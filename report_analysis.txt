@@ -1,0 +1,1206 @@
+
+==================================================
+ANALYZING: VC-SC 库存表-2025.8.4.xlsx
+==================================================
+Sheet Names: ['VC-SC -EU', 'VC-SC -GB', 'VC发货', 'SC-FBA', '翻单未到货', '易达总在途', 'VC INVENTORY', 'VC销量', '国内库存', '易达海外仓', 'Marvin 海外仓', 'marvin海外仓在途', '返SC在途', '近两月PO数量', '易达装箱对照', '销量需求', '产品信息表', 'Sheet1']
+
+[Sheet: VC-SC -EU] Info:
+Shape: (939, 106)
+Columns:
+  - Unnamed: 0
+  - Unnamed: 1
+  - Unnamed: 2
+  - Unnamed: 3
+  - Unnamed: 4
+  - Unnamed: 5
+  - Unnamed: 6
+  - Unnamed: 7
+  - 1809
+  - 130
+  - 9737
+  - 61
+  - 3830
+  - 226
+  - 27085
+  - 0
+  - 11728
+  - 15407
+  - 8108
+  - 176
+  - 3458
+  - 636
+  - 172
+  - 1705
+  - 225
+  - 205
+  - 1531
+  - 0.1
+  - 0.2
+  - 1475
+  - 1537
+  - 1553
+  - 1553.1
+  - 1641
+  - 1643
+  - 1798
+  - 1813
+  - 1897
+  - 2028
+  - 2197
+  - 2228
+  - 2138
+  - 2100
+  - 2096
+  - 2222
+  - 2563
+  - 3195
+  - 2991
+  - 2983
+  - 2767
+  - 1712
+  - 1760
+  - 2068
+  - 2001
+  - 1987
+  - 2025
+  - 1604
+  - 1762
+  - 1528
+  - 1585
+  - 1642
+  - 1604.1
+  - 1769
+  - 1623
+  - 1665
+  - 1517
+  - 1531.1
+  - 1518
+  - 1456
+  - 1391
+  - 1629
+  - 1577
+  - 1390
+  - 1384
+  - 1345
+  - 1314
+  - 1116
+  - 87921
+  - 7759
+  - 9179
+  - 10759
+  - 13954
+  - 10308
+  - 51959
+  - 4617
+  - 4884.7
+  - 6288.7
+  - 7865
+  - 7346
+  - 31001.4
+  - 33700
+  - 10504
+  - 9630
+  - Unnamed: 93
+  - Unnamed: 94
+  - Unnamed: 95
+  - Unnamed: 96
+  - Unnamed: 97
+  - Unnamed: 98
+  - Unnamed: 99
+  - Unnamed: 100
+  - Unnamed: 101
+  - Unnamed: 102
+  - Unnamed: 103
+  - 10940
+  - 2506
+
+First row sample:
+  Unnamed: 0: 产品信息
+  Unnamed: 1: nan
+  Unnamed: 2: nan
+  Unnamed: 3: nan
+  Unnamed: 4: nan
+  Unnamed: 5: nan
+  Unnamed: 6: nan
+  Unnamed: 7: nan
+  1809: SC库存
+  130: nan
+  9737: VC库存
+  61: nan
+  3830: nan
+  226: nan
+  27085: 国内库存
+  0: nan
+  11728: nan
+  15407: nan
+  8108: 海外仓在途
+  176: nan
+  3458: nan
+  636: nan
+  172: nan
+  1705: nan
+  225: nan
+  205: nan
+  1531: nan
+  0.1: nan
+  0.2: nan
+  1475: nan
+  1537: nan
+  1553: nan
+  1553.1: nan
+  1641: nan
+  1643: nan
+  1798: nan
+  1813: nan
+  1897: nan
+  2028: nan
+  2197: nan
+  2228: nan
+  2138: nan
+  2100: nan
+  2096: nan
+  2222: nan
+  2563: nan
+  3195: nan
+  2991: nan
+  2983: nan
+  2767: nan
+  1712: nan
+  1760: nan
+  2068: nan
+  2001: nan
+  1987: nan
+  2025: nan
+  1604: nan
+  1762: nan
+  1528: nan
+  1585: nan
+  1642: nan
+  1604.1: nan
+  1769: nan
+  1623: nan
+  1665: nan
+  1517: nan
+  1531.1: nan
+  1518: nan
+  1456: nan
+  1391: nan
+  1629: nan
+  1577: nan
+  1390: nan
+  1384: nan
+  1345: nan
+  1314: nan
+  1116: nan
+  87921: nan
+  7759: 5个月Forecast
+  9179: nan
+  10759: nan
+  13954: nan
+  10308: nan
+  51959: nan
+  4617: 5个月运营销量预估
+  4884.7: nan
+  6288.7: nan
+  7865: nan
+  7346: nan
+  31001.4: nan
+  33700: PO数量
+  10504: nan
+  9630: nan
+  Unnamed: 93: nan
+  Unnamed: 94: nan
+  Unnamed: 95: nan
+  Unnamed: 96: nan
+  Unnamed: 97: 海外预计剩余库存
+  Unnamed: 98: nan
+  Unnamed: 99: nan
+  Unnamed: 100: nan
+  Unnamed: 101: nan
+  Unnamed: 102: nan
+  Unnamed: 103: nan
+  10940: nan
+  2506: nan
+
+[Sheet: VC-SC -GB] Info:
+Shape: (496, 92)
+Columns:
+  - Unnamed: 0
+  - Unnamed: 1
+  - Unnamed: 2
+  - Unnamed: 3
+  - Unnamed: 4
+  - Unnamed: 5
+  - Unnamed: 6
+  - Unnamed: 7
+  - 412
+  - 0
+  - 750
+  - 2
+  - 239
+  - 1524
+  - 0.1
+  - 3827
+  - 0.2
+  - 10490
+  - 2646
+  - 769
+  - 114
+  - 259
+  - 396
+  - 0.3
+  - 0.4
+  - 75
+  - 95
+  - 87
+  - 69
+  - 76
+  - 76.1
+  - 82
+  - 80
+  - 82.1
+  - 86
+  - 85
+  - 88
+  - 90
+  - 86.1
+  - 87.1
+  - 89
+  - 103
+  - 123
+  - 132
+  - 126
+  - 121
+  - 70
+  - 66
+  - 76.2
+  - 70.1
+  - 67
+  - 78
+  - 59
+  - 64
+  - 62
+  - 60
+  - 63
+  - 66.1
+  - 73
+  - 70.2
+  - 70.3
+  - 62.1
+  - 63.1
+  - 69.1
+  - 66.2
+  - 62.2
+  - 72
+  - 70.4
+  - 66.3
+  - 63.2
+  - 61
+  - 61.1
+  - 62.3
+  - 3729
+  - 402
+  - 406
+  - 436
+  - 573
+  - 403
+  - 2220
+  - 1476
+  - 624
+  - 494
+  - Unnamed: 83
+  - Unnamed: 84
+  - Unnamed: 85
+  - Unnamed: 86
+  - Unnamed: 87
+  - Unnamed: 88
+  - Unnamed: 89
+  - Unnamed: 90
+  - Unnamed: 91
+
+First row sample:
+  Unnamed: 0: 产品信息
+  Unnamed: 1: nan
+  Unnamed: 2: nan
+  Unnamed: 3: nan
+  Unnamed: 4: nan
+  Unnamed: 5: nan
+  Unnamed: 6: nan
+  Unnamed: 7: nan
+  412: SC库存
+  0: nan
+  750: VC库存
+  2: nan
+  239: nan
+  1524: nan
+  0.1: nan
+  3827: 国内库存
+  0.2: nan
+  10490: nan
+  2646: nan
+  769: 海外仓在途
+  114: nan
+  259: nan
+  396: nan
+  0.3: nan
+  0.4: nan
+  75: UK-Forecasting
+  95: nan
+  87: nan
+  69: nan
+  76: nan
+  76.1: nan
+  82: nan
+  80: nan
+  82.1: nan
+  86: nan
+  85: nan
+  88: nan
+  90: nan
+  86.1: nan
+  87.1: nan
+  89: nan
+  103: nan
+  123: nan
+  132: nan
+  126: nan
+  121: nan
+  70: nan
+  66: nan
+  76.2: nan
+  70.1: nan
+  67: nan
+  78: nan
+  59: nan
+  64: nan
+  62: nan
+  60: nan
+  63: nan
+  66.1: nan
+  73: nan
+  70.2: nan
+  70.3: nan
+  62.1: nan
+  63.1: nan
+  69.1: nan
+  66.2: nan
+  62.2: nan
+  72: nan
+  70.4: nan
+  66.3: nan
+  63.2: nan
+  61: nan
+  61.1: nan
+  62.3: nan
+  3729: nan
+  402: 5个月Forecast
+  406: nan
+  436: nan
+  573: nan
+  403: nan
+  2220: nan
+  1476: PO数量
+  624: nan
+  494: nan
+  Unnamed: 83: nan
+  Unnamed: 84: nan
+  Unnamed: 85: nan
+  Unnamed: 86: nan
+  Unnamed: 87: 海外预计剩余库存
+  Unnamed: 88: nan
+  Unnamed: 89: nan
+  Unnamed: 90: nan
+  Unnamed: 91: nan
+
+[Sheet: VC发货] Info:
+Shape: (69, 16)
+Columns:
+  - 年月
+  - 类型
+  - Order/PO number
+  - ASIN
+  - 名称
+  - 规格
+  - Cost（供货价）
+  - Quantity ordered
+  - Hand-off start
+  - Hand-end start
+  - Vendor code
+  - Fulfilment Centre
+  - Order date（PO下单日）
+  - 仓库国家
+  - 实发数量
+  - 售卖站点
+
+First row sample:
+  年月: 45772
+  类型: PO
+  Order/PO number: 24I2618D
+  ASIN: B01GNKZO74
+  名称: 自由兵阿拉伯方巾欧版
+  规格: 白色
+  Cost（供货价）: £8.66
+  Quantity ordered: 80
+  Hand-off start: 45865
+  Hand-end start: 45872
+  Vendor code: 8U6SC
+  Fulfilment Centre: TRN3
+  Order date（PO下单日）: 45754
+  仓库国家: 意大利
+  实发数量: 80
+  售卖站点: 意大利
+
+[Sheet: SC-FBA] Info:
+Shape: (703, 14)
+Columns:
+  - 账号
+  - EU
+  - seller-sku
+  - fulfillment-channel-sku
+  - asin
+  - condition-type
+  - country
+  - quantity-for-local-fulfillment
+  - Unnamed: 8
+  - EU.1
+  - fulfillment-channel-sku.1
+  - asin.1
+  - country.1
+  - quantity-for-local-fulfillment.1
+
+First row sample:
+  账号: 欧一
+  EU: GB
+  seller-sku: 1BFR-UYIW-C4SI
+  fulfillment-channel-sku: B0BN54CFN1
+  asin: B0BN54CFN1
+  condition-type: NewItem
+  country: GB
+  quantity-for-local-fulfillment: 2.0
+  Unnamed: 8: nan
+  EU.1: GB
+  fulfillment-channel-sku.1: B0BN54CFN1
+  asin.1: B0BN54CFN1
+  country.1: GB
+  quantity-for-local-fulfillment.1: 2.0
+
+[Sheet: 翻单未到货] Info:
+Shape: (744, 26)
+Columns:
+  - Unnamed: 0
+  - Unnamed: 1
+  - Unnamed: 2
+  - Unnamed: 3
+  - Unnamed: 4
+  - 0
+  - 0.1
+  - 30714
+  - 29709
+  - 60123
+  - 33711
+  - 14225
+  - 6803
+  - 4972
+  - 412
+  - 0.2
+  - 0.3
+  - 13636
+  - 7152
+  - 3080
+  - 2148
+  - 2849
+  - 606
+  - 396
+  - 660
+  - Unnamed: 25
+
+First row sample:
+  Unnamed: 0: COUNTRY
+  Unnamed: 1: ASIN
+  Unnamed: 2: SKU
+  Unnamed: 3: 产品
+  Unnamed: 4: 规格
+  0: 全年需求
+  0.1: 国内在途
+  30714: 生产完成
+  29709: 未到货
+  60123: 翻单总计
+  33711: 下单1
+  14225: 下单2
+  6803: 下单3
+  4972: 下单4
+  412: 下单5
+  0.2: 下单6
+  0.3: 下单7
+  13636: 到货1
+  7152: 到货2
+  3080: 到货3
+  2148: 到货4
+  2849: 到货5
+  606: 到货6
+  396: 到货7
+  660: 到货8
+  Unnamed: 25: nan
+
+[Sheet: 易达总在途] Info:
+Shape: (654, 22)
+Columns:
+  - ASIN
+  - 箱号ID
+  - 箱号
+  - SKU
+  - 产品条码
+  - 产品名称
+  - 数量
+  - 入库数量
+  - 差异数量
+  - 申报价值($)
+  - 查验重量(G)
+  - 查验尺寸（长、宽、高）CM
+  - 目的地国家
+  - 发货日期
+  - 发货单号
+  - 单件数量
+  - ERP SKU
+  - 发货数量
+  - 未到数量
+  - 渠道
+  - 在途批次
+  - 备注
+
+First row sample:
+  ASIN: B0CZ6F34XG
+  箱号ID: 5553470
+  箱号: 1
+  SKU: LBSXGrey38S6
+  产品条码: LBSXGrey38S6
+  产品名称: 自由兵雷豹战术溯溪鞋通用版-灰色US6.5 38码-6双/箱
+  数量: 1
+  入库数量: 1
+  差异数量: 0
+  申报价值($): nan
+  查验重量(G): 5000
+  查验尺寸（长、宽、高）CM: 42.00*39.00*34.50=56,511.00
+  目的地国家: PL
+  发货日期: 45764
+  发货单号: JH2504170007-YBHW
+  单件数量: 6
+  ERP SKU: 6925810002348
+  发货数量: 6
+  未到数量: 0
+  渠道: 海运
+  在途批次: 1
+  备注: nan
+
+[Sheet: VC INVENTORY] Info:
+Shape: (1589, 19)
+Columns:
+  - COUNTRY CODE
+  - ASIN
+  - Product title
+  - Brand
+  - Store code
+  - Sourceable product OOS %
+  - Vendor confirmation %
+  - Net Received
+  - Net Received Units
+  - Open Purchase Order Quantity
+  - Receive fill %
+  - Overall Vendor Lead Time (days)
+  - Unfilled Customer Ordered Units
+  - Aged 90+ Days Sellable Inventory
+  - Aged 90+ Days Sellable Units
+  - Sellable On Hand Inventory
+  - Sellable On Hand Units
+  - Unsellable On Hand Inventory
+  - Unsellable On Hand Units
+
+First row sample:
+  COUNTRY CODE: EU
+  ASIN: B0CW573T4G
+  Product title: FREE SOLDIER Taktische Herrenstiefel 8 Zoll Leichte Kampfstiefel Langlebige Wildleder Militärische Arbeitsstiefel Wüstenstiefel
+  Brand: FREE SOLDIER
+  Store code: DE
+  Sourceable product OOS %: 0.0
+  Vendor confirmation %: 0
+  Net Received: 722.29
+  Net Received Units: 15
+  Open Purchase Order Quantity: 0.0
+  Receive fill %: 0
+  Overall Vendor Lead Time (days): 2.27
+  Unfilled Customer Ordered Units: 1.0
+  Aged 90+ Days Sellable Inventory: 0.0
+  Aged 90+ Days Sellable Units: 0.0
+  Sellable On Hand Inventory: 1017.62
+  Sellable On Hand Units: 21.0
+  Unsellable On Hand Inventory: 0.0
+  Unsellable On Hand Units: 0.0
+
+[Sheet: VC销量] Info:
+Shape: (1216, 11)
+Columns:
+  - Unnamed: 0
+  - Programme=[Retail]
+  - Distributor View=[Manufacturing]
+  - View By=[ASIN]
+  - Countries=[UK;DE;BE;ES;FR;IT;NL;PL;SE]
+  - Businesses=[Free Soldier;Free Soldier - DE Sporting Goods - (Pan-EU);Free Soldier - DE Sporting Goods - (Pan-EU);Free Soldier - ES Sporting Goods - (Pan-EU);Free Soldier - FR Sporting Goods - (Pan-EU);Free Soldier - IT Sporting Goods - (Pan-EU);Free Soldier - NL Sporting Goods - (Pan-EU);Free Soldier - PL Sporting Goods - (Pan-EU);Free Soldier - SE Sporting Goods - (Pan-EU)]
+  - Locale=[en_GB]
+  - Currency=[GBP]
+  - Reporting range=[Custom]
+  - Viewing Range=[01/06/2025 - 31/07/2025]
+  - Report Updated=[02/08/2025]
+
+
+First row sample:
+  Unnamed: 0: nan
+  Programme=[Retail]: ASIN
+  Distributor View=[Manufacturing]: Product title
+  View By=[ASIN]: Brand
+  Countries=[UK;DE;BE;ES;FR;IT;NL;PL;SE]: Store code
+  Businesses=[Free Soldier;Free Soldier - DE Sporting Goods - (Pan-EU);Free Soldier - DE Sporting Goods - (Pan-EU);Free Soldier - ES Sporting Goods - (Pan-EU);Free Soldier - FR Sporting Goods - (Pan-EU);Free Soldier - IT Sporting Goods - (Pan-EU);Free Soldier - NL Sporting Goods - (Pan-EU);Free Soldier - PL Sporting Goods - (Pan-EU);Free Soldier - SE Sporting Goods - (Pan-EU)]: Ordered revenue
+  Locale=[en_GB]: Ordered units
+  Currency=[GBP]: Dispatched revenue
+  Reporting range=[Custom]: Dispatched COGS
+  Viewing Range=[01/06/2025 - 31/07/2025]: Dispatched units
+  Report Updated=[02/08/2025]
+: Customer returns
+
+[Sheet: 国内库存] Info:
+Shape: (6553, 58)
+Columns:
+  - 品名
+  - SKU
+  - 产品标签
+  - 店铺
+  - FNSKU
+  - 识别码
+  - MSKU
+  - 国家/地区
+  - 仓库
+  - 仓位
+  - 款名
+  - SPU
+  - 型号
+  - 属性
+  - 一级分类
+  - 二级分类
+  - 三级分类
+  - 品牌
+  - Listing负责人
+  - 单位
+  - 产品状态
+  - 可用量
+  - 可用锁定量
+  - 次品量
+  - 次品锁定量
+  - 预锁定量
+  - 待检待上架量
+  - 待到货量
+  - 期望可用量
+  - 期望待到货量
+  - 调拨在途
+  - 调拨在途货值
+  - 调拨在途费用
+  - 调拨在途头程成本
+  - 调拨在途库存成本
+  - 移除在途
+  - FBA发货单待配货量
+  - 实际总量
+  - 预计总量
+  - 采购单价
+  - 单位费用
+  - 单位库存成本
+  - 货值
+  - 费用
+  - 预警状态
+  - 库存成本
+  - 可用库存箱数
+  - 产品负责人
+  - 备注
+  - 平均库龄
+  - 头程
+  - 单位头程
+  - 0-30天库龄
+  - 31-90天库龄
+  - 91-180天库龄
+  - 181-240天库龄
+  - 241-365天库龄
+  - 366天以上库龄
+
+First row sample:
+  品名: 自由兵雷豹战术溯溪鞋通用版/沙色/US8/EU40
+  SKU: 6925810002287
+  产品标签: nan
+  店铺: nan
+  FNSKU: nan
+  识别码: nan
+  MSKU: nan
+  国家/地区: nan
+  仓库: 南京EU1仓
+  仓位: nan
+  款名: 自由兵雷豹战术溯溪鞋通用版
+  SPU: ACC0071
+  型号: nan
+  属性: 颜色\沙色,尺码\US8-41码
+  一级分类: 鞋靴
+  二级分类: 水鞋
+  三级分类: 男士水鞋
+  品牌: nan
+  Listing负责人: nan
+  单位: nan
+  产品状态: 在售
+  可用量: 0
+  可用锁定量: 0
+  次品量: 0
+  次品锁定量: 0
+  预锁定量: 0
+  待检待上架量: 0
+  待到货量: 0
+  期望可用量: 0
+  期望待到货量: 0
+  调拨在途: 0
+  调拨在途货值: 0
+  调拨在途费用: 0
+  调拨在途头程成本: 0
+  调拨在途库存成本: 0
+  移除在途: 0
+  FBA发货单待配货量: 0
+  实际总量: 0
+  预计总量: 0
+  采购单价: -
+  单位费用: -
+  单位库存成本: -
+  货值: 0.0
+  费用: 0.0
+  预警状态: nan
+  库存成本: 0.0
+  可用库存箱数: 0.0
+  产品负责人: nan
+  备注: nan
+  平均库龄: 0
+  头程: 0.0
+  单位头程: -
+  0-30天库龄: 0
+  31-90天库龄: 0
+  91-180天库龄: 0
+  181-240天库龄: 0
+  241-365天库龄: 0
+  366天以上库龄: 0
+
+[Sheet: 易达海外仓] Info:
+Shape: (561, 17)
+Columns:
+  - 仓库名称
+  - 产品ID
+  - SKU
+  - 产品名称
+  - 产品条码
+  - 产品尺寸（长、宽、高）CM
+  - 产品重量G
+  - 查验尺寸（长、宽、高）CM
+  - 查验重量G
+  - 查验状态
+  - 实际库存
+  - 预留库存
+  - 可销售库存
+  - 在途库存
+  - 每箱数量
+  - 实际数量
+  - ASIN
+
+First row sample:
+  仓库名称: 金鹰波兰仓
+  产品ID: 286084
+  SKU: QXGREY46TallS5
+  产品名称: 自由兵奇袭战术裤欧版碳灰-46Tall-(32W/32L)-5件/包
+  产品条码: QXGREY46TallS5
+  产品尺寸（长、宽、高）CM: 11237.5
+  产品重量G: 3000
+  查验尺寸（长、宽、高）CM: 40.00*29.00*13.00=15,080.00
+  查验重量G: 2895
+  查验状态: 通过
+  实际库存: 4
+  预留库存: 0
+  可销售库存: 4
+  在途库存: 0
+  每箱数量: 5.0
+  实际数量: 20.0
+  ASIN: B0D2K8LN4K
+
+[Sheet: Marvin 海外仓] Info:
+Shape: (384, 12)
+Columns:
+  - 2025年自由兵英国海外仓库存统计
+  - Unnamed: 1
+  - Unnamed: 2
+  - Unnamed: 3
+  - Unnamed: 4
+  - Unnamed: 5
+  - Unnamed: 6
+  - Unnamed: 7
+  - Unnamed: 8
+  - Unnamed: 9
+  - Unnamed: 10
+  - Unnamed: 11
+
+First row sample:
+  2025年自由兵英国海外仓库存统计: 月份
+  Unnamed: 1: 4月
+  Unnamed: 2: nan
+  Unnamed: 3: nan
+  Unnamed: 4: nan
+  Unnamed: 5: nan
+  Unnamed: 6: nan
+  Unnamed: 7: nan
+  Unnamed: 8: nan
+  Unnamed: 9: nan
+  Unnamed: 10: nan
+  Unnamed: 11: nan
+
+[Sheet: marvin海外仓在途] Info:
+Shape: (481, 11)
+Columns:
+  - 发货批号
+  - 产品名
+  - 箱号
+  - 位置
+  - 备注
+  - 箱内数量
+  - ASIN
+  - 批次
+  - 状态
+  - Unnamed: 9
+  - Unnamed: 10
+
+First row sample:
+  发货批号: UK241231 (11)
+  产品名: ETD 1.13 ETA 2.28
+  箱号: nan
+  位置: nan
+  备注: nan
+  箱内数量: nan
+  ASIN: nan
+  批次: nan
+  状态: nan
+  Unnamed: 9: nan
+  Unnamed: 10: nan
+
+[Sheet: 返SC在途] Info:
+Shape: (26, 16)
+Columns:
+  - 后台配送时间
+  - 国家
+  - 仓库
+  - FBAID/货代单号
+  - 货件名称
+  - ERPSKU
+  - MSKU（后台）
+  - ASIN
+  - FNSKU
+  - 发货数量
+  - 接收数量
+  - 箱号
+  - 渠道
+  - 状态
+  - 备注
+  - 是否海外仓
+
+First row sample:
+  后台配送时间: nan
+  国家: DE
+  仓库: WRO5
+  FBAID/货代单号: FBA15KBXYKMV
+  货件名称: 5.13-风暴二代厚底-WRO5 -EU1-海运
+  ERPSKU: nan
+  MSKU（后台）: FB2DHD-BK-EU41
+  ASIN: B0F7XGXYJP
+  FNSKU: B0F7XGXYJP
+  发货数量: 6
+  接收数量: nan
+  箱号: nan
+  渠道: 海运
+  状态: nan
+  备注: nan
+  是否海外仓: nan
+
+[Sheet: 近两月PO数量] Info:
+Shape: (999, 24)
+Columns:
+  - 日期
+  - 2025-07-31 00:00:00
+  - 2025-07-25 00:00:00
+  - 2025-06-25 00:00:00
+  - Unnamed: 4
+  - Unnamed: 5
+  - Unnamed: 6
+  - Unnamed: 7
+  - Unnamed: 8
+  - Unnamed: 9
+  - Unnamed: 10
+  - Unnamed: 11
+  - Unnamed: 12
+  - Unnamed: 13
+  - Unnamed: 14
+  - Unnamed: 15
+  - Unnamed: 16
+  - Unnamed: 17
+  - Unnamed: 18
+  - Unnamed: 19
+  - Unnamed: 20
+  - Unnamed: 21
+  - Unnamed: 22
+  - Unnamed: 23
+
+First row sample:
+  日期: EU-PO单量
+  2025-07-31 00:00:00: nan
+  2025-07-25 00:00:00: nan
+  2025-06-25 00:00:00: nan
+  Unnamed: 4: nan
+  Unnamed: 5: nan
+  Unnamed: 6: UK-PO单量
+  Unnamed: 7: nan
+  Unnamed: 8: nan
+  Unnamed: 9: nan
+  Unnamed: 10: nan
+  Unnamed: 11: nan
+  Unnamed: 12: EU-VC发货
+  Unnamed: 13: nan
+  Unnamed: 14: nan
+  Unnamed: 15: nan
+  Unnamed: 16: nan
+  Unnamed: 17: nan
+  Unnamed: 18: UK-VC发货
+  Unnamed: 19: nan
+  Unnamed: 20: nan
+  Unnamed: 21: nan
+  Unnamed: 22: nan
+  Unnamed: 23: nan
+
+[Sheet: 易达装箱对照] Info:
+Shape: (2451, 5)
+Columns:
+  - 易达条码
+  - ASIN
+  - ERP SKU
+  - 单件数量
+  - Unnamed: 4
+
+First row sample:
+  易达条码: 0089BLACK1
+  ASIN: B00ZOMKH5C
+  ERP SKU: 6941099425975
+  单件数量: 1.0
+  Unnamed: 4: nan
+
+[Sheet: 销量需求] Info:
+Shape: (156, 17)
+Columns:
+  - 品名
+  - 年份
+  - 1月销量
+  - 2月销量
+  - 3月销量
+  - 4月销量
+  - 5月销量
+  - 6月销量
+  - 7月销量
+  - 8月销量
+  - 9月销量
+  - 10月销量
+  - 11月销量
+  - 12月销量
+  - 销量汇总
+  - Unnamed: 15
+  - Unnamed: 16
+
+First row sample:
+  品名: 自由兵鲨鱼皮冲锋衣软壳欧版
+  年份: 2024
+  1月销量: 450
+  2月销量: 400
+  3月销量: 300
+  4月销量: 300
+  5月销量: 150
+  6月销量: 50
+  7月销量: 70
+  8月销量: 200
+  9月销量: 500
+  10月销量: 800
+  11月销量: 1100
+  12月销量: 950
+  销量汇总: 5270
+  Unnamed: 15: nan
+  Unnamed: 16: nan
+
+[Sheet: 产品信息表] Info:
+Shape: (570, 4)
+Columns:
+  - ASIN
+  - 品名
+  - 规格
+  - ERP SKU 
+
+First row sample:
+  ASIN: B01GNKZO74
+  品名: 自由兵阿拉伯方巾欧版
+  规格: 白色
+  ERP SKU : 6941099424510
+
+[Sheet: Sheet1] Info:
+Shape: (0, 0)
+Columns:
+
+First row sample:
+
+==================================================
+ANALYZING: 欧洲广告分析表8.3.xlsx
+==================================================
+Sheet Names: ['广告转化VS自然转化', '广告位分析', '投放词分析', '搜索词分析']
+
+[Sheet: 广告转化VS自然转化] Info:
+Shape: (45, 30)
+Columns:
+  - Unnamed: 0
+  - Unnamed: 1
+  - Unnamed: 2
+  - Unnamed: 3
+  - Unnamed: 4
+  - Unnamed: 5
+  - Unnamed: 6
+  - Unnamed: 7
+  - Unnamed: 8
+  - Unnamed: 9
+  - Unnamed: 10
+  - Unnamed: 11
+  - Unnamed: 12
+  - Unnamed: 13
+  - Unnamed: 14
+  - Unnamed: 15
+  - Unnamed: 16
+  - Unnamed: 17
+  - Unnamed: 18
+  - Unnamed: 19
+  - Unnamed: 20
+  - Unnamed: 21
+  - Unnamed: 22
+  - Unnamed: 23
+  - Unnamed: 24
+  - Unnamed: 25
+  - Unnamed: 26
+  - Unnamed: 27
+  - Unnamed: 28
+  - Unnamed: 29
+
+First row sample:
+  Unnamed: 0: nan
+  Unnamed: 1: nan
+  Unnamed: 2: nan
+  Unnamed: 3: nan
+  Unnamed: 4: nan
+  Unnamed: 5: nan
+  Unnamed: 6: nan
+  Unnamed: 7: nan
+  Unnamed: 8: nan
+  Unnamed: 9: nan
+  Unnamed: 10: nan
+  Unnamed: 11: nan
+  Unnamed: 12: nan
+  Unnamed: 13: nan
+  Unnamed: 14: nan
+  Unnamed: 15: nan
+  Unnamed: 16: nan
+  Unnamed: 17: nan
+  Unnamed: 18: nan
+  Unnamed: 19: nan
+  Unnamed: 20: nan
+  Unnamed: 21: nan
+  Unnamed: 22: nan
+  Unnamed: 23: nan
+  Unnamed: 24: nan
+  Unnamed: 25: nan
+  Unnamed: 26: nan
+  Unnamed: 27: nan
+  Unnamed: 28: nan
+  Unnamed: 29: nan
+
+[Sheet: 广告位分析] Info:
+Shape: (372, 12)
+Columns:
+  - 广告活动
+  - 曝光量
+  - 点击
+  - 销售额-欧元
+  - 花费-欧元
+  - 广告订单
+  - ACOS
+  - 点击率
+  - 转化率
+  - CPC
+  - SPC,
+  - CPA
+
+First row sample:
+  广告活动: DE-VC-软壳冲锋裤-冬季+功能词-广泛-B07VXZWCN6-TI7U
+  曝光量: 715
+  点击: 5
+  销售额-欧元: 0.0
+  花费-欧元: 3.36
+  广告订单: 0
+  ACOS: nan
+  点击率: 0.006993006993006993
+  转化率: 0.0
+  CPC: 0.6719999999999999
+  SPC,: 0.0
+  CPA: nan
+
+[Sheet: 投放词分析] Info:
+Shape: (0, 12)
+Columns:
+  - 投放词
+  - 销售额-欧元
+  - 花费-欧元
+  - 曝光量
+  - 点击
+  - 广告订单
+  - ACOS
+  - 点击率
+  - 转化率
+  - CPC
+  - SPC
+  - CPA
+
+First row sample:
+
+[Sheet: 搜索词分析] Info:
+Shape: (27926, 13)
+Columns:
+  - 搜索词
+  - 广告订单
+  - 关键词排名
+  - ACOS
+  - 点击率
+  - 转化率
+  - CPC
+  - SPC
+  - CPA
+  - 周搜索量
+  - Top3 点击份额
+  - Top3 购买份额
+  - 竞争难度
+
+First row sample:
+  搜索词: fernglas
+  广告订单: 87
+  关键词排名: nan
+  ACOS: 0.4890264396380838
+  点击率: 0.008316055683397508
+  转化率: 0.05958904109589041
+  CPC: 0.7992534246575341
+  SPC: 1.634376712328768
+  CPA: 13.412758620689653
+  周搜索量: nan
+  Top3 点击份额: nan
+  Top3 购买份额: nan
+  竞争难度: nan
