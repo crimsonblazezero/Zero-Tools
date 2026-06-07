@@ -1,0 +1,5 @@
+2026/05/29-16:55:55.503 b604 Creating DB C:\Users\china\Desktop\Amazon Image Extractor\src\chrome_profile\Default\Local Storage\leveldb since it was missing.
+2026/05/29-16:55:55.541 b604 Reusing MANIFEST C:\Users\china\Desktop\Amazon Image Extractor\src\chrome_profile\Default\Local Storage\leveldb/MANIFEST-000001
+2026/05/29-16:56:55.551 b300 Level-0 table #5: started
+2026/05/29-16:56:55.564 b300 Level-0 table #5: 135396 bytes OK
+2026/05/29-16:56:55.568 b300 Delete type=0 #3

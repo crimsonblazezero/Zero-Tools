@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🇯🇵 日本亚马逊利润核算器 2026</title>
+<style>
+:root{--primary:#FF6B35;--primary-dark:#E55A25;--secondary:#2C3E50;--accent:#27AE60;--danger:#E74C3C;--warning:#F39C12;--purple:#8E44AD;--bg:#F0F2F5;--card:#fff;--border:#E0E6ED;--text:#2C3E50;--muted:#7F8C8D}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.header{background:linear-gradient(135deg,#BC002D 0%,#FF6B35 100%);color:#fff;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 20px rgba(188,0,45,.3)}
+.header h1{font-size:21px;font-weight:700}
+.header .sub{font-size:12px;opacity:.85;margin-top:3px}
+.rate-badge{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4);border-radius:20px;padding:8px 16px;cursor:pointer;transition:.2s;text-align:center;min-width:170px}
+.rate-badge:hover{background:rgba(255,255,255,.28)}
+.rate-val{font-size:17px;font-weight:700;margin:2px 0}
+.rate-label{font-size:11px;opacity:.8}
+.rate-time{font-size:10px;opacity:.6}
+.quick-bar{background:#fff;border-bottom:2px solid var(--border);padding:10px 28px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.quick-bar .qb-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.quick-bar .qb-group{display:flex;align-items:center;gap:8px}
+.quick-bar input{width:72px;padding:5px 8px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;font-weight:700;color:var(--text);text-align:center}
+.quick-bar input:focus{outline:none;border-color:var(--primary)}
+.quick-bar .qb-unit{font-size:12px;color:var(--muted)}
+.quick-bar .qb-divider{width:1px;height:28px;background:var(--border)}
+.container{max-width:1520px;margin:0 auto;padding:18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.card{background:var(--card);border-radius:12px;padding:18px;box-shadow:0 2px 12px rgba(0,0,0,.06);border:1px solid var(--border)}
+.card-title{font-size:14px;font-weight:700;color:var(--secondary);margin-bottom:14px;display:flex;align-items:center;gap:7px;padding-bottom:9px;border-bottom:2px solid var(--bg)}
+.fg{margin-bottom:11px}
+.fg label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.fg input,.fg select,.fg textarea{width:100%;padding:8px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);background:#fff;transition:border-color .2s}
+.fg input:focus,.fg select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(255,107,53,.1)}
+.fg input[readonly]{background:#F8F9FA;color:var(--primary);font-weight:600}
+.fg textarea{resize:vertical;min-height:110px;font-family:monospace;font-size:12px}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+.btn{padding:9px 18px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:5px}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-dark);transform:translateY(-1px);box-shadow:0 4px 12px rgba(255,107,53,.3)}
+.btn-success{background:var(--accent);color:#fff}.btn-success:hover{background:#219A52;transform:translateY(-1px)}
+.btn-secondary{background:var(--secondary);color:#fff}.btn-secondary:hover{background:#1a252f}
+.btn-outline{background:transparent;color:var(--primary);border:2px solid var(--primary)}.btn-outline:hover{background:var(--primary);color:#fff}
+.btn-purple{background:var(--purple);color:#fff}.btn-purple:hover{background:#7D3C98;transform:translateY(-1px)}
+.btn-danger{background:var(--danger);color:#fff}.btn-danger:hover{background:#C0392B;transform:translateY(-1px)}
+.btn-sm{padding:5px 11px;font-size:12px}
+.tabs{display:flex;gap:4px;margin-bottom:18px;background:var(--bg);padding:4px;border-radius:10px}
+.tab{flex:1;padding:8px 14px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:.2s;background:transparent;color:var(--muted)}
+.tab.active{background:#fff;color:var(--primary);box-shadow:0 2px 8px rgba(0,0,0,.1)}
+.tab-content{display:none}.tab-content.active{display:block}
+.rtable{width:100%;border-collapse:collapse;font-size:12px}
+.rtable th{background:var(--secondary);color:#fff;padding:9px 11px;text-align:left;font-size:11px;font-weight:700;white-space:nowrap}
+.rtable td{padding:9px 11px;border-bottom:1px solid var(--border);white-space:nowrap}
+.rtable tr:hover td{background:#F8F9FA}
+.rtable tr.hl-row td{background:#FFF8E1}
+.twrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border)}
+.pos{color:var(--accent);font-weight:700}.neg{color:var(--danger);font-weight:700}.neu{color:var(--warning);font-weight:700}
+.pbar-wrap{background:#eee;border-radius:20px;height:8px;overflow:hidden;margin-top:4px}
+.pbar{height:100%;border-radius:20px;transition:width .5s}
+.fbd{background:#F8F9FA;border-radius:10px;padding:14px;margin-top:11px}
+.frow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px dashed var(--border);font-size:12px}
+.frow:last-child{border-bottom:none;font-weight:700;font-size:13px;color:var(--primary)}
+.frow .fl{color:var(--muted)}
+.ibox{background:#EBF5FB;border-left:4px solid #3498DB;border-radius:0 8px 8px 0;padding:10px 14px;font-size:12px;margin-bottom:13px;color:#2980B9}
+.wbox{background:#FEF9E7;border-left:4px solid var(--warning);border-radius:0 8px 8px 0;padding:10px 14px;font-size:12px;margin-bottom:13px;color:#D68910}
+.sbox{background:#EAFAF1;border-left:4px solid var(--accent);border-radius:0 8px 8px 0;padding:10px 14px;font-size:12px;margin-bottom:13px;color:#1E8449}
+.sbadge{display:inline-block;padding:2px 7px;border-radius:12px;font-size:11px;font-weight:700}
+.s-sm{background:#D5F5E3;color:#1E8449}.s-std{background:#D6EAF8;color:#1A5276}
+.s-lg{background:#FDEBD0;color:#784212}.s-xl{background:#FADBD8;color:#922B21}
+.sgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:18px}
+.sc{background:#fff;border-radius:10px;padding:14px;text-align:center;border:1px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.sc .sv{font-size:20px;font-weight:800;margin:3px 0}
+.sc .sl{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase}
+.sc .ss{font-size:11px;color:var(--muted);margin-top:2px}
+.action-bar{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.hlrow td{background:#FFF0F0!important}
+.revrow td{background:#F3E8FF!important}
+.revrow td:first-child{border-left:3px solid var(--purple)}
+.loading{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.surcharge-section{background:#FAFBFC;border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:11px}
+.surcharge-title{font-size:12px;font-weight:700;color:var(--secondary);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.toggle-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.toggle-row label{font-size:12px;font-weight:600;color:var(--text);cursor:pointer}
+input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--primary)}
+.rev-applied-bar{background:linear-gradient(135deg,#F3E8FF,#EDE0FF);border:1.5px solid var(--purple);border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:13px;color:var(--purple);font-weight:700}
+.rev-applied-bar .undo-btn{margin-left:auto;background:transparent;border:1.5px solid var(--purple);color:var(--purple);border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700;cursor:pointer}
+.rev-applied-bar .undo-btn:hover{background:var(--purple);color:#fff}
+.surcharge-select-group{background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.surcharge-select-group .sg-title{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.surcharge-select-group select{width:100%;padding:6px 9px;border:1.5px solid var(--border);border-radius:7px;font-size:12px;color:var(--text);background:#fff}
+.surcharge-select-group select:focus{outline:none;border-color:var(--primary)}
+/* 费率预览小标签 */
+.rate-hint{font-size:11px;color:var(--muted);margin-top:5px;padding:4px 8px;background:#F0F2F5;border-radius:5px;line-height:1.6}
+.rate-hint b{color:var(--secondary)}
+@media(max-width:900px){.grid2{grid-template-columns:1fr}.sgrid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.header{flex-direction:column;gap:10px;text-align:center}.fr2,.fr3{grid-template-columns:1fr}.quick-bar{padding:10px 14px}}
+@media print{.header,.quick-bar,.action-bar,.btn,.tabs{display:none!important}body{background:#fff}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>🇯🇵 日本亚马逊利润核算器</h1>
+    <div class="sub">2026年4月1日最新费率 · FBA配送料25档 · 紹介料 · 月次保管料 · 超龄/利用率附加费 · 头程 · 反推售价</div>
+  </div>
+  <div class="rate-badge" onclick="refreshRate()" title="点击刷新汇率">
+    <div class="rate-label">CNY/JPY 实时汇率（点击刷新）</div>
+    <div class="rate-val" id="rateDisplay">加载中...</div>
+    <div class="rate-time" id="rateTime">--</div>
+  </div>
+</div>
+
+<div class="quick-bar">
+  <span class="qb-label">⚡ 快捷参数</span>
+  <div class="qb-group">
+    <span class="qb-label">推广占比</span>
+    <input type="number" id="qb_ads" value="15" step="0.5" min="0" max="100" oninput="syncQuickBar('ads')">
+    <span class="qb-unit">%</span>
+  </div>
+  <div class="qb-divider"></div>
+  <div class="qb-group">
+    <span class="qb-label">退货率</span>
+    <input type="number" id="qb_return" value="5" step="0.5" min="0" max="100" oninput="syncQuickBar('return')">
+    <span class="qb-unit">%</span>
+  </div>
+  <div class="qb-divider"></div>
+  <button class="btn btn-primary btn-sm" onclick="applyQuickBar()">✅ 一键应用</button>
+  <span id="qb_applied" style="font-size:12px;color:var(--accent);display:none">✓ 已应用！</span>
+</div>
+
+<div class="container">
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('single')">📦 单品核算</button>
+  <button class="tab" onclick="switchTab('batch')">📋 批量核算</button>
+  <button class="tab" onclick="switchTab('settings')">⚙️ 全局设置</button>
+  <button class="tab" onclick="switchTab('reference')">📊 费率参考表</button>
+</div>
+
+<!-- ===== 单品核算 ===== -->
+<div id="tab-single" class="tab-content active">
+<div class="grid2">
+<div>
+  <div class="card">
+    <div class="card-title">📦 产品信息</div>
+    <div class="fg"><label>产品名称</label><input type="text" id="s_name" placeholder="例：木製ウォールシェルフ 60cm" oninput="calc()"></div>
+    <div class="fr2">
+      <div class="fg"><label>售价 (JPY ¥)</label><input type="number" id="s_price" value="3980" step="10" oninput="calc()"></div>
+      <div class="fg"><label>采购价 (CNY ¥)</label><input type="number" id="s_cost" value="45" step="1" oninput="calc()"></div>
+    </div>
+    <div class="fr3">
+      <div class="fg"><label>重量 (kg)</label><input type="number" id="s_weight" value="1.2" step="0.1" oninput="calc()"></div>
+      <div class="fg"><label>长 (cm)</label><input type="number" id="s_l" value="65" step="1" oninput="calc()"></div>
+      <div class="fg"><label>宽 (cm)</label><input type="number" id="s_w" value="20" step="1" oninput="calc()"></div>
+    </div>
+    <div class="fr2">
+      <div class="fg"><label>高 (cm)</label><input type="number" id="s_h" value="8" step="1" oninput="calc()"></div>
+      <div class="fg"><label>品类</label>
+        <select id="s_cat" onchange="calc()">
+          <option value="home">ホーム&キッチン / 家具</option>
+          <option value="diy">DIY・工具・ガーデン</option>
+          <option value="elec">家電・カメラ</option>
+          <option value="book">本・コミック</option>
+          <option value="other">その他（15.4%）</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr3">
+      <div class="fg"><label>推广占比 (%)</label><input type="number" id="s_ads" value="15" step="0.5" oninput="calc()"></div>
+      <div class="fg"><label>退货率 (%)</label><input type="number" id="s_return" value="5" step="0.5" oninput="calc()"></div>
+      <div class="fg"><label>月均销量 (件)</label><input type="number" id="s_monthly" value="30" step="1" oninput="calc()"></div>
+    </div>
+
+    <div class="surcharge-section">
+      <div class="surcharge-title">💰 附加费设置</div>
+
+      <!-- 月次保管料 -->
+      <div class="toggle-row">
+        <input type="checkbox" id="s_use_storage" checked onchange="calc()">
+        <label for="s_use_storage">月次保管料（仓储费）</label>
+      </div>
+
+      <!-- 仓储利用率附加费 -->
+      <div class="toggle-row" style="margin-top:6px">
+        <input type="checkbox" id="s_use_util" onchange="toggleUtilSelect('s');calc()">
+        <label for="s_use_util">仓储利用率附加费</label>
+      </div>
+      <div id="s_util_select" style="display:none;margin:4px 0 8px 24px">
+        <div class="surcharge-select-group">
+          <div class="sg-title">库存周龄 — 系统自动按产品尺寸匹配费率</div>
+          <select id="s_util_weeks" onchange="calc()">
+            <option value="26">26〜39週（标准¥1.462 / 大件¥0.316 /dm³）</option>
+            <option value="39">39〜52週（标准¥3.997 / 大件¥1.023 /dm³）</option>
+            <option value="52">超过52週（标准¥16.762 / 大件¥3.842 /dm³）</option>
+          </select>
+          <div class="rate-hint" id="s_util_hint">选择周龄后，费率将根据该产品的FBA尺寸档位自动匹配。</div>
+        </div>
+      </div>
+
+      <!-- 超龄库存附加费 -->
+      <div class="toggle-row">
+        <input type="checkbox" id="s_use_aged" onchange="toggleAgedSelect('s');calc()">
+        <label for="s_use_aged">超龄库存附加费</label>
+      </div>
+      <div id="s_aged_select" style="display:none;margin:4px 0 8px 24px">
+        <div class="surcharge-select-group">
+          <div class="sg-title">库龄天数档位</div>
+          <select id="s_aged_tier" onchange="calc()">
+            <option value="0">＜271天 · ¥0（免费）</option>
+            <option value="271">271〜300天 · ¥16.662/dm³（最低¥20/件）</option>
+            <option value="301">301〜330天 · ¥17.475/dm³（最低¥20/件）</option>
+            <option value="331">331〜365天 · ¥18.085/dm³（最低¥20/件）</option>
+            <option value="366">≥366天 · ¥34.239/dm³（最低¥20/件）</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div>
+  <div class="card">
+    <div class="card-title">📊 核算结果</div>
+    <div id="s_result_box">
+      <div class="ibox">请在左侧填写产品信息，结果将实时显示。</div>
+    </div>
+  </div>
+  <div style="margin-top:14px">
+    <button class="btn btn-secondary" onclick="exportSingleHTML()" style="width:100%">📄 导出单品报告 HTML</button>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ===== 批量核算 ===== -->
+<div id="tab-batch" class="tab-content">
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title">📋 批量输入</div>
+    <div class="ibox">
+      粘贴Excel数据，列顺序：<strong>产品名 | 售价JPY | 采购价CNY | 重量kg | 长cm | 宽cm | 高cm</strong>（Tab分隔，可直接从Excel复制）<br>
+      <span style="color:#E67E22">💡 售价填0时，系统将直接使用反推售价计算利润。</span>
+    </div>
+    <div class="fg">
+      <textarea id="b_input" placeholder="产品A	3980	45	1.2	65	20	8&#10;产品B	5980	68	2.1	80	25	10&#10;产品C	0	32	0.8	40	15	5" oninput="batchCalc()"></textarea>
+    </div>
+    <div class="fr2">
+      <div class="fg">
+        <label>品类（批量统一）</label>
+        <select id="b_cat" onchange="batchCalc()">
+          <option value="home">ホーム&キッチン / 家具</option>
+          <option value="diy">DIY・工具・ガーデン</option>
+          <option value="elec">家電・カメラ</option>
+          <option value="book">本・コミック</option>
+          <option value="other">その他（15.4%）</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>目标利润率 (%) — 反推售价用</label>
+        <input type="number" id="b_target" value="20" step="1" min="1" max="80" oninput="batchCalc()">
+      </div>
+    </div>
+
+    <div class="surcharge-section">
+      <div class="surcharge-title">💰 批量附加费设置</div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:10px">
+        <div class="toggle-row"><input type="checkbox" id="b_use_storage" checked onchange="batchCalc()"><label for="b_use_storage">月次保管料</label></div>
+        <div class="toggle-row"><input type="checkbox" id="b_use_util" onchange="toggleUtilSelect('b');batchCalc()"><label for="b_use_util">仓储利用率附加费</label></div>
+        <div class="toggle-row"><input type="checkbox" id="b_use_aged" onchange="toggleAgedSelect('b');batchCalc()"><label for="b_use_aged">超龄库存附加费</label></div>
+      </div>
+      <div class="fr2">
+        <div id="b_util_select" style="display:none">
+          <div class="surcharge-select-group">
+            <div class="sg-title">库存周龄 — 自动按各产品尺寸匹配费率</div>
+            <select id="b_util_weeks" onchange="batchCalc()">
+              <option value="26">26〜39週（标准¥1.462 / 大件¥0.316 /dm³）</option>
+              <option value="39">39〜52週（标准¥3.997 / 大件¥1.023 /dm³）</option>
+              <option value="52">超过52週（标准¥16.762 / 大件¥3.842 /dm³）</option>
+            </select>
+            <div class="rate-hint">✅ 批量核算时，标准型产品和大件产品将自动使用各自对应的费率。</div>
+          </div>
+        </div>
+        <div id="b_aged_select" style="display:none">
+          <div class="surcharge-select-group">
+            <div class="sg-title">库龄天数档位</div>
+            <select id="b_aged_tier" onchange="batchCalc()">
+              <option value="0">＜271天 · ¥0（免费）</option>
+              <option value="271">271〜300天 · ¥16.662/dm³（最低¥20/件）</option>
+              <option value="301">301〜330天 · ¥17.475/dm³（最低¥20/件）</option>
+              <option value="331">331〜365天 · ¥18.085/dm³（最低¥20/件）</option>
+              <option value="366">≥366天 · ¥34.239/dm³（最低¥20/件）</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <button class="btn btn-primary" onclick="batchCalc()">🔄 重新计算</button>
+    <button class="btn btn-purple" onclick="applyRevPrice()">🎯 一键应用反推售价</button>
+    <button class="btn btn-success" onclick="exportBatchCSV()">📥 导出CSV</button>
+    <button class="btn btn-secondary" onclick="exportBatchHTML()">📄 导出HTML报告</button>
+    <button class="btn btn-danger btn-sm" onclick="clearBatch()">🗑️ 清空</button>
+  </div>
+
+  <div id="rev_applied_bar" style="display:none" class="rev-applied-bar">
+    🎯 已应用反推售价！所有产品售价已按目标利润率 <span id="rev_target_show"></span>% 重新计算。
+    <button class="undo-btn" onclick="undoRevPrice()">↩ 撤销</button>
+  </div>
+
+  <div id="b_summary" style="display:none" class="sgrid"></div>
+  <div id="b_result"></div>
+</div>
+
+<!-- ===== 全局设置 ===== -->
+<div id="tab-settings" class="tab-content">
+<div class="grid2">
+<div class="card">
+  <div class="card-title">💱 汇率设置</div>
+  <div class="fg"><label>CNY → JPY 汇率</label><input type="number" id="cfg_rate" value="21.5" step="0.01" oninput="saveCfg()"></div>
+  <button class="btn btn-outline btn-sm" onclick="refreshRate()">🔄 获取实时汇率</button>
+  <div class="ibox" style="margin-top:12px">汇率来源：frankfurter.app / open.er-api.com / fawazahmed0 CDN（4个备用）</div>
+</div>
+<div class="card">
+  <div class="card-title">🚢 头程运费设置</div>
+  <div class="fg"><label>清关申报比例 (%)</label><input type="number" id="cfg_declare" value="25" step="1" oninput="saveCfg()"></div>
+  <div class="fg"><label>进口税率 (%)</label><input type="number" id="cfg_tax" value="15" step="0.5" oninput="saveCfg()"></div>
+  <div class="fg"><label>海运费 (CNY/m³)</label><input type="number" id="cfg_freight" value="1200" step="50" oninput="saveCfg()"></div>
+  <div class="ibox">头程 = 售价×申报比例×税率 + 体积(m³)×海运费×汇率</div>
+</div>
+</div>
+<div class="wbox" style="margin-top:14px">
+  💡 仓储利用率附加费和超龄库存附加费的费率已固化为官方档位，在单品核算和批量核算的附加费开关中直接选择档位即可。
+</div>
+</div>
+
+<!-- ===== 费率参考表 ===== -->
+<div id="tab-reference" class="tab-content">
+
+<div class="card" style="margin-bottom:14px">
+  <div class="card-title">📦 FBA配送費 2026年4月1日起（完整25档）</div>
+  <div class="twrap">
+  <table class="rtable">
+    <thead><tr><th>区分</th><th>判定方式</th><th>最長辺/寸法</th><th>重量上限</th><th>售价&gt;¥1,000</th><th>售价≤¥1,000</th></tr></thead>
+    <tbody>
+      <tr><td><span class="sbadge s-sm">小型</span></td><td>三辺すべて</td><td>25×18×2.0cm以下</td><td>250g</td><td>¥288</td><td>¥222</td></tr>
+      <tr><td><span class="sbadge s-std">標準1</span></td><td>三辺すべて</td><td>35×30×3.3cm以下</td><td>1kg</td><td>¥318</td><td>¥252</td></tr>
+      <tr><td><span class="sbadge s-std">標準2a</span></td><td>最長辺</td><td>20cm以下</td><td>2kg</td><td>¥410</td><td>¥344</td></tr>
+      <tr><td><span class="sbadge s-std">標準2b</span></td><td>最長辺</td><td>30cm以下</td><td>2kg</td><td>¥415</td><td>¥358</td></tr>
+      <tr><td><span class="sbadge s-std">標準2c</span></td><td>最長辺</td><td>40cm以下</td><td>2kg</td><td>¥420</td><td>¥371</td></tr>
+      <tr><td><span class="sbadge s-std">標準2d</span></td><td>最長辺</td><td>50cm以下</td><td>2kg</td><td>¥425</td><td>¥379</td></tr>
+      <tr><td><span class="sbadge s-std">標準2e</span></td><td>最長辺</td><td>60cm以下</td><td>2kg</td><td>¥430</td><td>¥391</td></tr>
+      <tr><td><span class="sbadge s-std">標準3</span></td><td>最長辺</td><td>80cm以下</td><td>5kg</td><td>¥472</td><td>¥427</td></tr>
+      <tr><td><span class="sbadge s-std">標準4</span></td><td>最長辺</td><td>100cm以下</td><td>9kg</td><td>¥532</td><td>¥466</td></tr>
+      <tr><td><span class="sbadge s-lg">大型1</span></td><td>最長辺</td><td>60cm以下</td><td>2kg</td><td>¥589</td><td>¥523</td></tr>
+      <tr><td><span class="sbadge s-lg">大型2</span></td><td>最長辺</td><td>80cm以下</td><td>5kg</td><td>¥624</td><td>¥558</td></tr>
+      <tr><td><span class="sbadge s-lg">大型3</span></td><td>最長辺</td><td>100cm以下</td><td>10kg</td><td>¥675</td><td>¥609</td></tr>
+      <tr><td><span class="sbadge s-lg">大型4</span></td><td>最長辺</td><td>120cm以下</td><td>15kg</td><td>¥781</td><td>¥715</td></tr>
+      <tr><td><span class="sbadge s-lg">大型5</span></td><td>最長辺</td><td>140cm以下</td><td>20kg</td><td>¥1,020</td><td>¥954</td></tr>
+      <tr><td><span class="sbadge s-lg">大型6</span></td><td>最長辺</td><td>160cm以下</td><td>25kg</td><td>¥1,100</td><td>¥1,034</td></tr>
+      <tr><td><span class="sbadge s-lg">大型7</span></td><td>最長辺</td><td>180cm以下</td><td>30kg</td><td>¥1,532</td><td>¥1,466</td></tr>
+      <tr><td><span class="sbadge s-lg">大型8</span></td><td>最長辺</td><td>200cm以下</td><td>40kg</td><td>¥1,756</td><td>¥1,690</td></tr>
+      <tr><td><span class="sbadge s-xl">特大型1</span></td><td>最長辺</td><td>200cm以下</td><td>50kg</td><td>¥2,755</td><td>¥2,689</td></tr>
+      <tr><td><span class="sbadge s-xl">特大型2</span></td><td>最長辺</td><td>220cm以下</td><td>50kg</td><td>¥3,573</td><td>¥3,507</td></tr>
+      <tr><td><span class="sbadge s-xl">特大型3</span></td><td>最長辺</td><td>240cm以下</td><td>50kg</td><td>¥4,496</td><td>¥4,430</td></tr>
+      <tr><td><span class="sbadge s-xl">特大型4a</span></td><td>最長辺</td><td>260cm以下</td><td>50kg</td><td>¥5,625</td><td>¥5,559</td></tr>
+      <tr><td><span class="sbadge s-xl">特大型4b</span></td><td>最長辺</td><td>400cm以下</td><td>50kg</td><td>¥13,950</td><td>¥13,884</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="wbox" style="margin-top:12px">⚠️ 大型1（最長辺≤60cm, ≤2kg）与標準2e（最長辺≤60cm, ≤2kg）尺寸相同但费率不同。系统优先匹配標準型。所有费用含10%消費税。</div>
+</div>
+
+<div class="grid2" style="margin-bottom:14px">
+<div class="card">
+  <div class="card-title">🏭 月次保管料（仓储费）</div>
+  <div class="twrap">
+  <table class="rtable">
+    <thead><tr><th>サイズ区分</th><th>1〜9月（淡季）</th><th>10〜12月（旺季）</th></tr></thead>
+    <tbody>
+      <tr><td>小型・標準サイズ</td><td>¥5.676/dm³/月</td><td>¥10.087/dm³/月</td></tr>
+      <tr><td>大型・特大型</td><td>¥3.278/dm³/月</td><td>¥6.984/dm³/月</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="ibox" style="margin-top:10px">体积(dm³) = 长×宽×高(cm) ÷ 1,000</div>
+</div>
+<div class="card">
+  <div class="card-title">💴 紹介料（プラットフォーム手数料）</div>
+  <div class="twrap">
+  <table class="rtable">
+    <thead><tr><th>品类</th><th>条件</th><th>手数料率</th><th>最低</th></tr></thead>
+    <tbody>
+      <tr><td>ホーム&キッチン / 家具</td><td>¥750以下</td><td>5%</td><td>¥30</td></tr>
+      <tr><td>ホーム&キッチン / 家具</td><td>¥750超</td><td>15.4%</td><td>¥30</td></tr>
+      <tr><td>DIY・工具・ガーデン</td><td>全額</td><td>10.4%</td><td>¥30</td></tr>
+      <tr><td>家電・カメラ</td><td>全額</td><td>8.4%</td><td>¥30</td></tr>
+      <tr><td>本・コミック</td><td>全額</td><td>15.4%</td><td>¥30</td></tr>
+      <tr><td>その他</td><td>全額</td><td>15.4%</td><td>¥30</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+</div>
+
+<div class="grid2">
+<div class="card">
+  <div class="card-title">📊 仓储利用率附加費（在庫利用率サーチャージ）</div>
+  <div class="ibox">选择库存周龄档位，系统自动按产品FBA尺寸（小号&标准 / 大件）匹配对应费率。单位：JPY/dm³/月，适用1-12月全年。</div>
+  <div class="twrap">
+  <table class="rtable">
+    <thead><tr><th>库存周龄</th><th>小号&标准（小型・標準）</th><th>大件（大型・特大型）</th></tr></thead>
+    <tbody>
+      <tr><td>26〜39週</td><td>¥1.462/dm³</td><td>¥0.316/dm³</td></tr>
+      <tr><td>39〜52週</td><td>¥3.997/dm³</td><td>¥1.023/dm³</td></tr>
+      <tr class="hl-row"><td>超过52週</td><td style="color:var(--danger);font-weight:700">¥16.762/dm³</td><td style="color:var(--danger);font-weight:700">¥3.842/dm³</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="wbox" style="margin-top:10px">⚠️ 日本新卖家不收仓储利用率附加费，但会收超龄库存附加费。</div>
+</div>
+<div class="card">
+  <div class="card-title">⏰ 超龄库存附加費（長期在庫保管費）</div>
+  <div class="ibox">按库龄天数收取，单位：JPY/dm³。非媒介类费率，每月评估一次。</div>
+  <div class="twrap">
+  <table class="rtable">
+    <thead><tr><th>库龄 (天)</th><th>费率 (JPY/dm³)</th><th>最低费用</th></tr></thead>
+    <tbody>
+      <tr><td>＜271天</td><td style="color:var(--accent);font-weight:700">¥0</td><td>—</td></tr>
+      <tr><td>271〜300天</td><td style="font-weight:700">¥16.662</td><td>¥20/件</td></tr>
+      <tr><td>301〜330天</td><td style="font-weight:700">¥17.475</td><td>¥20/件</td></tr>
+      <tr><td>331〜365天</td><td style="font-weight:700">¥18.085</td><td>¥20/件</td></tr>
+      <tr class="hl-row"><td>≥366天</td><td style="font-weight:700;color:var(--danger)">¥34.239</td><td>¥20/件</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="wbox" style="margin-top:10px">⚠️ 日本新卖家会收超龄库存附加费。建议控制库龄在271天以内。</div>
+</div>
+</div>
+
+</div><!-- /tab-reference -->
+</div><!-- /container -->
+
+<script>
+// ===== 固化费率常量 =====
+
+// 仓储利用率附加费（JPY/dm³）
+// 按周龄档位 × 尺寸类型（std=小号&标准, lg=大件&特大型）
+const UTIL_RATES = {
+  // weeks_key -> { std: rate, lg: rate }
+  '26': { std: 1.462, lg: 0.316 },  // 26-39週
+  '39': { std: 3.997, lg: 1.023 },  // 39-52週
+  '52': { std: 16.762, lg: 3.842 }  // 超过52週
+};
+
+// 超龄库存附加费（JPY/dm³），最低¥20/件（0档除外）
+const AGED_RATES = {
+  0:   0,
+  271: 16.662,
+  301: 17.475,
+  331: 18.085,
+  366: 34.239
+};
+const AGED_MIN_FEE = 20;
+
+// ===== 配置管理 =====
+const CFG_KEY = 'amzjp_cfg_v8';
+const RATE_KEY = 'amzjp_rate';
+
+function defaultCfg(){ return { rate:21.5, declare:25, tax:15, freight:1200 }; }
+function loadCfg(){
+  try{ return Object.assign(defaultCfg(), JSON.parse(localStorage.getItem(CFG_KEY)||'{}')); }
+  catch(e){ return defaultCfg(); }
+}
+function saveCfg(){
+  const c={rate:+v('cfg_rate'),declare:+v('cfg_declare'),tax:+v('cfg_tax'),freight:+v('cfg_freight')};
+  localStorage.setItem(CFG_KEY,JSON.stringify(c)); calc();
+}
+function v(id){ return document.getElementById(id)?.value||''; }
+function sv(id,val){ const el=document.getElementById(id); if(el) el.value=val; }
+function initCfg(){
+  const c=loadCfg();
+  sv('cfg_rate',c.rate); sv('cfg_declare',c.declare); sv('cfg_tax',c.tax); sv('cfg_freight',c.freight);
+}
+
+// ===== 附加费选择器显示/隐藏 =====
+function toggleUtilSelect(prefix){
+  const checked=document.getElementById(prefix+'_use_util')?.checked;
+  const el=document.getElementById(prefix+'_util_select');
+  if(el) el.style.display=checked?'block':'none';
+}
+function toggleAgedSelect(prefix){
+  const checked=document.getElementById(prefix+'_use_aged')?.checked;
+  const el=document.getElementById(prefix+'_aged_select');
+  if(el) el.style.display=checked?'block':'none';
+}
+
+// ===== 汇率 =====
+async function refreshRate(){
+  const el=document.getElementById('rateDisplay'),tel=document.getElementById('rateTime');
+  el.innerHTML='<span class="loading"></span>';
+  const apis=[
+    ()=>fetch('https://api.frankfurter.app/latest?from=CNY&to=JPY').then(r=>r.json()).then(d=>d.rates.JPY),
+    ()=>fetch('https://open.er-api.com/v6/latest/CNY').then(r=>r.json()).then(d=>d.rates.JPY),
+    ()=>{const dt=new Date().toISOString().slice(0,10);return fetch(`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@${dt}/v1/currencies/cny.json`).then(r=>r.json()).then(d=>d.cny.jpy);},
+    ()=>fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/cny.json').then(r=>r.json()).then(d=>d.cny.jpy)
+  ];
+  for(const api of apis){
+    try{
+      const rate=await api();
+      if(rate&&rate>=18&&rate<=30){
+        el.textContent=rate.toFixed(4)+' JPY/CNY'; tel.textContent='更新: '+new Date().toLocaleTimeString('zh-CN');
+        sv('cfg_rate',rate.toFixed(4)); localStorage.setItem(RATE_KEY,JSON.stringify({rate,time:Date.now()}));
+        saveCfg(); return;
+      }
+    }catch(e){}
+  }
+  const cached=JSON.parse(localStorage.getItem(RATE_KEY)||'null');
+  if(cached&&cached.rate){ el.textContent=cached.rate.toFixed(4)+' JPY/CNY'; tel.textContent='缓存: '+new Date(cached.time).toLocaleString('zh-CN'); sv('cfg_rate',cached.rate.toFixed(4)); }
+  else { el.textContent='21.50 JPY/CNY'; tel.textContent='默认值（获取失败）'; }
+}
+function initRate(){
+  const cached=JSON.parse(localStorage.getItem(RATE_KEY)||'null');
+  const el=document.getElementById('rateDisplay'),tel=document.getElementById('rateTime');
+  if(cached&&cached.rate&&(Date.now()-cached.time)<3600000){
+    el.textContent=cached.rate.toFixed(4)+' JPY/CNY'; tel.textContent='缓存: '+new Date(cached.time).toLocaleString('zh-CN'); sv('cfg_rate',cached.rate.toFixed(4));
+  } else { refreshRate(); }
+}
+
+// ===== FBA费率（完整25档）=====
+function getFBAFee(weight_kg,l_cm,w_cm,h_cm,price_jpy){
+  const longest=[l_cm,w_cm,h_cm].sort((a,b)=>b-a)[0];
+  const w=weight_kg,hi=price_jpy>1000;
+  const sd=[l_cm,w_cm,h_cm].sort((a,b)=>a-b);
+  if(sd[2]<=25&&sd[1]<=18&&sd[0]<=2.0&&w<=0.25) return {tier:'小型',fee:hi?288:222};
+  const s1=[l_cm,w_cm,h_cm].sort((a,b)=>a-b);
+  if(s1[2]<=35&&s1[1]<=30&&s1[0]<=3.3&&w<=1) return {tier:'標準1',fee:hi?318:252};
+  if(longest<=20&&w<=2) return {tier:'標準2a',fee:hi?410:344};
+  if(longest<=30&&w<=2) return {tier:'標準2b',fee:hi?415:358};
+  if(longest<=40&&w<=2) return {tier:'標準2c',fee:hi?420:371};
+  if(longest<=50&&w<=2) return {tier:'標準2d',fee:hi?425:379};
+  if(longest<=60&&w<=2) return {tier:'標準2e',fee:hi?430:391};
+  if(longest<=80&&w<=5) return {tier:'標準3',fee:hi?472:427};
+  if(longest<=100&&w<=9) return {tier:'標準4',fee:hi?532:466};
+  if(longest<=60&&w<=2) return {tier:'大型1',fee:hi?589:523};
+  if(longest<=80&&w<=5) return {tier:'大型2',fee:hi?624:558};
+  if(longest<=100&&w<=10) return {tier:'大型3',fee:hi?675:609};
+  if(longest<=120&&w<=15) return {tier:'大型4',fee:hi?781:715};
+  if(longest<=140&&w<=20) return {tier:'大型5',fee:hi?1020:954};
+  if(longest<=160&&w<=25) return {tier:'大型6',fee:hi?1100:1034};
+  if(longest<=180&&w<=30) return {tier:'大型7',fee:hi?1532:1466};
+  if(longest<=200&&w<=40) return {tier:'大型8',fee:hi?1756:1690};
+  if(longest<=200&&w<=50) return {tier:'特大型1',fee:hi?2755:2689};
+  if(longest<=220&&w<=50) return {tier:'特大型2',fee:hi?3573:3507};
+  if(longest<=240&&w<=50) return {tier:'特大型3',fee:hi?4496:4430};
+  if(longest<=260&&w<=50) return {tier:'特大型4a',fee:hi?5625:5559};
+  if(longest<=400&&w<=50) return {tier:'特大型4b',fee:hi?13950:13884};
+  return {tier:'規格外',fee:hi?13950:13884};
+}
+
+function getSizeInfo(tier){
+  if(tier.startsWith('小型')) return {label:'小型',cls:'s-sm'};
+  if(tier.startsWith('標準')) return {label:'標準型',cls:'s-std'};
+  if(tier.startsWith('大型')) return {label:'大型',cls:'s-lg'};
+  if(tier.startsWith('特大型')) return {label:'特大型',cls:'s-xl'};
+  return {label:'規格外',cls:'s-xl'};
+}
+
+// 判断FBA tier是否属于"大件"（大型/特大型）
+function isLargeTier(tier){
+  return tier.startsWith('大型') || tier.startsWith('特大型');
+}
+
+// ===== 月次保管料 =====
+function getStorageFee(l_cm,w_cm,h_cm,tier){
+  const vol_dm3=(l_cm*w_cm*h_cm)/1000;
+  const month=new Date().getMonth()+1,isPeak=month>=10;
+  const isLarge=isLargeTier(tier);
+  const rate=isLarge?(isPeak?6.984:3.278):(isPeak?10.087:5.676);
+  return {fee:vol_dm3*rate,vol_dm3,rate,isPeak};
+}
+
+// ===== 仓储利用率附加费（固化档位，按周龄+FBA尺寸自动匹配）=====
+// weeksKey: '26' | '39' | '52'
+// fbaTier: FBA档位名称（用于判断是否大件）
+function getUtilFee(l_cm,w_cm,h_cm,weeksKey,fbaTier){
+  const vol_dm3=(l_cm*w_cm*h_cm)/1000;
+  const rateGroup=UTIL_RATES[weeksKey];
+  if(!rateGroup) return {fee:0,vol_dm3,rate:0,weeksKey,sizeType:'std'};
+  const sizeType=isLargeTier(fbaTier)?'lg':'std';
+  const rate=rateGroup[sizeType];
+  return {fee:vol_dm3*rate, vol_dm3, rate, weeksKey, sizeType};
+}
+
+// ===== 超龄库存附加费（固化档位）=====
+function getAgedFee(l_cm,w_cm,h_cm,agedKey){
+  const vol_dm3=(l_cm*w_cm*h_cm)/1000;
+  const rate=AGED_RATES[+agedKey];
+  if(rate===undefined||rate===0) return {fee:0,vol_dm3,rate:0,agedKey};
+  const fee=Math.max(vol_dm3*rate,AGED_MIN_FEE);
+  return {fee,vol_dm3,rate,agedKey};
+}
+
+// ===== 佣金 =====
+function getCommission(price,cat){
+  let rate;
+  if(cat==='home') rate=price<=750?0.05:0.154;
+  else if(cat==='diy') rate=0.104;
+  else if(cat==='elec') rate=0.084;
+  else if(cat==='book') rate=0.154;
+  else rate=0.154;
+  return Math.max(price*rate,30);
+}
+
+// ===== 核心计算 =====
+function calcProfit(params){
+  const {price,cost_cny,weight,l,w,h,cat,ads_pct,return_pct,monthly,
+         use_storage,use_util,util_weeks,use_aged,aged_tier,cfg}=params;
+  const rate=cfg.rate, cost_jpy=cost_cny*rate;
+  const customs=price*(cfg.declare/100)*(cfg.tax/100);
+  const vol_m3=(l*w*h)/1000000;
+  const freight=vol_m3*cfg.freight*rate;
+  const shipping=customs+freight;
+  const fba=getFBAFee(weight,l,w,h,price);
+  const commission=getCommission(price,cat);
+  const ads_fee=price*(ads_pct/100);
+  const return_fee=price*(return_pct/100)*0.5;
+
+  let storage_fee=0,storage_info=null;
+  if(use_storage){ const si=getStorageFee(l,w,h,fba.tier); storage_fee=si.fee; storage_info=si; }
+
+  // 仓储利用率附加费：传入周龄key + FBA tier，自动匹配尺寸费率
+  let util_fee=0,util_info=null;
+  if(use_util&&util_weeks){
+    const ui=getUtilFee(l,w,h,util_weeks,fba.tier);
+    util_fee=ui.fee; util_info=ui;
+  }
+
+  let aged_fee=0,aged_info=null;
+  if(use_aged&&aged_tier!==undefined){
+    const ai=getAgedFee(l,w,h,aged_tier);
+    aged_fee=ai.fee; aged_info=ai;
+  }
+
+  const total_cost=cost_jpy+shipping+fba.fee+commission+ads_fee+return_fee+storage_fee+util_fee+aged_fee;
+  const profit=price-total_cost;
+  const profit_rate=price>0?(profit/price*100):0;
+  const monthly_profit=profit*(monthly||30);
+  return {price,cost_jpy,shipping,customs,freight,fba,commission,ads_fee,return_fee,
+          storage_fee,storage_info,util_fee,util_info,aged_fee,aged_info,
+          total_cost,profit,profit_rate,monthly_profit,vol_m3,rate};
+}
+
+// ===== 反推售价 =====
+function calcRevPrice(params_no_price,target_pct){
+  const {cost_cny,weight,l,w,h,cat,ads_pct,return_pct,use_storage,use_util,util_weeks,use_aged,aged_tier,cfg}=params_no_price;
+  const rate=cfg.rate;
+  const vol_m3=(l*w*h)/1000000;
+  const freight=vol_m3*cfg.freight*rate;
+  const cost_jpy=cost_cny*rate;
+  const fixed_approx=cost_jpy+freight;
+  let price_est=fixed_approx/(1-target_pct/100-0.154-ads_pct/100-return_pct/100*0.5-(cfg.declare/100)*(cfg.tax/100));
+  if(!isFinite(price_est)||price_est<=0) price_est=fixed_approx*3;
+  for(let i=0;i<50;i++){
+    const r=calcProfit({price:price_est,cost_cny,weight,l,w,h,cat,ads_pct,return_pct,monthly:30,
+                        use_storage,use_util,util_weeks,use_aged,aged_tier,cfg});
+    const price_new=r.total_cost/(1-target_pct/100);
+    if(Math.abs(price_new-price_est)<0.1){price_est=price_new;break;}
+    price_est=price_new;
+  }
+  return Math.ceil(price_est/10)*10;
+}
+
+// ===== 单品核算 =====
+function calc(){
+  const cfg=loadCfg();
+  const price=+v('s_price'),cost_cny=+v('s_cost'),weight=+v('s_weight');
+  const l=+v('s_l'),w=+v('s_w'),h=+v('s_h');
+  const cat=v('s_cat'),ads_pct=+v('s_ads'),return_pct=+v('s_return'),monthly=+v('s_monthly')||30;
+  const use_storage=document.getElementById('s_use_storage')?.checked;
+  const use_util=document.getElementById('s_use_util')?.checked;
+  const util_weeks=v('s_util_weeks');
+  const use_aged=document.getElementById('s_use_aged')?.checked;
+  const aged_tier=v('s_aged_tier');
+
+  if(!price||!cost_cny||!weight||!l||!w||!h){
+    document.getElementById('s_result_box').innerHTML='<div class="ibox">请填写完整的产品信息。</div>'; return;
+  }
+  const r=calcProfit({price,cost_cny,weight,l,w,h,cat,ads_pct,return_pct,monthly,
+                      use_storage,use_util,util_weeks,use_aged,aged_tier,cfg});
+  const si=getSizeInfo(r.fba.tier);
+  const pcolor=r.profit_rate>=20?'pos':r.profit_rate>=10?'neu':'neg';
+  const pbarcolor=r.profit_rate>=20?'#27AE60':r.profit_rate>=10?'#F39C12':'#E74C3C';
+  const storageMonth=r.storage_info?(r.storage_info.isPeak?'旺季(10-12月)':'淡季(1-9月)'):'';
+
+  // 更新利用率附加费提示
+  if(use_util&&r.util_info){
+    const weeksLabels={'26':'26-39週','39':'39-52週','52':'超过52週'};
+    const sizeLabel=r.util_info.sizeType==='lg'?'大件':'小号&标准';
+    const hint=document.getElementById('s_util_hint');
+    if(hint) hint.innerHTML=`<b>当前产品：${r.fba.tier}（${sizeLabel}）→ 适用费率 ¥${r.util_info.rate}/dm³</b>`;
+  }
+
+  // 附加费描述
+  let utilDesc='';
+  if(use_util&&r.util_info){
+    const weeksLabels={'26':'26-39週','39':'39-52週','52':'52週超'};
+    const sizeLabel=r.util_info.sizeType==='lg'?'大件':'标准';
+    utilDesc=`${weeksLabels[r.util_info.weeksKey]||''} · ${sizeLabel} · ¥${r.util_info.rate}/dm³`;
+  }
+  let agedDesc='';
+  if(use_aged&&r.aged_info){
+    const agedLabels={'0':'<271天','271':'271-300天','301':'301-330天','331':'331-365天','366':'≥366天'};
+    agedDesc=`${agedLabels[r.aged_info.agedKey]||''} · ¥${r.aged_info.rate}/dm³`;
+  }
+
+  document.getElementById('s_result_box').innerHTML=`
+    <div class="fbd">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <span class="sbadge ${si.cls}">${si.label} · ${r.fba.tier}</span>
+        <span style="font-size:11px;color:var(--muted)">体积: ${(r.vol_m3*1000000).toFixed(0)}cm³ · ${((r.vol_m3*1000000)/1000).toFixed(3)}dm³</span>
+      </div>
+      <div class="frow"><span class="fl">💴 售价</span><span>¥${price.toLocaleString()}</span></div>
+      <div class="frow"><span class="fl">🏭 采购价 (${r.rate.toFixed(2)} JPY/CNY)</span><span>¥${r.cost_jpy.toFixed(0)}</span></div>
+      <div class="frow"><span class="fl">🚢 头程（清关¥${r.customs.toFixed(0)}+海运¥${r.freight.toFixed(0)}）</span><span>¥${r.shipping.toFixed(0)}</span></div>
+      <div class="frow"><span class="fl">📦 FBA配送費 (${r.fba.tier})</span><span>¥${r.fba.fee.toLocaleString()}</span></div>
+      <div class="frow"><span class="fl">💰 紹介料（佣金）</span><span>¥${r.commission.toFixed(0)}</span></div>
+      <div class="frow"><span class="fl">📢 推广费 (${ads_pct}%)</span><span>¥${r.ads_fee.toFixed(0)}</span></div>
+      <div class="frow"><span class="fl">↩️ 退货成本 (${return_pct}%)</span><span>¥${r.return_fee.toFixed(0)}</span></div>
+      ${use_storage?`<div class="frow"><span class="fl">🏭 月次保管料 (${storageMonth} ¥${r.storage_info?.rate}/dm³)</span><span>¥${r.storage_fee.toFixed(2)}</span></div>`:''}
+      ${use_util?`<div class="frow"><span class="fl">📊 利用率附加費 (${utilDesc})</span><span>¥${r.util_fee.toFixed(2)}</span></div>`:''}
+      ${use_aged?`<div class="frow"><span class="fl">⏰ 超龄附加費 (${agedDesc})</span><span>¥${r.aged_fee.toFixed(2)}</span></div>`:''}
+      <div class="frow" style="margin-top:6px;padding-top:8px;border-top:2px solid var(--border)">
+        <span class="fl">📊 总成本</span><span class="neg">¥${r.total_cost.toFixed(0)}</span>
+      </div>
+      <div class="frow"><span class="fl">💵 单件利润</span><span class="${pcolor}" style="font-size:16px">¥${r.profit.toFixed(0)}</span></div>
+    </div>
+    <div style="margin:12px 0 4px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:13px;font-weight:700">利润率</span>
+      <span class="${pcolor}" style="font-size:18px;font-weight:800">${r.profit_rate.toFixed(1)}%</span>
+    </div>
+    <div class="pbar-wrap"><div class="pbar" style="width:${Math.max(0,Math.min(100,r.profit_rate))}%;background:${pbarcolor}"></div></div>
+    <div style="margin-top:12px;display:flex;gap:10px">
+      <div style="flex:1;background:#F8F9FA;border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:11px;color:var(--muted)">月均利润 (${monthly}件)</div>
+        <div class="${pcolor}" style="font-size:17px;font-weight:800">¥${r.monthly_profit.toFixed(0)}</div>
+      </div>
+      <div style="flex:1;background:#F8F9FA;border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:11px;color:var(--muted)">盈亏平衡售价</div>
+        <div style="font-size:17px;font-weight:800;color:var(--warning)">¥${r.total_cost.toFixed(0)}</div>
+      </div>
+    </div>`;
+}
+
+// ===== 批量核算 =====
+let batchRawRows=[],batchData=[],revApplied=false;
+
+function parseBatchInput(){
+  const raw=v('b_input').trim();
+  if(!raw) return [];
+  return raw.split('\n').filter(l=>l.trim()).map((line,idx)=>{
+    const cols=line.split('\t').map(c=>c.trim());
+    if(cols.length<7) return null;
+    const [name,price_s,cost_s,weight_s,l_s,w_s,h_s]=cols;
+    const cost_cny=+cost_s,weight=+weight_s,l=+l_s,w=+w_s,h=+h_s;
+    if(!cost_cny||!weight||!l||!w||!h) return null;
+    return {name,price_orig:+price_s,cost_cny,weight,l,w,h,idx};
+  }).filter(Boolean);
+}
+
+function batchCalc(useRevPrices){
+  const raw=v('b_input').trim();
+  if(!raw){ document.getElementById('b_result').innerHTML=''; document.getElementById('b_summary').style.display='none'; hideRevBar(); return; }
+  const cfg=loadCfg();
+  const cat=v('b_cat'),target=+v('b_target')||20;
+  const use_storage=document.getElementById('b_use_storage')?.checked;
+  const use_util=document.getElementById('b_use_util')?.checked;
+  const util_weeks=v('b_util_weeks');   // '26' | '39' | '52'
+  const use_aged=document.getElementById('b_use_aged')?.checked;
+  const aged_tier=v('b_aged_tier');
+  const ads_pct=+document.getElementById('qb_ads')?.value||15;
+  const return_pct=+document.getElementById('qb_return')?.value||5;
+
+  batchRawRows=parseBatchInput();
+  if(!batchRawRows.length){
+    document.getElementById('b_result').innerHTML='<div class="wbox">未能解析有效数据，请检查格式（Tab分隔，7列）。</div>';
+    document.getElementById('b_summary').style.display='none'; hideRevBar(); return;
+  }
+
+  batchData=batchRawRows.map(row=>{
+    const {name,price_orig,cost_cny,weight,l,w,h,idx}=row;
+    const rev_price=calcRevPrice({cost_cny,weight,l,w,h,cat,ads_pct,return_pct,
+                                   use_storage,use_util,util_weeks,use_aged,aged_tier,cfg},target);
+    const actual_price=useRevPrices?rev_price:(price_orig>0?price_orig:rev_price);
+    const r=calcProfit({price:actual_price,cost_cny,weight,l,w,h,cat,ads_pct,return_pct,monthly:30,
+                        use_storage,use_util,util_weeks,use_aged,aged_tier,cfg});
+    return {name,price_orig,actual_price,rev_price,...r,idx,isRevApplied:useRevPrices||(price_orig===0)};
+  });
+
+  renderBatchResult();
+}
+
+function renderBatchResult(){
+  if(!batchData.length) return;
+  const avgRate=batchData.reduce((s,d)=>s+d.profit_rate,0)/batchData.length;
+  const profitable=batchData.filter(d=>d.profit_rate>=20).length;
+  const warning=batchData.filter(d=>d.profit_rate<10).length;
+  const sumEl=document.getElementById('b_summary');
+  sumEl.style.display='grid';
+  sumEl.innerHTML=`
+    <div class="sc"><div class="sl">产品数量</div><div class="sv">${batchData.length}</div><div class="ss">件</div></div>
+    <div class="sc"><div class="sl">平均利润率</div><div class="sv ${avgRate>=20?'pos':avgRate>=10?'neu':'neg'}">${avgRate.toFixed(1)}%</div><div class="ss">目标≥20%</div></div>
+    <div class="sc"><div class="sl">优质产品</div><div class="sv pos">${profitable}</div><div class="ss">利润率≥20%</div></div>
+    <div class="sc"><div class="sl">风险产品</div><div class="sv neg">${warning}</div><div class="ss">利润率<10%</div></div>`;
+
+  let html=`<div class="twrap"><table class="rtable"><thead><tr>
+    <th>#</th><th>产品名</th><th>原始售价</th><th>实际售价</th>
+    <th>采购(JPY)</th><th>头程</th><th>FBA档位</th><th>FBA费</th><th>佣金</th><th>推广</th><th>退货</th>
+    <th>仓储</th><th>利用率附加</th><th>超龄附加</th>
+    <th>总成本</th><th>利润</th><th>利润率</th><th>反推售价</th>
+  </tr></thead><tbody>`;
+
+  batchData.forEach(d=>{
+    const si=getSizeInfo(d.fba.tier);
+    const pcolor=d.profit_rate>=20?'pos':d.profit_rate>=10?'neu':'neg';
+    const rowcls=d.isRevApplied?'revrow':(d.profit_rate<10?'hlrow':'');
+    const origDisplay=d.price_orig>0?`¥${d.price_orig.toLocaleString()}`:`<span style="color:var(--muted)">—</span>`;
+    const actualDisplay=d.isRevApplied
+      ?`<span style="color:var(--purple);font-weight:700">¥${d.actual_price.toLocaleString()} 🎯</span>`
+      :`¥${d.actual_price.toLocaleString()}`;
+    // 利用率附加费：显示实际使用的费率（含尺寸类型）
+    const utilDisplay=d.util_info&&d.util_fee>0
+      ?`¥${d.util_fee.toFixed(1)}<br><span style="font-size:10px;color:var(--muted)">${d.util_info.sizeType==='lg'?'大件':'标准'} ¥${d.util_info.rate}</span>`
+      :`¥${d.util_fee.toFixed(1)}`;
+    html+=`<tr class="${rowcls}">
+      <td>${d.idx+1}</td><td>${d.name||'-'}</td>
+      <td>${origDisplay}</td><td>${actualDisplay}</td>
+      <td>¥${d.cost_jpy.toFixed(0)}</td><td>¥${d.shipping.toFixed(0)}</td>
+      <td><span class="sbadge ${si.cls}">${d.fba.tier}</span></td>
+      <td>¥${d.fba.fee}</td>
+      <td>¥${d.commission.toFixed(0)}</td><td>¥${d.ads_fee.toFixed(0)}</td>
+      <td>¥${d.return_fee.toFixed(0)}</td><td>¥${d.storage_fee.toFixed(1)}</td>
+      <td>${utilDisplay}</td>
+      <td>¥${d.aged_fee.toFixed(1)}</td>
+      <td>¥${d.total_cost.toFixed(0)}</td>
+      <td class="${pcolor}">¥${d.profit.toFixed(0)}</td>
+      <td class="${pcolor}">${d.profit_rate.toFixed(1)}%</td>
+      <td style="color:var(--purple);font-weight:700">¥${d.rev_price.toLocaleString()}</td>
+    </tr>`;
+  });
+  html+='</tbody></table></div>';
+  document.getElementById('b_result').innerHTML=html;
+}
+
+function applyRevPrice(){
+  if(!v('b_input').trim()){ alert('请先粘贴数据！'); return; }
+  revApplied=true; batchCalc(true);
+  const target=+v('b_target')||20;
+  document.getElementById('rev_target_show').textContent=target;
+  document.getElementById('rev_applied_bar').style.display='flex';
+}
+function undoRevPrice(){ revApplied=false; batchCalc(false); hideRevBar(); }
+function hideRevBar(){ document.getElementById('rev_applied_bar').style.display='none'; revApplied=false; }
+function clearBatch(){
+  document.getElementById('b_input').value='';
+  document.getElementById('b_result').innerHTML='';
+  document.getElementById('b_summary').style.display='none';
+  batchData=[]; batchRawRows=[]; hideRevBar();
+}
+
+// ===== 快捷参数 =====
+function syncQuickBar(type){
+  if(type==='ads') sv('s_ads',v('qb_ads'));
+  if(type==='return') sv('s_return',v('qb_return'));
+  calc();
+}
+function applyQuickBar(){
+  sv('s_ads',v('qb_ads')); sv('s_return',v('qb_return'));
+  calc(); batchCalc(revApplied);
+  const el=document.getElementById('qb_applied');
+  el.style.display='inline'; setTimeout(()=>el.style.display='none',2000);
+}
+
+// ===== Tab切换 =====
+function switchTab(name){
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  ['single','batch','settings','reference'].forEach((t,i)=>{
+    if(t===name) document.querySelectorAll('.tab')[i]?.classList.add('active');
+  });
+}
+
+// ===== 导出 =====
+function exportSingleHTML(){
+  const name=v('s_name')||'产品';
+  const content=document.getElementById('s_result_box').innerHTML;
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${name} - 利润核算报告</title>
+  <style>body{font-family:sans-serif;max-width:600px;margin:40px auto;padding:20px}
+  .fbd{background:#F8F9FA;border-radius:10px;padding:14px}
+  .frow{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed #eee;font-size:13px}
+  .frow:last-child{border-bottom:none;font-weight:700;font-size:14px}
+  .frow .fl{color:#7F8C8D}.pos{color:#27AE60;font-weight:700}.neg{color:#E74C3C;font-weight:700}.neu{color:#F39C12;font-weight:700}
+  .sbadge{display:inline-block;padding:2px 7px;border-radius:12px;font-size:11px;font-weight:700}
+  .s-sm{background:#D5F5E3;color:#1E8449}.s-std{background:#D6EAF8;color:#1A5276}
+  .s-lg{background:#FDEBD0;color:#784212}.s-xl{background:#FADBD8;color:#922B21}
+  .pbar-wrap{background:#eee;border-radius:20px;height:8px;overflow:hidden;margin-top:4px}
+  .pbar{height:100%;border-radius:20px}h2{color:#BC002D;margin-bottom:16px}
+  </style></head><body>
+  <h2>🇯🇵 ${name} — 利润核算报告</h2>
+  <p style="color:#7F8C8D;font-size:12px">生成时间：${new Date().toLocaleString('zh-CN')}</p>
+  ${content}</body></html>`;
+  downloadFile(html,`${name}-利润报告.html`,'text/html');
+}
+
+function exportBatchCSV(){
+  if(!batchData.length){ alert('请先计算批量数据'); return; }
+  const headers=['产品名','原始售价JPY','实际售价JPY','采购价JPY','头程JPY','FBA档位','FBA费JPY','佣金JPY','推广费JPY','退货成本JPY','仓储费JPY','利用率附加JPY','超龄附加JPY','总成本JPY','利润JPY','利润率%','反推售价JPY'];
+  const rows=batchData.map(d=>[
+    d.name,d.price_orig,d.actual_price,d.cost_jpy.toFixed(0),d.shipping.toFixed(0),
+    d.fba.tier,d.fba.fee,d.commission.toFixed(0),d.ads_fee.toFixed(0),
+    d.return_fee.toFixed(0),d.storage_fee.toFixed(1),d.util_fee.toFixed(1),d.aged_fee.toFixed(1),
+    d.total_cost.toFixed(0),d.profit.toFixed(0),d.profit_rate.toFixed(1),d.rev_price
+  ]);
+  const csv=[headers,...rows].map(r=>r.join(',')).join('\n');
+  downloadFile('\uFEFF'+csv,'批量核算结果.csv','text/csv');
+}
+
+function exportBatchHTML(){
+  if(!batchData.length){ alert('请先计算批量数据'); return; }
+  const tableHTML=document.getElementById('b_result').innerHTML;
+  const summaryHTML=document.getElementById('b_summary').innerHTML;
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>批量核算报告</title>
+  <style>body{font-family:sans-serif;padding:20px}table{width:100%;border-collapse:collapse;font-size:12px}
+  th{background:#2C3E50;color:#fff;padding:8px;text-align:left}td{padding:8px;border-bottom:1px solid #eee}
+  tr:hover td{background:#F8F9FA}.pos{color:#27AE60;font-weight:700}.neg{color:#E74C3C;font-weight:700}.neu{color:#F39C12;font-weight:700}
+  .hlrow td{background:#FFF0F0!important}.revrow td{background:#F3E8FF!important}.revrow td:first-child{border-left:3px solid #8E44AD}
+  .sbadge{display:inline-block;padding:2px 7px;border-radius:12px;font-size:11px;font-weight:700}
+  .s-sm{background:#D5F5E3;color:#1E8449}.s-std{background:#D6EAF8;color:#1A5276}
+  .s-lg{background:#FDEBD0;color:#784212}.s-xl{background:#FADBD8;color:#922B21}
+  .sgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:18px}
+  .sc{background:#fff;border-radius:10px;padding:14px;text-align:center;border:1px solid #E0E6ED}
+  .sc .sv{font-size:20px;font-weight:800;margin:3px 0}.sc .sl{font-size:11px;color:#7F8C8D;font-weight:700}
+  h2{color:#BC002D}
+  </style></head><body>
+  <h2>🇯🇵 批量核算报告</h2>
+  <p style="color:#7F8C8D;font-size:12px">生成时间：${new Date().toLocaleString('zh-CN')}</p>
+  <div class="sgrid">${summaryHTML}</div>${tableHTML}</body></html>`;
+  downloadFile(html,'批量核算报告.html','text/html');
+}
+
+function downloadFile(content,filename,type){
+  const blob=new Blob([content],{type});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; a.click();
+}
+
+// ===== 初始化 =====
+window.onload=function(){ initCfg(); initRate(); calc(); };
+</script>
+</body>
+</html>

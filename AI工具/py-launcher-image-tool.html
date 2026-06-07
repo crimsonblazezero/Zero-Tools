@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>亚马逊图片批量处理工具 · KovaScape</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#064338;--green-deep:#042E25;--green-light:#E8F2F0;
+  --gold:#F3C546;--gold-light:#FFF8DC;
+  --warm-white:#FDFCF9;--body-gray:#717171;--title-dark:#1D1B20;--border:#E8E4DE;
+}
+body{font-family:'Poppins',sans-serif;background:#F0EDE8;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:40px 20px}
+.page-wrap{width:100%;max-width:680px}
+.tool-header{background:var(--green);border-radius:20px;padding:36px 40px;margin-bottom:24px;position:relative;overflow:hidden}
+.tool-header::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;border-radius:50%;background:rgba(243,197,70,.07)}
+.tool-header::after{content:'';position:absolute;bottom:-70px;left:30%;width:260px;height:260px;border-radius:50%;background:rgba(243,197,70,.04)}
+.brand-row{display:flex;align-items:center;gap:8px;margin-bottom:16px;position:relative;z-index:1}
+.brand-logo{width:26px;height:26px;background:var(--gold);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-weight:700;font-size:13px;color:var(--green-deep)}
+.brand-name{font-family:'Playfair Display',serif;font-size:12px;font-weight:600;color:var(--gold)}
+.brand-sep,.brand-cat{font-size:11px;color:rgba(255,255,255,.35)}
+.tool-icon-wrap{width:64px;height:64px;background:rgba(243,197,70,.15);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:14px;position:relative;z-index:1}
+.tool-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:500;color:#fff;margin-bottom:6px;position:relative;z-index:1}
+.tool-subtitle{font-size:12.5px;color:rgba(255,255,255,.55);position:relative;z-index:1;line-height:1.6}
+.tool-meta{display:flex;gap:16px;margin-top:18px;padding-top:16px;border-top:1px solid rgba(243,197,70,.25);position:relative;z-index:1;flex-wrap:wrap}
+.meta-item{display:flex;align-items:center;gap:5px}
+.meta-dot{width:5px;height:5px;border-radius:50%;background:var(--gold)}
+.meta-text{font-size:10.5px;color:rgba(255,255,255,.45)}
+.launch-card{background:#fff;border-radius:16px;padding:28px 32px;margin-bottom:20px;border:1px solid var(--border)}
+.card-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:500;color:var(--title-dark);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.card-title-icon{width:28px;height:28px;background:var(--green-light);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.launch-btn{width:100%;padding:18px 24px;background:var(--green);color:#fff;border:none;border-radius:12px;font-family:'Poppins',sans-serif;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .2s;letter-spacing:.3px}
+.launch-btn:hover{background:var(--green-deep);transform:translateY(-1px);box-shadow:0 8px 24px rgba(6,67,56,.28)}
+.launch-btn:active{transform:translateY(0)}
+.launch-btn:disabled{background:#aaa;cursor:not-allowed;transform:none;box-shadow:none}
+.launch-btn .btn-icon{font-size:20px}
+.launch-btn .btn-spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.status-bar{margin-top:12px;padding:10px 14px;border-radius:9px;font-size:12px;font-weight:500;display:none;align-items:center;gap:8px}
+.status-bar.success{background:#E8F2F0;color:var(--green);display:flex}
+.status-bar.error{background:#FDECEA;color:#C4433A;display:flex}
+.service-indicator{display:flex;align-items:center;gap:7px;margin-bottom:16px;padding:9px 13px;background:#F5F4F2;border-radius:9px;border:1px solid var(--border)}
+.svc-dot{width:8px;height:8px;border-radius:50%;background:#ccc;flex-shrink:0;transition:background .3s}
+.svc-dot.online{background:#22C55E}
+.svc-dot.offline{background:#EF4444}
+.svc-dot.checking{background:var(--gold);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.svc-text{font-size:11.5px;color:var(--body-gray);flex:1}
+.svc-text strong{color:var(--title-dark)}
+.fallback-section{margin-top:16px;padding-top:16px;border-top:1px dashed var(--border)}
+.fallback-title{font-size:11px;font-weight:500;color:var(--body-gray);margin-bottom:8px}
+.cmd-block{background:#F5F4F2;border:1px solid var(--border);border-radius:9px;padding:11px 14px;font-family:'Courier New',monospace;font-size:12px;color:var(--title-dark);word-break:break-all;position:relative}
+.copy-btn{position:absolute;top:8px;right:8px;padding:4px 10px;background:#fff;border:1px solid var(--border);border-radius:6px;font-family:'Poppins',sans-serif;font-size:10.5px;font-weight:500;color:var(--body-gray);cursor:pointer;transition:all .13s}
+.copy-btn:hover{border-color:var(--green);color:var(--green)}
+.copy-btn.copied{background:var(--green-light);border-color:var(--green);color:var(--green)}
+.steps{list-style:none}
+.step-item{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border)}
+.step-item:last-child{border-bottom:none}
+.step-num{width:26px;height:26px;min-width:26px;border-radius:50%;background:var(--green);color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.step-title{font-size:13px;font-weight:600;color:var(--title-dark);margin-bottom:3px}
+.step-desc{font-size:11.5px;color:var(--body-gray);line-height:1.65}
+.features-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.feat-item{background:#FDFCF9;border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.feat-icon{font-size:20px;margin-bottom:7px}
+.feat-title{font-size:12px;font-weight:600;color:var(--title-dark);margin-bottom:3px}
+.feat-desc{font-size:11px;color:var(--body-gray);line-height:1.55}
+.dep-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
+.dep-tag{padding:4px 10px;background:var(--green-light);color:var(--green);border-radius:20px;font-size:11px;font-weight:500}
+.alert-box{border-radius:9px;padding:11px 14px;margin-top:12px}
+.alert-warn{background:var(--gold-light);border-left:3px solid var(--gold)}
+.alert-warn p{font-size:11.5px;color:#92400E;line-height:1.6}
+.alert-info{background:var(--green-light);border-left:3px solid var(--green)}
+.alert-info p{font-size:11.5px;color:var(--green);line-height:1.6}
+.pos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.pos-item{background:#F5F4F2;border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center}
+.pos-code{font-family:'Courier New',monospace;font-size:12px;font-weight:700;color:var(--green);margin-bottom:3px}
+.pos-desc{font-size:10.5px;color:var(--body-gray)}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--green-deep);color:#fff;padding:10px 20px;border-radius:10px;font-size:12px;font-weight:500;opacity:0;transition:all .3s;pointer-events:none;z-index:999}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="tool-header">
+    <div class="brand-row">
+      <div class="brand-logo">K</div>
+      <div class="brand-name">KovaScape</div>
+      <div class="brand-sep">·</div>
+      <div class="brand-cat">图片工具</div>
+    </div>
+    <div class="tool-icon-wrap">🖼️</div>
+    <div class="tool-title">亚马逊图片批量处理</div>
+    <div class="tool-subtitle">读取 SKU 大表，按 ASIN 批量重命名图片<br>自动分配图片位置（MAIN/PT01-PT08/SWCH），ZIP 打包上传</div>
+    <div class="tool-meta">
+      <div class="meta-item"><div class="meta-dot"></div><div class="meta-text">Amazon Image Tool V5.0</div></div>
+      <div class="meta-item"><div class="meta-dot"></div><div class="meta-text">Tkinter GUI</div></div>
+      <div class="meta-item"><div class="meta-dot"></div><div class="meta-text">多标签页界面</div></div>
+      <div class="meta-item"><div class="meta-dot"></div><div class="meta-text">需要 Python 3</div></div>
+    </div>
+  </div>
+
+  <div class="launch-card">
+    <div class="card-title"><div class="card-title-icon">▶</div>启动工具</div>
+    <div class="service-indicator">
+      <div class="svc-dot checking" id="svc-dot"></div>
+      <div class="svc-text" id="svc-text"><strong>正在检测</strong> Launcher 服务状态…</div>
+    </div>
+    <button class="launch-btn" id="launch-btn" onclick="launchTool()">
+      <span class="btn-icon" id="btn-icon">▶</span>
+      <span class="btn-spinner" id="btn-spinner"></span>
+      <span id="btn-text">启动 亚马逊图片批量处理工具</span>
+    </button>
+    <div class="status-bar" id="status-bar">
+      <span id="status-icon"></span><span id="status-msg"></span>
+    </div>
+    <div class="fallback-section">
+      <div class="fallback-title">🔧 备用方式（Launcher 服务未运行时）</div>
+      <div class="cmd-block">python "Amazon_Image_Tool_V5.0.py"<div class="copy-btn" id="copy-btn" onclick="copyCmd()">复制</div></div>
+      <div class="alert-box alert-info" style="margin-top:10px">
+        <p>✅ 也可直接双击 <strong>启动-图片工具.bat</strong> 文件运行</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="launch-card">
+    <div class="card-title"><div class="card-title-icon">✨</div>功能介绍</div>
+    <div class="features-grid">
+      <div class="feat-item"><div class="feat-icon">🔄</div><div class="feat-title">批量重命名</div><div class="feat-desc">读取 SKU 大表，将图片按 ASIN 规则批量重命名，符合亚马逊上传要求</div></div>
+      <div class="feat-item"><div class="feat-icon">📍</div><div class="feat-title">图片位置分配</div><div class="feat-desc">自动分配 MAIN、PT01-PT08、SWCH 等图片位置，无需手动命名</div></div>
+      <div class="feat-item"><div class="feat-icon">📦</div><div class="feat-title">ZIP 打包</div><div class="feat-desc">处理完成后自动打包为 ZIP 文件，可直接上传至亚马逊后台</div></div>
+      <div class="feat-item"><div class="feat-icon">🎨</div><div class="feat-title">自定义字典</div><div class="feat-desc">内置颜色映射、层板尺寸、相框尺寸字典编辑器，可自定义配置</div></div>
+    </div>
+  </div>
+
+  <div class="launch-card">
+    <div class="card-title"><div class="card-title-icon">📍</div>图片位置说明</div>
+    <div style="font-size:12px;color:var(--body-gray);margin-bottom:4px">亚马逊图片命名规则：<code style="background:#F5F4F2;padding:2px 6px;border-radius:4px;font-size:11px">ASIN.POSITION.jpg</code></div>
+    <div class="pos-grid">
+      <div class="pos-item"><div class="pos-code">MAIN</div><div class="pos-desc">主图</div></div>
+      <div class="pos-item"><div class="pos-code">PT01</div><div class="pos-desc">副图 1</div></div>
+      <div class="pos-item"><div class="pos-code">PT02</div><div class="pos-desc">副图 2</div></div>
+      <div class="pos-item"><div class="pos-code">PT03</div><div class="pos-desc">副图 3</div></div>
+      <div class="pos-item"><div class="pos-code">PT04</div><div class="pos-desc">副图 4</div></div>
+      <div class="pos-item"><div class="pos-code">PT05</div><div class="pos-desc">副图 5</div></div>
+      <div class="pos-item"><div class="pos-code">PT06</div><div class="pos-desc">副图 6</div></div>
+      <div class="pos-item"><div class="pos-code">PT07</div><div class="pos-desc">副图 7</div></div>
+      <div class="pos-item"><div class="pos-code">SWCH</div><div class="pos-desc">变体切换图</div></div>
+    </div>
+  </div>
+
+  <div class="launch-card">
+    <div class="card-title"><div class="card-title-icon">📦</div>依赖安装</div>
+    <div class="dep-list"><span class="dep-tag">Pillow</span><span class="dep-tag">openpyxl</span><span class="dep-tag">xlrd（可选）</span><span class="dep-tag">Python 3.7+</span></div>
+    <div class="cmd-block" style="margin-top:12px">pip install Pillow openpyxl xlrd<div class="copy-btn" onclick="copyText('pip install Pillow openpyxl xlrd',this)">复制</div></div>
+    <div class="alert-box alert-warn"><p>⚠️ xlrd 仅用于读取旧版 .xls 格式，SKU 大表为 .xlsx 时可忽略安装失败。</p></div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const LAUNCHER_URL = 'http://127.0.0.1:8766';
+const TOOL_ID = 'image-tool';
+const FALLBACK_CMD = 'python "Amazon_Image_Tool_V5.0.py"';
+let serviceOnline = false;
+
+async function checkService() {
+  const dot = document.getElementById('svc-dot');
+  const txt = document.getElementById('svc-text');
+  try {
+    const res = await fetch(LAUNCHER_URL + '/ping', { signal: AbortSignal.timeout(2000) });
+    if (res.ok) {
+      serviceOnline = true;
+      dot.className = 'svc-dot online';
+      txt.innerHTML = '<strong>Launcher 服务运行中</strong> · 点击按钮即可直接启动工具';
+    } else { throw new Error(); }
+  } catch {
+    serviceOnline = false;
+    dot.className = 'svc-dot offline';
+    txt.innerHTML = '<strong>Launcher 服务未运行</strong> · 请通过 启动Hub.bat 启动，或使用下方备用命令';
+  }
+}
+
+async function launchTool() {
+  if (!serviceOnline) {
+    copyText(FALLBACK_CMD, null);
+    showStatus('error', '⚠️', 'Launcher 未运行，已复制启动命令到剪贴板，请在 CMD 中粘贴运行');
+    return;
+  }
+  setLoading(true);
+  try {
+    const res = await fetch(LAUNCHER_URL + '/launch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tool: TOOL_ID }),
+      signal: AbortSignal.timeout(5000),
+    });
+    const data = await res.json();
+    if (res.ok) { showStatus('success', '✅', `工具已启动：${data.tool}`); showToast('✅ 工具窗口正在打开…'); }
+    else { showStatus('error', '❌', data.error || '启动失败'); }
+  } catch {
+    serviceOnline = false; checkService();
+    showStatus('error', '⚠️', '连接 Launcher 失败，请检查服务是否运行');
+  } finally { setLoading(false); }
+}
+
+function setLoading(on) {
+  const btn = document.getElementById('launch-btn');
+  document.getElementById('btn-icon').style.display = on ? 'none' : '';
+  document.getElementById('btn-spinner').style.display = on ? 'block' : 'none';
+  document.getElementById('btn-text').textContent = on ? '正在启动…' : '启动 亚马逊图片批量处理工具';
+  btn.disabled = on;
+}
+
+function showStatus(type, icon, msg) {
+  const bar = document.getElementById('status-bar');
+  bar.className = 'status-bar ' + type;
+  document.getElementById('status-icon').textContent = icon;
+  document.getElementById('status-msg').textContent = msg;
+}
+
+function copyCmd() { copyText(FALLBACK_CMD, document.getElementById('copy-btn')); }
+
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).catch(() => {
+    const ta = Object.assign(document.createElement('textarea'), { value: text });
+    ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+  }).finally(() => {
+    if (btn) { btn.textContent = '已复制 ✓'; btn.classList.add('copied'); setTimeout(() => { btn.textContent = '复制'; btn.classList.remove('copied'); }, 2000); }
+    showToast('已复制到剪贴板');
+  });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+checkService();
+setInterval(checkService, 10000);
+</script>
+</body>
+</html>

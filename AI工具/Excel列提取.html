@@ -1,0 +1,2588 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@700&family=Fira+Code&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background-color: #121212;
+      color: white;
+      font-family: 'Fira Code', monospace;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      position: relative;
+    }
+
+    .container {
+      width: 95%;
+      max-width: 1200px; /* 调整最大宽度 */
+      border-radius: 32px;
+      backdrop-filter: blur(12px);
+      background-color: rgba(255, 255, 255, 0.1);
+      padding: 32px;
+    }
+
+    h1 {
+      font-family: 'Roboto Mono', monospace;
+      font-weight: bold;
+      font-size: 2.2em;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    h2, h3 {
+      font-family: 'Roboto Mono', monospace;
+      font-weight: bold;
+      margin-top: 0;
+      margin-bottom: 15px;
+      font-size: 1.4em;
+    }
+
+    .module {
+      background-color: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 25px;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .file-label {
+      background-color: #32F08C;
+      color: black;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.1s;
+      display: inline-flex;
+      align-items: center;
+      font-size: 1em;
+    }
+
+    .file-label svg {
+      margin-right: 8px;
+    }
+
+    .file-label:hover {
+      background-color: #28d177;
+    }
+
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.1s;
+      display: inline-flex;
+      align-items: center;
+      margin-top: 15px;
+      font-size: 1em;
+    }
+
+    button svg {
+      margin-right: 8px;
+    }
+
+    .primary-button {
+      background-color: #32F08C;
+      color: black;
+    }
+
+    .primary-button:hover {
+      background-color: #28d177;
+    }
+
+    .secondary-button {
+      background-color: #6c757d;
+      color: white;
+    }
+
+    .secondary-button:hover {
+      background-color: #5a6268;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
+
+    .button-group button {
+      margin-top: 0;
+    }
+
+    .download-button {
+      background-color: #6c757d;
+    }
+
+    .download-button:hover {
+      background-color: #5a6268;
+    }
+
+    .error-message {
+      color: #e74c3c;
+    }
+
+    .success-message {
+      color: #2ecc71;
+    }
+
+    .progress-bar {
+      background-color: #ddd;
+      height: 20px;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    .progress {
+      background-color: #9b59b6;
+      height: 100%;
+      width: 0;
+      transition: width 0.3s;
+    }
+
+    .selected-files {
+      resize: vertical;
+      overflow: auto;
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 0.9em;
+    }
+
+    .status-message {
+      font-size: 1em;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 3em;
+      border-radius: 5px;
+      padding: 10px;
+      margin-bottom: 10px;
+      font-size: 0.9em;
+      background-color: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    #headers {
+      list-style-type: none;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+    }
+
+    #headers li {
+      display: flex;
+      align-items: center;
+    }
+
+    #headers input[type="checkbox"] {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      width: 20px;
+      height: 20px;
+      border: 2px solid #32F08C;
+      border-radius: 50%;
+      margin-right: 12px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.1s ease;
+      background-color: transparent;
+    }
+
+    #headers input[type="checkbox"]:hover {
+      transform: scale(1.2);
+      border-color: #28d177;
+      box-shadow: 0 0 10px rgba(50, 240, 140, 0.3);
+    }
+
+    #headers input[type="checkbox"]:checked {
+      background-color: #32F08C;
+      border-color: #32F08C;
+    }
+
+    #headers input[type="checkbox"]:checked::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: black;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    #headers input[type="checkbox"]:checked:hover {
+      background-color: #28d177;
+      border-color: #28d177;
+    }
+
+    #fileNameDisplay {
+      margin-left: 15px;
+      font-size: 0.9em;
+    }
+
+    .author-info {
+      font-size: 0.9em; /* 调整作者信息字体大小 */
+      color: rgba(255, 255, 255, 0.5);
+      text-align: center; /* 居中显示 */
+      margin-top: 20px; /* 调整位置 */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    
+    .author-logo {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    
+    .author-text {
+      font-size: 0.9em;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .preview-list {
+      list-style-type: none;
+      padding: 0;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 5px;
+      min-height: 50px;
+      margin-top: 10px;
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .preview-list li {
+      padding: 10px;
+      background-color: rgba(255, 255, 255, 0.1);
+      margin: 5px;
+      border-radius: 3px;
+      cursor: move;
+      font-size: 0.8em; /* 缩小导出列预览部分的字体大小 */
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    
+    .preview-list li:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .preview-list li.editing {
+      background-color: rgba(52, 152, 219, 0.2);
+      cursor: text;
+    }
+    
+    .preview-list li .edit-input {
+      background: transparent;
+      border: 1px solid rgba(52, 152, 219, 0.5);
+      border-radius: 3px;
+      color: white;
+      font-size: inherit;
+      font-family: inherit;
+      padding: 2px 5px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    
+    .preview-list li .edit-input:focus {
+      outline: none;
+      border-color: rgba(52, 152, 219, 0.8);
+    }
+    
+    .preview-list li .edit-hint {
+      position: absolute;
+      top: -25px;
+      left: 0;
+      font-size: 0.7em;
+      color: rgba(255, 255, 255, 0.6);
+      background-color: rgba(0, 0, 0, 0.7);
+      padding: 2px 6px;
+      border-radius: 3px;
+      white-space: nowrap;
+      z-index: 10;
+    }
+    
+    .sortable-ghost {
+      opacity: 0.4;
+    }
+    
+    .sortable-chosen {
+      background-color: rgba(155, 89, 182, 0.3) !important;
+    }
+    
+    .sortable-drag {
+      background-color: rgba(155, 89, 182, 0.5) !important;
+    }
+    
+    .preset-controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      align-items: center;
+    }
+    
+    .preset-input {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: 5px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background-color: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 0.9em;
+    }
+    
+    .preset-input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .preset-button {
+      background-color: #9b59b6;
+      color: white;
+      margin-top: 0;
+    }
+
+    .preset-button:hover {
+      background-color: #8e44ad;
+    }
+    
+    .presets-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    
+    .preset-item {
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.2s ease;
+    }
+    
+    .preset-item:hover {
+      background-color: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    
+    .preset-name {
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #3498db;
+    }
+    
+    .preset-columns {
+      font-size: 0.8em;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 10px;
+      max-height: 60px;
+      overflow-y: auto;
+    }
+    
+    .preset-actions {
+      display: flex;
+      gap: 5px;
+    }
+    
+    .preset-load-btn, .preset-delete-btn {
+      padding: 4px 8px;
+      font-size: 0.8em;
+      border-radius: 3px;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .preset-load-btn {
+      background-color: #9b59b6;
+      color: white;
+      flex: 1;
+    }
+
+    .preset-load-btn:hover {
+      background-color: #8e44ad;
+    }
+
+    .preset-delete-btn {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    .preset-delete-btn:hover {
+      background-color: #c0392b;
+    }
+    
+    /* 智能推荐样式 */
+    .preset-recommendations {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      max-width: 600px;
+      max-height: 70vh;
+      overflow-y: auto;
+      color: white;
+    }
+    
+    .preset-recommendations-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+    }
+    
+    .recommendations-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .recommendations-title {
+      font-size: 1.4em;
+      font-weight: bold;
+      color: #fff;
+      font-family: 'Roboto Mono', monospace;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .recommendations-close {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 1.5em;
+      cursor: pointer;
+      padding: 0;
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+    
+    .recommendations-close:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: white;
+    }
+    
+    .recommendation-item {
+      background-color: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 15px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.2s ease;
+    }
+    
+    .recommendation-item:hover {
+      background-color: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .recommendation-name {
+      font-weight: bold;
+      font-size: 1.1em;
+      margin-bottom: 8px;
+      color: #32F08C;
+      font-family: 'Roboto Mono', monospace;
+    }
+    
+    .recommendation-match {
+      font-size: 0.9em;
+      margin-bottom: 8px;
+      color: #32F08C;
+      font-weight: 500;
+    }
+    
+    .recommendation-details {
+      font-size: 0.8em;
+      color: rgba(255, 255, 255, 0.8);
+      margin-bottom: 10px;
+    }
+    
+    .recommendation-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 15px;
+    }
+    
+    .recommendation-apply-btn {
+      background-color: #32F08C;
+      color: black;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.9em;
+      font-weight: 500;
+      transition: background-color 0.1s;
+      display: inline-flex;
+      align-items: center;
+    }
+    
+    .recommendation-apply-btn:hover {
+      background-color: #28d177;
+    }
+    
+    .recommendation-preview-btn {
+      background-color: #6c757d;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.9em;
+      font-weight: 500;
+      transition: background-color 0.1s;
+      display: inline-flex;
+      align-items: center;
+    }
+    
+    .recommendation-preview-btn:hover {
+      background-color: #5a6268;
+    }
+    
+    .preset-list h4 {
+      margin: 0 0 10px 0;
+      font-size: 1em;
+      color: rgba(255, 255, 255, 0.8);
+    }
+    
+    .preset-import-export {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .export-button, .import-button {
+      background-color: #6c757d;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.1s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9em;
+      text-decoration: none;
+      font-family: inherit;
+      font-weight: normal;
+      line-height: 1.2;
+      white-space: nowrap;
+      box-sizing: border-box;
+      height: 36px;
+      vertical-align: top;
+      margin: 0;
+    }
+
+    .export-button svg, .import-button svg {
+      margin-right: 6px;
+    }
+
+    .export-button:hover {
+      background-color: #5a6268;
+    }
+
+    .import-button:hover {
+      background-color: #5a6268;
+    }
+    
+    .preset-tips {
+      background-color: rgba(52, 152, 219, 0.1);
+      border: 1px solid rgba(52, 152, 219, 0.3);
+      border-radius: 5px;
+      padding: 10px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9em;
+      color: rgba(255, 255, 255, 0.8);
+    }
+    
+    .preset-tips svg {
+      color: #3498db;
+      flex-shrink: 0;
+    }
+    
+    .preset-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    
+    .preset-header h3 {
+      margin: 0;
+      color: #fff;
+    }
+    
+    .preset-actions-inline {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    
+    .preset-actions-inline button,
+        .preset-actions-inline label {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.1s ease;
+            font-size: 14px;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .preset-actions-inline .export-button,
+        .preset-actions-inline .import-button {
+            background: #6c757d;
+            color: white;
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .preset-actions-inline .export-button:hover,
+        .preset-actions-inline .import-button:hover {
+            background: #5a6268;
+            transform: translateY(-1px);
+        }
+        
+        .preset-actions-inline .export-button svg,
+        .preset-actions-inline .import-button svg {
+            margin: 0;
+        }
+    
+    .preset-tip-toggle {
+      background: #6c757d;
+      color: white;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      margin: 0;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.1s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      line-height: 1;
+    }
+    
+    .preset-tip-toggle:hover {
+      background: #5a6268;
+      transform: translateY(-1px);
+    }
+    
+    .preset-tip-toggle svg {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      vertical-align: middle;
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    .file-section {
+      margin-bottom: 25px;
+    }
+    
+    /* 拖拽上传区域样式 */
+    .drop-zone {
+      border: 2px dashed rgba(255, 255, 255, 0.3);
+      border-radius: 12px;
+      padding: 40px 20px;
+      text-align: center;
+      transition: all 0.3s ease;
+      background-color: rgba(255, 255, 255, 0.02);
+      cursor: pointer;
+    }
+    
+    .drop-zone:hover {
+      border-color: rgba(50, 240, 140, 0.6);
+      background-color: rgba(50, 240, 140, 0.05);
+    }
+    
+    .drop-zone.drag-over {
+      border-color: #32F08C;
+      background-color: rgba(50, 240, 140, 0.1);
+      transform: scale(1.02);
+    }
+    
+    .drop-zone-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+    
+    .drop-icon {
+      color: rgba(255, 255, 255, 0.4);
+      transition: all 0.3s ease;
+    }
+    
+    .drop-zone:hover .drop-icon,
+    .drop-zone.drag-over .drop-icon {
+      color: #32F08C;
+      transform: translateY(-5px);
+    }
+    
+    .drop-text {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .drop-main-text {
+      font-size: 1.2em;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.8);
+      margin: 0;
+    }
+    
+    .drop-sub-text {
+      font-size: 0.9em;
+      color: rgba(255, 255, 255, 0.5);
+      margin: 0;
+    }
+    
+    .file-info {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .file-info:empty {
+      display: none;
+    }
+    
+    #fileNameDisplay {
+      font-size: 0.9em;
+      color: rgba(255, 255, 255, 0.7);
+    }
+    
+    @media (max-width: 768px) {
+      .drop-zone {
+        padding: 30px 15px;
+      }
+      
+      .drop-main-text {
+        font-size: 1em;
+      }
+      
+      .drop-icon {
+        width: 36px;
+        height: 36px;
+      }
+    }
+    
+
+    
+    /* Sheet选择器样式 */
+    .sheet-selector {
+      margin-top: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .sheet-selector label {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 0.9em;
+      white-space: nowrap;
+    }
+    
+    .sheet-select {
+      flex: 1;
+      max-width: 300px;
+      padding: 8px 12px;
+      border-radius: 5px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background-color: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 0.9em;
+      transition: all 0.1s ease;
+    }
+    
+    .sheet-select:focus {
+      outline: none;
+      border-color: #32F08C;
+      box-shadow: 0 0 10px rgba(50, 240, 140, 0.3);
+      background-color: rgba(255, 255, 255, 0.15);
+    }
+    
+    .sheet-select option {
+      background-color: #2a2a2a;
+      color: white;
+    }
+    
+    /* 表头控制区域样式 */
+    .header-controls {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    .search-container {
+      position: relative;
+      flex: 1;
+      min-width: 250px;
+    }
+    
+    #headerSearch {
+      width: 100%;
+      padding: 10px 40px 10px 12px;
+      border-radius: 5px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background-color: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 0.9em;
+      transition: all 0.1s ease;
+    }
+    
+    #headerSearch::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+    }
+    
+    #headerSearch:focus {
+      outline: none;
+      border-color: #32F08C;
+      box-shadow: 0 0 10px rgba(50, 240, 140, 0.3);
+      background-color: rgba(255, 255, 255, 0.15);
+    }
+    
+    .search-icon {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255, 255, 255, 0.5);
+      pointer-events: none;
+    }
+    
+    .select-controls {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .control-button {
+      background-color: #9b59b6;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.1s ease;
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.9em;
+      margin-top: 0;
+      white-space: nowrap;
+    }
+    
+    .control-button svg {
+      margin-right: 6px;
+    }
+    
+    .control-button:hover {
+      background-color: #8e44ad;
+      transform: translateY(-1px);
+    }
+    
+    @media (max-width: 768px) {
+      .header-controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .search-container {
+        min-width: auto;
+      }
+      
+      .select-controls {
+        justify-content: center;
+      }
+    }
+
+    /* 欢迎指引模块样式 */
+    .welcome-guide {
+      text-align: center;
+      padding: 40px 20px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.1) 100%);
+      border-radius: 16px;
+      margin-bottom: 25px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      animation: fadeInUp 0.6s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+    }
+
+    .welcome-header {
+      margin-bottom: 40px;
+    }
+
+    .welcome-icon {
+      color: #03fc90;
+      margin-bottom: 20px;
+      opacity: 0.8;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .welcome-guide h2 {
+      color: #ffffff;
+      font-size: 28px;
+      margin: 0 0 10px 0;
+      font-weight: 700;
+      font-family: 'Roboto Mono', monospace;
+    }
+
+    .welcome-subtitle {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 16px;
+      margin: 0;
+    }
+
+    .guide-steps {
+      text-align: left;
+      margin-bottom: 40px;
+    }
+
+    .guide-steps h3 {
+      color: #ffffff;
+      font-size: 20px;
+      margin-bottom: 20px;
+      text-align: center;
+      font-family: 'Roboto Mono', monospace;
+      font-weight: 700;
+    }
+
+    .timeline-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      max-width: 600px;
+      margin: 0 auto;
+      flex-wrap: wrap;
+    }
+
+    .timeline-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+    }
+
+    .timeline-step:hover {
+      transform: translateY(-3px);
+    }
+
+    .timeline-number {
+      background-color: #9b59b6;
+      color: white;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(155, 89, 182, 0.3);
+    }
+
+    .timeline-step:hover .timeline-number {
+      background-color: #8e44ad;
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(155, 89, 182, 0.5);
+    }
+
+    .timeline-title {
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .timeline-arrow {
+      color: #9b59b6;
+      font-size: 20px;
+      font-weight: bold;
+      margin: 0 5px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .features-highlight {
+      text-align: left;
+    }
+
+    .features-highlight h3 {
+      color: #ffffff;
+      font-size: 20px;
+      margin-bottom: 20px;
+      text-align: center;
+      font-family: 'Roboto Mono', monospace;
+      font-weight: 700;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 15px;
+      background-color: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 14px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .feature-item:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(3, 252, 144, 0.15);
+    }
+
+    .feature-item svg {
+      color: #03fc90;
+      flex-shrink: 0;
+      transition: transform 0.3s ease;
+    }
+
+    .feature-item:hover svg {
+      transform: scale(1.2);
+    }
+
+    @media (max-width: 768px) {
+      .welcome-guide {
+        padding: 30px 15px;
+      }
+      
+      .welcome-guide h2 {
+        font-size: 24px;
+      }
+      
+      .timeline-container {
+        flex-direction: column;
+        gap: 20px;
+      }
+      
+      .timeline-arrow {
+        transform: rotate(90deg);
+        margin: 0;
+      }
+      
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+  <title>Excel 列筛选工具</title>
+  <meta name="author" content="AmaBrain">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+</head>
+
+<body>
+
+
+  <div class="container">
+    <h1>Excel 列筛选工具</h1>
+    
+    <!-- 文件选择模块 -->
+    <div class="module file-section">
+      <div id="dropZone" class="drop-zone">
+        <div class="drop-zone-content">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="drop-icon" viewBox="0 0 16 16">
+            <path d="M8.5 11.5a.5.5 0 0 1-1 0V7.707L6.354 9.854a.5.5 0 1 1-.708-.708l2-2a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 7.707V11.5z"/>
+            <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+          </svg>
+          <div class="drop-text">
+            <p class="drop-main-text">拖拽文件到此处</p>
+            <p class="drop-sub-text">支持 Excel (.xlsx/.xls)、CSV (.csv)、文本 (.txt) 格式</p>
+            <label for="fileInput" class="file-label">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-arrow-up" viewBox="0 0 16 16">
+                <path d="M8.5 11.5a.5.5 0 0 1-1 0V7.707L6.354 9.854a.5.5 0 1 1-.708-.708l2-2a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 7.707V11.5z"/>
+                <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+              </svg>
+              点击选择文件
+            </label>
+          </div>
+        </div>
+        <div class="file-info">
+          <span id="fileNameDisplay"></span>
+        </div>
+      </div>
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.txt">
+      
+      <!-- Sheet选择下拉菜单 -->
+      <div id="sheetSelector" class="sheet-selector hidden">
+        <label for="sheetSelect">选择工作表：</label>
+        <select id="sheetSelect" class="sheet-select">
+          <option value="">请选择工作表</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 欢迎和帮助指引模块 -->
+    <div id="welcomeGuide" class="module welcome-guide">
+      <div class="welcome-header">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="bi bi-file-earmark-spreadsheet welcome-icon" viewBox="0 0 16 16">
+          <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V9H3V2a1 1 0 0 1 1-1h5.5v2zM3 12v-2h2v2H3zm0 1h2v2H4a1 1 0 0 1-1-1v-1zm3 2v-2h3v2H6zm4 0v-2h3v1a1 1 0 0 1-1 1h-2zm3-3h-3v-2h3v2zm-7 0v-2h3v2H6z"/>
+        </svg>
+        <h2>欢迎使用 Excel 列筛选工具</h2>
+        <p class="welcome-subtitle">快速提取和重组您的 Excel 数据</p>
+      </div>
+      
+      <div class="guide-steps">
+        <h3>使用步骤：</h3>
+        <div class="timeline-container">
+          <div class="timeline-step">
+            <div class="timeline-number">1</div>
+            <div class="timeline-title">选择文件</div>
+          </div>
+          <div class="timeline-arrow">→</div>
+          <div class="timeline-step">
+            <div class="timeline-number">2</div>
+            <div class="timeline-title">选择列</div>
+          </div>
+          <div class="timeline-arrow">→</div>
+          <div class="timeline-step">
+            <div class="timeline-number">3</div>
+            <div class="timeline-title">调整顺序</div>
+          </div>
+          <div class="timeline-arrow">→</div>
+          <div class="timeline-step">
+            <div class="timeline-number">4</div>
+            <div class="timeline-title">导出数据</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="features-highlight">
+        <h3>主要功能：</h3>
+        <div class="features-grid">
+          <div class="feature-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-check-circle-fill" viewBox="0 0 16 16">
+              <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+            </svg>
+            <span>支持 .xlsx 和 .xls 格式</span>
+          </div>
+          <div class="feature-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-check-circle-fill" viewBox="0 0 16 16">
+              <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+            </svg>
+            <span>拖拽调整列顺序</span>
+          </div>
+          <div class="feature-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-check-circle-fill" viewBox="0 0 16 16">
+              <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+            </svg>
+            <span>预设配置保存</span>
+          </div>
+          <div class="feature-item">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-check-circle-fill" viewBox="0 0 16 16">
+              <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+            </svg>
+            <span>批量粘贴表头</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="headerList" class="hidden">
+      <!-- 粘贴表头模块 -->
+      <div class="module">
+        <h3>粘贴表头（支持直接从Excel粘贴）</h3>
+        <textarea id="selectedHeadersInput" placeholder="从Excel中复制表头并粘贴到这里..."></textarea>
+        <button id="applyPastedHeadersButton" class="primary-button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-circle" viewBox="0 0 16 16">
+            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+            <path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/>
+          </svg>
+          应用粘贴的表头
+        </button>
+      </div>
+
+      <!-- 选择表头模块 -->
+      <div class="module">
+        <h3>点选表头</h3>
+        
+        <!-- 搜索和操作区域 -->
+        <div class="header-controls">
+          <div class="search-container">
+            <input type="text" id="headerSearch" placeholder="搜索表头 (如: ASIN, SKU, Session...)" />
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="search-icon" viewBox="0 0 16 16">
+              <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+            </svg>
+          </div>
+          <div class="select-controls">
+            <button id="selectAllHeaders" class="control-button" title="全选所有表头">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022Z"/>
+              </svg>
+              全选
+            </button>
+            <button id="clearAllHeaders" class="control-button" title="清空所有选择">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
+              </svg>
+              清空
+            </button>
+          </div>
+        </div>
+        
+        <ul id="headers"></ul>
+      </div>
+
+      <!-- 预设配置模块 -->
+    <div class="module">
+      <div class="preset-header">
+        <h3>预设配置管理</h3>
+        <div class="preset-actions-inline">
+          <button id="exportPresetsButton" class="export-button" title="导出预设到Excel文件">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
+              <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+              <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+            </svg>
+          </button>
+          
+          <label for="importPresetsInput" class="import-button" title="从Excel文件导入预设">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-upload" viewBox="0 0 16 16">
+              <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+              <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+            </svg>
+          </label>
+          <input type="file" id="importPresetsInput" accept=".xlsx,.xls" style="display: none;">
+          
+          <button class="preset-tip-toggle" onclick="togglePresetTip()" title="查看使用提示">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle" viewBox="0 0 16 16">
+              <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+              <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      <div class="preset-controls">
+        <input type="text" id="presetName" placeholder="输入预设名称..." class="preset-input">
+        <button id="savePresetButton" class="preset-button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bookmark-plus" viewBox="0 0 16 16">
+            <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.777.416L8 13.101l-5.223 2.815A.5.5 0 0 1 2 15.5V2zm2-1a1 1 0 0 0-1 1v12.566l4.723-2.482a.5.5 0 0 1 .554 0L13 14.566V2a1 1 0 0 0-1-1H4z"/>
+            <path d="M8 4a.5.5 0 0 1 .5.5V6H10a.5.5 0 0 1 0 1H8.5v1.5a.5.5 0 0 1-1 0V7H6a.5.5 0 0 1 0-1h1.5V4.5A.5.5 0 0 1 8 4z"/>
+          </svg>
+          保存预设
+        </button>
+      </div>
+      
+      <div class="preset-tips" id="presetTip" style="display: none;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle" viewBox="0 0 16 16">
+          <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+          <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+        </svg>
+        <span><strong>💡 使用提示：</strong>预设功能可以保存您常用的表头选择配置，方便下次快速应用。配置信息保存在浏览器缓存中，重要配置建议定期导出存档至本地。</span>
+      </div>
+      
+      <div class="preset-list">
+        <h4>已保存的预设：</h4>
+        <div id="presetsList" class="presets-container"></div>
+      </div>
+    </div>
+
+    <!-- 预览模块 -->
+    <div class="module">
+      <h3>导出列预览（可拖拽调整顺序，双击列名可重命名）</h3>
+      <ul id="exportPreviewList" class="preview-list"></ul>
+    </div>
+    </div>
+
+    <!-- 导出按钮模块 -->
+    <div class="module">
+      <div class="button-group">
+        <button id="exportButton" class="primary-button hidden">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
+            <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+            <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+          </svg>
+          导出筛选后的数据
+        </button>
+        <button id="resetButton" class="secondary-button hidden">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-clockwise" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+            <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+          </svg>
+          处理新文件
+        </button>
+      </div>
+    </div>
+
+    <div class="author-info">
+      <img alt="AmzBrain Logo" class="author-logo" src="https://img.imgdd.com/d6a56334-3371-4770-a0e4-9407211d5c3d.jpg">
+      <span class="author-text">Design by AmzBrain</span>
+    </div>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const headerList = document.getElementById('headerList');
+    const headers = document.getElementById('headers');
+    const selectedHeadersInput = document.getElementById('selectedHeadersInput');
+    const applyPastedHeadersButton = document.getElementById('applyPastedHeadersButton');
+    const exportButton = document.getElementById('exportButton');
+    const fileNameDisplay = document.getElementById('fileNameDisplay');
+    const exportPreviewList = document.getElementById('exportPreviewList');
+    const presetName = document.getElementById('presetName');
+    const savePresetButton = document.getElementById('savePresetButton');
+    const presetsList = document.getElementById('presetsList');
+    const exportPresetsButton = document.getElementById('exportPresetsButton');
+    const importPresetsInput = document.getElementById('importPresetsInput');
+    const headerSearch = document.getElementById('headerSearch');
+    const selectAllHeaders = document.getElementById('selectAllHeaders');
+    const clearAllHeaders = document.getElementById('clearAllHeaders');
+    const sheetSelector = document.getElementById('sheetSelector');
+    const sheetSelect = document.getElementById('sheetSelect');
+    const dropZone = document.getElementById('dropZone');
+    let workbook;
+    let allHeaders = [];
+    let filteredHeaders = []; // 存储筛选后的表头
+    let currentSheetName = ''; // 当前选择的Sheet名称
+    
+
+    
+    // 预设管理功能
+    const PresetManager = {
+      STORAGE_KEY: 'excel_filter_presets',
+      
+      // 获取所有预设
+      getPresets() {
+        try {
+          const presets = localStorage.getItem(this.STORAGE_KEY);
+          return presets ? JSON.parse(presets) : {};
+        } catch (error) {
+          console.error('读取预设失败:', error);
+          return {};
+        }
+      },
+      
+      // 保存预设
+      savePreset(name, columnMappings) {
+        try {
+          const presets = this.getPresets();
+          presets[name] = {
+            columnMappings: columnMappings, // 新的数据结构：[{originalName: '原始列名', newName: '新列名'}]
+            columns: columnMappings.map(mapping => mapping.newName), // 保持向后兼容
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(presets));
+          return true;
+        } catch (error) {
+          console.error('保存预设失败:', error);
+          return false;
+        }
+      },
+      
+      // 删除预设
+      deletePreset(name) {
+        try {
+          const presets = this.getPresets();
+          delete presets[name];
+          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(presets));
+          return true;
+        } catch (error) {
+          console.error('删除预设失败:', error);
+          return false;
+        }
+      },
+      
+      // 加载预设
+       loadPreset(name) {
+         const presets = this.getPresets();
+         return presets[name] || null;
+       },
+       
+       // 导出所有预设
+       exportPresets() {
+         const presets = this.getPresets();
+         const exportData = {
+           version: '1.0',
+           exportDate: new Date().toISOString(),
+           presets: presets
+         };
+         return JSON.stringify(exportData, null, 2);
+       },
+       
+       // 导入预设
+       importPresets(jsonData, mergeMode = false) {
+         try {
+           const importData = JSON.parse(jsonData);
+           
+           if (!importData.presets || typeof importData.presets !== 'object') {
+             throw new Error('无效的预设文件格式');
+           }
+           
+           const currentPresets = mergeMode ? this.getPresets() : {};
+           const newPresets = { ...currentPresets, ...importData.presets };
+           
+           localStorage.setItem(this.STORAGE_KEY, JSON.stringify(newPresets));
+           return {
+             success: true,
+             importedCount: Object.keys(importData.presets).length,
+             totalCount: Object.keys(newPresets).length
+           };
+         } catch (error) {
+           console.error('导入预设失败:', error);
+           return {
+             success: false,
+             error: error.message
+           };
+         }
+       },
+       
+       // 智能预设推荐
+       getRecommendedPresets(currentHeaders, threshold = 0.3) {
+         const presets = this.getPresets();
+         const recommendations = [];
+         
+         Object.entries(presets).forEach(([name, preset]) => {
+           // 优先使用新的columnMappings数据结构
+           let presetColumns;
+           if (preset.columnMappings && Array.isArray(preset.columnMappings)) {
+             presetColumns = preset.columnMappings.map(mapping => mapping.originalName);
+           } else {
+             presetColumns = preset.columns || [];
+           }
+           
+           const matchScore = this.calculateMatchScore(currentHeaders, presetColumns);
+           if (matchScore >= threshold) {
+             recommendations.push({
+               name: name,
+               preset: preset,
+               matchScore: matchScore,
+               matchedColumns: this.getMatchedColumns(currentHeaders, presetColumns)
+             });
+           }
+         });
+         
+         // 按匹配度排序
+         return recommendations.sort((a, b) => b.matchScore - a.matchScore);
+       },
+       
+       // 计算匹配分数
+       calculateMatchScore(currentHeaders, presetColumns) {
+         if (!currentHeaders || !presetColumns || presetColumns.length === 0) {
+           return 0;
+         }
+         
+         const currentHeadersLower = currentHeaders.map(h => h.toLowerCase());
+         let matchedCount = 0;
+         
+         presetColumns.forEach(presetCol => {
+           if (currentHeadersLower.includes(presetCol.toLowerCase())) {
+             matchedCount++;
+           }
+         });
+         
+         return matchedCount / presetColumns.length;
+       },
+       
+       // 获取匹配的列
+       getMatchedColumns(currentHeaders, presetColumns) {
+         const currentHeadersLower = currentHeaders.map(h => h.toLowerCase());
+         const matched = [];
+         const unmatched = [];
+         
+         presetColumns.forEach(presetCol => {
+           if (currentHeadersLower.includes(presetCol.toLowerCase())) {
+             matched.push(presetCol);
+           } else {
+             unmatched.push(presetCol);
+           }
+         });
+         
+         return { matched, unmatched };
+       }
+     };
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      fileNameDisplay.textContent = file.name;
+      
+      const fileName = file.name.toLowerCase();
+      const reader = new FileReader();
+      
+      reader.onload = (event) => {
+        try {
+          let jsonData = [];
+          
+          if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+            // Excel文件处理
+            const data = new Uint8Array(event.target.result);
+            
+            workbook = XLSX.read(data, { type: 'array' });
+            
+            if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+              throw new Error('文件中没有找到工作表');
+            }
+            
+            // 显示Sheet选择器（无论单个还是多个Sheet）
+            populateSheetSelector(workbook.SheetNames);
+            sheetSelector.classList.remove('hidden');
+            
+            if (workbook.SheetNames.length === 1) {
+              // 只有一个Sheet，自动选中并加载
+              currentSheetName = workbook.SheetNames[0];
+              sheetSelect.value = currentSheetName;
+              loadSheetData(currentSheetName);
+            }
+            // 多个Sheet时等待用户选择
+            return;
+          } else if (fileName.endsWith('.csv')) {
+            // CSV文件处理
+            const text = event.target.result;
+            jsonData = parseCSV(text);
+          } else if (fileName.endsWith('.txt')) {
+            // TXT文件处理
+            const text = event.target.result;
+            jsonData = parseTXT(text);
+          }
+          
+          // 处理CSV和TXT文件的数据
+          if (jsonData.length > 0) {
+            // 隐藏Sheet选择器（CSV/TXT文件不需要）
+            sheetSelector.classList.add('hidden');
+            
+            // 直接处理数据
+            allHeaders = jsonData[0] || [];
+            
+            if (allHeaders.length === 0) {
+              throw new Error('第一行没有找到表头数据');
+            }
+            
+            headers.innerHTML = '';
+            exportPreviewList.innerHTML = '';
+            selectedHeadersInput.value = '';
+            
+            allHeaders.forEach((header, index) => {
+              if (header !== undefined && header !== null && header !== '') {
+                const li = document.createElement('li');
+                const input = document.createElement('input');
+                input.type = 'checkbox';
+                input.value = header;
+                input.id = `header_${index}`;
+                input.checked = false;
+                const label = document.createElement('label');
+                label.textContent = header;
+                label.setAttribute('for', `header_${index}`);
+                li.appendChild(input);
+                li.appendChild(label);
+                headers.appendChild(li);
+              }
+            });
+            
+            // 初始化筛选后的表头数组
+            filteredHeaders = [...allHeaders.filter(h => h !== undefined && h !== null && h !== '')];
+            
+            // 清空搜索框
+            if (headerSearch) {
+              headerSearch.value = '';
+            }
+            
+            // 保存解析后的数据供导出使用
+            workbook = {
+              SheetNames: ['Data'],
+              Sheets: {
+                'Data': XLSX.utils.aoa_to_sheet(jsonData)
+              }
+            };
+            currentSheetName = 'Data';
+            
+            headerList.classList.remove('hidden');
+            exportButton.classList.remove('hidden');
+            resetButton.classList.remove('hidden');
+            // 隐藏欢迎指引模块和拖拽区域
+            document.getElementById('welcomeGuide').classList.add('hidden');
+            dropZone.classList.add('hidden');
+          }
+        } catch (error) {
+          console.error('读取文件时出错:', error);
+          alert('读取文件时出错: ' + error.message);
+          // 重置界面状态
+          headerList.classList.add('hidden');
+          exportButton.classList.add('hidden');
+          resetButton.classList.add('hidden');
+          fileNameDisplay.textContent = '';
+          // 显示欢迎指引模块
+          document.getElementById('welcomeGuide').classList.remove('hidden');
+        }
+      };
+      
+      reader.onerror = () => {
+        alert('文件读取失败，请重试');
+        fileNameDisplay.textContent = '';
+        // 显示欢迎指引模块
+        document.getElementById('welcomeGuide').classList.remove('hidden');
+      };
+      
+      // 根据文件类型选择读取方式
+      if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+        reader.readAsArrayBuffer(file);
+      } else {
+        reader.readAsText(file, 'UTF-8');
+      }
+    });
+
+    // 智能处理粘贴表头
+    selectedHeadersInput.addEventListener('paste', function(e) {
+      // 防止默认粘贴行为
+      e.preventDefault();
+      
+      // 获取粘贴的文本
+      const clipboardData = e.clipboardData || window.clipboardData;
+      const pastedText = clipboardData.getData('text');
+      
+      // 智能检测分隔符
+      // 如果包含制表符，可能是从Excel行粘贴的
+      if (pastedText.includes('\t')) {
+        const headers = pastedText.split('\t').map(h => h.trim()).filter(h => h);
+        this.value = headers.join(',');
+      } 
+      // 如果包含换行符，可能是从Excel列粘贴的
+      else if (pastedText.includes('\n')) {
+        const headers = pastedText.split('\n').map(h => h.trim()).filter(h => h);
+        this.value = headers.join(',');
+      } 
+      // 如果已经包含逗号，可能已经是逗号分隔的
+      else if (pastedText.includes(',')) {
+        this.value = pastedText;
+      } 
+      // 否则可能只有一个表头
+      else {
+        this.value = pastedText.trim();
+      }
+    });
+
+    applyPastedHeadersButton.addEventListener('click', () => {
+      const inputValue = selectedHeadersInput.value.trim();
+      if (!inputValue) {
+        alert('请先粘贴表头数据');
+        return;
+      }
+      
+      const selectedHeaders = inputValue.split(',').map(header => header.trim()).filter(header => header);
+      if (selectedHeaders.length === 0) {
+        alert('没有找到有效的表头数据');
+        return;
+      }
+      
+      const checkboxes = headers.querySelectorAll('input[type="checkbox"]');
+      let matchedCount = 0;
+      
+      checkboxes.forEach(checkbox => {
+        const isSelected = selectedHeaders.includes(checkbox.value);
+        checkbox.checked = isSelected;
+        if (isSelected) matchedCount++;
+      });
+      
+      if (matchedCount === 0) {
+        alert('没有找到匹配的表头，请检查输入的表头名称是否正确');
+      } else {
+        alert(`成功匹配 ${matchedCount} 个表头`);
+      }
+      
+      updateExportPreview();
+    });
+    
+    // 预设管理事件监听
+    savePresetButton.addEventListener('click', () => {
+      const name = presetName.value.trim();
+      if (!name) {
+        alert('请输入预设名称');
+        return;
+      }
+      
+      const lis = exportPreviewList.querySelectorAll('li');
+      if (lis.length === 0) {
+        alert('请先选择要保存的列');
+        return;
+      }
+      
+      // 创建列名映射数组
+      const columnMappings = [];
+      lis.forEach(li => {
+        columnMappings.push({
+          originalName: li.getAttribute('data-original-name') || li.textContent,
+          newName: li.textContent
+        });
+      });
+      
+      if (PresetManager.savePreset(name, columnMappings)) {
+        alert(`预设 "${name}" 保存成功！`);
+        presetName.value = '';
+        renderPresetsList();
+      } else {
+        alert('保存预设失败，请重试');
+      }
+    });
+    
+    // 渲染预设列表
+    function renderPresetsList() {
+      const presets = PresetManager.getPresets();
+      presetsList.innerHTML = '';
+      
+      if (Object.keys(presets).length === 0) {
+        presetsList.innerHTML = '<div style="color: rgba(255, 255, 255, 0.5); font-style: italic;">暂无保存的预设</div>';
+        return;
+      }
+      
+      Object.entries(presets).forEach(([name, preset]) => {
+        const presetItem = document.createElement('div');
+        presetItem.className = 'preset-item';
+        
+        presetItem.innerHTML = `
+          <div class="preset-name">${name}</div>
+          <div class="preset-columns">列: ${preset.columns.join(', ')}</div>
+          <div class="preset-actions">
+            <button class="preset-load-btn" onclick="loadPreset('${name}')">加载</button>
+            <button class="preset-delete-btn" onclick="deletePreset('${name}')">删除</button>
+          </div>
+        `;
+        
+        presetsList.appendChild(presetItem);
+      });
+    }
+    
+    // 加载预设
+    window.loadPreset = function(name) {
+      const preset = PresetManager.loadPreset(name);
+      if (!preset) {
+        alert('预设不存在');
+        return;
+      }
+      
+      if (!allHeaders || allHeaders.length === 0) {
+        alert('请先选择Excel文件');
+        return;
+      }
+      
+      // 清除当前选择
+      const checkboxes = headers.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach(checkbox => {
+        checkbox.checked = false;
+      });
+      
+      let matchedCount = 0;
+      let appliedRenames = 0;
+      
+      // 如果预设有新的columnMappings数据结构，优先使用
+      if (preset.columnMappings && Array.isArray(preset.columnMappings)) {
+        preset.columnMappings.forEach(mapping => {
+          // 首先尝试匹配原始列名
+          let checkbox = Array.from(checkboxes).find(cb => cb.value === mapping.originalName);
+          
+          // 如果原始列名没找到，尝试匹配新列名（向后兼容）
+          if (!checkbox) {
+            checkbox = Array.from(checkboxes).find(cb => cb.value === mapping.newName);
+          }
+          
+          if (checkbox) {
+            checkbox.checked = true;
+            matchedCount++;
+          }
+        });
+        
+        // 更新预览
+        updateExportPreview();
+        
+        // 应用重命名
+        const lis = exportPreviewList.querySelectorAll('li');
+        preset.columnMappings.forEach((mapping, index) => {
+          if (lis[index] && lis[index].getAttribute('data-original-name') === mapping.originalName) {
+            if (mapping.originalName !== mapping.newName) {
+              lis[index].textContent = mapping.newName;
+              appliedRenames++;
+            }
+          }
+        });
+        
+        // 更新输入框
+        updateSelectedHeadersInput();
+        
+        if (appliedRenames > 0) {
+          alert(`预设 "${name}" 加载成功！匹配了 ${matchedCount} 个列，应用了 ${appliedRenames} 个重命名`);
+        } else if (matchedCount < preset.columnMappings.length) {
+          alert(`预设加载完成！匹配了 ${matchedCount}/${preset.columnMappings.length} 个列`);
+        } else {
+          alert(`预设 "${name}" 加载成功！`);
+        }
+      } else {
+        // 向后兼容：使用旧的columns数据结构
+        preset.columns.forEach(columnName => {
+          const checkbox = Array.from(checkboxes).find(cb => cb.value === columnName);
+          if (checkbox) {
+            checkbox.checked = true;
+            matchedCount++;
+          }
+        });
+        
+        // 更新预览和输入框
+        updateExportPreview();
+        selectedHeadersInput.value = preset.columns.join(',');
+        
+        if (matchedCount < preset.columns.length) {
+          alert(`预设加载完成！匹配了 ${matchedCount}/${preset.columns.length} 个列`);
+        } else {
+          alert(`预设 "${name}" 加载成功！`);
+        }
+      }
+    };
+    
+    // 删除预设
+    window.deletePreset = function(name) {
+      if (confirm(`确定要删除预设 "${name}" 吗？`)) {
+        if (PresetManager.deletePreset(name)) {
+          alert('预设删除成功');
+          renderPresetsList();
+        } else {
+          alert('删除预设失败');
+        }
+      }
+    };
+    
+    // 导出预设功能
+     exportPresetsButton.addEventListener('click', () => {
+       const presets = PresetManager.getPresets();
+       if (Object.keys(presets).length === 0) {
+         alert('没有预设可导出');
+         return;
+       }
+       
+       // 创建Excel数据
+       const excelData = [];
+       excelData.push(['预设名称', '列名称', '创建时间', '更新时间']); // 表头
+       
+       Object.entries(presets).forEach(([name, preset]) => {
+         preset.columns.forEach((column, index) => {
+           excelData.push([
+             index === 0 ? name : '', // 只在第一行显示预设名称
+             column,
+             index === 0 ? new Date(preset.createdAt).toLocaleString() : '',
+             index === 0 ? new Date(preset.updatedAt).toLocaleString() : ''
+           ]);
+         });
+       });
+       
+       // 创建工作表和工作簿
+       const worksheet = XLSX.utils.aoa_to_sheet(excelData);
+       const workbook = XLSX.utils.book_new();
+       XLSX.utils.book_append_sheet(workbook, worksheet, '预设配置');
+       
+       // 下载文件
+       const fileName = `excel_filter_presets_${new Date().toISOString().slice(0, 10)}.xlsx`;
+       XLSX.writeFile(workbook, fileName);
+       
+       alert(`成功导出 ${Object.keys(presets).length} 个预设到Excel文件`);
+     });
+     
+     // 导入预设功能
+     importPresetsInput.addEventListener('change', (e) => {
+       const file = e.target.files[0];
+       if (!file) return;
+       
+       const reader = new FileReader();
+       reader.onload = (event) => {
+         try {
+           const data = new Uint8Array(event.target.result);
+           const workbook = XLSX.read(data, { type: 'array' });
+           
+           if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+             throw new Error('Excel文件中没有找到工作表');
+           }
+           
+           const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+           
+           if (!jsonData || jsonData.length < 2) {
+             throw new Error('Excel文件中没有有效的预设数据');
+           }
+           
+           // 解析Excel数据
+           const presets = {};
+           let currentPresetName = '';
+           
+           for (let i = 1; i < jsonData.length; i++) { // 跳过表头
+             const row = jsonData[i];
+             if (!row || row.length < 2) continue;
+             
+             const [presetName, columnName, createdAt, updatedAt] = row;
+             
+             // 如果有预设名称，更新当前预设名称
+             if (presetName && presetName.trim()) {
+               currentPresetName = presetName.trim();
+               presets[currentPresetName] = {
+                 columns: [],
+                 createdAt: createdAt || new Date().toISOString(),
+                 updatedAt: updatedAt || new Date().toISOString()
+               };
+             }
+             
+             // 添加列名到当前预设
+             if (currentPresetName && columnName && columnName.trim()) {
+               presets[currentPresetName].columns.push(columnName.trim());
+             }
+           }
+           
+           if (Object.keys(presets).length === 0) {
+             throw new Error('Excel文件中没有找到有效的预设配置');
+           }
+           
+           // 合并到现有预设
+           const currentPresets = PresetManager.getPresets();
+           const mergedPresets = { ...currentPresets, ...presets };
+           localStorage.setItem(PresetManager.STORAGE_KEY, JSON.stringify(mergedPresets));
+           
+           alert(`导入成功！导入了 ${Object.keys(presets).length} 个预设，当前共有 ${Object.keys(mergedPresets).length} 个预设`);
+           renderPresetsList();
+           
+         } catch (error) {
+           console.error('导入预设失败:', error);
+           alert(`导入失败：${error.message}`);
+         }
+         
+         // 清空文件输入
+         e.target.value = '';
+       };
+       
+       reader.onerror = () => {
+         alert('文件读取失败');
+         e.target.value = '';
+       };
+       
+       reader.readAsArrayBuffer(file);
+     });
+     
+     // 页面加载时渲染预设列表
+     document.addEventListener('DOMContentLoaded', () => {
+       renderPresetsList();
+     });
+     
+     // 切换预设提示显示/隐藏
+     window.togglePresetTip = function() {
+       const presetTip = document.getElementById('presetTip');
+       if (presetTip.style.display === 'none') {
+         presetTip.style.display = 'flex';
+       } else {
+         presetTip.style.display = 'none';
+       }
+     };
+     
+     // 显示智能预设推荐
+     function showPresetRecommendations(recommendations) {
+       // 创建遮罩层
+       const overlay = document.createElement('div');
+       overlay.className = 'preset-recommendations-overlay';
+       
+       // 创建推荐弹窗
+       const modal = document.createElement('div');
+       modal.className = 'preset-recommendations';
+       
+       // 创建标题栏
+       const header = document.createElement('div');
+       header.className = 'recommendations-header';
+       header.innerHTML = `
+         <div class="recommendations-title">🎯 智能预设推荐</div>
+         <button class="recommendations-close" onclick="closePresetRecommendations()">&times;</button>
+       `;
+       
+       modal.appendChild(header);
+       
+       // 创建推荐列表
+       recommendations.slice(0, 3).forEach((rec, index) => {
+         const item = document.createElement('div');
+         item.className = 'recommendation-item';
+         
+         const matchPercentage = Math.round(rec.matchScore * 100);
+         const matchedCount = rec.matchedColumns.matched.length;
+         const totalCount = rec.preset.columns.length;
+         
+         item.innerHTML = `
+           <div class="recommendation-name">${rec.name}</div>
+           <div class="recommendation-match">匹配度: ${matchPercentage}% (${matchedCount}/${totalCount} 列)</div>
+           <div class="recommendation-details">
+             <strong>匹配的列:</strong> ${rec.matchedColumns.matched.join(', ')}<br>
+             ${rec.matchedColumns.unmatched.length > 0 ? `<strong>未匹配的列:</strong> ${rec.matchedColumns.unmatched.join(', ')}` : ''}
+           </div>
+           <div class="recommendation-actions">
+             <button class="recommendation-apply-btn" onclick="applyRecommendedPreset('${rec.name}')">应用预设</button>
+             <button class="recommendation-preview-btn" onclick="previewRecommendedPreset('${rec.name}')">预览</button>
+           </div>
+         `;
+         
+         modal.appendChild(item);
+       });
+       
+       // 添加到页面
+       document.body.appendChild(overlay);
+       document.body.appendChild(modal);
+       
+       // 点击遮罩层关闭
+       overlay.addEventListener('click', closePresetRecommendations);
+     }
+     
+     // 关闭推荐弹窗
+     window.closePresetRecommendations = function() {
+       const overlay = document.querySelector('.preset-recommendations-overlay');
+       const modal = document.querySelector('.preset-recommendations');
+       
+       if (overlay) overlay.remove();
+       if (modal) modal.remove();
+     };
+     
+     // 应用推荐的预设
+     window.applyRecommendedPreset = function(presetName) {
+       closePresetRecommendations();
+       loadPreset(presetName);
+     };
+     
+     // 预览推荐的预设
+     window.previewRecommendedPreset = function(presetName) {
+       const preset = PresetManager.loadPreset(presetName);
+       if (!preset) return;
+       
+       const validHeaders = allHeaders.filter(h => h !== undefined && h !== null && h !== '');
+       const matchedColumns = PresetManager.getMatchedColumns(validHeaders, preset.columns);
+       
+       alert(`预设 "${presetName}" 详情:\n\n` +
+             `包含列数: ${preset.columns.length}\n` +
+             `匹配列数: ${matchedColumns.matched.length}\n\n` +
+             `匹配的列:\n${matchedColumns.matched.join('\n')}\n\n` +
+             (matchedColumns.unmatched.length > 0 ? 
+               `未匹配的列:\n${matchedColumns.unmatched.join('\n')}` : 
+               '所有列都匹配成功！'));
+     };
+     
+     // CSV文件解析函数
+     function parseCSV(text) {
+       const lines = text.split('\n');
+       const result = [];
+       
+       for (let line of lines) {
+         if (line.trim() === '') continue;
+         
+         const row = [];
+         let current = '';
+         let inQuotes = false;
+         
+         for (let i = 0; i < line.length; i++) {
+           const char = line[i];
+           
+           if (char === '"') {
+             inQuotes = !inQuotes;
+           } else if (char === ',' && !inQuotes) {
+             row.push(current.trim());
+             current = '';
+           } else {
+             current += char;
+           }
+         }
+         
+         row.push(current.trim());
+         result.push(row);
+       }
+       
+       return result;
+     }
+     
+     // TXT文件解析函数（制表符分隔）
+     function parseTXT(text) {
+       const lines = text.split('\n');
+       const result = [];
+       
+       for (let line of lines) {
+         if (line.trim() === '') continue;
+         const row = line.split('\t').map(cell => cell.trim());
+         result.push(row);
+       }
+       
+       return result;
+     }
+     
+     // 填充Sheet选择器
+     function populateSheetSelector(sheetNames) {
+       sheetSelect.innerHTML = '<option value="">请选择工作表</option>';
+       sheetNames.forEach(sheetName => {
+         const option = document.createElement('option');
+         option.value = sheetName;
+         option.textContent = sheetName;
+         sheetSelect.appendChild(option);
+       });
+     }
+     
+     // 加载指定Sheet的数据
+     function loadSheetData(sheetName) {
+       try {
+         if (!workbook || !workbook.Sheets[sheetName]) {
+           throw new Error(`工作表 "${sheetName}" 不存在`);
+         }
+         
+         const worksheet = workbook.Sheets[sheetName];
+         const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+         
+         if (!jsonData || jsonData.length === 0) {
+           throw new Error('工作表中没有数据');
+         }
+         
+         allHeaders = jsonData[0] || [];
+         
+         if (allHeaders.length === 0) {
+           throw new Error('第一行没有找到表头数据');
+         }
+
+         headers.innerHTML = '';
+         exportPreviewList.innerHTML = '';
+         selectedHeadersInput.value = '';
+         
+         allHeaders.forEach((header, index) => {
+           if (header !== undefined && header !== null && header !== '') {
+             const li = document.createElement('li');
+             const input = document.createElement('input');
+             input.type = 'checkbox';
+             input.value = header;
+             input.id = `header_${index}`;
+             input.checked = false;
+             const label = document.createElement('label');
+             label.textContent = header;
+             label.setAttribute('for', `header_${index}`);
+             li.appendChild(input);
+             li.appendChild(label);
+             headers.appendChild(li);
+           }
+         });
+         
+         // 初始化筛选后的表头数组
+         filteredHeaders = [...allHeaders.filter(h => h !== undefined && h !== null && h !== '')];
+         
+         // 清空搜索框
+         if (headerSearch) {
+           headerSearch.value = '';
+         }
+
+         headerList.classList.remove('hidden');
+         exportButton.classList.remove('hidden');
+         // 隐藏欢迎指引模块和拖拽区域
+         document.getElementById('welcomeGuide').classList.add('hidden');
+         dropZone.classList.add('hidden');
+         
+         // 智能预设推荐
+         const validHeaders = allHeaders.filter(h => h !== undefined && h !== null && h !== '');
+         const recommendations = PresetManager.getRecommendedPresets(validHeaders);
+         if (recommendations.length > 0) {
+           showPresetRecommendations(recommendations);
+         }
+       } catch (error) {
+         console.error('加载工作表数据时出错:', error);
+         alert('加载工作表数据时出错: ' + error.message);
+       }
+     }
+     
+     // Sheet选择事件监听
+     sheetSelect.addEventListener('change', (e) => {
+       const selectedSheet = e.target.value;
+       if (selectedSheet) {
+         currentSheetName = selectedSheet;
+         loadSheetData(selectedSheet);
+       }
+     });
+     
+     // 拖拽上传功能
+     dropZone.addEventListener('dragover', (e) => {
+       e.preventDefault();
+       dropZone.classList.add('drag-over');
+     });
+     
+     dropZone.addEventListener('dragleave', (e) => {
+       e.preventDefault();
+       if (!dropZone.contains(e.relatedTarget)) {
+         dropZone.classList.remove('drag-over');
+       }
+     });
+     
+     dropZone.addEventListener('drop', (e) => {
+       e.preventDefault();
+       dropZone.classList.remove('drag-over');
+       
+       const files = e.dataTransfer.files;
+       if (files.length > 0) {
+         const file = files[0];
+         const fileName = file.name.toLowerCase();
+         if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || fileName.endsWith('.csv') || fileName.endsWith('.txt')) {
+           fileInput.files = files;
+           // 触发文件输入的change事件
+           const event = new Event('change', { bubbles: true });
+           fileInput.dispatchEvent(event);
+         } else {
+           alert('请选择支持的文件格式（Excel: .xlsx/.xls, CSV: .csv, 文本: .txt）');
+         }
+       }
+     });
+     
+     // 点击拖拽区域触发文件选择
+     dropZone.addEventListener('click', (e) => {
+       if (e.target.tagName !== 'LABEL' && !e.target.closest('label')) {
+         fileInput.click();
+       }
+     });
+     
+     // 表头搜索功能
+     function filterHeaders(searchTerm) {
+       const allCheckboxes = headers.querySelectorAll('li');
+       filteredHeaders = [];
+       
+       allCheckboxes.forEach(li => {
+         const label = li.querySelector('label');
+         const headerText = label.textContent.toLowerCase();
+         const matches = headerText.includes(searchTerm.toLowerCase());
+         
+         if (matches || searchTerm === '') {
+           li.style.display = 'flex';
+           filteredHeaders.push(li.querySelector('input').value);
+         } else {
+           li.style.display = 'none';
+         }
+       });
+     }
+     
+     // 搜索框事件监听
+     headerSearch.addEventListener('input', (e) => {
+       filterHeaders(e.target.value);
+     });
+     
+     // 全选功能
+     selectAllHeaders.addEventListener('click', () => {
+       const visibleCheckboxes = headers.querySelectorAll('li:not([style*="display: none"]) input[type="checkbox"]');
+       visibleCheckboxes.forEach(checkbox => {
+         checkbox.checked = true;
+       });
+       updateExportPreview();
+     });
+     
+     // 清空功能
+     clearAllHeaders.addEventListener('click', () => {
+       const allCheckboxes = headers.querySelectorAll('input[type="checkbox"]');
+       allCheckboxes.forEach(checkbox => {
+         checkbox.checked = false;
+       });
+       updateExportPreview();
+     });
+
+    headers.addEventListener('change', updateExportPreview);
+
+    function updateExportPreview() {
+      const checkboxes = headers.querySelectorAll('input[type="checkbox"]:checked');
+      const selectedHeaders = Array.from(checkboxes).map(checkbox => checkbox.value);
+      exportPreviewList.innerHTML = '';
+      selectedHeaders.forEach((header, index) => {
+        const li = document.createElement('li');
+        li.textContent = header;
+        li.setAttribute('data-original-name', header);
+        li.setAttribute('data-index', index);
+        
+        // 添加双击编辑功能
+        li.addEventListener('dblclick', function(e) {
+          e.stopPropagation();
+          startEditColumnName(this);
+        });
+        
+        exportPreviewList.appendChild(li);
+      });
+    }
+    
+    // 开始编辑列名
+    function startEditColumnName(liElement) {
+      if (liElement.classList.contains('editing')) return;
+      
+      const originalText = liElement.textContent;
+      liElement.classList.add('editing');
+      
+      // 创建输入框
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'edit-input';
+      input.value = originalText;
+      
+      // 创建提示
+      const hint = document.createElement('div');
+      hint.className = 'edit-hint';
+      hint.textContent = '按Enter保存，按Esc取消';
+      
+      // 清空li内容并添加输入框和提示
+      liElement.innerHTML = '';
+      liElement.appendChild(hint);
+      liElement.appendChild(input);
+      
+      // 聚焦并选中文本
+      input.focus();
+      input.select();
+      
+      // 处理键盘事件
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          finishEditColumnName(liElement, input.value.trim());
+        } else if (e.key === 'Escape') {
+          cancelEditColumnName(liElement, originalText);
+        }
+      });
+      
+      // 处理失去焦点事件
+      input.addEventListener('blur', function() {
+        finishEditColumnName(liElement, input.value.trim());
+      });
+    }
+    
+    // 完成编辑列名
+    function finishEditColumnName(liElement, newName) {
+      if (!newName) {
+        cancelEditColumnName(liElement, liElement.getAttribute('data-original-name'));
+        return;
+      }
+      
+      liElement.classList.remove('editing');
+      liElement.textContent = newName;
+      
+      // 更新selectedHeadersInput中的值
+      updateSelectedHeadersInput();
+    }
+    
+    // 取消编辑列名
+    function cancelEditColumnName(liElement, originalText) {
+      liElement.classList.remove('editing');
+      liElement.textContent = originalText;
+    }
+    
+    // 更新selectedHeadersInput的值
+    function updateSelectedHeadersInput() {
+      const lis = exportPreviewList.querySelectorAll('li');
+      const headerNames = Array.from(lis).map(li => li.textContent);
+      selectedHeadersInput.value = headerNames.join(',');
+    }
+
+    new Sortable(exportPreviewList, {
+      animation: 150,
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
+      dragClass: 'sortable-drag',
+      onEnd: function (evt) {
+        const newOrder = [];
+        const lis = exportPreviewList.querySelectorAll('li');
+        lis.forEach(li => {
+          newOrder.push(li.textContent);
+        });
+        
+        // 更新textarea中的顺序
+        const newHeaderString = newOrder.join(',');
+        selectedHeadersInput.value = newHeaderString;
+        
+        // 确保checkbox状态与预览列表一致
+        const checkboxes = headers.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+          checkbox.checked = newOrder.includes(checkbox.value);
+        });
+      }
+    });
+
+    exportButton.addEventListener('click', () => {
+      try {
+        const lis = exportPreviewList.querySelectorAll('li');
+        if (lis.length === 0) {
+          alert('请先选择要导出的列');
+          return;
+        }
+        
+        // 获取重命名后的列名和原始列名的映射
+        const columnMapping = [];
+        lis.forEach(li => {
+          columnMapping.push({
+            newName: li.textContent,
+            originalName: li.getAttribute('data-original-name') || li.textContent
+          });
+        });
+        
+        if (!workbook) {
+          alert('请先选择Excel文件');
+          return;
+        }
+        
+        const sheetName = currentSheetName || workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        
+        if (!jsonData || jsonData.length === 0) {
+          alert('文件中没有数据可导出');
+          return;
+        }
+        
+        const headerRow = jsonData[0];
+        const selectedIndices = columnMapping.map(mapping => {
+          const index = headerRow.indexOf(mapping.originalName);
+          if (index === -1) {
+            console.warn(`表头 "${mapping.originalName}" 在原文件中未找到`);
+          }
+          return { index, newName: mapping.newName };
+        }).filter(item => item.index !== -1);
+        
+        if (selectedIndices.length === 0) {
+          alert('所选表头在原文件中都未找到，无法导出');
+          return;
+        }
+        
+        // 创建新的表头行（使用重命名后的列名）
+        const newHeaderRow = selectedIndices.map(item => item.newName);
+        
+        // 创建数据行
+        const dataRows = jsonData.slice(1).map(row => 
+          selectedIndices.map(item => row[item.index] || '')
+        );
+        
+        // 合并表头和数据
+        const filteredData = [newHeaderRow, ...dataRows];
+        
+        const newWorksheet = XLSX.utils.aoa_to_sheet(filteredData);
+        const newWorkbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, 'Filtered Data');
+        
+        // 生成带时间戳的文件名
+        const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
+        const fileName = `filtered_data_${timestamp}.xlsx`;
+        
+        XLSX.writeFile(newWorkbook, fileName);
+        alert(`导出成功！文件名: ${fileName}`);
+      } catch (error) {
+        console.error('导出时出错:', error);
+        alert('导出失败: ' + error.message);
+      }
+    });
+
+    // 重置按钮事件监听器
+    const resetButton = document.getElementById('resetButton');
+    resetButton.addEventListener('click', () => {
+      if (confirm('确定要重置所有状态并处理新文件吗？这将清空当前的所有选择和设置。')) {
+        // 清空所有全局变量
+        workbook = null;
+        allHeaders = [];
+        filteredHeaders = [];
+        currentSheetName = '';
+        
+        // 清空DOM元素
+        headers.innerHTML = '';
+        exportPreviewList.innerHTML = '';
+        selectedHeadersInput.value = '';
+        fileNameDisplay.textContent = '';
+        
+        // 清空文件输入
+        fileInput.value = '';
+        
+        // 清空搜索框
+        if (headerSearch) {
+          headerSearch.value = '';
+        }
+        
+        // 清空预设输入框
+        presetName.value = '';
+        
+        // 隐藏相关模块
+        headerList.classList.add('hidden');
+        exportButton.classList.add('hidden');
+        resetButton.classList.add('hidden');
+        
+        // 显示欢迎指引模块和拖拽区域
+        document.getElementById('welcomeGuide').classList.remove('hidden');
+        dropZone.classList.remove('hidden');
+        
+        alert('重置完成！您可以重新上传文件开始处理。');
+      }
+    });
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</body>
+</html>

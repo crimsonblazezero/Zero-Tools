@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>亚马逊图片链接批量提取工具</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#064338;--green-deep:#042E25;--green-light:#E8F2F0;
+  --gold:#F3C546;--gold-light:#FFF8DC;
+  --warm-white:#FDFCF9;--body-gray:#717171;--title-dark:#1D1B20;--border:#E8E4DE;
+}
+body{font-family:'Poppins',sans-serif;background:#F0EDE8;min-height:100vh;padding:32px 24px}
+
+.page-header{max-width:860px;margin:0 auto 28px}
+.header-eyebrow{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.header-dot{width:6px;height:6px;border-radius:50%;background:var(--gold)}
+.header-eyebrow span{font-size:10.5px;font-weight:500;color:var(--body-gray);text-transform:uppercase;letter-spacing:1.4px}
+.header-title{font-family:'Playfair Display',serif;font-size:28px;font-weight:500;color:var(--title-dark);margin-bottom:6px}
+.header-sub{font-size:12.5px;color:var(--body-gray);line-height:1.7}
+
+/* ── HERO ── */
+.hero-card{max-width:860px;margin:0 auto 24px;background:var(--green);border-radius:16px;padding:28px 32px;position:relative;overflow:hidden}
+.hero-card::before{content:'';position:absolute;top:-50px;right:-50px;width:200px;height:200px;border-radius:50%;background:rgba(243,197,70,.07)}
+.hero-card::after{content:'';position:absolute;bottom:-60px;left:40%;width:240px;height:240px;border-radius:50%;background:rgba(243,197,70,.04)}
+.hero-inner{position:relative;z-index:1;display:flex;align-items:flex-start;gap:24px}
+.hero-icon-wrap{width:56px;height:56px;min-width:56px;background:rgba(243,197,70,.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;border:1px solid rgba(243,197,70,.25)}
+.hero-text .hero-name{font-family:'Playfair Display',serif;font-size:22px;font-weight:500;color:#fff;margin-bottom:5px}
+.hero-text .hero-desc{font-size:12px;color:rgba(255,255,255,.6);line-height:1.7;max-width:560px}
+.hero-badges{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.badge{font-size:10px;font-weight:500;padding:3px 10px;border-radius:20px;border:1px solid rgba(243,197,70,.3);color:rgba(255,255,255,.7)}
+.badge.gold{background:rgba(243,197,70,.15);border-color:rgba(243,197,70,.4);color:var(--gold)}
+
+/* ── LAUNCHER PANEL ── */
+.launcher-panel{max-width:860px;margin:0 auto 20px;background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.launcher-header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.launcher-title{font-size:13.5px;font-weight:600;color:var(--title-dark);display:flex;align-items:center;gap:8px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#D1D5DB;flex-shrink:0;transition:background .3s}
+.status-dot.online{background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.15)}
+.status-dot.offline{background:#ef4444}
+.status-txt{font-size:11px;color:var(--body-gray)}
+.launcher-body{padding:20px 24px}
+
+/* ── ACTION BUTTONS ── */
+.action-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.action-btn{border-radius:11px;border:1.5px solid var(--border);padding:16px 18px;cursor:pointer;transition:all .18s;background:#fff;text-align:left;font-family:'Poppins',sans-serif;display:flex;align-items:flex-start;gap:12px}
+.action-btn:hover{border-color:var(--green);box-shadow:0 4px 14px rgba(6,67,56,.08);transform:translateY(-1px)}
+.action-btn:active{transform:translateY(0)}
+.action-btn.primary{background:var(--green);border-color:var(--green)}
+.action-btn.primary:hover{background:var(--green-deep);border-color:var(--green-deep)}
+.action-btn.gold-btn{background:var(--gold);border-color:var(--gold)}
+.action-btn.gold-btn:hover{background:#e6b83e;border-color:#e6b83e}
+.action-btn.disabled{opacity:.45;cursor:not-allowed;pointer-events:none}
+.ab-icon{width:36px;height:36px;min-width:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.ab-text{}
+.ab-title{font-size:12.5px;font-weight:600;margin-bottom:2px}
+.ab-desc{font-size:10.5px;line-height:1.5}
+.action-btn.primary .ab-title,.action-btn.primary .ab-desc{color:#fff}
+.action-btn.primary .ab-icon{background:rgba(255,255,255,.12)}
+.action-btn.gold-btn .ab-title,.action-btn.gold-btn .ab-desc{color:var(--green-deep)}
+.action-btn.gold-btn .ab-icon{background:rgba(6,67,56,.1)}
+.action-btn:not(.primary):not(.gold-btn) .ab-title{color:var(--title-dark)}
+.action-btn:not(.primary):not(.gold-btn) .ab-desc{color:var(--body-gray)}
+.action-btn:not(.primary):not(.gold-btn) .ab-icon{background:var(--green-light)}
+
+/* 文件按钮行 */
+.file-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.file-btn{border-radius:10px;border:1px solid var(--border);padding:12px 16px;cursor:pointer;transition:all .15s;background:#FDFCF9;text-align:left;font-family:'Poppins',sans-serif;display:flex;align-items:center;gap:10px}
+.file-btn:hover{border-color:var(--green);background:var(--green-light)}
+.file-btn.disabled{opacity:.45;cursor:not-allowed;pointer-events:none}
+.fb-icon{font-size:20px;flex-shrink:0}
+.fb-text{}
+.fb-title{font-size:12px;font-weight:600;color:var(--title-dark);margin-bottom:1px}
+.fb-path{font-size:10px;color:var(--body-gray);font-family:monospace}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;right:24px;padding:11px 18px;border-radius:10px;font-size:12.5px;font-weight:500;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.15);transition:opacity .35s;pointer-events:none}
+.toast.success{background:var(--green);color:#fff}
+.toast.error{background:#C4433A;color:#fff}
+.toast.warn{background:#92400E;color:#fff}
+
+/* ── GRID ── */
+.main-grid{max-width:860px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:640px){.main-grid{grid-template-columns:1fr}.action-row,.file-row{grid-template-columns:1fr}}
+
+/* ── CARD ── */
+.card{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.card-header{padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.card-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.card-title{font-size:13px;font-weight:600;color:var(--title-dark)}
+.card-body{padding:16px 20px}
+.card-full{grid-column:1/-1}
+
+/* ── FLOW ── */
+.flow{display:flex;flex-direction:column;gap:0}
+.flow-step{display:flex;gap:12px;padding:10px 0;position:relative}
+.flow-step:not(:last-child)::after{content:'';position:absolute;left:14px;top:36px;bottom:-2px;width:1.5px;background:var(--border)}
+.step-num{width:28px;height:28px;min-width:28px;border-radius:50%;background:var(--green);color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;z-index:1}
+.step-body{}
+.step-title{font-size:12.5px;font-weight:600;color:var(--title-dark);margin-bottom:3px}
+.step-desc{font-size:11.5px;color:var(--body-gray);line-height:1.65}
+.step-code{background:#F5F4F2;border:1px solid var(--border);border-radius:7px;padding:7px 11px;font-family:monospace;font-size:11px;color:var(--title-dark);margin-top:6px;word-break:break-all;white-space:pre-wrap}
+.copy-btn{display:inline-flex;align-items:center;gap:4px;margin-top:5px;padding:3px 9px;border-radius:6px;border:1px solid var(--border);background:#fff;font-family:'Poppins',sans-serif;font-size:10.5px;color:var(--body-gray);cursor:pointer;transition:all .13s}
+.copy-btn:hover{border-color:var(--green);color:var(--green)}
+.copy-btn.copied{border-color:#16a34a;color:#16a34a;background:#f0fdf4}
+
+/* ── MODE CARDS ── */
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.mode-card{border:1.5px solid var(--border);border-radius:10px;padding:12px 13px;background:#fff}
+.mode-num{font-size:18px;font-weight:700;color:var(--green);font-family:'Playfair Display',serif;margin-bottom:4px}
+.mode-name{font-size:12px;font-weight:600;color:var(--title-dark);margin-bottom:3px}
+.mode-desc{font-size:10.5px;color:var(--body-gray);line-height:1.55}
+.mode-tag{display:inline-block;margin-top:5px;font-size:9.5px;font-weight:500;padding:2px 7px;border-radius:8px}
+.mode-tag.rec{background:#E8F2F0;color:var(--green)}
+.mode-tag.alt{background:#F5F4F2;color:#6B7280}
+
+/* ── SITE TABLE ── */
+.site-table{width:100%;border-collapse:collapse;font-size:11.5px}
+.site-table th{text-align:left;font-size:10px;font-weight:600;color:var(--body-gray);text-transform:uppercase;letter-spacing:.8px;padding:6px 8px;border-bottom:1px solid var(--border)}
+.site-table td{padding:7px 8px;border-bottom:1px solid #F5F4F2;color:var(--title-dark)}
+.site-table tr:last-child td{border-bottom:none}
+.site-code{font-family:monospace;font-weight:600;color:var(--green);background:var(--green-light);padding:1px 6px;border-radius:5px;font-size:11px}
+
+/* ── ALERT ── */
+.alert{border-radius:9px;padding:10px 13px;margin-top:10px;display:flex;gap:8px;align-items:flex-start}
+.alert-warn{background:var(--gold-light);border-left:3px solid var(--gold)}
+.alert-warn p{font-size:11.5px;color:#92400E;line-height:1.6}
+.alert-info{background:var(--green-light);border-left:3px solid var(--green)}
+.alert-info p{font-size:11.5px;color:var(--green);line-height:1.6}
+.alert-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+
+/* ── TROUBLE TABLE ── */
+.trouble-table{width:100%;border-collapse:collapse;font-size:11px}
+.trouble-table th{text-align:left;font-size:10px;font-weight:600;color:var(--body-gray);text-transform:uppercase;letter-spacing:.7px;padding:6px 8px;border-bottom:1px solid var(--border)}
+.trouble-table td{padding:8px 8px;border-bottom:1px solid #F5F4F2;color:var(--title-dark);vertical-align:top;line-height:1.6}
+.trouble-table tr:last-child td{border-bottom:none}
+.trouble-table td:first-child{color:#C4433A;font-weight:500}
+
+.page-footer{max-width:860px;margin:24px auto 0;text-align:center;font-size:10.5px;color:#B0ABA4;padding-bottom:24px}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="page-header">
+  <div class="header-eyebrow"><div class="header-dot"></div><span>KovaScape · 运营工具</span></div>
+  <div class="header-title">亚马逊图片链接批量提取工具</div>
+  <div class="header-sub">通过 Playwright 模拟真实浏览器，批量抓取亚马逊商品主图 1–8 的无损高清链接，支持人机协同过验证码与增量追加去重。</div>
+</div>
+
+<!-- HERO -->
+<div class="hero-card">
+  <div class="hero-inner">
+    <div class="hero-icon-wrap">🖼️</div>
+    <div class="hero-text">
+      <div class="hero-name">Amazon Image Extractor</div>
+      <div class="hero-desc">输入 ASIN 列表 → 运行脚本 → 自动抓取主图 1–8 高清链接 → 导出 Excel。遇到验证码手动滑过，程序自动恢复，历史数据增量保留不覆盖。</div>
+      <div class="hero-badges">
+        <span class="badge gold">Playwright 浏览器模拟</span>
+        <span class="badge">增量追加去重</span>
+        <span class="badge">人机协同过验证码</span>
+        <span class="badge">支持 8 大站点</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LAUNCHER PANEL -->
+<div class="launcher-panel">
+  <div class="launcher-header">
+    <div class="launcher-title">
+      <span id="status-dot" class="status-dot"></span>
+      <span>快速操作</span>
+    </div>
+    <span class="status-txt" id="status-txt">正在检测 Launcher 服务…</span>
+  </div>
+  <div class="launcher-body">
+
+    <!-- 启动按钮 -->
+    <div style="font-size:11px;font-weight:600;color:var(--body-gray);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">▶ 启动程序</div>
+    <div class="action-row" style="margin-bottom:16px">
+      <button class="action-btn primary disabled" id="btn-mode1" onclick="launchTool('amazon-image-extractor-mode1')">
+        <div class="ab-icon">🚀</div>
+        <div class="ab-text">
+          <div class="ab-title">模式 1 · 接管日常 Chrome</div>
+          <div class="ab-desc">复用日常 Cookies，验证码出现率低。需关闭当前所有 Chrome 窗口。</div>
+        </div>
+      </button>
+      <button class="action-btn disabled" id="btn-mode2" onclick="launchTool('amazon-image-extractor-mode2')">
+        <div class="ab-icon" style="background:#EEF2FF;font-size:17px">🖥️</div>
+        <div class="ab-text">
+          <div class="ab-title">模式 2 · 独立调试模式</div>
+          <div class="ab-desc">无需关闭正在使用的 Chrome，独立 Profile 互不影响。首次需登录一次亚马逊。</div>
+        </div>
+      </button>
+    </div>
+
+    <!-- 文件按钮 -->
+    <div style="font-size:11px;font-weight:600;color:var(--body-gray);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">📁 数据文件</div>
+    <div class="file-row">
+      <button class="file-btn disabled" id="btn-asin" onclick="openFile('Amazon Image Extractor/asin_list.xlsx')">
+        <span class="fb-icon">📋</span>
+        <div class="fb-text">
+          <div class="fb-title">ASIN 输入列表</div>
+          <div class="fb-path">asin_list.xlsx</div>
+        </div>
+      </button>
+      <button class="file-btn disabled" id="btn-result" onclick="openFile('Amazon Image Extractor/amazon_images_result.xlsx')">
+        <span class="fb-icon">📊</span>
+        <div class="fb-text">
+          <div class="fb-title">图片链接结果表</div>
+          <div class="fb-path">amazon_images_result.xlsx</div>
+        </div>
+      </button>
+    </div>
+
+    <div class="alert alert-warn" style="margin-top:14px">
+      <span class="alert-icon">⚠️</span>
+      <p>按钮需要 <strong>Launcher Service 在线</strong>才能使用。通过 <strong>启动Hub.bat</strong> 启动 Hub 时会自动开启 Launcher，无需手动操作。</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- MAIN GRID -->
+<div class="main-grid">
+
+  <!-- 环境配置 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:#E8F2F0">⚙️</div>
+      <div class="card-title">首次使用 · 环境配置</div>
+    </div>
+    <div class="card-body">
+      <div class="flow">
+        <div class="flow-step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">确认 Python 版本</div>
+            <div class="step-desc">需要 Python 3.8 或以上版本。</div>
+            <div class="step-code">python --version</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">安装依赖库</div>
+            <div class="step-desc">在脚本同级目录下打开终端运行：</div>
+            <div class="step-code">pip install pandas openpyxl playwright playwright-stealth</div>
+            <button class="copy-btn" onclick="copyCode(this,'pip install pandas openpyxl playwright playwright-stealth')">📋 复制</button>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">安装浏览器内核</div>
+            <div class="step-desc">必须执行，下载 Playwright 专属 Chromium：</div>
+            <div class="step-code">playwright install chromium</div>
+            <button class="copy-btn" onclick="copyCode(this,'playwright install chromium')">📋 复制</button>
+          </div>
+        </div>
+      </div>
+      <div class="alert alert-info" style="margin-top:14px">
+        <span class="alert-icon">✅</span>
+        <p>环境只需配置一次，后续直接点击上方按钮或双击 <strong>run.bat</strong> 运行即可。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 运行步骤 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:#FFF7ED">🚀</div>
+      <div class="card-title">日常使用 · 运行步骤</div>
+    </div>
+    <div class="card-body">
+      <div class="flow">
+        <div class="flow-step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">准备 ASIN 输入文件</div>
+            <div class="step-desc">点击上方「ASIN 输入列表」打开 <strong>asin_list.xlsx</strong>，填写 <strong>Site</strong> 列和 <strong>ASIN</strong> 列，可直接追加新行。</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">选择模式启动</div>
+            <div class="step-desc">点击上方「模式 1」或「模式 2」按钮，弹出 CMD 窗口自动运行。</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">人机协同过验证码</div>
+            <div class="step-desc">遇到验证码时控制台发出警报并暂停，在弹出的 Chrome 窗口中手动滑过，程序自动恢复。</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <div class="step-title">查看结果</div>
+            <div class="step-desc">运行完毕后点击上方「图片链接结果表」直接打开 <strong>amazon_images_result.xlsx</strong>。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 运行模式说明 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:#EEF2FF">🖥️</div>
+      <div class="card-title">两种运行模式说明</div>
+    </div>
+    <div class="card-body">
+      <div class="mode-grid">
+        <div class="mode-card">
+          <div class="mode-num">1</div>
+          <div class="mode-name">接管日常 Chrome</div>
+          <div class="mode-desc">强杀后台残留进程，复用日常 Cookies，亚马逊验证码出现率极低。需要关闭当前所有 Chrome 窗口。</div>
+          <span class="mode-tag rec">推荐</span>
+        </div>
+        <div class="mode-card">
+          <div class="mode-num">2</div>
+          <div class="mode-name">独立调试模式</div>
+          <div class="mode-desc">无需关闭正在使用的 Chrome，开启隔离 Profile 互不影响。首次运行需手动登录一次亚马逊。</div>
+          <span class="mode-tag alt">备用</span>
+        </div>
+      </div>
+      <div class="alert alert-warn" style="margin-top:12px">
+        <span class="alert-icon">⚠️</span>
+        <p>选择模式 1 前请确保已保存所有 Chrome 标签页内容，脚本会强制关闭所有 Chrome 进程。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 支持站点 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon" style="background:#F0FDF4">🌐</div>
+      <div class="card-title">支持站点</div>
+    </div>
+    <div class="card-body">
+      <table class="site-table">
+        <thead><tr><th>代码</th><th>站点</th><th>代码</th><th>站点</th></tr></thead>
+        <tbody>
+          <tr><td><span class="site-code">US</span></td><td>美国</td><td><span class="site-code">DE</span></td><td>德国</td></tr>
+          <tr><td><span class="site-code">UK</span></td><td>英国</td><td><span class="site-code">JP</span></td><td>日本</td></tr>
+          <tr><td><span class="site-code">FR</span></td><td>法国</td><td><span class="site-code">IT</span></td><td>意大利</td></tr>
+          <tr><td><span class="site-code">ES</span></td><td>西班牙</td><td><span class="site-code">CA</span></td><td>加拿大</td></tr>
+        </tbody>
+      </table>
+      <div class="alert alert-info" style="margin-top:12px">
+        <span class="alert-icon">💡</span>
+        <p>Site 列填入上方代码（大写），ASIN 列填入 10 位编码，可混合多站点批量提交。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 增量机制 -->
+  <div class="card card-full">
+    <div class="card-header">
+      <div class="card-icon" style="background:#FFF8DC">🔄</div>
+      <div class="card-title">增量追加去重机制</div>
+    </div>
+    <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px">
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--title-dark);margin-bottom:6px">① 启动时自动读取历史</div>
+        <div style="font-size:11.5px;color:var(--body-gray);line-height:1.7">脚本启动时自动读取现有的 <strong>amazon_images_result.xlsx</strong>，提取所有状态为 <strong>Success</strong> 的 ASIN 任务。</div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--title-dark);margin-bottom:6px">② 自动跳过已成功项</div>
+        <div style="font-size:11.5px;color:var(--body-gray);line-height:1.7">主循环中自动跳过已成功的 ASIN，防止重复请求，保护账号安全并大幅缩短运行时间。</div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--title-dark);margin-bottom:6px">③ 合并去重写回</div>
+        <div style="font-size:11.5px;color:var(--body-gray);line-height:1.7">本次新结果与历史数据在 <strong>[Site, ASIN]</strong> 维度合并去重，以最新状态为准，历史数据不丢失不覆盖。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 异常处理 -->
+  <div class="card card-full">
+    <div class="card-header">
+      <div class="card-icon" style="background:#FFF0F0">🛠️</div>
+      <div class="card-title">常见异常处理</div>
+    </div>
+    <div class="card-body">
+      <table class="trouble-table">
+        <thead><tr><th style="width:28%">异常现象</th><th style="width:34%">根本原因</th><th>解决方案</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>ModuleNotFoundError</td>
+            <td style="color:var(--body-gray)">尚未安装某 Python 第三方包</td>
+            <td style="color:var(--body-gray)">重新执行 <code style="background:#F5F4F2;padding:1px 5px;border-radius:4px;font-size:10.5px">pip install</code> 安装对应依赖</td>
+          </tr>
+          <tr>
+            <td>Playwright initialization error</td>
+            <td style="color:var(--body-gray)">未安装 Playwright 专用浏览器内核</td>
+            <td style="color:var(--body-gray)">在终端执行 <code style="background:#F5F4F2;padding:1px 5px;border-radius:4px;font-size:10.5px">playwright install chromium</code></td>
+          </tr>
+          <tr>
+            <td>所有 ASIN 显示 Dog / Unavailable</td>
+            <td style="color:var(--body-gray)">本地 IP 被封锁或验证码未成功通过</td>
+            <td style="color:var(--body-gray)">重新运行并及时在弹窗中滑过验证码；大批量建议分批次运行</td>
+          </tr>
+          <tr>
+            <td>按钮显示灰色无法点击</td>
+            <td style="color:var(--body-gray)">Launcher Service 未运行</td>
+            <td style="color:var(--body-gray)">通过 <strong>启动Hub.bat</strong> 启动 Hub，Launcher 会自动随之启动</td>
+          </tr>
+          <tr>
+            <td>ECONNREFUSED ::1:9222</td>
+            <td style="color:var(--body-gray)">Windows IPv6 解析偏好冲突</td>
+            <td style="color:var(--body-gray)">脚本已内置自愈机制，自动替换为纯 IP 127.0.0.1 连接，无需手动处理</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div class="page-footer">KovaScape · Ops Hub · Amazon Image Extractor · 2026</div>
+
+<script>
+const LAUNCHER = 'http://127.0.0.1:8766';
+let launcherOnline = false;
+
+// ── 检测 Launcher 状态 ──
+async function checkLauncher() {
+  try {
+    const r = await fetch(LAUNCHER + '/ping', { signal: AbortSignal.timeout(2000) });
+    if (r.ok) {
+      setOnline(true);
+      return;
+    }
+  } catch(e) {}
+  setOnline(false);
+}
+
+function setOnline(online) {
+  launcherOnline = online;
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-txt');
+  dot.className = 'status-dot ' + (online ? 'online' : 'offline');
+  txt.textContent = online ? 'Launcher 在线 · 按钮已就绪' : 'Launcher 离线 · 请通过 启动Hub.bat 启动';
+
+  // 启用/禁用按钮
+  ['btn-mode1','btn-mode2','btn-asin','btn-result'].forEach(id => {
+    const el = document.getElementById(id);
+    if (online) el.classList.remove('disabled');
+    else el.classList.add('disabled');
+  });
+}
+
+// ── 启动工具 ──
+async function launchTool(toolId) {
+  if (!launcherOnline) { showToast('Launcher 未在线，请先通过 启动Hub.bat 启动', 'warn'); return; }
+  try {
+    showToast('正在启动，请稍候…', 'success');
+    const r = await fetch(LAUNCHER + '/launch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tool: toolId })
+    });
+    const data = await r.json();
+    if (r.ok) {
+      showToast('✅ 已启动：' + (data.tool || toolId), 'success');
+    } else {
+      showToast('❌ 启动失败：' + (data.error || '未知错误'), 'error');
+    }
+  } catch(e) {
+    showToast('❌ 无法连接 Launcher：' + e.message, 'error');
+  }
+}
+
+// ── 打开文件 ──
+async function openFile(relPath) {
+  if (!launcherOnline) { showToast('Launcher 未在线，请先通过 启动Hub.bat 启动', 'warn'); return; }
+  try {
+    const r = await fetch(LAUNCHER + '/open-file?path=' + encodeURIComponent(relPath));
+    const data = await r.json();
+    if (r.ok) {
+      showToast('✅ 已打开文件', 'success');
+    } else {
+      showToast('❌ ' + (data.error || '文件不存在'), 'error');
+    }
+  } catch(e) {
+    showToast('❌ 无法连接 Launcher', 'error');
+  }
+}
+
+// ── Toast ──
+function showToast(msg, type='success') {
+  const old = document.querySelector('.toast');
+  if (old) old.remove();
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 380); }, 2800);
+}
+
+// ── 复制命令 ──
+function copyCode(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✅ 已复制'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 复制'; btn.classList.remove('copied'); }, 2000);
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+    btn.textContent = '✅ 已复制'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '📋 复制'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// 页面加载时检测，之后每 5 秒轮询一次
+checkLauncher();
+setInterval(checkLauncher, 5000);
+</script>
+</body>
+</html>

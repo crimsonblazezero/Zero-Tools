@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KovaScape - 产品销量分析助手</title>
+    <!-- 引入品牌规范字体 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- Tailwind KovaScape 品牌配置 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            primary: '#064338',   // 主色墨绿
+                            gold: '#F3C546',      // 金色
+                            dark: '#042E25',      // 深墨绿
+                            warmwhite: '#FDFCF9', // 暖白背景
+                            lightbeige: '#FDF9F2',// 浅金米
+                            lightgreen: '#E8F2F0',// 墨绿浅版
+                            lightgold: '#FFF8DC', // 金色浅版
+                            gray: '#717171',      // 正文灰
+                            darktext: '#1D1B20',  // 标题深色
+                            border: '#E8E4DE',    // 边框色
+                            track: '#F0EDE8',     // 背景轨道
+                            danger: '#C4433A'     // 危险/警示红
+                        }
+                    },
+                    fontFamily: {
+                        playfair: ['"Playfair Display"', 'serif'],
+                        poppins: ['"Poppins"', 'sans-serif'],
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body { background-color: #FDFCF9; color: #1D1B20; }
+        .tab-active { border-bottom: 2px solid #F3C546; color: #064338; font-weight: 600; }
+        
+        /* Checkbox 样式覆写 */
+        .checkbox-wrapper { display: flex; align-items: center; padding: 4px 0; }
+        .checkbox-wrapper input { margin-right: 8px; accent-color: #064338; width: 16px; height: 16px; cursor: pointer; }
+        .checkbox-wrapper label { cursor: pointer; font-size: 0.875rem; color: #717171; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: 'Poppins', sans-serif; }
+        
+        /* 滚动条品牌化 */
+        .filter-section { max-height: 200px; overflow-y: auto; }
+        .filter-section::-webkit-scrollbar { width: 6px; }
+        .filter-section::-webkit-scrollbar-track { background: #F0EDE8; }
+        .filter-section::-webkit-scrollbar-thumb { background: #064338; border-radius: 3px; }
+        .filter-section::-webkit-scrollbar-thumb:hover { background: #042E25; }
+        
+        .table-container { min-height: 550px; display: flex; flex-direction: column; }
+        .table-content { flex: 1; }
+        
+        /* 装饰金线渐变 */
+        .gold-gradient-divider {
+            height: 1px;
+            background: linear-gradient(90deg, #F3C546 0%, transparent 100%);
+        }
+    </style>
+</head>
+<body class="font-poppins min-h-screen flex flex-col">
+
+    <!-- Hero 头部 -->
+    <div class="bg-brand-primary text-white py-14 px-6 shadow-md relative overflow-hidden border-b-[3px] border-brand-gold no-print flex-shrink-0">
+        <!-- 几何装饰金线 -->
+        <div class="absolute top-0 right-0 opacity-30 pointer-events-none transform translate-x-1/4 -translate-y-1/4">
+            <svg width="300" height="300" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="48" stroke="#F3C546" stroke-width="1"/>
+                <circle cx="50" cy="50" r="38" stroke="#F3C546" stroke-width="0.5"/>
+                <path d="M0 50H100" stroke="#F3C546" stroke-width="0.5"/>
+                <path d="M50 0V100" stroke="#F3C546" stroke-width="0.5"/>
+            </svg>
+        </div>
+        
+        <div class="max-w-[880px] mx-auto text-center relative z-10">
+            <div class="flex items-center justify-center gap-3 mb-4">
+                <div class="h-px w-8 bg-brand-gold"></div>
+                <span class="text-brand-gold font-poppins text-xs tracking-[0.2em] uppercase font-semibold">KovaScape Analytics</span>
+                <div class="h-px w-8 bg-brand-gold"></div>
+            </div>
+            <h1 class="text-4xl md:text-5xl font-playfair font-bold mb-4 tracking-wide text-white">产品销量分析助手</h1>
+            <p class="font-poppins text-white/75 max-w-xl mx-auto text-sm leading-relaxed">
+                智能识别多平台繁杂的产品款式、尺寸及颜色属性，一键自动归类并生成符合 KovaScape 视觉规范的标准化业务报表。
+            </p>
+        </div>
+    </div>
+
+    <!-- 主体内容 (放宽至 90rem 以适应数据看板的多列需求) -->
+    <div class="max-w-[90rem] w-full mx-auto px-4 py-10 flex-1">
+        
+        <!-- Mode Selector -->
+        <div class="max-w-4xl mx-auto mb-8 no-print">
+            <div class="bg-white rounded-lg p-1 shadow-sm border border-brand-border flex flex-col md:flex-row gap-1">
+                <button onclick="setMode('shelf')" id="btn-mode-shelf" class="flex-1 py-3 rounded-md text-sm transition-all shadow-sm">
+                    🪵 层板类 (Floating Shelves)
+                </button>
+                <button onclick="setMode('frame')" id="btn-mode-frame" class="flex-1 py-3 rounded-md text-sm transition-all">
+                    🖼️ 通用相框 (Standard Frames)
+                </button>
+                <button onclick="setMode('wood')" id="btn-mode-wood" class="flex-1 py-3 rounded-md text-sm transition-all">
+                    🌲 木质相框 (Wood Frames)
+                </button>
+            </div>
+        </div>
+
+        <!-- Input Section -->
+        <div class="max-w-5xl mx-auto bg-white rounded-xl shadow-sm border border-brand-border overflow-hidden mb-8 no-print">
+            <div class="flex border-b border-brand-border bg-brand-warmwhite">
+                <button id="tab-paste" onclick="switchTab('paste')" class="flex-1 py-4 font-poppins font-medium text-sm tab-active transition-colors">粘贴文本数据</button>
+                <button id="tab-upload" onclick="switchTab('upload')" class="flex-1 py-4 font-poppins font-medium text-sm text-brand-gray hover:text-brand-darktext transition-colors">上传 Excel 表格</button>
+            </div>
+            
+            <div class="p-6 md:p-8">
+                <!-- Paste Area -->
+                <div id="panel-paste" class="space-y-4">
+                    <label class="block text-sm font-medium text-brand-darktext font-poppins" id="paste-label">请在此粘贴 “品名” 和 “销量” 两列数据：</label>
+                    <textarea id="paste-input" rows="7" class="w-full p-4 border border-brand-border rounded-lg bg-brand-warmwhite focus:ring-1 focus:ring-brand-primary focus:border-brand-primary outline-none transition-all text-sm font-mono text-brand-gray leading-relaxed" placeholder=""></textarea>
+                    <button onclick="processPasteData()" class="w-full bg-brand-primary hover:bg-brand-dark text-white font-poppins font-semibold py-3.5 rounded-lg transition-colors shadow-md text-sm tracking-wide">
+                        开始智能解析
+                    </button>
+                </div>
+
+                <!-- Upload Area -->
+                <div id="panel-upload" class="hidden space-y-4">
+                    <div class="border-2 border-dashed border-brand-border bg-brand-warmwhite rounded-lg p-12 text-center hover:border-brand-primary transition-colors cursor-pointer group" onclick="document.getElementById('file-input').click()">
+                        <div class="w-16 h-16 rounded-full bg-brand-lightgreen flex items-center justify-center mx-auto mb-4 group-hover:bg-brand-primary/10 transition-colors">
+                            <svg class="h-8 w-8 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                        </div>
+                        <p class="text-sm text-brand-darktext font-medium font-poppins">点击浏览本地文件上传</p>
+                        <p class="mt-1 text-xs text-brand-gray font-poppins">支持 .xlsx, .xls, .csv 格式文件</p>
+                        <input type="file" id="file-input" class="hidden" accept=".xlsx, .xls, .csv" onchange="handleFileUpload(event)">
+                    </div>
+                    <p id="file-name" class="text-sm text-center text-brand-primary font-medium font-poppins"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification -->
+        <div id="status-message" class="hidden max-w-5xl mx-auto mb-8 p-4 border rounded-lg flex justify-between items-start no-print shadow-sm">
+            <div class="flex gap-3">
+                <svg id="status-icon" class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span id="status-text" class="text-sm font-medium font-poppins leading-relaxed"></span>
+            </div>
+            <button onclick="this.parentElement.classList.add('hidden')" class="text-gray-400 hover:text-gray-600 transition-colors ml-4 focus:outline-none">&times;</button>
+        </div>
+
+        <!-- Filter Panel (KovaScape Styled) -->
+        <div id="filter-panel" class="hidden bg-brand-lightbeige rounded-xl shadow-sm border border-brand-border mb-10 overflow-hidden no-print">
+            <div class="px-6 py-4 border-b border-brand-border flex justify-between items-center bg-white">
+                <h3 class="font-playfair font-semibold text-brand-darktext flex items-center text-lg">
+                    <span class="w-1.5 h-5 bg-brand-gold mr-3 rounded-sm"></span>
+                    属性筛选控制台
+                </h3>
+                <button onclick="resetFilters()" class="text-xs font-poppins text-brand-primary hover:text-brand-dark font-medium underline underline-offset-2">重置筛选</button>
+            </div>
+            <div id="filter-grid" class="p-6 grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <!-- Material Filter -->
+                <div id="filter-group-material" style="display: none;">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="font-poppins font-medium text-sm text-brand-darktext">材质</span>
+                        <div class="flex gap-2">
+                            <button onclick="toggleAll('material', true)" class="text-[11px] text-brand-primary hover:text-brand-dark">全选</button>
+                            <span class="text-brand-border">|</span>
+                            <button onclick="toggleAll('material', false)" class="text-[11px] text-brand-gray hover:text-brand-darktext">全不选</button>
+                        </div>
+                    </div>
+                    <div id="filter-list-material" class="filter-section border border-brand-border rounded bg-white p-3"></div>
+                </div>
+                
+                <!-- Color Filter -->
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="font-poppins font-medium text-sm text-brand-darktext" id="filter-label-color">色彩</span>
+                        <div class="flex gap-2">
+                            <button onclick="toggleAll('color', true)" class="text-[11px] text-brand-primary hover:text-brand-dark">全选</button>
+                            <span class="text-brand-border">|</span>
+                            <button onclick="toggleAll('color', false)" class="text-[11px] text-brand-gray hover:text-brand-darktext">全不选</button>
+                        </div>
+                    </div>
+                    <div id="filter-list-color" class="filter-section border border-brand-border rounded bg-white p-3"></div>
+                </div>
+                
+                <!-- Size Filter -->
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="font-poppins font-medium text-sm text-brand-darktext" id="filter-label-size">尺寸</span>
+                        <div class="flex gap-2 items-center">
+                            <button onclick="selectSquareSizes()" id="btn-filter-square" class="hidden text-[10px] font-semibold tracking-wide bg-brand-lightgold text-brand-primary border border-brand-gold px-1.5 py-0.5 rounded uppercase" title="一键筛选正方形">Square</button>
+                            <button onclick="selectPopularSizes()" class="text-[10px] font-semibold tracking-wide bg-brand-lightgreen text-brand-primary border border-brand-primary/20 px-1.5 py-0.5 rounded uppercase" title="一键筛选热门尺寸">Popular</button>
+                            <span class="text-brand-border ml-1">|</span>
+                            <button onclick="toggleAll('size', true)" class="text-[11px] text-brand-primary hover:text-brand-dark">全选</button>
+                            <span class="text-brand-border">|</span>
+                            <button onclick="toggleAll('size', false)" class="text-[11px] text-brand-gray hover:text-brand-darktext">全不选</button>
+                        </div>
+                    </div>
+                    <div id="filter-list-size" class="filter-section border border-brand-border rounded bg-white p-3"></div>
+                </div>
+                
+                <!-- Sets Filter -->
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="font-poppins font-medium text-sm text-brand-darktext">套数</span>
+                        <div class="flex gap-2">
+                            <button onclick="toggleAll('sets', true)" class="text-[11px] text-brand-primary hover:text-brand-dark">全选</button>
+                            <span class="text-brand-border">|</span>
+                            <button onclick="toggleAll('sets', false)" class="text-[11px] text-brand-gray hover:text-brand-darktext">全不选</button>
+                        </div>
+                    </div>
+                    <div id="filter-list-sets" class="filter-section border border-brand-border rounded bg-white p-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analysis Results -->
+        <div id="results-section" class="hidden space-y-8">
+            <h2 class="font-playfair text-2xl text-brand-darktext font-bold mb-2">分析视图 <span class="font-poppins text-brand-gray text-sm font-normal ml-2">Data Breakdown</span></h2>
+            <div class="gold-gradient-divider w-full mb-6"></div>
+
+            <div id="results-grid" class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <!-- Material Table -->
+                <div id="card-material" class="bg-white rounded-xl shadow-sm border border-brand-border border-l-[4px] border-l-brand-primary print-card table-container overflow-hidden flex-col" style="display: none;">
+                    <div class="p-4 border-b border-brand-border bg-brand-warmwhite flex-shrink-0">
+                        <h3 class="font-playfair text-lg font-bold text-brand-darktext">
+                            <span id="material-title">材质分布</span>
+                        </h3>
+                    </div>
+                    <div class="overflow-x-auto table-content bg-white">
+                        <table class="w-full text-sm font-poppins">
+                            <thead class="bg-brand-primary text-brand-gold">
+                                <tr class="text-left">
+                                    <th class="p-3 font-medium text-[11px] uppercase tracking-wider pl-4">材质</th>
+                                    <th class="p-3 font-medium text-[11px] uppercase tracking-wider text-right">绝对销量</th>
+                                    <th class="p-3 font-medium text-[11px] uppercase tracking-wider text-right pr-4">占比率</th>
+                                </tr>
+                            </thead>
+                            <tbody id="material-body"></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-controls flex justify-between items-center p-3 border-t border-brand-border bg-brand-warmwhite text-xs text-brand-gray font-poppins flex-shrink-0">
+                        <button onclick="changePage('materials', -1)" class="hover:text-brand-primary disabled:opacity-30 font-medium" id="btn-prev-materials">上一页</button>
+                        <span id="page-info-materials" class="tracking-widest">1 / 1</span>
+                        <button onclick="changePage('materials', 1)" class="hover:text-brand-primary disabled:opacity-30 font-medium" id="btn-next-materials">下一页</button>
+                    </div>
+                </div>
+
+                <!-- Color Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-brand-border border-l-[4px] border-l-brand-primary print-card table-container overflow-hidden flex flex-col">
+                    <div class="p-4 border-b border-brand-border bg-brand-warmwhite flex-shrink-0">
+                        <h3 class="font-playfair text-lg font-bold text-brand-darktext">
+                            <span id="color-title">色彩分布</span>
+                        </h3>
+                    </div>
+                    <div class="overflow-x-auto table-content bg-white">
+                        <table class="w-full text-sm font-poppins">
+                            <thead class="bg-brand-primary text-brand-gold">
+                                <tr class="text-left">
+                                    <th class="p-3 font-medium text-[11px] uppercase tracking-wider pl-4">色彩</th>
+                                    <th class="p-3 font-medium text-[11px] uppercase tracking-wider text-right">绝对销量</th>
+                                    <th class="p-3 font-medium text-[11px] uppercase tracking-wider text-right pr-4">占比率</th>
+                                </tr>
+                            </thead>
+                            <tbody id="color-body"></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-controls flex justify-between items-center p-3 border-t border-brand-border bg-brand-warmwhite text-xs text-brand-gray font-poppins flex-shrink-0">
+                        <button onclick="changePage('colors', -1)" class="hover:text-brand-primary disabled:opacity-30 font-medium" id="btn-prev-colors">上一页</button>
+                        <span id="page-info-colors" class="tracking-widest">1 / 1</span>
+                        <button onclick="changePage('colors', 1)" class="hover:text-brand-primary disabled:opacity-30 font-medium" id="btn-next-colors">下一页</button>
+                    </div>
+                </div>
+
+                <!-- Size Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-brand-border border-l-[4px] border-l-brand-primary print-card table-container overflow-hidden flex flex-col">
+                    <div class="p-4 border-b border-brand-border bg-brand-warmwhite flex-shrink-0">
+                        <h3 class="font-playfair text-lg font-bold text-brand-darktext">
+                            <span id="size-title">尺寸分布</span>
+                        </h3>
+                    </div>
+                    <div class="overflow-x-auto table-content bg-white">
+                        <table class="w-full text-sm font-poppins">
+                            <thead class="bg-brand-primary text-brand-gold">
+                                <tr class="text-left">
+                                    <th class="p-3 font-medium text-[11px] uppercase tracking-wider pl-4">规格</th>
+                                    <th class="p-3 font-medium text-[11px] uppercase tracking-wider text-right">绝对销量</th>
+                                    <th class="p-3 font-medium text-[11px] uppercase tracking-wider text-right pr-4">占比率</th>
+                                </tr>
+                            </thead>
+                            <tbody id="size-body"></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-controls flex justify-between items-center p-3 border-t border-brand-border bg-brand-warmwhite text-xs text-brand-gray font-poppins flex-shrink-0">
+                        <button onclick="changePage('sizes', -1)" class="hover:text-brand-primary disabled:opacity-30 font-medium" id="btn-prev-sizes">上一页</button>
+                        <span id="page-info-sizes" class="tracking-widest">1 / 1</span>
+                        <button onclick="changePage('sizes', 1)" class="hover:text-brand-primary disabled:opacity-30 font-medium" id="btn-next-sizes">下一页</button>
+                    </div>
+                </div>
+
+                <!-- Sets Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-brand-border border-l-[4px] border-l-brand-primary print-card table-container overflow-hidden flex flex-col">
+                    <div class="p-4 border-b border-brand-border bg-brand-warmwhite flex-shrink-0">
+                        <h3 class="font-playfair text-lg font-bold text-brand-darktext">
+                            套数分布
+                        </h3>
+                    </div>
+                    <div class="overflow-x-auto table-content bg-white">
+                        <table class="w-full text-sm font-poppins">
+                            <thead class="bg-brand-primary text-brand-gold">
+                                <tr class="text-left">
+                                    <th class="p-3 font-medium text-[11px] uppercase tracking-wider pl-4">套数</th>
+                                    <th class="p-3 font-medium text-[11px] uppercase tracking-wider text-right">绝对销量</th>
+                                    <th class="p-3 font-medium text-[11px] uppercase tracking-wider text-right pr-4">占比率</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sets-body"></tbody>
+                        </table>
+                    </div>
+                    <div class="pagination-controls flex justify-between items-center p-3 border-t border-brand-border bg-brand-warmwhite text-xs text-brand-gray font-poppins flex-shrink-0">
+                        <button onclick="changePage('sets', -1)" class="hover:text-brand-primary disabled:opacity-30 font-medium" id="btn-prev-sets">上一页</button>
+                        <span id="page-info-sets" class="tracking-widest">1 / 1</span>
+                        <button onclick="changePage('sets', 1)" class="hover:text-brand-primary disabled:opacity-30 font-medium" id="btn-next-sets">下一页</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Summary & Actions -->
+            <div class="bg-brand-dark text-brand-warmwhite p-8 md:p-10 rounded-xl shadow-lg flex flex-col md:flex-row justify-between items-center gap-6 mt-8 relative overflow-hidden">
+                <!-- Deco -->
+                <svg class="absolute top-0 right-0 opacity-10 pointer-events-none" width="150" height="150" viewBox="0 0 100 100" fill="none">
+                    <circle cx="80" cy="20" r="60" stroke="#F3C546" stroke-width="2"/>
+                </svg>
+                
+                <div class="relative z-10 text-center md:text-left">
+                    <p class="text-brand-gold text-xs mb-1 uppercase tracking-[0.15em] font-poppins font-medium">当前筛选条件下总销量计</p>
+                    <h2 id="total-qty" class="text-5xl md:text-6xl font-playfair font-bold tracking-tight">0</h2>
+                </div>
+                <div class="flex gap-4 no-print relative z-10 w-full md:w-auto">
+                    <button onclick="exportToExcel()" class="w-full md:w-auto bg-brand-gold text-brand-darktext px-8 py-4 rounded font-poppins font-semibold hover:bg-[#E3B536] transition-all flex justify-center items-center shadow-lg text-sm tracking-wide">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        导出标准数据报表 (Excel)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Details Modal -->
+        <div id="details-modal" class="fixed inset-0 bg-brand-dark/80 hidden flex items-center justify-center z-50 no-print backdrop-blur-sm">
+            <div class="bg-brand-warmwhite rounded-xl w-full max-w-2xl mx-4 max-h-[80vh] flex flex-col shadow-2xl border border-brand-border">
+                <div class="p-5 border-b border-brand-border flex justify-between items-center bg-brand-primary rounded-t-xl">
+                    <h3 id="modal-title" class="font-playfair font-bold text-lg text-brand-gold tracking-wide">未识别数据详单</h3>
+                    <button onclick="closeModal()" class="text-brand-gold/70 hover:text-brand-gold transition-colors focus:outline-none">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div class="p-6 overflow-y-auto modal-scroll flex-1 bg-white font-poppins">
+                    <p class="text-sm text-brand-gray mb-4 font-medium flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-brand-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        系统未能解析以下品名的对应属性，建议核对原文：
+                    </p>
+                    <div id="modal-content" class="space-y-2"></div>
+                </div>
+                <div class="p-5 border-t border-brand-border bg-brand-warmwhite rounded-b-xl text-right">
+                    <button onclick="closeModal()" class="bg-brand-lightgreen border border-brand-primary/20 text-brand-primary px-6 py-2 rounded text-sm font-poppins font-medium hover:bg-brand-primary/10 transition-colors">关闭窗口</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="bg-brand-dark text-white/60 py-10 mt-auto border-t border-brand-gold/20 no-print flex-shrink-0">
+        <div class="max-w-[90rem] mx-auto px-10 text-center">
+            <h2 class="font-playfair text-brand-gold text-2xl tracking-widest mb-2 opacity-90">KovaScape</h2>
+            <p class="font-poppins text-[11px] tracking-[0.2em] uppercase mb-5 text-brand-gold/60">Nordic Minimalism × Mid-Century Modern</p>
+            <div class="h-px w-32 bg-brand-gold/20 mx-auto mb-5"></div>
+            <p class="text-xs font-poppins font-light">© 2026 KovaScape Analytics. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // === 配置与常量 (逻辑不变，仅UI层改变) ===
+        let currentMode = 'shelf'; // 'shelf' | 'frame' | 'wood'
+
+        // Constants...
+        const SHELF_STANDARDS = [8, 12, 16, 20, 24, 30, 32, 36, 40, 48, 55, 66, 72];
+        const POPULAR_SIZES = ['8', '12', '16', '20', '24', '30', '32', '36', '40', '48', '55', '66', '72'];
+        const A_SERIES_MAP = {'A1': 'A1 (59.4x84.1cm)', 'A2': 'A2 (42x59.4cm)', 'A3': 'A3 (29.7x42cm)', 'A4': 'A4 (21x29.7cm)', 'A5': 'A5 (14.8x21cm)'};
+        const EU_KEEP_SIZES = ['30x40', '40x50', '40x60', '45x60', '50x70', '60x80'];
+        const EU_KEYWORDS = ['UK', 'DE', 'FR', 'IT', 'ES', 'EU', 'GERMANY', 'FRANCE', 'ITALY', 'SPAIN', 'NETHERLANDS', 'NL', 'EUROPE'];
+        const FRAME_METRIC_MAP = {'10x15': '4x6', '13x18': '5x7', '15x20': '6x8', '20x25': '8x10', '21x30': 'A4 (21x29.7cm)', '30x40': '12x16', '40x50': '16x20', '50x70': '20x28', '60x90': '24x36'};
+        
+        const SHELF_MATERIALS = ['PVC', '中密度板', 'MDF', '桐木', 'Paulownia', '松木', 'Pine', '樟子松', '杉木', 'Fir', '辐射松', 'Radiata Pine', '刨花板', 'Particle Board', '人造板', '空心板', '竹', 'Bamboo', '人造层板', '空心层板', '实木层板', '榆木', 'Elm', '橡木', 'Oak', '水曲柳', 'Ash', '樱桃木', '胡桃木'];
+
+        const COLOR_KEYWORDS = ['旧木刷白色', '旧木深灰', '北京大杉木套', '北京大杉木', '水洗灰', '浅胡桃', '水洗浅灰', '红胡桃', '灰G41074K', '秦枫叶苑灰', '水洗蓝', '做旧白', '复古白', '烤色', '炭烧色', 'G41074K', '哑光金', '哑光银', '哑光黑', '磨砂黑', '亮黑', '亮白', '拉丝金', '拉丝银', 'Natural Black', 'Natural Color', 'Jet Black', 'Off Black', 'Dark Brown', 'Medium Brown', 'Light Brown', 'Ash Blonde', 'Platinum Blonde', 'Strawberry Blonde', 'Auburn', 'Burgundy', 'Piano', 'Highlight', 'White', 'Black', 'Red', 'Blue', 'Green', 'Yellow', 'Pink', 'Purple', 'Orange', 'Grey', 'Silver', 'Gold', '1B', '#1', '#2', '#4', '#27', '#30', '#33', '#613', '#99J', '#60', '香槟金', '玫瑰金', '卡其', '驼色', '橡木色', '胡桃色', '胡桃木色', '原木色', '复古色', '柚木色', '古铜', '钛金', '橡木本色', '本色', '重烧', '重碳化', '轻烧', '轻度碳化', '炭黑', '橡色'];
+        
+        const SHORT_COLOR_MAP = {'金': '金色', '黑': '黑色', '银': '银色', '白': '白色', '红': '红色', '蓝': '蓝色'};
+        const PREMIUM_WOODS = ['胡桃木', '黑胡桃', '柚木', '樱桃木', '白蜡木', '榉木', '沙令', '巴花', '红橡', '黄金檀'];
+        const BASE_WOODS = ['橡木', '松木', '桐木', '杨木', '橡胶木', '实木', '木质'];
+        const CHINESE_NUM_MAP = {'一': 1, '二': 2, '两': 2, '三': 3, '四': 4, '五': 5, '六': 6, '七': 7, '八': 8, '九': 9, '十': 10};
+
+        const POPULAR_FRAME_SIZES = ['A0', 'A1 (59.4x84.1cm)', 'A2 (42x59.4cm)', 'A3 (29.7x42cm)', 'A4 (21x29.7cm)', '4x6', '5x7', '6x8', '8x8', '8x10', '8.5x11', '10x10', '11x14', '11x17', '12x12', '12x16', '16x16', '16x20', '16x24', '18x24', '20x30', '22x28', '24x30', '24x36', '27x40', '30x40cm', '40x50cm', '40x60cm', '45x60cm', '50x70cm', '60x80cm'];
+
+        // --- 全局状态 ---
+        let globalProcessedData = []; 
+        let globalStats = null;
+        let globalSortedStats = { materials: [], colors: [], sizes: [], sets: [] };
+        let globalUnknowns = { materials: [], colors: [], sizes: [], sets: [] };
+        
+        let filters = { material: new Set(), color: new Set(), size: new Set(), sets: new Set() };
+        let pagination = { materials: 1, colors: 1, sizes: 1, sets: 1 };
+        const ITEMS_PER_PAGE = 12; // 适应宽屏展示更多数据
+
+        // === UI Logic ===
+        function setMode(mode) {
+            currentMode = mode;
+            const inputArea = document.getElementById('paste-input');
+            inputArea.value = '';
+
+            const btnShelf = document.getElementById('btn-mode-shelf');
+            const btnFrame = document.getElementById('btn-mode-frame');
+            const btnWood = document.getElementById('btn-mode-wood');
+            
+            // KovaScape Active/Inactive Classes
+            const inactiveClass = "flex-1 py-3.5 rounded-md text-sm font-medium font-poppins text-brand-gray bg-white hover:bg-brand-lightgreen hover:text-brand-darktext transition-all border border-transparent";
+            const activeClass = "flex-1 py-3.5 rounded-md text-sm font-semibold font-poppins transition-all bg-brand-primary text-brand-gold shadow-md border border-brand-primary";
+
+            btnShelf.className = inactiveClass; btnFrame.className = inactiveClass; btnWood.className = inactiveClass;
+            const colorTitle = document.getElementById('color-title');
+            
+            const cardMaterial = document.getElementById('card-material');
+            const filterGroupMaterial = document.getElementById('filter-group-material');
+            const filterLabelColor = document.getElementById('filter-label-color');
+            const filterLabelSize = document.getElementById('filter-label-size');
+            const btnFilterSquare = document.getElementById('btn-filter-square');
+            
+            const resultsGrid = document.getElementById('results-grid');
+            const filterGrid = document.getElementById('filter-grid');
+
+            if (mode === 'shelf') {
+                btnShelf.className = activeClass;
+                resultsGrid.className = "grid grid-cols-1 lg:grid-cols-4 gap-6";
+                filterGrid.className = "p-6 grid grid-cols-1 lg:grid-cols-4 gap-6";
+                inputArea.placeholder = "示例：\n12*30MDF高低款相框5x7,旧木刷白色，1片装\n91外宽8板厚20前高44后高U型板,中密度板16\"长,胡桃木色套2\t100";
+                document.getElementById('size-title').textContent = "长度分布 (英寸)";
+                colorTitle.textContent = "色彩分布";
+                cardMaterial.style.display = 'flex';
+                filterGroupMaterial.style.display = 'block';
+                if(filterLabelColor) filterLabelColor.textContent = "色彩";
+                if(filterLabelSize) filterLabelSize.textContent = "长度";
+                if(btnFilterSquare) btnFilterSquare.classList.add('hidden');
+            } else if (mode === 'frame') {
+                btnFrame.className = activeClass;
+                resultsGrid.className = "grid grid-cols-1 lg:grid-cols-3 gap-6";
+                filterGrid.className = "p-6 grid grid-cols-1 lg:grid-cols-3 gap-6";
+                inputArea.placeholder = "示例：\nBlack Photo Frame 16\"x20\" 2pcs\t100\nUK Frame 30x40cm Black\t50\nA4 黑色\t20\n铝合金框玫瑰金4x6\t10";
+                document.getElementById('size-title').textContent = "尺寸分布";
+                colorTitle.textContent = "色彩分布";
+                cardMaterial.style.display = 'none';
+                filterGroupMaterial.style.display = 'none';
+                if(filterLabelColor) filterLabelColor.textContent = "色彩";
+                if(filterLabelSize) filterLabelSize.textContent = "尺寸";
+                if(btnFilterSquare) btnFilterSquare.classList.remove('hidden');
+            } else {
+                btnWood.className = activeClass;
+                resultsGrid.className = "grid grid-cols-1 lg:grid-cols-4 gap-6";
+                filterGrid.className = "p-6 grid grid-cols-1 lg:grid-cols-4 gap-6";
+                inputArea.placeholder = "示例：\n胡桃木 8x8 原木色 套1\t100\n橡木相框 胡桃色\t50\n两片装橡木本色\t20\n1520胡桃木小斜边相框，16x20，1片装\t10";
+                document.getElementById('size-title').textContent = "尺寸分布";
+                colorTitle.textContent = "材质/色彩分布";
+                cardMaterial.style.display = 'flex'; 
+                filterGroupMaterial.style.display = 'block'; 
+                if(filterLabelColor) filterLabelColor.textContent = "材质/色彩";
+                if(filterLabelSize) filterLabelSize.textContent = "尺寸";
+                if(btnFilterSquare) btnFilterSquare.classList.remove('hidden');
+            }
+            clearResults();
+        }
+        
+        function clearResults() {
+            document.getElementById('results-section').classList.add('hidden');
+            document.getElementById('filter-panel').classList.add('hidden');
+            document.getElementById('total-qty').textContent = "0";
+            globalProcessedData = [];
+            globalStats = null;
+            globalUnknowns = { materials: [], colors: [], sizes: [], sets: [] };
+            globalSortedStats = { materials: [], colors: [], sizes: [], sets: [] };
+        }
+
+        function switchTab(tab) {
+            document.getElementById('tab-paste').className = tab === 'paste' ? 'flex-1 py-4 font-poppins font-medium text-sm tab-active transition-colors' : 'flex-1 py-4 font-poppins font-medium text-sm text-brand-gray hover:text-brand-darktext transition-colors';
+            document.getElementById('tab-upload').className = tab === 'upload' ? 'flex-1 py-4 font-poppins font-medium text-sm tab-active transition-colors' : 'flex-1 py-4 font-poppins font-medium text-sm text-brand-gray hover:text-brand-darktext transition-colors';
+            document.getElementById('panel-paste').classList.toggle('hidden', tab !== 'paste');
+            document.getElementById('panel-upload').classList.toggle('hidden', tab !== 'upload');
+        }
+
+        function showStatus(msg, isError = false) {
+            const el = document.getElementById('status-message');
+            const icon = document.getElementById('status-icon');
+            document.getElementById('status-text').textContent = msg;
+            
+            if(isError) {
+                el.className = `p-4 mb-8 flex justify-between items-start no-print shadow-sm rounded-lg bg-red-50 text-brand-danger border border-brand-danger/30`;
+                icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>`;
+            } else {
+                el.className = `p-4 mb-8 flex justify-between items-start no-print shadow-sm rounded-lg bg-brand-lightgreen text-brand-primary border border-brand-primary/20`;
+                icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>`;
+            }
+            el.classList.remove('hidden');
+        }
+
+        // === 筛选逻辑 ===
+
+        function initFilters(data) {
+            const uniqueMaterials = new Set();
+            const uniqueColors = new Set();
+            const uniqueSizes = new Set();
+            const uniqueSets = new Set();
+
+            data.forEach(d => {
+                if(currentMode === 'shelf' || currentMode === 'wood') uniqueMaterials.add(d.material || '未知');
+                uniqueColors.add(d.color);
+                uniqueSizes.add(String(d.size));
+                uniqueSets.add(d.sets);
+            });
+
+            filters.material = new Set(uniqueMaterials);
+            filters.color = new Set(uniqueColors);
+            filters.size = new Set(uniqueSizes);
+            filters.sets = new Set(uniqueSets);
+
+            if(currentMode === 'shelf' || currentMode === 'wood') renderFilterList('material', uniqueMaterials);
+            renderFilterList('color', uniqueColors);
+            renderFilterList('size', uniqueSizes);
+            renderFilterList('sets', uniqueSets);
+
+            document.getElementById('filter-panel').classList.remove('hidden');
+        }
+
+        function renderFilterList(type, set) {
+            const container = document.getElementById(`filter-list-${type}`);
+            container.innerHTML = '';
+            const sortedArr = Array.from(set).sort((a, b) => {
+                if (a === '未知') return 1;
+                if (b === '未知') return -1;
+                return String(a).localeCompare(String(b), 'zh-CN', {numeric: true});
+            });
+            sortedArr.forEach(item => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'checkbox-wrapper';
+                const input = document.createElement('input');
+                input.type = 'checkbox';
+                input.id = `filter-${type}-${item}`;
+                input.value = item;
+                input.checked = true;
+                input.onchange = () => updateFilterState(type, item, input.checked);
+                const label = document.createElement('label');
+                label.htmlFor = input.id;
+                label.textContent = item;
+                if (item === '未知') label.className += " text-brand-danger font-medium";
+                wrapper.appendChild(input);
+                wrapper.appendChild(label);
+                container.appendChild(wrapper);
+            });
+        }
+
+        function updateFilterState(type, value, isChecked) {
+            if (isChecked) filters[type].add(value); else filters[type].delete(value);
+            applyFiltersAndRender();
+        }
+
+        function toggleAll(type, checkAll) {
+            const container = document.getElementById(`filter-list-${type}`);
+            const inputs = container.querySelectorAll('input[type="checkbox"]');
+            inputs.forEach(input => { input.checked = checkAll; });
+            if (checkAll) { inputs.forEach(input => filters[type].add(input.value)); } 
+            else { filters[type].clear(); }
+            applyFiltersAndRender();
+        }
+
+        function selectPopularSizes() {
+            const container = document.getElementById(`filter-list-size`);
+            const inputs = container.querySelectorAll('input[type="checkbox"]');
+            filters.size.clear();
+            const targetList = currentMode === 'shelf' ? SHELF_STANDARDS.map(String) : POPULAR_FRAME_SIZES; 
+            inputs.forEach(input => {
+                const isPopular = targetList.includes(input.value);
+                input.checked = isPopular;
+                if (isPopular) filters.size.add(input.value);
+            });
+            applyFiltersAndRender();
+        }
+
+        function selectSquareSizes() {
+             const container = document.getElementById(`filter-list-size`);
+             const inputs = container.querySelectorAll('input[type="checkbox"]');
+             filters.size.clear();
+             inputs.forEach(input => {
+                 const size = input.value;
+                 let isSquare = false;
+                 const regex = /^(\d+(\.\d+)?)x\1(?:cm)?$/i;
+                 if (regex.test(size)) isSquare = true;
+                 
+                 input.checked = isSquare;
+                 if (isSquare) filters.size.add(size);
+             });
+             applyFiltersAndRender();
+        }
+
+        function resetFilters() {
+            let types = ['color', 'size', 'sets'];
+            if(currentMode === 'shelf' || currentMode === 'wood') types.push('material');
+            types.forEach(type => toggleAll(type, true));
+        }
+
+        function applyFiltersAndRender() {
+            const filteredData = globalProcessedData.filter(d => {
+                let matchMat = true;
+                if(currentMode === 'shelf' || currentMode === 'wood') matchMat = filters.material.has(d.material || '未知');
+                return matchMat && filters.color.has(d.color) && filters.size.has(String(d.size)) && filters.sets.has(d.sets);
+            });
+            pagination = { materials: 1, colors: 1, sizes: 1, sets: 1 };
+            renderStats(filteredData);
+        }
+
+        // === 数据处理 ===
+        function processPasteData() {
+            const input = document.getElementById('paste-input').value.trim();
+            if (!input) return showStatus("数据区域空白，请粘贴业务数据。", true);
+            const lines = input.split('\n');
+            const data = [];
+            lines.forEach((line, index) => {
+                const parts = line.split('\t');
+                if (parts.length >= 2) {
+                    const name = parts[0].trim();
+                    const salesStr = parts[parts.length - 1].replace(/[,，]/g, ''); 
+                    const sales = parseInt(salesStr) || 0;
+                    if (index === 0 && (name.includes("品名") || isNaN(parseInt(parts[parts.length - 1])))) return;
+                    const attrs = extractAttributes(name);
+                    data.push({ ...attrs, sales, originalName: name });
+                }
+            });
+            initializeData(data);
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            document.getElementById('file-name').textContent = file.name;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                const data = jsonData.map(row => {
+                    const keys = Object.keys(row);
+                    const salesKey = keys.find(k => k.match(/(销量|qty|数量|amount)/i)) || keys[keys.length-1];
+                    const nameKey = keys.find(k => k.match(/(品名|name|title|product|产品)/i)) || keys[0];
+                    const name = String(row[nameKey] || "");
+                    const sales = parseInt(row[salesKey]) || 0;
+                    const attrs = extractAttributes(name);
+                    return { ...attrs, sales, originalName: name };
+                });
+                initializeData(data);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function initializeData(data) {
+            globalProcessedData = data;
+            initFilters(data);
+            applyFiltersAndRender();
+            let statusMsg = `数据解析完毕：成功识别 ${data.length} 条有效记录，报表视图已同步更新。`;
+            showStatus(statusMsg);
+        }
+
+        function renderStats(data) {
+            let stats = { materials: {}, colors: {}, sizes: {}, sets: {}, total: 0 };
+            globalUnknowns = { materials: [], colors: [], sizes: [], sets: [] };
+
+            data.forEach(d => {
+                stats.total += d.sales;
+                if(currentMode === 'shelf' || currentMode === 'wood') {
+                    const mat = d.material || '未知';
+                    stats.materials[mat] = (stats.materials[mat] || 0) + d.sales;
+                    if(mat === '未知') globalUnknowns.materials.push(d.originalName);
+                }
+                stats.colors[d.color] = (stats.colors[d.color] || 0) + d.sales;
+                stats.sizes[d.size] = (stats.sizes[d.size] || 0) + d.sales;
+                stats.sets[d.sets] = (stats.sets[d.sets] || 0) + d.sales;
+                if (d.color === '未知') globalUnknowns.colors.push(d.originalName);
+                if (d.size === '未知') globalUnknowns.sizes.push(d.originalName);
+            });
+
+            globalStats = stats;
+            const sortFn = (a, b) => { if (a[0] === '未知') return 1; if (b[0] === '未知') return -1; return b[1] - a[1]; };
+            if(currentMode === 'shelf' || currentMode === 'wood') globalSortedStats.materials = Object.entries(stats.materials).sort(sortFn);
+            globalSortedStats.colors = Object.entries(stats.colors).sort(sortFn);
+            globalSortedStats.sizes = Object.entries(stats.sizes).sort(sortFn);
+            globalSortedStats.sets = Object.entries(stats.sets).sort(sortFn);
+
+            document.getElementById('total-qty').textContent = stats.total.toLocaleString();
+            if(currentMode === 'shelf' || currentMode === 'wood') renderPaginatedTable('material-body', 'materials', stats.total);
+            
+            renderPaginatedTable('color-body', 'colors', stats.total);
+            renderPaginatedTable('size-body', 'sizes', stats.total);
+            renderPaginatedTable('sets-body', 'sets', stats.total);
+            document.getElementById('results-section').classList.remove('hidden');
+        }
+
+        function renderPaginatedTable(tbodyId, type, total) {
+            const tbody = document.getElementById(tbodyId);
+            if(!tbody) return; 
+            tbody.innerHTML = '';
+            const dataList = globalSortedStats[type];
+            const currentPage = pagination[type];
+            const start = (currentPage - 1) * ITEMS_PER_PAGE;
+            const end = start + ITEMS_PER_PAGE;
+            const pageData = dataList.slice(start, end);
+            const totalPages = Math.ceil(dataList.length / ITEMS_PER_PAGE) || 1;
+
+            document.getElementById(`page-info-${type}`).textContent = `PAGE ${currentPage} OF ${totalPages}`;
+            document.getElementById(`btn-prev-${type}`).disabled = currentPage <= 1;
+            document.getElementById(`btn-next-${type}`).disabled = currentPage >= totalPages;
+
+            pageData.forEach(([key, val]) => {
+                const percent = ((val / total) * 100).toFixed(1) + '%';
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-brand-lightgreen/30 transition-colors";
+                
+                let keyHtml = key;
+                if (key === '未知' && globalUnknowns[type] && globalUnknowns[type].length > 0) {
+                    keyHtml += ` <a href="javascript:void(0)" onclick="showDetails('${type}')" class="text-brand-primary text-[10px] uppercase font-bold ml-1 hover:underline tracking-wide bg-brand-lightgreen px-1 py-0.5 rounded">查看明细</a>`;
+                }
+                
+                tr.innerHTML = `
+                    <td class="py-3 px-2 border-b border-brand-border/50 font-medium text-brand-darktext pl-4 ${key === '未知' ? 'text-brand-danger' : ''}">${keyHtml}</td>
+                    <td class="py-3 px-2 border-b border-brand-border/50 text-right text-brand-gray font-mono text-sm">${val.toLocaleString()}</td>
+                    <td class="py-3 px-2 border-b border-brand-border/50 text-right pr-4">
+                        <div class="flex flex-col items-end">
+                            <span class="text-[11px] font-bold text-brand-darktext mb-1.5">${percent}</span>
+                            <div class="w-12 h-[5px] bg-brand-track rounded-full overflow-hidden">
+                                <div class="bg-brand-primary h-full rounded-full" style="width: ${percent}"></div>
+                            </div>
+                        </div>
+                    </td>`;
+                tbody.appendChild(tr);
+            });
+            
+            const emptyRows = ITEMS_PER_PAGE - pageData.length;
+            for(let i=0; i<emptyRows; i++) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = '<td class="py-3 px-2 border-b border-brand-border/50 pl-4 text-transparent select-none">-</td><td class="py-3 px-2 border-b border-brand-border/50 text-transparent select-none">-</td><td class="py-3 px-2 border-b border-brand-border/50 pr-4 text-transparent select-none">-</td>';
+                tbody.appendChild(tr);
+            }
+        }
+
+        function changePage(type, delta) {
+            const dataList = globalSortedStats[type];
+            const totalPages = Math.ceil(dataList.length / ITEMS_PER_PAGE) || 1;
+            const newPage = pagination[type] + delta;
+            if (newPage >= 1 && newPage <= totalPages) {
+                pagination[type] = newPage;
+                let tbodyId = type === 'colors' ? 'color-body' : (type === 'sizes' ? 'size-body' : (type === 'sets' ? 'sets-body' : 'material-body'));
+                renderPaginatedTable(tbodyId, type, globalStats.total);
+            }
+        }
+
+        // === Extract Logic (业务逻辑与原版保持完全一致) ===
+        function extractAttributes(text) {
+            let result = { size: '未知', color: '未知', sets: '套1' };
+            if(currentMode === 'shelf') result.material = '中密度板'; 
+            if(currentMode === 'wood') result.material = '未知';
+            if (!text) return result;
+            let cleanText = text.replace(/[,，:：/\\|]/g, ' ') + ' '; 
+            if (currentMode === 'wood') return extractWoodAttributes(cleanText);
+            if (currentMode === 'shelf') return extractShelfAttributes(cleanText);
+            return extractStandardAttributes(cleanText);
+        }
+
+        function extractStandardAttributes(cleanText) {
+            let result = { size: '未知', color: '未知', sets: '套1' };
+            result.sets = extractSets(cleanText) || '套1';
+            result.color = extractColorStandard(cleanText);
+            result.size = extractFrameSize(cleanText);
+            return result;
+        }
+
+        function extractShelfAttributes(cleanText) {
+            let result = { size: '未知', color: '未知', material: '中密度板', sets: '套1' };
+            result.sets = extractSets(cleanText) || '套1';
+            
+            const explicitInch = cleanText.match(/(\d+(?:\.\d+)?)\s*(?:inch|in|"|”|“)(?:\s*长|Length|L)?/i);
+            if (explicitInch) {
+                 const preceding = cleanText.substring(0, explicitInch.index).trim().slice(-1);
+                 if (!['宽', '厚', '高', 'W', 'D', 'H'].includes(preceding)) {
+                     result.size = snapToShelfStandard(parseFloat(explicitInch[1]));
+                 } else {
+                     result.size = extractShelfSize(cleanText);
+                 }
+            } else {
+                 result.size = extractShelfSize(cleanText);
+            }
+
+            for (let mat of SHELF_MATERIALS) {
+                if (cleanText.includes(mat)) {
+                    if (mat === '空心层板') result.material = '空心板';
+                    else if (mat === '人造层板') result.material = '人造板';
+                    else if (mat === '实木层板') result.material = '实木';
+                    else if (mat === '北京大杉木') result.material = '杉木';
+                    else if (mat === 'MDF') result.material = '中密度板';
+                    else result.material = mat;
+                    break;
+                }
+            }
+            result.color = extractColorStandard(cleanText);
+            return result;
+        }
+
+        function extractWoodAttributes(cleanText) {
+            let result = { size: '未知', color: '未知', material: '未知', sets: '套1' };
+            result.sets = extractSets(cleanText) || '套1';
+            result.size = extractFrameSize(cleanText);
+            let foundPremiumMaterial = null;
+            for (let wood of PREMIUM_WOODS) {
+                const reg = new RegExp(`${wood}(?!色|color)`, 'i');
+                if (reg.test(cleanText)) { foundPremiumMaterial = wood; break; }
+            }
+            if (foundPremiumMaterial) {
+                result.color = foundPremiumMaterial; 
+                result.material = foundPremiumMaterial; 
+            } else {
+                if (cleanText.includes('橡木')) {
+                    if (cleanText.includes('橡木本色') || cleanText.includes('原木色') || cleanText.includes('本色') || cleanText.includes('橡本色') || cleanText.includes('未知')) {
+                        result.color = '橡木色';
+                        result.material = '橡木';
+                        return result; 
+                    }
+                }
+                let baseWood = null;
+                for (let wood of BASE_WOODS) { if (cleanText.includes(wood)) { baseWood = wood; break; } }
+                if(baseWood) result.material = baseWood;
+
+                const color = extractColorStandard(cleanText);
+                if (color !== '未知') result.color = color;
+            }
+            return result;
+        }
+
+        function extractSets(text) {
+            let setsVal = null;
+            const cnSetMatch = text.match(/([一二两三四五六七八九十])件套/);
+            if (cnSetMatch) setsVal = CHINESE_NUM_MAP[cnSetMatch[1]];
+
+            if (!setsVal) {
+                const prefixSet = text.match(/(?:套|Set)\s*([0-9]+|[一二两三四五六七八九十]+)/i);
+                if(prefixSet) {
+                    let rawNum = prefixSet[1];
+                    if(CHINESE_NUM_MAP[rawNum]) setsVal = CHINESE_NUM_MAP[rawNum]; else setsVal = rawNum;
+                }
+            }
+            if (!setsVal) {
+                const explicitLabel = text.match(/(?:套数|数量|规格|Qty|Quantity|Set|Count|Num)\s*[:：.-]?\s*(\d+)/i);
+                if (explicitLabel) setsVal = explicitLabel[1];
+            }
+            if (!setsVal) {
+                const unitMatch = text.match(/(\d+)\s*(?:pcs|sets|bundles|pk|支|把|条|件|套|个|pair|pairs|片装|片)/i);
+                if (unitMatch) setsVal = unitMatch[1];
+                if (!setsVal) {
+                    const cnUnitMatch = text.match(/([一二两三四五六七八九十])\s*(?:pcs|sets|bundles|pk|支|把|条|件|套|个|pair|pairs|片装|片)/i);
+                    if (cnUnitMatch) setsVal = CHINESE_NUM_MAP[cnUnitMatch[1]];
+                }
+            }
+            if (!setsVal) {
+                const multiMatches = text.matchAll(/([^\d."”’]+)\s*[x*×]\s*(\d+)/gi);
+                for (const match of multiMatches) {
+                    const suffix = text.substring(match.index + match[0].length).trim().toLowerCase();
+                    if (!suffix.startsWith('inch') && !suffix.startsWith('mm') && !suffix.startsWith('cm')) { setsVal = match[2]; break; }
+                }
+            }
+            if (setsVal && parseInt(setsVal) <= 15 && parseInt(setsVal) > 0) return "套" + setsVal;
+            return null;
+        }
+
+        function extractColorStandard(text) {
+            let found = '未知';
+            const colorLabelMatch = text.match(/(?:颜色|Color|Colour|Col)\s*[:：]?\s*([^\s\d]+)/i);
+            if (colorLabelMatch && colorLabelMatch[1] && colorLabelMatch[1].length < 20) {
+                 if (!['颜色','color','frame','size'].includes(colorLabelMatch[1].toLowerCase())) found = colorLabelMatch[1];
+            }
+            if(text.includes('炭黑') || text.includes('重碳化') || text.includes('重烧')) found = '重烧';
+            if(text.includes('轻烧') || text.includes('轻重碳化') || text.includes('轻度碳化')) found = '轻烧';
+
+            if (found === '未知') {
+                for (let color of COLOR_KEYWORDS) {
+                    const safeColor = color.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const isChineseWord = /[\u4e00-\u9fa5]/.test(color);
+                    if (isChineseWord) { if (text.includes(color)) { found = color; break; } } 
+                    else { const reg = new RegExp(`(^|[\\s(/-])${safeColor}([\\s)/-] |$)`, 'i'); if (reg.test(text)) { found = color; break; } }
+                }
+            }
+            if (found === '未知') {
+                const chineseColorMatches = text.matchAll(/([\u4e00-\u9fa5]{1,5}色)/g);
+                for (const match of chineseColorMatches) {
+                    let rawColor = match[1];
+                    rawColor = rawColor.replace(/^(?:油漆|英寸|型板|装|片|套|个|件|[0-9]+|[一二两三四五六七八九十]+)+/, '');
+                    const ignoredColors = ['颜色', '产品颜色', '单色', '双色', '图片色', '同色', '撞色', '单榫同色', '双榫同色', '单榫撞色', '双榫撞色', '榫'];
+                    if (!ignoredColors.includes(rawColor) && rawColor.length >= 2) { found = rawColor; break; }
+                }
+            }
+            if (found === '未知') {
+                for (let [shortKey, fullVal] of Object.entries(SHORT_COLOR_MAP)) {
+                    const reg = new RegExp(`(^|[\\s(])${shortKey}(?=[\\s)]|$)`, 'i');
+                    if (reg.test(text)) { found = fullVal; break; }
+                }
+            }
+            if (found === '未知') {
+                if (text.includes('白') && !/白色|白蜡|米白|乳白|漂白|灰白|白橡|白松|做旧白|复古白|亮白/.test(text)) found = '白色';
+                else if (text.includes('黑') && !/黑色|黑胡桃|墨黑|炭黑|黑檀|磨砂黑|亮黑|哑光黑|重烧|轻烧/.test(text)) found = '黑色';
+            }
+
+            if (found === '胡桃色') return '胡桃木色';
+            if (found === '橡色') return '橡木色';
+            return found;
+        }
+
+        function extractShelfSize(text) {
+            let sizeInches = null;
+            const toInch = (val, unit) => {
+                const u = unit.toLowerCase();
+                if (u.includes('cm') || u.includes('厘米')) return val / 2.54;
+                if (u.includes('mm') || u.includes('毫米')) return val / 25.4;
+                return val;
+            };
+
+            const explicitUnitRegex = /(\d+(?:\.\d+)?)\s*(mm|mms|millimeter|毫米|cm|cms|centimeter|厘米|公分)/gi;
+            let candidates = [];
+            let match;
+            while ((match = explicitUnitRegex.exec(text)) !== null) {
+                 let val = parseFloat(match[1]);
+                 let unit = match[2];
+                 const preceding = text.substring(0, match.index).trim().slice(-1);
+                 if (['宽', '厚', '高', 'W', 'D', 'H'].includes(preceding)) continue;
+                 candidates.push(toInch(val, unit));
+            }
+            
+            if (candidates.length > 0) sizeInches = Math.max(...candidates);
+            
+            if(sizeInches === null) {
+                const numMatches = text.matchAll(/(?:^|\D)(\d+(?:\.\d+)?)(?:\D|$)/g);
+                let impCandidates = [];
+                for (const match of numMatches) {
+                    let val = parseFloat(match[1]);
+                    const idx = match.index + match[0].indexOf(match[1]); 
+                    const prefix = text.substring(Math.max(0, idx - 5), idx).toLowerCase();
+                    if (/[宽厚高wdh]/.test(prefix) || /width|depth|height|thick/.test(prefix)) continue;
+
+                    if (val === 2020 || val === 2021 || val < 10) continue; 
+                    if (val >= 100) impCandidates.push(val / 25.4);
+                    else if (val >= 10 && val <= 100) impCandidates.push(val);
+                }
+                if(impCandidates.length > 0) sizeInches = Math.max(...impCandidates);
+            }
+
+            if (sizeInches !== null) return snapToShelfStandard(sizeInches);
+            return '未知';
+        }
+
+        function snapToShelfStandard(val) {
+            const closest = SHELF_STANDARDS.reduce((prev, curr) => {
+                return (Math.abs(curr - val) < Math.abs(prev - val) ? curr : prev);
+            });
+            return closest;
+        }
+
+        function extractFrameSize(text) {
+            const explicitInchRegex = /(\d+(?:\.\d+)?)\s*(?:inch|in|"|”|“)\s*[x*×]\s*(\d+(?:\.\d+)?)/i;
+            const explicitInchMatch = text.match(explicitInchRegex);
+            if (explicitInchMatch) {
+                let w = parseFloat(explicitInchMatch[1]);
+                let h = parseFloat(explicitInchMatch[2]);
+                if (w > h) [w, h] = [h, w];
+                return `${w}x${h}`;
+            }
+
+            const paperMatch = text.match(/\b(A[1-5])\b/i);
+            if (paperMatch) return A_SERIES_MAP[paperMatch[1].toUpperCase()];
+            
+            let isEU = false;
+            for (let kw of EU_KEYWORDS) { if (new RegExp(`\\b${kw}\\b`, 'i').test(text)) { isEU = true; break; } }
+            
+            const dimRegexGlobal = /(\d+(?:\.\d+)?)\s*(?:cm|mm)?\s*[x*×]\s*(\d+(?:\.\d+)?)/gi;
+            const matches = [...text.matchAll(dimRegexGlobal)];
+            
+            let targetMatch = null;
+            if (matches.length > 0) {
+                targetMatch = matches[0];
+                if (matches.length > 1 && matches[0].index < 5) targetMatch = matches[matches.length - 1]; 
+            }
+            
+            if (targetMatch) {
+                let w = parseFloat(targetMatch[1]);
+                let h = parseFloat(targetMatch[2]);
+                if (w > h) [w, h] = [h, w];
+                
+                const fullMatchStr = targetMatch[0].toLowerCase();
+                const afterMatch = text.substring(targetMatch.index + targetMatch[0].length).trim().toLowerCase();
+                
+                let isMetric = false;
+                if (fullMatchStr.includes('cm') || fullMatchStr.includes('mm') || fullMatchStr.includes('厘米') || fullMatchStr.includes('毫米')) isMetric = true;
+                else if (afterMatch.startsWith('cm') || afterMatch.startsWith('mm') || afterMatch.startsWith('厘米') || afterMatch.startsWith('毫米')) isMetric = true;
+                
+                if (!isMetric) {
+                     const isApprox = (val, target) => Math.abs(val - target) < 0.25; 
+                     if ((isApprox(w, 21) && isApprox(h, 29.7)) || (isApprox(w, 210) && isApprox(h, 297))) isMetric = true;
+                }
+
+                if (isMetric) {
+                     if (fullMatchStr.includes('mm') || fullMatchStr.includes('毫米') || afterMatch.startsWith('mm') || afterMatch.startsWith('毫米') || w > 100 || h > 100) { w /= 10; h /= 10; }
+                     
+                     const isApprox = (val, target) => Math.abs(val - target) < 0.25; 
+                     if (isApprox(w, 59.4) && (isApprox(h, 84.1) || isApprox(h, 84))) return A_SERIES_MAP['A1'];
+                     if (isApprox(w, 42) && isApprox(h, 59.4)) return A_SERIES_MAP['A2'];
+                     if (isApprox(w, 29.7) && isApprox(h, 42)) return A_SERIES_MAP['A3'];
+                     if (isApprox(w, 21) && isApprox(h, 29.7)) return A_SERIES_MAP['A4'];
+                     if (isApprox(w, 14.8) && isApprox(h, 21)) return A_SERIES_MAP['A5'];
+
+                     const wInt = Math.round(w); const hInt = Math.round(h); const key = `${wInt}x${hInt}`;
+                     if (EU_KEEP_SIZES.includes(key)) return `${key}cm`;
+                     if (FRAME_METRIC_MAP[key]) return FRAME_METRIC_MAP[key];
+                     return `${Math.round(w*10)/10}x${Math.round(h*10)/10}cm`;
+                } else {
+                    return `${w}x${h}`;
+                }
+            }
+            return '未知';
+        }
+
+        // === 弹窗和导出 ===
+        function showDetails(type) {
+            const modal = document.getElementById('details-modal');
+            const titleEl = document.getElementById('modal-title');
+            const contentEl = document.getElementById('modal-content');
+            let typeLabel = "属性";
+            if (type === 'colors') typeLabel = currentMode === 'wood' ? "材质/色彩" : "色彩";
+            if (type === 'materials') typeLabel = "材质";
+            if (type === 'sizes') typeLabel = currentMode === 'shelf' ? "长度" : "尺寸";
+            if (type === 'sets') typeLabel = "套数";
+            titleEl.textContent = `无法解析 [${typeLabel}] 的异常源数据 (${globalUnknowns[type].length}条)`;
+            contentEl.innerHTML = globalUnknowns[type].map(name => `<div class="p-3 bg-brand-lightgreen/30 border border-brand-primary/10 rounded text-xs text-brand-darktext font-mono break-all hover:bg-brand-lightgreen transition-colors">${name}</div>`).join('');
+            modal.classList.remove('hidden');
+        }
+        function closeModal() { document.getElementById('details-modal').classList.add('hidden'); }
+        
+        function exportToExcel() {
+            if (!globalStats) return showStatus("请先导入数据并进行分析", true);
+            const wb = XLSX.utils.book_new();
+            const createSheetData = (dataObj, labelName) => {
+                const rows = [[labelName, '绝对销量', '占比率']];
+                const sorted = Object.entries(dataObj).sort((a, b) => { if (a[0] === '未知') return 1; if (b[0] === '未知') return -1; return b[1] - a[1]; });
+                sorted.forEach(([key, val]) => { const percent = ((val / globalStats.total) * 100).toFixed(1) + '%'; rows.push([key, val, percent]); });
+                return rows;
+            };
+            const colorLabel = currentMode === 'wood' ? "材质与色彩" : "色彩";
+            const sizeLabel = currentMode === 'shelf' ? "长度" : "尺寸";
+            
+            if(currentMode === 'shelf' || currentMode === 'wood') {
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(createSheetData(globalStats.materials, "材质")), "KovaScape_材质分布");
+            }
+
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(createSheetData(globalStats.colors, colorLabel)), "KovaScape_色彩分布");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(createSheetData(globalStats.sizes, sizeLabel)), "KovaScape_尺寸分布");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(createSheetData(globalStats.sets, "套数")), "KovaScape_套数分布");
+            
+            const filteredData = globalProcessedData.filter(d => {
+                let matchMat = true;
+                if(currentMode === 'shelf' || currentMode === 'wood') matchMat = filters.material.has(d.material || '未知');
+                return matchMat && filters.color.has(d.color) && filters.size.has(String(d.size)) && filters.sets.has(d.sets);
+            });
+            
+            const detailHeader = ['原始录入数据', colorLabel, sizeLabel, '套数', '绝对销量'];
+            if(currentMode === 'shelf' || currentMode === 'wood') detailHeader.splice(1, 0, '材质');
+            
+            const detailRows = [detailHeader];
+            filteredData.forEach(d => {
+                let row = [d.originalName, d.color, d.size, d.sets, d.sales];
+                if (d.color === '胡桃色') d.color = '胡桃木色'; 
+
+                if(currentMode === 'shelf' || currentMode === 'wood') row.splice(1, 0, d.material);
+                detailRows.push(row);
+            });
+            
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(detailRows), "核心筛选明细");
+
+            const now = new Date();
+            XLSX.writeFile(wb, `KovaScape_Analytics_${currentMode}_${now.getHours()}${now.getMinutes()}.xlsx`);
+        }
+
+        // 初始化
+        setMode('shelf');
+    </script>
+</body>
+</html>

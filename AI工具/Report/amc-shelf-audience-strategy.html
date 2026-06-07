@@ -1,0 +1,2010 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="moss">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KovaScape 层板 AMC 受众策略 — 显性层板 & 空心层板</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Noto+Serif:wght@400;500&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --outer-bg: #E4E1DC;
+  --page-bg: #FDFCF9;
+  --surface: #FFFFFF;
+  --border: #E8E6E2;
+  --divider: #C5C0BA;
+  --text-primary: #151515;
+  --text-body: #3D3D3D;
+  --text-secondary: #717171;
+  --hero-bg: #DDE8D8;
+  --hero-deco: #93B888;
+  --hero-deco2: #5E8F52;
+  --success-bg: #E8FBCF; --success-fg: #3D4826;
+  --warning-bg: #FFF0DC; --warning-fg: #E47700;
+  --info-bg: #DEE5F7; --info-fg: #3E54CE;
+  --error-bg: #FDECEA; --error-fg: #C4433A;
+  --neutral-bg: #FDF9F2; --neutral-fg: #7C746F;
+  --brand-green: #064338;
+  --brand-gold: #F3C546;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter Tight', sans-serif;
+  background: var(--outer-bg);
+  color: var(--text-body);
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 32px 16px;
+}
+
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: var(--page-bg);
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+/* ── HERO ── */
+.hero {
+  background: var(--hero-bg);
+  padding: 56px 48px 48px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero svg.blobs {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.hero-inner { position: relative; z-index: 1; }
+
+.hero-eyebrow {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--brand-green);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hero-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 24px;
+  height: 2px;
+  background: var(--brand-gold);
+  border-radius: 2px;
+}
+
+.hero h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 38px;
+  font-weight: 600;
+  color: var(--brand-green);
+  line-height: 1.2;
+  margin-bottom: 12px;
+}
+
+.hero-subtitle {
+  font-size: 15px;
+  color: var(--text-body);
+  max-width: 640px;
+  margin-bottom: 32px;
+}
+
+.hero-divider {
+  width: 100%;
+  height: 0.5px;
+  background: rgba(255,255,255,0.6);
+  margin-bottom: 28px;
+}
+
+.hero-stats {
+  display: flex;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.hero-stat-value {
+  font-family: 'Noto Serif', serif;
+  font-size: 32px;
+  font-weight: 500;
+  color: var(--brand-green);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.hero-stat-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* ── CONTENT ── */
+.content { padding: 48px; }
+
+/* ── SECTION ── */
+.section { margin-bottom: 48px; }
+
+.section-header {
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 0.5px solid var(--border);
+}
+
+.section-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.section-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 3px;
+}
+
+/* ── CARDS ── */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.card-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.card {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.card-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+}
+
+/* ── AUDIENCE CARD ── */
+.audience-card {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.audience-card-header {
+  padding: 18px 20px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 0.5px solid var(--border);
+}
+
+.audience-card-header-left { flex: 1; }
+
+.audience-number {
+  font-family: 'Noto Serif', serif;
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--brand-green);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.audience-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.audience-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.audience-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.audience-card-body {
+  padding: 18px 20px;
+}
+
+.param-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.param-item {}
+
+.param-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 3px;
+}
+
+.param-value {
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.param-note {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.strategy-block {
+  background: var(--neutral-bg);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-top: 12px;
+}
+
+.strategy-block-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+.strategy-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.strategy-list li {
+  font-size: 13px;
+  color: var(--text-body);
+  padding-left: 16px;
+  position: relative;
+}
+
+.strategy-list li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: var(--brand-gold);
+  font-weight: 600;
+}
+
+/* ── PILLS ── */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 9px;
+  border-radius: 20px;
+}
+
+.pill-success { background: var(--success-bg); color: var(--success-fg); }
+.pill-warning { background: var(--warning-bg); color: var(--warning-fg); }
+.pill-info { background: var(--info-bg); color: var(--info-fg); }
+.pill-error { background: var(--error-bg); color: var(--error-fg); }
+.pill-neutral { background: var(--neutral-bg); color: var(--neutral-fg); }
+.pill-brand { background: #E8F0EE; color: var(--brand-green); }
+.pill-gold { background: #FEF8E3; color: #8A6A00; }
+
+/* ── FUNNEL ── */
+.funnel-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 16px 0;
+}
+
+.funnel-stage {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  border-radius: 10px;
+  margin-bottom: 4px;
+  position: relative;
+}
+
+.funnel-stage::after {
+  content: '▼';
+  position: absolute;
+  bottom: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: var(--divider);
+  z-index: 1;
+}
+
+.funnel-stage:last-child::after { display: none; }
+
+.funnel-top { background: #E8F0EE; }
+.funnel-mid { background: #EEF3E8; }
+.funnel-bot { background: #F5F8E8; }
+
+.funnel-icon {
+  font-size: 22px;
+  width: 40px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.funnel-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.funnel-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.funnel-right {
+  margin-left: auto;
+  text-align: right;
+}
+
+.funnel-audience-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brand-green);
+}
+
+.funnel-audience-names {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* ── TABLE ── */
+.table-wrap {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 0.5px solid var(--border);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+thead th {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--divider);
+  background: var(--neutral-bg);
+  white-space: nowrap;
+}
+
+tbody td {
+  padding: 12px 16px;
+  border-bottom: 0.5px solid var(--border);
+  vertical-align: top;
+}
+
+tbody tr:last-child td { border-bottom: none; }
+
+tbody tr:hover { background: #FAFAF8; }
+
+/* ── ALERT ── */
+.alert {
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.alert-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.alert-body { font-size: 13px; }
+
+.alert-info { background: var(--info-bg); color: var(--info-fg); }
+.alert-warning { background: var(--warning-bg); color: var(--warning-fg); }
+.alert-success { background: var(--success-bg); color: var(--success-fg); }
+
+/* ── METRIC CARDS ── */
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.metric-card {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.metric-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.metric-value {
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.metric-delta {
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+/* ── TIMELINE ── */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.timeline-item {
+  display: flex;
+  gap: 16px;
+  padding-bottom: 24px;
+  position: relative;
+}
+
+.timeline-item:last-child { padding-bottom: 0; }
+
+.timeline-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 32px;
+}
+
+.timeline-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--brand-green);
+  border: 2px solid var(--hero-bg);
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.timeline-line {
+  width: 1px;
+  flex: 1;
+  background: var(--border);
+  margin-top: 4px;
+}
+
+.timeline-item:last-child .timeline-line { display: none; }
+
+.timeline-content { flex: 1; }
+
+.timeline-phase {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+
+.timeline-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.timeline-body {
+  font-size: 13px;
+  color: var(--text-body);
+}
+
+/* ── PRODUCT BADGE ── */
+.product-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--brand-green);
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  letter-spacing: 0.04em;
+}
+
+.product-badge-hollow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  color: var(--brand-green);
+  border: 1.5px solid var(--brand-green);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  letter-spacing: 0.04em;
+}
+
+/* ── CHART CONTAINER ── */
+.chart-container {
+  position: relative;
+  height: 220px;
+}
+
+/* ── FOOTER ── */
+.footer {
+  background: var(--hero-bg);
+  padding: 32px 48px;
+  position: relative;
+  overflow: hidden;
+}
+
+.footer-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.footer-brand {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--brand-green);
+}
+
+.footer-sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.footer-divider {
+  width: 100%;
+  height: 0.5px;
+  background: rgba(255,255,255,0.6);
+  margin: 20px 0;
+}
+
+.footer-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  body { padding: 0; }
+  .page { border-radius: 0; }
+  .hero { padding: 36px 20px 32px; }
+  .hero h1 { font-size: 26px; }
+  .content { padding: 24px 20px; }
+  .card-grid, .card-grid-3 { grid-template-columns: 1fr; }
+  .param-grid { grid-template-columns: 1fr; }
+  .hero-stats { gap: 24px; }
+  .footer { padding: 24px 20px; }
+}
+
+/* ── TABS ── */
+.tab-nav {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
+.tab-btn {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: -1px;
+}
+
+.tab-btn.active {
+  color: var(--brand-green);
+  border-bottom-color: var(--brand-green);
+}
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── PROGRESS BAR ── */
+.progress-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.progress-track {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.8s ease;
+}
+
+/* ── HIGHLIGHT BOX ── */
+.highlight-box {
+  border-left: 3px solid var(--brand-gold);
+  background: #FEFBF0;
+  padding: 14px 16px;
+  border-radius: 0 8px 8px 0;
+  margin: 12px 0;
+}
+
+.highlight-box-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.highlight-box-body {
+  font-size: 13px;
+  color: var(--text-body);
+}
+
+/* ── STEP CARD ── */
+.step-card {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--brand-green);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.step-content { flex: 1; }
+
+.step-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.step-body {
+  font-size: 13px;
+  color: var(--text-body);
+}
+
+/* ── COMPARISON TABLE ── */
+.compare-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+  border-radius: 10px 10px 0 0;
+  overflow: hidden;
+}
+
+.compare-col-header {
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.compare-col-header.dim { background: var(--neutral-bg); color: var(--text-secondary); }
+.compare-col-header.col-a { background: #E8F0EE; color: var(--brand-green); }
+.compare-col-header.col-b { background: #EEF3E8; color: #3D6B2A; }
+
+.compare-body {
+  border: 0.5px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  overflow: hidden;
+}
+
+.compare-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+}
+
+.compare-row:last-child { border-bottom: none; }
+
+.compare-cell {
+  padding: 11px 16px;
+  font-size: 13px;
+  background: var(--surface);
+}
+
+.compare-cell.dim { background: var(--neutral-bg); color: var(--text-secondary); font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ── HERO ── -->
+<div class="hero">
+  <svg class="blobs" viewBox="0 0 1200 360" preserveAspectRatio="xMidYMid slice">
+    <path d="M-60,80 C20,20 120,60 180,140 C240,220 200,300 120,320 C40,340 -80,280 -60,80Z" fill="#93B888" opacity="0.15"/>
+    <path d="M900,20 C980,-20 1100,40 1150,120 C1200,200 1160,300 1080,320 C1000,340 880,280 900,20Z" fill="#5E8F52" opacity="0.12"/>
+    <path d="M500,280 C560,240 640,260 680,320 C720,380 680,420 600,400 C520,380 440,320 500,280Z" fill="#93B888" opacity="0.18"/>
+    <path d="M300,0 C360,-30 420,20 400,80 C380,140 300,160 260,120 C220,80 240,30 300,0Z" fill="#5E8F52" opacity="0.1"/>
+  </svg>
+  <div class="hero-inner">
+    <div class="hero-eyebrow">KovaScape · AMC 受众策略</div>
+    <h1>层板品类 AMC 受众人群策略</h1>
+    <p class="hero-subtitle">针对显性层板（带三角支架）与空心层板（MDF厚板）的全漏斗 AMC 受众创建方案，覆盖拉新、再营销、复购三大场景，结合 SparkX 后台参数设置指引。</p>
+    <div class="hero-divider"></div>
+    <div class="hero-stats">
+      <div>
+        <div class="hero-stat-value">10</div>
+        <div class="hero-stat-label">核心受众方案</div>
+      </div>
+      <div>
+        <div class="hero-stat-value">3</div>
+        <div class="hero-stat-label">漏斗层级</div>
+      </div>
+      <div>
+        <div class="hero-stat-value">2</div>
+        <div class="hero-stat-label">产品线专属策略</div>
+      </div>
+      <div>
+        <div class="hero-stat-value">5</div>
+        <div class="hero-stat-label">广告投放组合</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── CONTENT ── -->
+<div class="content">
+
+  <!-- ── 产品线概览 ── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">产品线概览与买家画像</div>
+      <div class="section-sub">AMC 受众策略的基础：理解两条产品线的差异化定位与目标人群</div>
+    </div>
+
+    <div class="card-grid">
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <span style="font-size:24px;">🔩</span>
+          <div>
+            <div class="card-title">显性层板（Industrial Shelf）</div>
+            <div class="card-meta">带三角金属支架 · 刨花板 · 工业风</div>
+          </div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <div class="param-label">父ASIN</div>
+          <div class="param-value" style="font-size:12px;font-family:monospace;">B0G39LJKCK</div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <div class="param-label">核心卖点</div>
+          <div class="param-value" style="font-size:13px;">承重强（35–70 lbs）· 金属支架 · 工业风 · 5–10分钟安装</div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <div class="param-label">尺寸范围</div>
+          <div class="param-value" style="font-size:13px;">16" / 24" / 36" / 48"（深度8"）</div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <div class="param-label">目标买家</div>
+          <div class="param-value" style="font-size:13px;">25–45岁 · 工业/现代风爱好者 · 重物收纳需求 · 男性比例较高</div>
+        </div>
+        <div>
+          <div class="param-label">典型场景</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">
+            <span class="pill pill-neutral">车库工具架</span>
+            <span class="pill pill-neutral">书房书架</span>
+            <span class="pill pill-neutral">厨房收纳</span>
+            <span class="pill pill-neutral">工业风客厅</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <span style="font-size:24px;">🪵</span>
+          <div>
+            <div class="card-title">空心层板（Floating Shelf）</div>
+            <div class="card-meta">MDF厚板 · 仿木纹 · 北欧/农舍风</div>
+          </div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <div class="param-label">产品特征</div>
+          <div class="param-value" style="font-size:12px;">厚度3.5–5cm · 轻便 · 防水 · 防刮擦</div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <div class="param-label">核心卖点</div>
+          <div class="param-value" style="font-size:13px;">轻盈美观 · 仿木纹质感 · 防水防潮 · 易清洁</div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <div class="param-label">目标买家</div>
+          <div class="param-value" style="font-size:13px;">25–45岁 · 北欧/农舍风爱好者 · 装饰性收纳 · 女性比例较高</div>
+        </div>
+        <div>
+          <div class="param-label">典型场景</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">
+            <span class="pill pill-neutral">卫浴收纳</span>
+            <span class="pill pill-neutral">Gallery Wall</span>
+            <span class="pill pill-neutral">Coffee Bar</span>
+            <span class="pill pill-neutral">卧室装饰</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert alert-info" style="margin-top:16px;">
+      <div class="alert-title">🎯 AMC 策略核心差异</div>
+      <div class="alert-body">显性层板买家更注重<strong>功能性（承重/稳固）</strong>，再营销窗口较短（7–14天决策）；空心层板买家更注重<strong>装饰性（风格/颜色）</strong>，浏览周期更长（14–30天），且更容易被场景图触发冲动购买。两条产品线需要差异化的受众策略。</div>
+    </div>
+  </div>
+
+  <!-- ── 漏斗架构 ── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">全漏斗受众架构</div>
+      <div class="section-sub">三层漏斗 × 两条产品线 = 10个核心受众方案</div>
+    </div>
+
+    <div class="funnel-wrap">
+      <div class="funnel-stage funnel-top">
+        <div class="funnel-icon">🌐</div>
+        <div>
+          <div class="funnel-label">TOF — 认知层（Top of Funnel）</div>
+          <div class="funnel-desc">曝光过但未点击 · 相似受众扩展 · 竞品浏览人群</div>
+        </div>
+        <div class="funnel-right">
+          <div class="funnel-audience-count">3个受众</div>
+          <div class="funnel-audience-names">相似扩展 · 竞品浏览 · 品类兴趣</div>
+        </div>
+      </div>
+
+      <div class="funnel-stage funnel-mid">
+        <div class="funnel-icon">🔍</div>
+        <div>
+          <div class="funnel-label">MOF — 考虑层（Middle of Funnel）</div>
+          <div class="funnel-desc">已点击未购买 · 加购未结账 · 多次浏览</div>
+        </div>
+        <div class="funnel-right">
+          <div class="funnel-audience-count">4个受众</div>
+          <div class="funnel-audience-names">点击未购 · 加购未结账 · 高意向浏览</div>
+        </div>
+      </div>
+
+      <div class="funnel-stage funnel-bot">
+        <div class="funnel-icon">🛒</div>
+        <div>
+          <div class="funnel-label">BOF — 转化层（Bottom of Funnel）</div>
+          <div class="funnel-desc">已购买复购 · 高价值客户 · 交叉销售</div>
+        </div>
+        <div class="funnel-right">
+          <div class="funnel-audience-count">3个受众</div>
+          <div class="funnel-audience-names">已购复购 · 高价值 · 交叉销售</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 受众方案详情 ── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">10个核心受众方案详解</div>
+      <div class="section-sub">每个方案包含 SparkX 后台参数设置 + 广告投放策略</div>
+    </div>
+
+    <!-- TAB NAV -->
+    <div class="tab-nav">
+      <button class="tab-btn active" onclick="switchTab('tof')">🌐 TOF 认知层</button>
+      <button class="tab-btn" onclick="switchTab('mof')">🔍 MOF 考虑层</button>
+      <button class="tab-btn" onclick="switchTab('bof')">🛒 BOF 转化层</button>
+    </div>
+
+    <!-- TOF -->
+    <div id="tab-tof" class="tab-panel active">
+
+      <!-- 受众1 -->
+      <div class="audience-card">
+        <div class="audience-card-header">
+          <div class="audience-card-header-left">
+            <div class="audience-number">01</div>
+            <div class="audience-name">显性层板 · 相似受众扩展</div>
+            <div class="audience-desc">基于已购买显性层板的用户，向相似人群扩展，用于拉新</div>
+            <div class="audience-tags">
+              <span class="pill pill-brand">显性层板</span>
+              <span class="pill pill-info">相似受众</span>
+              <span class="pill pill-neutral">TOF</span>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <span class="pill pill-success">推荐优先级：高</span>
+          </div>
+        </div>
+        <div class="audience-card-body">
+          <div class="param-grid">
+            <div class="param-item">
+              <div class="param-label">受众类型</div>
+              <div class="param-value">相似受众（Lookalike）</div>
+              <div class="param-note">基于已购买用户建模</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">邻近度级别</div>
+              <div class="param-value">1级（最相似）</div>
+              <div class="param-note">精准扩展，避免稀释</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">基础受众</div>
+              <div class="param-value">转化事件 → 购买</div>
+              <div class="param-note">选择已完成购买的用户</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">时间窗口</div>
+              <div class="param-value">过去 90 天</div>
+              <div class="param-note">覆盖足够样本量（≥2000人）</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">自动更新</div>
+              <div class="param-value">开启 · 每7天</div>
+              <div class="param-note">保持受众新鲜度</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">目标广告账户</div>
+              <div class="param-value">KovaScape 北美</div>
+              <div class="param-note">AMC Instance: amcump7aucq</div>
+            </div>
+          </div>
+          <div class="strategy-block">
+            <div class="strategy-block-title">📢 广告投放策略</div>
+            <ul class="strategy-list">
+              <li>投放广告类型：<strong>展示型推广（SD）</strong>，使用场景图（工业风书房/车库）</li>
+              <li>竞价策略：动态竞价-提高或降低，广告位溢价不超过 300%</li>
+              <li>素材重点：突出承重数字（35–70 lbs）+ 金属支架视觉 + 安装简便</li>
+              <li>排除已购买用户，避免预算浪费</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 受众2 -->
+      <div class="audience-card">
+        <div class="audience-card-header">
+          <div class="audience-card-header-left">
+            <div class="audience-number">02</div>
+            <div class="audience-name">空心层板 · 相似受众扩展</div>
+            <div class="audience-desc">基于已购买空心层板的用户，向装饰性家居爱好者扩展</div>
+            <div class="audience-tags">
+              <span class="pill pill-brand">空心层板</span>
+              <span class="pill pill-info">相似受众</span>
+              <span class="pill pill-neutral">TOF</span>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <span class="pill pill-success">推荐优先级：高</span>
+          </div>
+        </div>
+        <div class="audience-card-body">
+          <div class="param-grid">
+            <div class="param-item">
+              <div class="param-label">受众类型</div>
+              <div class="param-value">相似受众（Lookalike）</div>
+              <div class="param-note">基于已购买用户建模</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">邻近度级别</div>
+              <div class="param-value">1–2级</div>
+              <div class="param-note">空心层板受众更广，可适当扩展</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">基础受众</div>
+              <div class="param-value">转化事件 → 购买</div>
+              <div class="param-note">选择已完成购买的用户</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">时间窗口</div>
+              <div class="param-value">过去 90 天</div>
+              <div class="param-note">样本量不足时延长至180天</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">自动更新</div>
+              <div class="param-value">开启 · 每7天</div>
+              <div class="param-note">保持受众新鲜度</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">目标广告账户</div>
+              <div class="param-value">KovaScape 北美</div>
+              <div class="param-note">AMC Instance: amcump7aucq</div>
+            </div>
+          </div>
+          <div class="strategy-block">
+            <div class="strategy-block-title">📢 广告投放策略</div>
+            <ul class="strategy-list">
+              <li>投放广告类型：<strong>展示型推广（SD）+ 品牌推广视频（SBV）</strong></li>
+              <li>素材重点：Gallery Wall 场景图 / Coffee Bar 场景图 / 卫浴防水场景</li>
+              <li>颜色展示：多颜色变体同框展示（白色/黑色/木纹色），触发风格决策</li>
+              <li>排除已购买用户，避免预算浪费</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 受众3 -->
+      <div class="audience-card">
+        <div class="audience-card-header">
+          <div class="audience-card-header-left">
+            <div class="audience-number">03</div>
+            <div class="audience-name">品类曝光未点击人群</div>
+            <div class="audience-desc">曾被层板广告曝光但未点击的用户，进行二次触达</div>
+            <div class="audience-tags">
+              <span class="pill pill-brand">通用</span>
+              <span class="pill pill-warning">曝光再触达</span>
+              <span class="pill pill-neutral">TOF</span>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <span class="pill pill-warning">推荐优先级：中</span>
+          </div>
+        </div>
+        <div class="audience-card-body">
+          <div class="param-grid">
+            <div class="param-item">
+              <div class="param-label">受众类型</div>
+              <div class="param-value">规则型受众</div>
+              <div class="param-note">基于曝光事件筛选</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">基础受众</div>
+              <div class="param-value">被曝光（Impressions）</div>
+              <div class="param-note">选择"被曝光"事件类型</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">排除条件</div>
+              <div class="param-value">排除已点击用户</div>
+              <div class="param-note">避免与MOF受众重叠</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">时间窗口</div>
+              <div class="param-value">过去 14 天</div>
+              <div class="param-note">短窗口保持意向新鲜</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">曝光次数阈值</div>
+              <div class="param-value">≥ 3 次</div>
+              <div class="param-note">过滤低质量曝光，聚焦高频曝光用户</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">自动更新</div>
+              <div class="param-value">开启 · 每3天</div>
+              <div class="param-note">高频更新保持时效性</div>
+            </div>
+          </div>
+          <div class="strategy-block">
+            <div class="strategy-block-title">📢 广告投放策略</div>
+            <ul class="strategy-list">
+              <li>投放广告类型：<strong>展示型推广（SD）</strong>，低竞价触达</li>
+              <li>素材重点：换一张图，用不同场景/角度重新吸引注意力</li>
+              <li>加入价格锚点或优惠券信息，降低决策门槛</li>
+              <li>此受众规模通常较大，CPC 控制在较低水平</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOF -->
+    <div id="tab-mof" class="tab-panel">
+
+      <!-- 受众4 -->
+      <div class="audience-card">
+        <div class="audience-card-header">
+          <div class="audience-card-header-left">
+            <div class="audience-number">04</div>
+            <div class="audience-name">显性层板 · 点击未购买 14天</div>
+            <div class="audience-desc">点击过显性层板广告但14天内未完成购买，高意向再营销</div>
+            <div class="audience-tags">
+              <span class="pill pill-brand">显性层板</span>
+              <span class="pill pill-error">高意向</span>
+              <span class="pill pill-neutral">MOF</span>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <span class="pill pill-success">推荐优先级：最高</span>
+          </div>
+        </div>
+        <div class="audience-card-body">
+          <div class="param-grid">
+            <div class="param-item">
+              <div class="param-label">受众类型</div>
+              <div class="param-value">规则型受众</div>
+              <div class="param-note">基于点击事件筛选</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">基础受众</div>
+              <div class="param-value">已点击（Clicks）</div>
+              <div class="param-note">选择"已点击"事件类型</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">排除条件</div>
+              <div class="param-value">排除已购买用户</div>
+              <div class="param-note">转化事件 → 购买 → 排除</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">时间窗口</div>
+              <div class="param-value">过去 14 天</div>
+              <div class="param-note">显性层板决策周期短，14天足够</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">点击次数阈值</div>
+              <div class="param-value">≥ 1 次</div>
+              <div class="param-note">只要点击过即纳入，不设过高门槛</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">自动更新</div>
+              <div class="param-value">开启 · 每3天</div>
+              <div class="param-note">高频更新，及时捕捉新意向用户</div>
+            </div>
+          </div>
+          <div class="highlight-box">
+            <div class="highlight-box-title">💡 为什么显性层板用14天窗口？</div>
+            <div class="highlight-box-body">显性层板是功能性购买，买家通常有明确需求（如装修、搬家），决策周期短。超过14天未购买的用户，需求可能已被满足或放弃，继续投放ROI较低。</div>
+          </div>
+          <div class="strategy-block">
+            <div class="strategy-block-title">📢 广告投放策略</div>
+            <ul class="strategy-list">
+              <li>投放广告类型：<strong>展示型推广（SD）</strong>，高竞价优先抢占</li>
+              <li>素材重点：强调承重数字 + 安装简便（5–10分钟）+ 36"/48"加L型角码</li>
+              <li>加入社会证明：评分/评论数量（如有）</li>
+              <li>可配合优惠券或限时折扣，加速决策</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 受众5 -->
+      <div class="audience-card">
+        <div class="audience-card-header">
+          <div class="audience-card-header-left">
+            <div class="audience-number">05</div>
+            <div class="audience-name">空心层板 · 点击未购买 30天</div>
+            <div class="audience-desc">点击过空心层板广告但30天内未完成购买，装饰性购买决策周期更长</div>
+            <div class="audience-tags">
+              <span class="pill pill-brand">空心层板</span>
+              <span class="pill pill-error">高意向</span>
+              <span class="pill pill-neutral">MOF</span>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <span class="pill pill-success">推荐优先级：最高</span>
+          </div>
+        </div>
+        <div class="audience-card-body">
+          <div class="param-grid">
+            <div class="param-item">
+              <div class="param-label">受众类型</div>
+              <div class="param-value">规则型受众</div>
+              <div class="param-note">基于点击事件筛选</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">基础受众</div>
+              <div class="param-value">已点击（Clicks）</div>
+              <div class="param-note">选择"已点击"事件类型</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">排除条件</div>
+              <div class="param-value">排除已购买用户</div>
+              <div class="param-note">转化事件 → 购买 → 排除</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">时间窗口</div>
+              <div class="param-value">过去 30 天</div>
+              <div class="param-note">装饰性购买决策周期更长</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">点击次数阈值</div>
+              <div class="param-value">≥ 1 次</div>
+              <div class="param-note">只要点击过即纳入</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">自动更新</div>
+              <div class="param-value">开启 · 每7天</div>
+              <div class="param-note">30天窗口，每周更新即可</div>
+            </div>
+          </div>
+          <div class="highlight-box">
+            <div class="highlight-box-title">💡 为什么空心层板用30天窗口？</div>
+            <div class="highlight-box-body">空心层板是装饰性购买，买家通常在规划家居改造，会反复比较颜色和风格。30天窗口能覆盖更多"慢决策"用户，这部分人群转化价值高但需要更多触达次数。</div>
+          </div>
+          <div class="strategy-block">
+            <div class="strategy-block-title">📢 广告投放策略</div>
+            <ul class="strategy-list">
+              <li>投放广告类型：<strong>展示型推广（SD）+ 品牌推广视频（SBV）</strong></li>
+              <li>素材重点：多颜色场景图轮播 + 防水防潮卖点 + Gallery Wall 氛围图</li>
+              <li>视频素材：8秒场景视频（Coffee Bar / 卫浴 / 卧室），展示安装后效果</li>
+              <li>频次控制：每用户每周不超过5次曝光，避免骚扰</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 受众6 -->
+      <div class="audience-card">
+        <div class="audience-card-header">
+          <div class="audience-card-header-left">
+            <div class="audience-number">06</div>
+            <div class="audience-name">加购未结账 · 通用</div>
+            <div class="audience-desc">将层板加入购物车但未完成结账，最高意向用户，优先追回</div>
+            <div class="audience-tags">
+              <span class="pill pill-brand">通用</span>
+              <span class="pill pill-error">最高意向</span>
+              <span class="pill pill-neutral">MOF</span>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <span class="pill pill-success">推荐优先级：最高</span>
+          </div>
+        </div>
+        <div class="audience-card-body">
+          <div class="param-grid">
+            <div class="param-item">
+              <div class="param-label">受众类型</div>
+              <div class="param-value">规则型受众</div>
+              <div class="param-note">基于加购事件筛选</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">基础受众</div>
+              <div class="param-value">转化事件 → 加入购物车</div>
+              <div class="param-note">选择"加入购物车"转化事件</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">排除条件</div>
+              <div class="param-value">排除已购买用户</div>
+              <div class="param-note">转化事件 → 购买 → 排除</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">时间窗口</div>
+              <div class="param-value">过去 7 天</div>
+              <div class="param-note">加购后7天内是最佳追回窗口</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">加购次数阈值</div>
+              <div class="param-value">≥ 1 次</div>
+              <div class="param-note">只要加购过即纳入</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">自动更新</div>
+              <div class="param-value">开启 · 每1天</div>
+              <div class="param-note">每日更新，及时追回</div>
+            </div>
+          </div>
+          <div class="strategy-block">
+            <div class="strategy-block-title">📢 广告投放策略</div>
+            <ul class="strategy-list">
+              <li>投放广告类型：<strong>展示型推广（SD）</strong>，最高竞价，优先抢占</li>
+              <li>素材重点：直接展示加购商品图 + 价格 + 评分，减少干扰信息</li>
+              <li>可配合优惠券（5–10%），给予"最后一推"的价格激励</li>
+              <li>此受众规模小但转化率极高，是ROI最优的受众之一</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 受众7 -->
+      <div class="audience-card">
+        <div class="audience-card-header">
+          <div class="audience-card-header-left">
+            <div class="audience-number">07</div>
+            <div class="audience-name">多次浏览高意向人群</div>
+            <div class="audience-desc">在30天内多次点击层板广告（≥3次）但未购买，强烈购买意向</div>
+            <div class="audience-tags">
+              <span class="pill pill-brand">通用</span>
+              <span class="pill pill-warning">高频浏览</span>
+              <span class="pill pill-neutral">MOF</span>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <span class="pill pill-warning">推荐优先级：中高</span>
+          </div>
+        </div>
+        <div class="audience-card-body">
+          <div class="param-grid">
+            <div class="param-item">
+              <div class="param-label">受众类型</div>
+              <div class="param-value">规则型受众</div>
+              <div class="param-note">基于点击次数筛选</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">基础受众</div>
+              <div class="param-value">已点击（Clicks）</div>
+              <div class="param-note">选择"已点击"事件类型</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">数值类型</div>
+              <div class="param-value">不重复数量（Unique Count）</div>
+              <div class="param-note">统计独立点击次数</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">阈值设置</div>
+              <div class="param-value">≥ 3 次点击</div>
+              <div class="param-note">过滤低意向用户，聚焦高频浏览者</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">时间窗口</div>
+              <div class="param-value">过去 30 天</div>
+              <div class="param-note">覆盖完整决策周期</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">排除条件</div>
+              <div class="param-value">排除已购买用户</div>
+              <div class="param-note">转化事件 → 购买 → 排除</div>
+            </div>
+          </div>
+          <div class="strategy-block">
+            <div class="strategy-block-title">📢 广告投放策略</div>
+            <ul class="strategy-list">
+              <li>投放广告类型：<strong>展示型推广（SD）</strong>，中高竞价</li>
+              <li>素材重点：解决疑虑型文案（"Still thinking about it? Here's why 1,000+ customers chose us"）</li>
+              <li>可展示竞品对比信息（承重/材质/安装时间），强化差异化优势</li>
+              <li>此受众是"犹豫型"买家，需要额外的信任建立</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOF -->
+    <div id="tab-bof" class="tab-panel">
+
+      <!-- 受众8 -->
+      <div class="audience-card">
+        <div class="audience-card-header">
+          <div class="audience-card-header-left">
+            <div class="audience-number">08</div>
+            <div class="audience-name">已购买显性层板 · 交叉销售空心层板</div>
+            <div class="audience-desc">购买过显性层板的用户，向其推广空心层板（装饰性补充）</div>
+            <div class="audience-tags">
+              <span class="pill pill-brand">交叉销售</span>
+              <span class="pill pill-info">已购买</span>
+              <span class="pill pill-neutral">BOF</span>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <span class="pill pill-success">推荐优先级：高</span>
+          </div>
+        </div>
+        <div class="audience-card-body">
+          <div class="param-grid">
+            <div class="param-item">
+              <div class="param-label">受众类型</div>
+              <div class="param-value">规则型受众</div>
+              <div class="param-note">基于购买事件筛选</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">基础受众</div>
+              <div class="param-value">转化事件 → 购买</div>
+              <div class="param-note">选择"购买"转化事件</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">ASIN 范围</div>
+              <div class="param-value">显性层板父ASIN</div>
+              <div class="param-note">B0G39LJKCK 及其子ASIN</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">时间窗口</div>
+              <div class="param-value">过去 180 天</div>
+              <div class="param-note">覆盖更多历史购买用户</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">排除条件</div>
+              <div class="param-value">排除已购买空心层板用户</div>
+              <div class="param-note">避免重复触达</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">自动更新</div>
+              <div class="param-value">开启 · 每7天</div>
+              <div class="param-note">每周更新，纳入新购买用户</div>
+            </div>
+          </div>
+          <div class="highlight-box">
+            <div class="highlight-box-title">💡 交叉销售逻辑</div>
+            <div class="highlight-box-body">购买显性层板的用户已证明有层板需求，且对KovaScape品牌有信任。向其推广空心层板（装饰性/卫浴/卧室场景）是自然的补充，转化率通常高于冷流量。</div>
+          </div>
+          <div class="strategy-block">
+            <div class="strategy-block-title">📢 广告投放策略</div>
+            <ul class="strategy-list">
+              <li>投放广告类型：<strong>展示型推广（SD）</strong>，中等竞价</li>
+              <li>素材重点：展示空心层板的装饰性场景（与显性层板的功能性形成互补）</li>
+              <li>文案角度："You've got the heavy-duty shelf. Now complete the look."</li>
+              <li>可配合多件优惠（Buy 2 Save X%），提升客单价</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 受众9 -->
+      <div class="audience-card">
+        <div class="audience-card-header">
+          <div class="audience-card-header-left">
+            <div class="audience-number">09</div>
+            <div class="audience-name">已购买空心层板 · 复购追加</div>
+            <div class="audience-desc">购买过空心层板的用户，90天后推广同系列其他尺寸/颜色</div>
+            <div class="audience-tags">
+              <span class="pill pill-brand">空心层板</span>
+              <span class="pill pill-info">复购</span>
+              <span class="pill pill-neutral">BOF</span>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <span class="pill pill-warning">推荐优先级：中</span>
+          </div>
+        </div>
+        <div class="audience-card-body">
+          <div class="param-grid">
+            <div class="param-item">
+              <div class="param-label">受众类型</div>
+              <div class="param-value">规则型受众</div>
+              <div class="param-note">基于购买事件筛选</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">基础受众</div>
+              <div class="param-value">转化事件 → 购买</div>
+              <div class="param-note">选择"购买"转化事件</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">时间窗口</div>
+              <div class="param-value">90–365 天前购买</div>
+              <div class="param-note">排除近90天购买（太近，不适合复购推广）</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">购买金额阈值</div>
+              <div class="param-value">总计金额 ≥ $30</div>
+              <div class="param-note">过滤低价值购买，聚焦高价值用户</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">排除条件</div>
+              <div class="param-value">排除近90天购买用户</div>
+              <div class="param-note">避免过早推送复购</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">自动更新</div>
+              <div class="param-value">开启 · 每14天</div>
+              <div class="param-note">复购周期长，双周更新即可</div>
+            </div>
+          </div>
+          <div class="strategy-block">
+            <div class="strategy-block-title">📢 广告投放策略</div>
+            <ul class="strategy-list">
+              <li>投放广告类型：<strong>展示型推广（SD）</strong>，低竞价（已购买用户，CPC 控制）</li>
+              <li>素材重点：展示其他颜色/尺寸，"Complete your gallery wall"</li>
+              <li>推广多件套装或不同尺寸组合，提升客单价</li>
+              <li>此受众是品牌忠诚度最高的群体，可测试品牌推广（SB）</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 受众10 -->
+      <div class="audience-card">
+        <div class="audience-card-header">
+          <div class="audience-card-header-left">
+            <div class="audience-number">10</div>
+            <div class="audience-name">高价值客户 · 层板+相框双购</div>
+            <div class="audience-desc">同时购买过层板和相框的用户，是KovaScape最高价值客户群</div>
+            <div class="audience-tags">
+              <span class="pill pill-brand">高价值</span>
+              <span class="pill pill-gold">VIP</span>
+              <span class="pill pill-neutral">BOF</span>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <span class="pill pill-success">推荐优先级：高</span>
+          </div>
+        </div>
+        <div class="audience-card-body">
+          <div class="param-grid">
+            <div class="param-item">
+              <div class="param-label">受众类型</div>
+              <div class="param-value">规则型受众（多条件AND）</div>
+              <div class="param-note">同时满足两个购买条件</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">条件1</div>
+              <div class="param-value">购买过层板（任意）</div>
+              <div class="param-note">转化事件 → 购买 → 层板ASIN</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">条件2</div>
+              <div class="param-value">购买过相框（任意）</div>
+              <div class="param-note">转化事件 → 购买 → 相框ASIN</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">时间窗口</div>
+              <div class="param-value">过去 365 天</div>
+              <div class="param-note">覆盖所有历史高价值用户</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">条件关系</div>
+              <div class="param-value">为所有条件组（AND）</div>
+              <div class="param-note">必须同时满足两个购买条件</div>
+            </div>
+            <div class="param-item">
+              <div class="param-label">自动更新</div>
+              <div class="param-value">开启 · 每14天</div>
+              <div class="param-note">双周更新，纳入新高价值用户</div>
+            </div>
+          </div>
+          <div class="highlight-box">
+            <div class="highlight-box-title">💡 高价值客户策略</div>
+            <div class="highlight-box-body">同时购买层板和相框的用户是KovaScape的核心品牌用户，LTV（生命周期价值）最高。这个受众规模可能较小，但可以作为相似受众的种子人群，扩展出更多高质量新客。</div>
+          </div>
+          <div class="strategy-block">
+            <div class="strategy-block-title">📢 广告投放策略</div>
+            <ul class="strategy-list">
+              <li>投放广告类型：<strong>品牌推广（SB）</strong>，展示品牌旗舰店</li>
+              <li>素材重点：品牌故事 + 产品系列全貌，强化品牌认同感</li>
+              <li>同时作为相似受众种子：基于此人群创建Lookalike，扩展高质量新客</li>
+              <li>可测试品牌推广视频（SBV），展示家居整体搭配方案</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 两条产品线对比 ── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">两条产品线受众策略对比</div>
+      <div class="section-sub">关键参数差异一览</div>
+    </div>
+
+    <div class="compare-header">
+      <div class="compare-col-header dim">维度</div>
+      <div class="compare-col-header col-a">🔩 显性层板</div>
+      <div class="compare-col-header col-b">🪵 空心层板</div>
+    </div>
+    <div class="compare-body">
+      <div class="compare-row">
+        <div class="compare-cell dim">决策周期</div>
+        <div class="compare-cell">7–14 天（功能性购买，需求明确）</div>
+        <div class="compare-cell">14–30 天（装饰性购买，反复比较）</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell dim">再营销窗口</div>
+        <div class="compare-cell">14 天（超过则意向衰减快）</div>
+        <div class="compare-cell">30 天（装饰性购买可持续触达）</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell dim">主要买家性别</div>
+        <div class="compare-cell">男性比例较高（工业风/重物收纳）</div>
+        <div class="compare-cell">女性比例较高（装饰/家居改造）</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell dim">核心转化驱动</div>
+        <div class="compare-cell">承重数字 + 安装简便 + 稳固性</div>
+        <div class="compare-cell">场景图 + 颜色选择 + 防水防潮</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell dim">推荐广告类型</div>
+        <div class="compare-cell">SD（展示型）为主</div>
+        <div class="compare-cell">SD + SBV（品牌推广视频）</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell dim">相似受众邻近度</div>
+        <div class="compare-cell">1级（精准扩展）</div>
+        <div class="compare-cell">1–2级（可适当扩展）</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell dim">复购周期</div>
+        <div class="compare-cell">较长（功能性，不频繁购买）</div>
+        <div class="compare-cell">较短（装饰性，可能多次购买不同颜色）</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-cell dim">交叉销售方向</div>
+        <div class="compare-cell">→ 空心层板（装饰性补充）</div>
+        <div class="compare-cell">→ 相框（Gallery Wall 完整方案）</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SparkX 操作步骤 ── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">SparkX 后台操作步骤</div>
+      <div class="section-sub">在 Xnurta/SparkX 平台创建上述受众的完整操作流程</div>
+    </div>
+
+    <div class="alert alert-warning" style="margin-bottom:20px;">
+      <div class="alert-title">⚠️ 前置条件</div>
+      <div class="alert-body">登录 SparkX 后，必须先切换到 <strong>KovaScape北美（AMC类型）</strong> 账户，AMC Instance ID：<code>amcump7aucq</code>。默认进入的是"南京欧洲组KS"SP账户，需手动切换。</div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-number">1</div>
+      <div class="step-content">
+        <div class="step-title">登录并切换账户</div>
+        <div class="step-body">访问 <strong>ai.sparkx.io</strong> → 右上角第2个下拉框 → 选择"北美洲" → 选择"KovaScape北美（AMC）" → 确认URL中包含 <code>instanceId=21834</code></div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-number">2</div>
+      <div class="step-content">
+        <div class="step-title">进入受众创建页面</div>
+        <div class="step-body">左侧导航 → AMC → 受众管理 → 点击"创建受众"按钮 → 选择受众模板（规则型受众 或 相似受众）</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-number">3</div>
+      <div class="step-content">
+        <div class="step-title">填写受众人群区块</div>
+        <div class="step-body">
+          <strong>名称：</strong>按命名规范填写（如 <code>KS_显性层板_点击未购_14D_20260519</code>）<br>
+          <strong>目标广告账户：</strong>选择 KovaScape 北美<br>
+          <strong>自动更新：</strong>开启，频率按方案设置（1天/3天/7天/14天）<br>
+          <strong>受众类型：</strong>规则型受众 或 相似受众<br>
+          <strong>邻近度级别：</strong>相似受众选1级或1–2级
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-number">4</div>
+      <div class="step-content">
+        <div class="step-title">配置受众条件</div>
+        <div class="step-body">
+          <strong>时间设置：</strong>选择"为每个条件组"（单条件）或"为所有条件组"（多条件AND）<br>
+          <strong>基础受众：</strong>选择"被曝光" / "已点击" / "转化事件"<br>
+          <strong>转化事件：</strong>加入购物车 / 购买 / 商品详情页浏览<br>
+          <strong>数值类型：</strong>不重复数量（统计独立用户行为次数）<br>
+          <strong>运算符+阈值：</strong>≥ 1 / ≥ 3 / ≥ $30（按方案设置）
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-number">5</div>
+      <div class="step-content">
+        <div class="step-title">设置排除条件（重要）</div>
+        <div class="step-body">
+          点击"添加排除条件" → 选择"转化事件 → 购买" → 时间窗口与主条件相同<br>
+          <strong>目的：</strong>排除已购买用户，避免对已转化用户浪费预算，同时避免受众重叠
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-number">6</div>
+      <div class="step-content">
+        <div class="step-title">保存并关联广告活动</div>
+        <div class="step-body">
+          保存受众 → 等待受众规模计算（通常24–48小时）<br>
+          确认规模 ≥ 2,000人（Sponsored Ads最低要求）<br>
+          在广告活动中选择"受众定向" → 选择已创建的AMC受众 → 设置竞价
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 受众命名规范 ── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">受众命名规范</div>
+      <div class="section-sub">统一命名便于管理和追踪效果</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px;">命名格式</div>
+      <div style="background:#F5F5F0;border-radius:8px;padding:14px 16px;font-family:monospace;font-size:13px;color:var(--text-primary);margin-bottom:16px;">
+        KS_[产品线]_[行为类型]_[时间窗口]_[日期]
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>受众编号</th>
+              <th>建议命名</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="pill pill-neutral">01</span></td>
+              <td><code>KS_显性层板_相似受众_购买90D_20260519</code></td>
+              <td>显性层板购买用户相似扩展</td>
+            </tr>
+            <tr>
+              <td><span class="pill pill-neutral">02</span></td>
+              <td><code>KS_空心层板_相似受众_购买90D_20260519</code></td>
+              <td>空心层板购买用户相似扩展</td>
+            </tr>
+            <tr>
+              <td><span class="pill pill-neutral">03</span></td>
+              <td><code>KS_层板_曝光未点击_14D_20260519</code></td>
+              <td>曝光未点击再触达</td>
+            </tr>
+            <tr>
+              <td><span class="pill pill-neutral">04</span></td>
+              <td><code>KS_显性层板_点击未购_14D_20260519</code></td>
+              <td>显性层板高意向再营销</td>
+            </tr>
+            <tr>
+              <td><span class="pill pill-neutral">05</span></td>
+              <td><code>KS_空心层板_点击未购_30D_20260519</code></td>
+              <td>空心层板高意向再营销</td>
+            </tr>
+            <tr>
+              <td><span class="pill pill-neutral">06</span></td>
+              <td><code>KS_层板_加购未结账_7D_20260519</code></td>
+              <td>加购未结账追回</td>
+            </tr>
+            <tr>
+              <td><span class="pill pill-neutral">07</span></td>
+              <td><code>KS_层板_多次点击_30D_20260519</code></td>
+              <td>高频浏览高意向人群</td>
+            </tr>
+            <tr>
+              <td><span class="pill pill-neutral">08</span></td>
+              <td><code>KS_显性层板购买_交叉空心_180D_20260519</code></td>
+              <td>交叉销售</td>
+            </tr>
+            <tr>
+              <td><span class="pill pill-neutral">09</span></td>
+              <td><code>KS_空心层板_复购_90-365D_20260519</code></td>
+              <td>空心层板复购追加</td>
+            </tr>
+            <tr>
+              <td><span class="pill pill-neutral">10</span></td>
+              <td><code>KS_高价值_层板相框双购_365D_20260519</code></td>
+              <td>高价值VIP客户</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 优先级与执行计划 ── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">执行优先级与落地计划</div>
+      <div class="section-sub">新品阶段数据有限，按优先级分阶段创建受众</div>
+    </div>
+
+    <div class="alert alert-info" style="margin-bottom:20px;">
+      <div class="alert-title">📌 新品阶段注意事项</div>
+      <div class="alert-body">KovaScape层板目前为新品，历史数据量有限。<strong>相似受众</strong>需要至少2,000个种子用户才能创建；<strong>规则型受众</strong>需要至少2,000人才能投放Sponsored Ads。建议先积累数据（1–2个月），再逐步创建受众。</div>
+    </div>
+
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-left">
+          <div class="timeline-dot"></div>
+          <div class="timeline-line"></div>
+        </div>
+        <div class="timeline-content">
+          <div class="timeline-phase">第一阶段 · 立即执行</div>
+          <div class="timeline-title">加购未结账 + 点击未购买（受众06、04、05）</div>
+          <div class="timeline-body">这三个受众不需要大量历史数据，只要有点击和加购行为即可创建。优先创建，立即开始积累再营销数据。即使规模未达2,000人，也可以先创建等待规模增长。</div>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-left">
+          <div class="timeline-dot"></div>
+          <div class="timeline-line"></div>
+        </div>
+        <div class="timeline-content">
+          <div class="timeline-phase">第二阶段 · 1个月后</div>
+          <div class="timeline-title">曝光未点击 + 多次浏览（受众03、07）</div>
+          <div class="timeline-body">积累1个月广告数据后，曝光量和点击量应足够创建这两个受众。开始对高频曝光但未点击的用户进行二次触达。</div>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-left">
+          <div class="timeline-dot"></div>
+          <div class="timeline-line"></div>
+        </div>
+        <div class="timeline-content">
+          <div class="timeline-phase">第三阶段 · 2–3个月后</div>
+          <div class="timeline-title">相似受众扩展（受众01、02）</div>
+          <div class="timeline-body">积累足够购买数据（≥2,000个购买用户）后，创建相似受众。这是最强大的拉新工具，但需要足够的种子数据。</div>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-left">
+          <div class="timeline-dot"></div>
+          <div class="timeline-line"></div>
+        </div>
+        <div class="timeline-content">
+          <div class="timeline-phase">第四阶段 · 3–6个月后</div>
+          <div class="timeline-title">复购 + 交叉销售 + 高价值客户（受众08、09、10）</div>
+          <div class="timeline-body">积累足够购买历史后，开始精细化运营已购买用户。这个阶段的重点是提升LTV（生命周期价值）和品牌忠诚度。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 效果追踪 ── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">效果追踪指标</div>
+      <div class="section-sub">各受众层级的核心KPI与优化方向</div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>漏斗层级</th>
+            <th>核心KPI</th>
+            <th>参考目标</th>
+            <th>优化方向</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="pill pill-info">TOF</span></td>
+            <td>CTR（点击率）、新客比例（NTB%）</td>
+            <td>CTR &gt; 0.3%，NTB &gt; 60%</td>
+            <td>优化素材，测试不同场景图</td>
+          </tr>
+          <tr>
+            <td><span class="pill pill-warning">MOF</span></td>
+            <td>CVR（转化率）、ACOS</td>
+            <td>CVR &gt; 5%，ACOS &lt; 25%</td>
+            <td>优化文案，加入价格激励</td>
+          </tr>
+          <tr>
+            <td><span class="pill pill-success">BOF</span></td>
+            <td>复购率、客单价、LTV</td>
+            <td>复购率 &gt; 15%，客单价提升10%+</td>
+            <td>优化交叉销售组合，测试套装</td>
+          </tr>
+          <tr>
+            <td><span class="pill pill-brand">相似受众</span></td>
+            <td>NTB%、ROAS</td>
+            <td>NTB &gt; 70%，ROAS &gt; 3x</td>
+            <td>调整邻近度级别，优化种子受众</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="highlight-box" style="margin-top:16px;">
+      <div class="highlight-box-title">📊 AMC 分析模型配合使用</div>
+      <div class="highlight-box-body">建议同时在 SparkX AMC 模型库中运行以下分析：<br>
+      • <strong>转化路径分析</strong>：了解层板买家从曝光到购买的平均触点数和时间<br>
+      • <strong>新客购买分析（NTB）</strong>：追踪各受众带来的新客比例<br>
+      • <strong>广告重合度分析</strong>：检查各受众之间的重叠，避免预算内耗</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── FOOTER ── -->
+<div class="footer">
+  <svg class="blobs" viewBox="0 0 1200 160" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;">
+    <path d="M-40,40 C20,0 80,20 100,80 C120,140 60,160 0,140 C-60,120 -100,80 -40,40Z" fill="#93B888" opacity="0.15"/>
+    <path d="M1100,0 C1160,-20 1220,20 1200,80 C1180,140 1100,160 1060,120 C1020,80 1040,20 1100,0Z" fill="#5E8F52" opacity="0.12"/>
+  </svg>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">KovaScape</div>
+      <div class="footer-sub">层板品类 AMC 受众策略报告</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:12px;color:var(--text-secondary);">生成日期：2026年5月19日</div>
+      <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">AMC Instance：amcump7aucq</div>
+    </div>
+  </div>
+  <div class="footer-divider"></div>
+  <div class="footer-bottom">
+    <div>显性层板（B0G39LJKCK）· 空心层板 · 10个核心受众方案</div>
+    <div>Generated by AllyHub AI · KovaScape Internal Use Only</div>
+  </div>
+</div>
+
+</div>
+
+<script>
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+  
+  const tabMap = { tof: 0, mof: 1, bof: 2 };
+  document.querySelectorAll('.tab-btn')[tabMap[tab]].classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+</script>
+</body>
+</html>

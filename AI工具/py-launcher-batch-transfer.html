@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>批量文件分发工具 · KovaScape</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#064338;--green-deep:#042E25;--green-light:#E8F2F0;
+  --gold:#F3C546;--gold-light:#FFF8DC;
+  --warm-white:#FDFCF9;--body-gray:#717171;--title-dark:#1D1B20;--border:#E8E4DE;
+}
+body{font-family:'Poppins',sans-serif;background:#F0EDE8;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:40px 20px}
+.page-wrap{width:100%;max-width:680px}
+
+.tool-header{background:var(--green);border-radius:20px;padding:36px 40px;margin-bottom:24px;position:relative;overflow:hidden}
+.tool-header::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;border-radius:50%;background:rgba(243,197,70,.07)}
+.tool-header::after{content:'';position:absolute;bottom:-70px;left:30%;width:260px;height:260px;border-radius:50%;background:rgba(243,197,70,.04)}
+.brand-row{display:flex;align-items:center;gap:8px;margin-bottom:16px;position:relative;z-index:1}
+.brand-logo{width:26px;height:26px;background:var(--gold);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-weight:700;font-size:13px;color:var(--green-deep)}
+.brand-name{font-family:'Playfair Display',serif;font-size:12px;font-weight:600;color:var(--gold)}
+.brand-sep,.brand-cat{font-size:11px;color:rgba(255,255,255,.35)}
+.tool-icon-wrap{width:64px;height:64px;background:rgba(243,197,70,.15);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:14px;position:relative;z-index:1}
+.tool-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:500;color:#fff;margin-bottom:6px;position:relative;z-index:1}
+.tool-subtitle{font-size:12.5px;color:rgba(255,255,255,.55);position:relative;z-index:1;line-height:1.6}
+.tool-meta{display:flex;gap:16px;margin-top:18px;padding-top:16px;border-top:1px solid rgba(243,197,70,.25);position:relative;z-index:1;flex-wrap:wrap}
+.meta-item{display:flex;align-items:center;gap:5px}
+.meta-dot{width:5px;height:5px;border-radius:50%;background:var(--gold)}
+.meta-text{font-size:10.5px;color:rgba(255,255,255,.45)}
+
+.launch-card{background:#fff;border-radius:16px;padding:28px 32px;margin-bottom:20px;border:1px solid var(--border)}
+.card-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:500;color:var(--title-dark);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.card-title-icon{width:28px;height:28px;background:var(--green-light);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px}
+
+/* 主启动按钮 */
+.launch-btn{width:100%;padding:18px 24px;background:var(--green);color:#fff;border:none;border-radius:12px;font-family:'Poppins',sans-serif;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .2s;letter-spacing:.3px;position:relative;overflow:hidden}
+.launch-btn:hover{background:var(--green-deep);transform:translateY(-1px);box-shadow:0 8px 24px rgba(6,67,56,.28)}
+.launch-btn:active{transform:translateY(0)}
+.launch-btn:disabled{background:#aaa;cursor:not-allowed;transform:none;box-shadow:none}
+.launch-btn .btn-icon{font-size:20px}
+.launch-btn .btn-spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* 状态区 */
+.status-bar{margin-top:12px;padding:10px 14px;border-radius:9px;font-size:12px;font-weight:500;display:none;align-items:center;gap:8px}
+.status-bar.success{background:#E8F2F0;color:var(--green);display:flex}
+.status-bar.error{background:#FDECEA;color:#C4433A;display:flex}
+.status-bar.loading{background:#F5F4F2;color:var(--body-gray);display:flex}
+
+/* 服务状态指示 */
+.service-indicator{display:flex;align-items:center;gap:7px;margin-bottom:16px;padding:9px 13px;background:#F5F4F2;border-radius:9px;border:1px solid var(--border)}
+.svc-dot{width:8px;height:8px;border-radius:50%;background:#ccc;flex-shrink:0;transition:background .3s}
+.svc-dot.online{background:#22C55E}
+.svc-dot.offline{background:#EF4444}
+.svc-dot.checking{background:var(--gold);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.svc-text{font-size:11.5px;color:var(--body-gray);flex:1}
+.svc-text strong{color:var(--title-dark)}
+
+/* 备用区 */
+.fallback-section{margin-top:16px;padding-top:16px;border-top:1px dashed var(--border)}
+.fallback-title{font-size:11px;font-weight:500;color:var(--body-gray);margin-bottom:8px}
+.cmd-block{background:#F5F4F2;border:1px solid var(--border);border-radius:9px;padding:11px 14px;font-family:'Courier New',monospace;font-size:12px;color:var(--title-dark);word-break:break-all;position:relative}
+.copy-btn{position:absolute;top:8px;right:8px;padding:4px 10px;background:#fff;border:1px solid var(--border);border-radius:6px;font-family:'Poppins',sans-serif;font-size:10.5px;font-weight:500;color:var(--body-gray);cursor:pointer;transition:all .13s}
+.copy-btn:hover{border-color:var(--green);color:var(--green)}
+.copy-btn.copied{background:var(--green-light);border-color:var(--green);color:var(--green)}
+
+.steps{list-style:none}
+.step-item{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border)}
+.step-item:last-child{border-bottom:none}
+.step-num{width:26px;height:26px;min-width:26px;border-radius:50%;background:var(--green);color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.step-title{font-size:13px;font-weight:600;color:var(--title-dark);margin-bottom:3px}
+.step-desc{font-size:11.5px;color:var(--body-gray);line-height:1.65}
+
+.features-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.feat-item{background:#FDFCF9;border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.feat-icon{font-size:20px;margin-bottom:7px}
+.feat-title{font-size:12px;font-weight:600;color:var(--title-dark);margin-bottom:3px}
+.feat-desc{font-size:11px;color:var(--body-gray);line-height:1.55}
+
+.dep-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
+.dep-tag{padding:4px 10px;background:var(--green-light);color:var(--green);border-radius:20px;font-size:11px;font-weight:500}
+.alert-box{border-radius:9px;padding:11px 14px;margin-top:12px}
+.alert-warn{background:var(--gold-light);border-left:3px solid var(--gold)}
+.alert-warn p{font-size:11.5px;color:#92400E;line-height:1.6}
+.alert-info{background:var(--green-light);border-left:3px solid var(--green)}
+.alert-info p{font-size:11.5px;color:var(--green);line-height:1.6}
+
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--green-deep);color:#fff;padding:10px 20px;border-radius:10px;font-size:12px;font-weight:500;opacity:0;transition:all .3s;pointer-events:none;z-index:999}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <!-- HEADER -->
+  <div class="tool-header">
+    <div class="brand-row">
+      <div class="brand-logo">K</div>
+      <div class="brand-name">KovaScape</div>
+      <div class="brand-sep">·</div>
+      <div class="brand-cat">图片工具</div>
+    </div>
+    <div class="tool-icon-wrap">📤</div>
+    <div class="tool-title">批量文件分发工具</div>
+    <div class="tool-subtitle">将源文件一键批量复制到多个目标文件夹<br>支持拖拽操作，适合图片批量分发场景</div>
+    <div class="tool-meta">
+      <div class="meta-item"><div class="meta-dot"></div><div class="meta-text">Batch Files Transfer V1.0</div></div>
+      <div class="meta-item"><div class="meta-dot"></div><div class="meta-text">Tkinter GUI</div></div>
+      <div class="meta-item"><div class="meta-dot"></div><div class="meta-text">需要 Python 3</div></div>
+    </div>
+  </div>
+
+  <!-- LAUNCH CARD -->
+  <div class="launch-card">
+    <div class="card-title"><div class="card-title-icon">▶</div>启动工具</div>
+
+    <!-- 服务状态 -->
+    <div class="service-indicator">
+      <div class="svc-dot checking" id="svc-dot"></div>
+      <div class="svc-text" id="svc-text"><strong>正在检测</strong> Launcher 服务状态…</div>
+    </div>
+
+    <!-- 主按钮 -->
+    <button class="launch-btn" id="launch-btn" onclick="launchTool()">
+      <span class="btn-icon" id="btn-icon">▶</span>
+      <span class="btn-spinner" id="btn-spinner"></span>
+      <span id="btn-text">启动 批量文件分发工具</span>
+    </button>
+
+    <!-- 状态反馈 -->
+    <div class="status-bar" id="status-bar">
+      <span id="status-icon"></span>
+      <span id="status-msg"></span>
+    </div>
+
+    <!-- 备用：手动命令 -->
+    <div class="fallback-section">
+      <div class="fallback-title">🔧 备用方式（Launcher 服务未运行时）</div>
+      <div class="cmd-block">python "Batch Files Transfer_V1.0.py"<div class="copy-btn" id="copy-btn" onclick="copyCmd()">复制</div></div>
+      <div class="alert-box alert-info" style="margin-top:10px">
+        <p>✅ 也可直接双击 <strong>启动-批量分发.bat</strong> 文件运行</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <div class="launch-card">
+    <div class="card-title"><div class="card-title-icon">✨</div>功能介绍</div>
+    <div class="features-grid">
+      <div class="feat-item"><div class="feat-icon">📁</div><div class="feat-title">多目标分发</div><div class="feat-desc">将一个或多个源文件，同时复制到多个目标文件夹</div></div>
+      <div class="feat-item"><div class="feat-icon">🖱️</div><div class="feat-title">拖拽操作</div><div class="feat-desc">支持拖拽文件和文件夹到界面，操作直观便捷</div></div>
+      <div class="feat-item"><div class="feat-icon">⚡</div><div class="feat-title">批量处理</div><div class="feat-desc">一次操作完成所有分发，节省重复复制粘贴时间</div></div>
+      <div class="feat-item"><div class="feat-icon">🔒</div><div class="feat-title">安全复制</div><div class="feat-desc">复制而非移动，源文件保持不变，操作安全可靠</div></div>
+    </div>
+  </div>
+
+  <!-- STEPS -->
+  <div class="launch-card">
+    <div class="card-title"><div class="card-title-icon">📋</div>使用步骤</div>
+    <ul class="steps">
+      <li class="step-item"><div class="step-num">1</div><div><div class="step-title">启动工具</div><div class="step-desc">点击上方「启动」按钮，GUI 窗口将自动弹出</div></div></li>
+      <li class="step-item"><div class="step-num">2</div><div><div class="step-title">添加源文件</div><div class="step-desc">将需要分发的文件拖入「源文件」区域，或点击「浏览」选择文件</div></div></li>
+      <li class="step-item"><div class="step-num">3</div><div><div class="step-title">添加目标文件夹</div><div class="step-desc">将目标文件夹拖入「目标文件夹」区域，可添加多个目标</div></div></li>
+      <li class="step-item"><div class="step-num">4</div><div><div class="step-title">执行分发</div><div class="step-desc">点击「开始分发」，工具自动将源文件复制到所有目标文件夹</div></div></li>
+    </ul>
+  </div>
+
+  <!-- DEPS -->
+  <div class="launch-card">
+    <div class="card-title"><div class="card-title-icon">📦</div>依赖安装</div>
+    <div style="font-size:12px;color:var(--body-gray);margin-bottom:10px">首次使用前，请确保已安装以下 Python 依赖包：</div>
+    <div class="dep-list"><span class="dep-tag">tkinterdnd2</span><span class="dep-tag">Python 3.7+</span></div>
+    <div class="cmd-block" style="margin-top:12px">pip install tkinterdnd2<div class="copy-btn" onclick="copyText('pip install tkinterdnd2',this)">复制</div></div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const LAUNCHER_URL = 'http://127.0.0.1:8766';
+const TOOL_ID = 'batch-transfer';
+const FALLBACK_CMD = 'python "Batch Files Transfer_V1.0.py"';
+
+let serviceOnline = false;
+
+// ── 检测 Launcher 服务状态 ──
+async function checkService() {
+  const dot = document.getElementById('svc-dot');
+  const txt = document.getElementById('svc-text');
+  try {
+    const res = await fetch(LAUNCHER_URL + '/ping', { signal: AbortSignal.timeout(2000) });
+    if (res.ok) {
+      serviceOnline = true;
+      dot.className = 'svc-dot online';
+      txt.innerHTML = '<strong>Launcher 服务运行中</strong> · 点击按钮即可直接启动工具';
+    } else { throw new Error(); }
+  } catch {
+    serviceOnline = false;
+    dot.className = 'svc-dot offline';
+    txt.innerHTML = '<strong>Launcher 服务未运行</strong> · 请通过 启动Hub.bat 启动，或使用下方备用命令';
+  }
+}
+
+// ── 启动工具 ──
+async function launchTool() {
+  if (!serviceOnline) {
+    // 服务未运行，降级为复制命令
+    copyText(FALLBACK_CMD, null);
+    showStatus('error', '⚠️', 'Launcher 未运行，已复制启动命令到剪贴板，请在 CMD 中粘贴运行');
+    return;
+  }
+
+  setLoading(true);
+  try {
+    const res = await fetch(LAUNCHER_URL + '/launch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tool: TOOL_ID }),
+      signal: AbortSignal.timeout(5000),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      showStatus('success', '✅', `工具已启动：${data.tool}`);
+      showToast('✅ 工具窗口正在打开…');
+    } else {
+      showStatus('error', '❌', data.error || '启动失败');
+    }
+  } catch (e) {
+    serviceOnline = false;
+    checkService();
+    showStatus('error', '⚠️', '连接 Launcher 失败，请检查服务是否运行');
+  } finally {
+    setLoading(false);
+  }
+}
+
+function setLoading(on) {
+  const btn = document.getElementById('launch-btn');
+  const icon = document.getElementById('btn-icon');
+  const spinner = document.getElementById('btn-spinner');
+  const txt = document.getElementById('btn-text');
+  btn.disabled = on;
+  icon.style.display = on ? 'none' : '';
+  spinner.style.display = on ? 'block' : 'none';
+  txt.textContent = on ? '正在启动…' : '启动 批量文件分发工具';
+}
+
+function showStatus(type, icon, msg) {
+  const bar = document.getElementById('status-bar');
+  bar.className = 'status-bar ' + type;
+  document.getElementById('status-icon').textContent = icon;
+  document.getElementById('status-msg').textContent = msg;
+}
+
+function copyCmd() { copyText(FALLBACK_CMD, document.getElementById('copy-btn')); }
+
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).catch(() => {
+    const ta = Object.assign(document.createElement('textarea'), { value: text });
+    ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+  }).finally(() => {
+    if (btn) { btn.textContent = '已复制 ✓'; btn.classList.add('copied'); setTimeout(() => { btn.textContent = '复制'; btn.classList.remove('copied'); }, 2000); }
+    showToast('已复制到剪贴板');
+  });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// 页面加载时检测服务，之后每 10 秒刷新一次
+checkService();
+setInterval(checkService, 10000);
+</script>
+</body>
+</html>

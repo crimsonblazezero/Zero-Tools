@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>亚马逊库存翻单小工具</title>
+  
+  <!-- 引入 Tailwind CSS 进行页面样式渲染 -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- 引入 React 和 ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- 引入 Babel 以在浏览器中转换 JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- 引入 Lucide 图标库 -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- 引入 SheetJS 库，专门用于在浏览器中完美解析真正的 Excel (xls/xlsx) 文件 -->
+  <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <!-- React 应用将挂载到这里 -->
+  <div id="root"></div>
+
+  <!-- 应用程序代码 -->
+  <script type="text/babel">
+    const { useState, useMemo, useRef, useEffect } = React;
+
+    // 封装 Lucide 图标组件
+    const Icon = ({ name, size = 24, className = '', ...props }) => {
+      const ref = useRef(null);
+      useEffect(() => {
+        if (ref.current && window.lucide && window.lucide.icons[name]) {
+          ref.current.innerHTML = '';
+          const svg = window.lucide.createElement(window.lucide.icons[name]);
+          svg.setAttribute('width', size);
+          svg.setAttribute('height', size);
+          if (className) {
+            svg.setAttribute('class', className);
+          }
+          ref.current.appendChild(svg);
+        }
+      }, [name, size, className]);
+      
+      return <span ref={ref} className={`inline-flex items-center justify-center ${className}`} {...props} />;
+    };
+
+    function App() {
+      // --- 1. 全局计算参数设置 ---
+      const [params, setParams] = useState({
+        weight7: 0.4,
+        weight14: 0.3,
+        weight30: 0.3,
+        purchaseDays: 40,
+        inspectionDays: 15,
+        safeDays: 5,
+        purchaseFreq: 30,
+        fbaUS: 45,
+        fbaEU: 75
+      });
+
+      const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+      const [isPasteOpen, setIsPasteOpen] = useState(false); 
+      const [pasteText, setPasteText] = useState(''); 
+      const [importMarket, setImportMarket] = useState('US'); 
+      const fileInputRef = useRef(null);
+
+      // --- 2. 产品数据状态 ---
+      const initialDemoData = [
+        { id: 1, name: '1522单榫同色外圆弧面(UK站)相框,橡木210x297mm,黑色,套1(玻璃板,有卡纸,有画芯)', sku: 'KSNEUK-PF-N2-OA210297BLK1P', market: 'UK', fbaStock: 200, totalStock: 800, sales7: 140, sales14: 300, sales30: 620, manualLeadTime: '' },
+        { id: 2, name: '极简保温杯', sku: 'CUP-US-01', market: 'US', fbaStock: 500, totalStock: 1200, sales7: 350, sales14: 680, sales30: 1500, manualLeadTime: '' },
+      ];
+
+      const [items, setItems] = useState(initialDemoData);
+      const [originalItems, setOriginalItems] = useState(JSON.parse(JSON.stringify(initialDemoData))); 
+
+      // --- 3. 核心计算逻辑 ---
+      const processedItems = useMemo(() => {
+        return items.map(item => {
+          const d7 = (Number(item.sales7) || 0) / 7;
+          const d14 = (Number(item.sales14) || 0) / 14;
+          const d30 = (Number(item.sales30) || 0) / 30;
+          const weightedDailySales = (d7 * params.weight7) + (d14 * params.weight14) + (d30 * params.weight30);
+
+          const baseLeadTime = Number(params.purchaseDays) + Number(params.inspectionDays) + Number(params.safeDays) + Number(params.purchaseFreq);
+          const fbaTime = (item.market === 'UK' || item.market === 'DE') ? Number(params.fbaEU) : Number(params.fbaUS);
+          const calculatedLeadTime = baseLeadTime + fbaTime;
+
+          const hasManualOverride = item.manualLeadTime !== '' && item.manualLeadTime !== null;
+          const finalLeadTime = hasManualOverride ? Number(item.manualLeadTime) : calculatedLeadTime;
+
+          const totalStock = Number(item.totalStock) || 0;
+          let replenishmentQty = Math.ceil((weightedDailySales * finalLeadTime) - totalStock);
+          if (replenishmentQty < 0) replenishmentQty = 0;
+
+          return {
+            ...item,
+            weightedDailySales: weightedDailySales.toFixed(2),
+            calculatedLeadTime,
+            finalLeadTime,
+            hasManualOverride,
+            replenishmentQty
+          };
+        });
+      }, [items, params]);
+
+      // --- 4. 交互操作函数 ---
+      const updateItem = (id, field, value) => {
+        setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item));
+      };
+
+      const addItem = () => {
+        setItems([...items, {
+          id: Date.now(), name: '', sku: '', market: importMarket, 
+          fbaStock: '', totalStock: '', sales7: '', sales14: '', sales30: '', manualLeadTime: ''
+        }]);
+      };
+
+      const deleteItem = (id) => setItems(items.filter(item => item.id !== id));
+
+      const updateParam = (field, value) => {
+        setParams({ ...params, [field]: Number(value) || 0 });
+      };
+
+      // --- 5. Excel/CSV 真实文件解析逻辑 ---
+      const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          try {
+            // 使用 SheetJS 将二进制数据解析为工作簿
+            const data = new Uint8Array(evt.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            
+            // 获取第一张表
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            
+            // 将表格转换为二维数组 (header: 1 代表按行数组输出)
+            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            
+            if (jsonData.length <= 1) return alert('文件内容为空或仅有表头。');
+
+            const newItems = [];
+            // 从索引 1 开始（跳过表头）
+            for (let i = 1; i < jsonData.length; i++) {
+              const cols = jsonData[i];
+              // 跳过空行
+              if (!cols || cols.length === 0 || (cols.length === 1 && !cols[0])) continue;
+
+              newItems.push({
+                id: Date.now() + i,
+                name: cols[0] ? String(cols[0]).trim() : '未命名',
+                sku: cols[1] ? String(cols[1]).trim() : '无SKU',
+                market: importMarket, // 使用上传面板选择的国家站点
+                fbaStock: cols[2] || 0,
+                totalStock: cols[3] || 0,
+                sales7: cols[4] || 0,
+                sales14: cols[5] || 0,
+                sales30: cols[6] || 0,
+                manualLeadTime: ''
+              });
+            }
+
+            if (newItems.length > 0) {
+              setItems(newItems);
+              setOriginalItems(JSON.parse(JSON.stringify(newItems))); 
+            } else {
+              alert('未能提取到有效数据，请检查表格格式。');
+            }
+          } catch (error) {
+            console.error("解析错误:", error);
+            alert('解析文件失败！请确保上传的是有效的 Excel (.xls/.xlsx) 或 CSV 文件。如果自己改过后缀名，请重新另存为标准格式。');
+          }
+          
+          if(fileInputRef.current) fileInputRef.current.value = '';
+        };
+        // 以 ArrayBuffer 读取，兼容所有 Excel 格式
+        reader.readAsArrayBuffer(file); 
+      };
+
+      // --- 6. 粘贴数据解析逻辑 ---
+      const handlePasteProcess = () => {
+        if (!pasteText.trim()) return;
+        
+        // 按回车分割每一行
+        const lines = pasteText.split(/\r?\n/).filter(line => line.trim());
+        const newItems = [];
+
+        for (let i = 0; i < lines.length; i++) {
+          // Excel 复制出来的数据，列与列之间默认带有 Tab 制表符 (\t)
+          const cols = lines[i].split('\t').map(c => c.trim().replace(/^"|"$/g, ''));
+          
+          // 智能判断第一行是不是表头（如果你不小心连着第一行中文表头一起复制了，自动跳过）
+          if (i === 0 && (cols[0] === '品名' || cols[1] === 'SKU' || cols[0].includes('名称'))) {
+            continue; 
+          }
+
+          // 只要有前两列就可以生成
+          if (cols.length >= 2) {
+            newItems.push({
+              id: Date.now() + i,
+              name: cols[0] || '未命名',
+              sku: cols[1] || '无SKU',
+              market: importMarket, 
+              fbaStock: cols[2] || 0,
+              totalStock: cols[3] || 0,
+              sales7: cols[4] || 0,
+              sales14: cols[5] || 0,
+              sales30: cols[6] || 0,
+              manualLeadTime: ''
+            });
+          }
+        }
+
+        if (newItems.length > 0) {
+          setItems(newItems);
+          setOriginalItems(JSON.parse(JSON.stringify(newItems))); 
+          setIsPasteOpen(false); // 关闭弹窗
+          setPasteText(''); // 清空输入框
+        } else {
+          alert('未能识别有效数据，请确保是从 Excel 直接复制（列之间需使用 Tab 键分隔）。');
+        }
+      };
+
+      // --- 7. 还原、清空与导出逻辑 ---
+      const handleReset = () => {
+        setItems(JSON.parse(JSON.stringify(originalItems)));
+      };
+
+      const handleClearAll = () => {
+        setItems([]);
+        setOriginalItems([]);
+      };
+
+      const exportResults = () => {
+        const headers = ["品名", "SKU", "站点", "FBA库存", "总库存", "7天销量", "14天销量", "30天销量", "加权日销", "备货天数", "建议翻单量"];
+        const csvRows = [headers.join(",")];
+
+        // 专业的 CSV 转义函数：处理品名中含有逗号(,)和双引号(")的情况
+        const escapeCSV = (val) => {
+          const str = String(val || '');
+          // 将内部所有的双引号替换为两个双引号(CSV标准规范)，并在最外层用双引号包裹
+          return `"${str.replace(/"/g, '""')}"`;
+        };
+
+        processedItems.forEach(item => {
+          const row = [
+            escapeCSV(item.name), 
+            escapeCSV(item.sku),
+            item.market,
+            item.fbaStock,
+            item.totalStock,
+            item.sales7,
+            item.sales14,
+            item.sales30,
+            item.weightedDailySales,
+            item.finalLeadTime,
+            item.replenishmentQty
+          ];
+          csvRows.push(row.join(","));
+        });
+
+        const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + csvRows.join("\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `翻单计算结果_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+
+      const totalReplenishment = processedItems.reduce((sum, item) => sum + item.replenishmentQty, 0);
+      const itemsNeedingRestock = processedItems.filter(item => item.replenishmentQty > 0).length;
+
+      return (
+        <div className="min-h-screen bg-[#F8FAFC] p-6 font-sans text-slate-800">
+          <div className="max-w-[1400px] mx-auto space-y-6">
+            
+            {/* --- Header --- */}
+            <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4 pb-4 border-b border-slate-200">
+              <div>
+                <div className="flex items-center space-x-2 mb-1">
+                  <Icon name="Calculator" className="text-indigo-600" size={24} />
+                  <h1 className="text-2xl font-bold text-slate-900 tracking-tight">智能库存翻单系统</h1>
+                </div>
+                <p className="text-sm text-slate-500">支持 Excel (.xls/.xlsx) 上传 · 支持表格一键粘贴识别</p>
+              </div>
+              
+              <div className="flex items-center space-x-2 flex-wrap gap-y-2">
+                
+                {/* 站点选择与导入组件 */}
+                <div className="flex items-center bg-white border border-indigo-200 rounded-lg shadow-sm overflow-hidden focus-within:ring-2 focus-within:ring-indigo-500 transition-all">
+                  <div className="flex items-center px-2 bg-indigo-50 border-r border-indigo-100" title="选择接下来导入/粘贴的数据属于哪个站点">
+                    <Icon name="Globe" size={14} className="text-indigo-500 mr-1" />
+                    <select 
+                      value={importMarket} 
+                      onChange={(e) => setImportMarket(e.target.value)}
+                      className="text-sm bg-transparent border-none focus:ring-0 text-indigo-800 font-semibold cursor-pointer py-2 pl-1 pr-6 outline-none"
+                    >
+                      <option value="US">美国 (US)</option>
+                      <option value="UK">英国 (UK)</option>
+                      <option value="DE">德国 (DE)</option>
+                    </select>
+                  </div>
+                  
+                  {/* 文件上传 (支持 Excel) */}
+                  <input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" ref={fileInputRef} onChange={handleFileUpload} className="hidden" />
+                  <button onClick={() => fileInputRef.current?.click()} className="flex items-center space-x-1.5 px-3 py-2 text-sm font-bold text-indigo-600 hover:bg-indigo-50 transition-all border-r border-indigo-100">
+                    <Icon name="Upload" size={16} />
+                    <span>传文件</span>
+                  </button>
+                  
+                  {/* 粘贴按钮 */}
+                  <button onClick={() => setIsPasteOpen(true)} className="flex items-center space-x-1.5 px-3 py-2 text-sm font-bold text-indigo-600 hover:bg-indigo-50 transition-all">
+                    <Icon name="ClipboardPaste" size={16} />
+                    <span>粘贴数据</span>
+                  </button>
+                </div>
+
+                <button onClick={handleReset} className="flex items-center space-x-1.5 px-3 py-2 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-all shadow-sm" title="放弃手动修改，还原回原始数据">
+                  <Icon name="RotateCcw" size={16} />
+                  <span className="hidden lg:inline">刷新重置</span>
+                </button>
+
+                {/* 新增：一键清空按钮 */}
+                <button onClick={handleClearAll} className="flex items-center space-x-1.5 px-3 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-all shadow-sm" title="清空当前表格所有数据">
+                  <Icon name="Trash2" size={16} />
+                  <span className="hidden md:inline">一键清空</span>
+                </button>
+
+                <button onClick={exportResults} className="flex items-center space-x-1.5 px-3 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-all shadow-sm">
+                  <Icon name="FileDown" size={16} />
+                  <span className="hidden lg:inline">导出结果</span>
+                </button>
+
+                <button onClick={() => setIsSettingsOpen(true)} className="flex items-center space-x-1.5 px-3 py-2 text-sm font-medium text-slate-700 bg-slate-100 border border-slate-300 rounded-lg hover:bg-slate-200 transition-all shadow-sm">
+                  <Icon name="Settings" size={16} />
+                  <span className="hidden md:inline">全局参数设置</span>
+                </button>
+
+                <button onClick={addItem} className="flex items-center space-x-1.5 px-3 py-2 text-sm font-medium text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-all shadow-md">
+                  <Icon name="Plus" size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* --- 统计看板 --- */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl"><Icon name="Package" size={20} /></div>
+                  <p className="text-sm font-medium text-slate-600">建议总采购/翻单量</p>
+                </div>
+                <div className="mt-auto">
+                  <h2 className="text-4xl font-bold text-slate-900 tracking-tight">{totalReplenishment.toLocaleString()} <span className="text-base font-normal text-slate-500 ml-1">件</span></h2>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl"><Icon name="TrendingUp" size={20} /></div>
+                  <p className="text-sm font-medium text-slate-600">当前亟需补货 SKU 数</p>
+                </div>
+                <div className="mt-auto">
+                  <h2 className="text-4xl font-bold text-slate-900 tracking-tight">{itemsNeedingRestock} <span className="text-base font-normal text-slate-400 ml-1">/ {items.length} 个</span></h2>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 shadow-md text-white flex flex-col relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-6 opacity-10"><Icon name="Calculator" size={80} /></div>
+                <div className="flex items-center space-x-3 mb-2 relative z-10">
+                  <div className="p-2 bg-white/10 rounded-xl"><Icon name="Info" size={20} /></div>
+                  <p className="text-sm font-medium text-slate-200">当前核心计算公式</p>
+                </div>
+                <div className="mt-auto relative z-10 space-y-1.5 text-sm text-slate-300">
+                  <p>1. 日销 = 7日({params.weight7*100}%) + 14日({params.weight14*100}%) + 30日({params.weight30*100}%)</p>
+                  <p>2. 备货时长 = 默认全局时长 <span className="text-indigo-300">(或单品独立修改值)</span></p>
+                  <p className="text-white font-medium mt-2 pt-2 border-t border-slate-700">最终翻单量 = (加权日销 × 备货时长) - 总库存</p>
+                </div>
+              </div>
+            </div>
+
+            {/* --- 主表格 --- */}
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200 tracking-wider">
+                    <tr>
+                      <th className="px-5 py-4 font-semibold w-72">产品及 SKU</th>
+                      <th className="px-4 py-4 font-semibold w-24">站点</th>
+                      <th className="px-4 py-4 font-semibold text-right">FBA库存</th>
+                      <th className="px-4 py-4 font-semibold text-right">总库存</th>
+                      <th className="px-4 py-4 font-semibold text-right">7天销量</th>
+                      <th className="px-4 py-4 font-semibold text-right">14天销量</th>
+                      <th className="px-4 py-4 font-semibold text-right">30天销量</th>
+                      <th className="px-4 py-4 font-semibold text-right bg-indigo-50/50">加权日销</th>
+                      <th className="px-4 py-4 font-semibold text-right bg-amber-50/50 relative group">
+                        备货天数 
+                        <Icon name="Info" size={14} className="inline ml-1 text-slate-400 cursor-help" />
+                        <div className="absolute hidden group-hover:block bottom-full right-0 mb-2 w-48 p-2 bg-slate-800 text-white text-xs rounded shadow-lg z-10 font-normal normal-case">
+                          可直接点击下方数字修改单品特调天数，留空则使用全局默认时长。
+                        </div>
+                      </th>
+                      <th className="px-5 py-4 font-semibold text-right bg-emerald-50/50">建议翻单量</th>
+                      <th className="px-4 py-4 font-semibold text-center w-16">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {processedItems.length === 0 ? (
+                      <tr>
+                        <td colSpan="11" className="px-6 py-16 text-center">
+                          <div className="flex flex-col items-center justify-center text-slate-400">
+                            <Icon name="Package" size={48} className="mb-3 opacity-50" />
+                            <p className="text-base font-medium text-slate-600">暂无数据</p>
+                            <p className="text-sm mt-1">请点击右上方添加产品，或导入表格数据</p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      processedItems.map((item) => (
+                        <tr key={item.id} className="hover:bg-slate-50/80 transition-colors group">
+                          <td className="px-5 py-3">
+                            <textarea 
+                              value={item.name} 
+                              onChange={(e) => updateItem(item.id, 'name', e.target.value)}
+                              className="w-full text-sm font-semibold text-slate-900 bg-transparent border border-transparent hover:border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded px-2 py-1 transition-all resize-none overflow-hidden"
+                              placeholder="产品名称"
+                              rows="2"
+                            />
+                            <input 
+                              type="text" value={item.sku} onChange={(e) => updateItem(item.id, 'sku', e.target.value)}
+                              className="w-full text-xs text-slate-500 bg-transparent border border-transparent hover:border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded px-2 py-1 mt-0.5 transition-all"
+                              placeholder="SKU"
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <select
+                              value={item.market} onChange={(e) => updateItem(item.id, 'market', e.target.value)}
+                              className={`w-full text-xs font-semibold border-slate-200 rounded-md focus:ring-indigo-500 focus:border-indigo-500 p-1.5 cursor-pointer
+                                ${item.market === 'US' ? 'bg-blue-50 text-blue-700' : item.market === 'UK' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}
+                              `}
+                            >
+                              <option value="US">🇺🇸 US</option>
+                              <option value="UK">🇬🇧 UK</option>
+                              <option value="DE">🇩🇪 DE</option>
+                            </select>
+                          </td>
+                          <td className="px-4 py-3">
+                            <input type="number" value={item.fbaStock} onChange={(e) => updateItem(item.id, 'fbaStock', e.target.value)}
+                              className="w-full text-sm text-right bg-white border border-slate-200 hover:border-slate-300 rounded-md p-1.5 focus:ring-indigo-500 focus:border-indigo-500 transition-all" placeholder="0" />
+                          </td>
+                          <td className="px-4 py-3">
+                            <input type="number" value={item.totalStock} onChange={(e) => updateItem(item.id, 'totalStock', e.target.value)}
+                              className="w-full text-sm font-medium text-right bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-md p-1.5 focus:ring-indigo-500 focus:border-indigo-500 transition-all" placeholder="0" />
+                          </td>
+                          <td className="px-4 py-3">
+                            <input type="number" value={item.sales7} onChange={(e) => updateItem(item.id, 'sales7', e.target.value)}
+                              className="w-full text-sm text-right bg-white border border-slate-200 hover:border-slate-300 rounded-md p-1.5 focus:ring-indigo-500 focus:border-indigo-500 transition-all" placeholder="0" />
+                          </td>
+                          <td className="px-4 py-3">
+                            <input type="number" value={item.sales14} onChange={(e) => updateItem(item.id, 'sales14', e.target.value)}
+                              className="w-full text-sm text-right bg-white border border-slate-200 hover:border-slate-300 rounded-md p-1.5 focus:ring-indigo-500 focus:border-indigo-500 transition-all" placeholder="0" />
+                          </td>
+                          <td className="px-4 py-3">
+                            <input type="number" value={item.sales30} onChange={(e) => updateItem(item.id, 'sales30', e.target.value)}
+                              className="w-full text-sm text-right bg-white border border-slate-200 hover:border-slate-300 rounded-md p-1.5 focus:ring-indigo-500 focus:border-indigo-500 transition-all" placeholder="0" />
+                          </td>
+                          
+                          {/* 加权日销 */}
+                          <td className="px-4 py-3 text-right bg-indigo-50/20">
+                            <div className="text-sm font-bold text-indigo-900">{item.weightedDailySales}</div>
+                          </td>
+                          
+                          {/* 备货天数 (支持单品手动修改) */}
+                          <td className="px-4 py-3 bg-amber-50/20">
+                            <div className="relative flex items-center justify-end">
+                              <input 
+                                type="number" 
+                                value={item.manualLeadTime} 
+                                onChange={(e) => updateItem(item.id, 'manualLeadTime', e.target.value)}
+                                placeholder={item.calculatedLeadTime}
+                                className={`w-20 text-sm font-bold text-right border rounded-md p-1.5 transition-all focus:ring-indigo-500 focus:border-indigo-500
+                                  ${item.hasManualOverride 
+                                    ? 'bg-amber-100/50 border-amber-300 text-amber-700' 
+                                    : 'bg-transparent border-transparent hover:border-slate-300 text-slate-700 placeholder-slate-700' 
+                                  }
+                                `}
+                                title={item.hasManualOverride ? "当前为单品特调备货时长，清除数字恢复全局默认" : `全局默认计算时长: ${item.calculatedLeadTime}天`}
+                              />
+                              {item.hasManualOverride && (
+                                <div className="absolute -right-1 -top-1">
+                                  <span className="flex h-2 w-2 relative">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* 最终翻单量 */}
+                          <td className="px-5 py-3 text-right bg-emerald-50/30">
+                            <div className={`text-lg font-bold ${item.replenishmentQty > 0 ? 'text-emerald-600' : 'text-slate-300'}`}>
+                              {item.replenishmentQty > 0 ? item.replenishmentQty.toLocaleString() : '-'}
+                            </div>
+                          </td>
+                          
+                          <td className="px-4 py-3 text-center">
+                            <button onClick={() => deleteItem(item.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors opacity-0 group-hover:opacity-100">
+                              <Icon name="Trash2" size={18} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {/* --- 粘贴数据弹窗 --- */}
+          {isPasteOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsPasteOpen(false)}></div>
+              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50/50">
+                  <div className="flex items-center space-x-2">
+                    <div className="p-1.5 bg-indigo-100 text-indigo-600 rounded-md"><Icon name="ClipboardPaste" size={18} /></div>
+                    <h3 className="text-lg font-bold text-slate-900">从 Excel 粘贴数据</h3>
+                  </div>
+                  <button onClick={() => setIsPasteOpen(false)} className="text-slate-400 hover:text-slate-700 transition-colors">
+                    <Icon name="X" size={24} />
+                  </button>
+                </div>
+                
+                <div className="p-6">
+                  <div className="mb-4 text-sm text-slate-600 bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                    <p className="font-medium text-blue-800 mb-1 flex items-center"><Icon name="Info" size={16} className="mr-1.5"/> 使用说明</p>
+                    <p>1. 请在本地 Excel 中选中你需要计算的行和列 <b>(必须按照：品名、SKU、FBA库存、总库存、7天、14天、30天销量 顺序排好)</b>。</p>
+                    <p>2. 直接按 <kbd className="px-1.5 py-0.5 bg-white border border-slate-300 rounded text-xs shadow-sm">Ctrl+C</kbd> 复制，然后点击下方输入框按 <kbd className="px-1.5 py-0.5 bg-white border border-slate-300 rounded text-xs shadow-sm">Ctrl+V</kbd> 粘贴。</p>
+                    <p className="text-xs text-slate-500 mt-1">注：连同第一行中文表头一起复制进来也没关系，系统会自动识别并跳过表头。</p>
+                  </div>
+
+                  <textarea 
+                    value={pasteText}
+                    onChange={(e) => setPasteText(e.target.value)}
+                    placeholder="在此处粘贴 Excel 数据..."
+                    className="w-full h-64 p-4 text-sm font-mono border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none shadow-inner"
+                  ></textarea>
+                </div>
+
+                <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end space-x-3">
+                  <button onClick={() => setIsPasteOpen(false)} className="px-5 py-2 text-slate-600 bg-white border border-slate-300 rounded-lg font-medium hover:bg-slate-50 transition-colors">
+                    取消
+                  </button>
+                  <button onClick={handlePasteProcess} className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors shadow-md flex items-center space-x-1.5">
+                    <Icon name="CheckCircle2" size={18} />
+                    <span>确认解析</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* --- 全局参数设置侧边栏/弹窗 --- */}
+          {isSettingsOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsSettingsOpen(false)}></div>
+              <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50/50">
+                  <div className="flex items-center space-x-2">
+                    <Icon name="Settings" className="text-slate-700" size={20} />
+                    <h3 className="text-lg font-bold text-slate-900">全局计算逻辑配置</h3>
+                  </div>
+                  <button onClick={() => setIsSettingsOpen(false)} className="text-slate-400 hover:text-slate-700 transition-colors">
+                    <Icon name="X" size={24} />
+                  </button>
+                </div>
+                
+                <div className="p-6 space-y-8">
+                  {/* 权重设置 */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4 flex items-center"><Icon name="TrendingUp" size={16} className="mr-2"/> 销量加权占比配置</h4>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs text-slate-500 mb-1">7天销量权重</label>
+                        <div className="relative">
+                          <input type="number" step="0.1" value={params.weight7} onChange={e => updateParam('weight7', e.target.value)} className="w-full pl-3 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                          <span className="absolute right-3 top-2 text-slate-400 text-sm">{(params.weight7*100).toFixed(0)}%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-500 mb-1">14天销量权重</label>
+                        <div className="relative">
+                          <input type="number" step="0.1" value={params.weight14} onChange={e => updateParam('weight14', e.target.value)} className="w-full pl-3 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                          <span className="absolute right-3 top-2 text-slate-400 text-sm">{(params.weight14*100).toFixed(0)}%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-500 mb-1">30天销量权重</label>
+                        <div className="relative">
+                          <input type="number" step="0.1" value={params.weight30} onChange={e => updateParam('weight30', e.target.value)} className="w-full pl-3 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500" />
+                          <span className="absolute right-3 top-2 text-slate-400 text-sm">{(params.weight30*100).toFixed(0)}%</span>
+                        </div>
+                      </div>
+                    </div>
+                    { (params.weight7 + params.weight14 + params.weight30 !== 1) && (
+                      <p className="text-xs text-amber-600 mt-2 flex items-center"><Icon name="AlertCircle" size={12} className="mr-1"/> 提示：建议三项权重相加等于 1.0 (100%)</p>
+                    )}
+                  </div>
+
+                  {/* 备货天数设置 */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4 flex items-center"><Icon name="RefreshCw" size={16} className="mr-2"/> 供应链环节默认天数</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                      <div>
+                        <label className="block text-xs text-slate-500 mb-1">采购交期</label>
+                        <div className="relative"><input type="number" value={params.purchaseDays} onChange={e => updateParam('purchaseDays', e.target.value)} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500"/><span className="absolute right-3 top-2 text-slate-400 text-sm">天</span></div>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-500 mb-1">质检+发港</label>
+                        <div className="relative"><input type="number" value={params.inspectionDays} onChange={e => updateParam('inspectionDays', e.target.value)} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500"/><span className="absolute right-3 top-2 text-slate-400 text-sm">天</span></div>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-500 mb-1">安全天数</label>
+                        <div className="relative"><input type="number" value={params.safeDays} onChange={e => updateParam('safeDays', e.target.value)} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500"/><span className="absolute right-3 top-2 text-slate-400 text-sm">天</span></div>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-500 mb-1">采购频率</label>
+                        <div className="relative"><input type="number" value={params.purchaseFreq} onChange={e => updateParam('purchaseFreq', e.target.value)} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-indigo-500 focus:border-indigo-500"/><span className="absolute right-3 top-2 text-slate-400 text-sm">天</span></div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                      <div className="bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                        <label className="block text-xs font-medium text-blue-800 mb-1">🇺🇸 美国 FBA 时效</label>
+                        <div className="relative"><input type="number" value={params.fbaUS} onChange={e => updateParam('fbaUS', e.target.value)} className="w-full p-2 bg-white border border-blue-200 rounded-lg text-sm focus:ring-blue-500 focus:border-blue-500"/><span className="absolute right-3 top-2 text-slate-400 text-sm">天</span></div>
+                      </div>
+                      <div className="bg-amber-50/50 p-3 rounded-lg border border-amber-100">
+                        <label className="block text-xs font-medium text-amber-800 mb-1">🇬🇧/🇩🇪 英国/德国 FBA 时效</label>
+                        <div className="relative"><input type="number" value={params.fbaEU} onChange={e => updateParam('fbaEU', e.target.value)} className="w-full p-2 bg-white border border-amber-200 rounded-lg text-sm focus:ring-amber-500 focus:border-amber-500"/><span className="absolute right-3 top-2 text-slate-400 text-sm">天</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+                  <button onClick={() => setIsSettingsOpen(false)} className="px-6 py-2 bg-slate-900 text-white rounded-lg font-medium hover:bg-slate-800 transition-colors shadow-md">
+                    完成并应用
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // 渲染应用
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

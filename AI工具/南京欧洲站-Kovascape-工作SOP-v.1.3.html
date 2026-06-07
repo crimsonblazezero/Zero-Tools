@@ -1,0 +1,1547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOP Interactive Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Custom Scrollbar */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useEffect } = React;
+        
+        // --- LUCIDE ICONS WRAPPER ---
+        const Icon = ({ name, size = 24, className = "" }) => {
+            useEffect(() => {
+                lucide.createIcons();
+            }, [name]);
+
+            return <i data-lucide={name} width={size} height={size} className={className}></i>;
+        };
+
+        // --- DATA ---
+        const SOP_DATA = [
+            {
+                id: 'phase1',
+                title: '第一阶段：市场与产品调研',
+                subtitle: 'Market Research',
+                icon: 'search',
+                color: 'bg-blue-600',
+                border: 'border-blue-200',
+                text: 'text-blue-700',
+                steps: [
+                    {
+                        id: '1.1',
+                        title: '市场空间分析',
+                        roles: ['运营', '部门负责人'],
+                        tools: ['ABA', '卖家精灵', 'Google Trends'],
+                        tasks: [
+                            '查询亚马逊热搜词 TOP30W 搜索量',
+                            '使用 卖家精灵(AI市场分析) 分析亚马逊小类目ABA排名/搜索量/淡旺季/PPC/垄断度',
+                            '制作 Google 趋势与熟悉产品（如相框、层板）的对比趋势图',
+                            '主要竞品 ASIN 分析'
+                        ],
+                        outputs: ['ABA、卖家精灵、Google 趋势对比数据', '熟悉产品对比图'],
+                        notes: '重点关注市场容量与趋势'
+                    },
+                    {
+                        id: '1.2',
+                        title: '竞品信息收集',
+                        roles: ['运营'],
+                        tools: ['卖家精灵/前台/ABA'],
+                        tasks: [
+                            '找到对标竞品，收集主要竞品 ASIN',
+                            '收集价格、评论数、评分、排名信息',
+                            '收集外观展示图片、功能统计',
+                            '材质统计（如塑料、玻璃、实木、MDF、铝合金等）',
+                            '热卖颜色尺寸统计'
+                        ],
+                        outputs: ['竞品 ASIN 列表', '竞品信息汇总表'],
+                        notes: '确保找到主要对标竞品'
+                    },
+                    {
+                        id: '1.3',
+                        title: '卖点与痛点分析',
+                        roles: ['运营'],
+                        tools: ['Review Analysis'],
+                        tasks: [
+                            '好评反馈统计（质量优秀、耐用、物美价廉、送礼喜欢）',
+                            '产品质量问题分析（品质差、短时间损坏）',
+                            '产品结构问题分析（弯曲、承重不足）',
+                            '价格不满意与包装破损问题统计'
+                        ],
+                        outputs: ['商品差评点分析报告', '改进建议给 QC 及采购'],
+                        notes: '重点关注：收集包装差评点，反馈给 QC 及采购'
+                    }
+                ]
+            },
+            {
+                id: 'phase2',
+                title: '第二阶段：产品开发与采购',
+                subtitle: 'Development & Sourcing',
+                icon: 'package',
+                color: 'bg-indigo-600',
+                border: 'border-indigo-200',
+                text: 'text-indigo-700',
+                steps: [
+                    {
+                        id: '2.1',
+                        title: '产品开发设计',
+                        roles: ['开发', '运营'],
+                        tools: ['CAD', 'Design Tools'],
+                        tasks: [
+                            '确认材质、结构、尺寸、颜色等变体属性',
+                            '开发同事出具设计图纸',
+                            '确认是否有起订量要求'
+                        ],
+                        outputs: ['设计图纸', '产品规格书'],
+                        notes: '开发对接人：牛冲冲、王子旋'
+                    },
+                    {
+                        id: '2.2',
+                        title: '采购报价与核算',
+                        roles: ['采购', '运营', '部门负责人'],
+                        tools: ['FBA利润计算器'],
+                        tasks: [
+                            '采购给到 1 个或多个工厂报价及MOQ',
+                            '运营选择报价较低工厂价格并确认',
+                            '运营核价测算利润情况',
+                            '判断是否值得开发(毛利率达标大于20%)',
+                            '若不通过：和采购沟通寻找合适报价（可参考公司其他产品报价）'
+                        ],
+                        outputs: ['工厂报价单', '利润测算表'],
+                        notes: '采购对接人：沃凯敏、王新、高晓琴'
+                    },
+                    {
+                        id: '2.3',
+                        title: '打样与下单',
+                        roles: ['采购', '运营'],
+                        tools: ['简道云'],
+                        tasks: [
+                            '工厂进行打样确认（样品不通过，给出修改意见，重新出样）',
+                            '基于市场调研及竞品历史数据及参考公司同类产品确定下单 SKU 及数量',
+                            '采购回复交期，运营及时确认发货日期（验货后 2-7 天发货）'
+                        ],
+                        outputs: ['样品确认单', '简道云采购单'],
+                        notes: '美国到仓周期约 45 天；热卖 SKU 每月至少发一次'
+                    }
+                ]
+            },
+            {
+                id: 'phase3',
+                title: '第三阶段：上架前准备',
+                subtitle: 'Pre-Launch Preparation',
+                icon: 'image',
+                color: 'bg-purple-600',
+                border: 'border-purple-200',
+                text: 'text-purple-700',
+                steps: [
+                    {
+                        id: '3.1',
+                        title: '包装与说明书',
+                        roles: ['运营负责人', '开发同事'],
+                        tools: ['AI 翻译工具'],
+                        tasks: [
+                            '产品外盒报包装设计',
+                            '产品箱唛（检查尺寸、是否超大件）',
+                            '产品使用说明书制作（开发制作的八国语言说明书）',
+                            '验货报告（钉钉验货报告推送）'
+                        ],
+                        outputs: ['包装设计稿', '说明书 PDF'],
+                        notes: '注意：是否为标件产品超出到大件部分。全检、抽检、质检流程。是否有验货数据异常、出货数量短缺等'
+                    },
+                    {
+                        id: '3.2',
+                        title: '视觉方案 (图片/视频)',
+                        roles: ['运营', '美工'],
+                        tools: ['Camera+AI'],
+                        tasks: [
+                            '站内外竞品视觉调研',
+                            '输出拍照方案文案与视频拍摄方案',
+                            'AI生成草图或示意图给美工参考',
+                            '样品实物到位：相框全颜色，5x7/8x8/8x10/11x14/13x19/16x16/16x24/24x36 ; 空心层板样品全颜色，8或者10/24/36/48',
+                            '场景布置与拍摄剪辑',
+                            '图片优化定稿'
+                        ],
+                        outputs: ['主图、A+、旗舰店、视频素材', '拍摄需求单'],
+                        notes: '美工对接人：李菊；需符合品牌调性'
+                    },
+                    {
+                        id: '3.3',
+                        title: '文案与 Listing',
+                        roles: ['运营'],
+                        tools: ['ABA', '卖家精灵', 'AI'],
+                        tasks: [
+                            '关键词调研（卖家精灵关键词挖掘，词库搭建：大词、长尾词列表）',
+                            'Listing 文案撰写（标题、五点、描述）',
+                            '利用 AI Agent结合Rufus的QA 优化文案',
+                            '利用 AI Agent检查违禁词',
+                            '利用 AI Agent检查文案图片是否符合品牌调性-（情感连接/词库红绿灯）',
+                            '人工二次审核'
+                        ],
+                        outputs: ['关键词词库', '完整 Listing 文案', 'A+ 页面'],
+                        notes: '参考小类 TOP100 的 Listing 写法'
+                    }
+                ]
+            },
+            {
+                id: 'phase4',
+                title: '第四阶段：新品推广与运营',
+                subtitle: 'Launch & Promotion',
+                icon: 'trending-up',
+                color: 'bg-green-600',
+                border: 'border-green-200',
+                text: 'text-green-700',
+                steps: [
+                    {
+                        id: '4.1',
+                        title: '新品启动 (Launch)',
+                        roles: ['运营', '部门负责人'],
+                        tools: ['Vine', 'Amazon Backend'],
+                        tasks: [
+                            '新品爆款打造计划制定',
+                            '根据货值参加 10-30 个 Vine 计划',
+                            '秒杀资格确认 (BD/LD)',
+                            '划线价设置（新品最多低于划线价 20%)'
+                        ],
+                        outputs: ['新品推广计划表', 'Vine 注册成功'],
+                        notes: '注意：秒杀提报价格不得低于划线价 15%'
+                    },
+                    {
+                        id: '4.2',
+                        title: '广告投放',
+                        roles: ['运营'],
+                        tools: ['Flywheel DSP', '阿波罗', 'Xnurta'],
+                        tasks: [
+                            '广告架构梳理 (SOP)',
+                            '包含广告经理 DAA 计划',
+                            'Flywheel DSP 服务投放',
+                            'Xnurta定期报告分析AI广告效果及托管组非托管换组数据对比'
+                        ],
+                        outputs: ['广告投放架构', '广告优化日报'],
+                        notes: '领星,Xnurta,西柚结合'
+                    },
+                    {
+                        id: '4.3',
+                        title: '站外引流',
+                        roles: ['运营负责人'],
+                        tools: ['Amazon Associates', 'Facebook', 'Influencers'],
+                        tasks: [
+                            '亚马逊后台创作者连接（预算 $5000,佣金 10% 起）',
+                            '社交媒体促销代码设置',
+                            'FB 发帖与红人营销',
+                            '独立站 Blog 宣发',
+                            '官方社媒发帖'
+                        ],
+                        outputs: ['站外推广方案', '红人合作列表'],
+                        notes: '逐步推进，不可激进'
+                    }
+                ]
+            },
+            {
+                id: 'phase5',
+                title: '第五阶段：日常运营与维护',
+                subtitle: 'Daily Operations',
+                icon: 'clipboard-list',
+                color: 'bg-orange-600',
+                border: 'border-orange-200',
+                text: 'text-orange-700',
+                steps: [
+                    {
+                        id: '5.1',
+                        title: '库存与供应链',
+                        roles: ['运营负责人', '物流对接', '采购同事'],
+                        tools: ['简道云', 'FBA'],
+                        tasks: [
+                            '简道云系统下单发货（每月 5 号前上传出运计划,20号之前补单一次)',
+                            'FBA 头程物流跟进（直至上架）',
+                            '退款退货分析与反馈',
+                            '盘库（防止断货）',
+                            '库龄监测,关注90天以上库存,减少超长期库存,提报BD/Woot等加快动销或重置库龄',
+                            '必要时候使用批量清仓滞销产品'
+                        ],
+                        outputs: ['发货计划', '库存盘点表'],
+                        notes: '物流对接：黄云天、李梦娣'
+                    },
+                    {
+                        id: '5.2',
+                        title: '数据报表',
+                        roles: ['运营'],
+                        tools: ['Excel', 'ERP'],
+                        tasks: [
+                            '周报：每周一早上 9 点前提交（上周日-本周六数据）',
+                            '月报：每月 8 号下班前提交（上月 1-31 号数据）',
+                            '店铺绩效维护与新政策解读'
+                        ],
+                        outputs: ['周报', '月报', '工作反馈报告'],
+                        notes: '数据来源：抓取美国时间销售数据'
+                    },
+                    {
+                        id: '5.3',
+                        title: '工具开发和使用 ★',
+                        roles: ['运营'],
+                        tools: ['AI'],
+                        tasks: [
+                            '每周四钉钉修改本周重点任务完成进度',
+                            '每周五钉钉更新下周重点任务',
+                            'SKU信息领星做配对',
+                            'SKU/FNSKU/ASIN/箱规/报价/尺寸登记SKU大表',
+                            '独立站Blog和社媒发帖登记独立站to-do list',
+                            '核价定价:亚马逊FBA利润核算器-EU/US',
+                            '翻单和装箱使用：销量分析助手&翻单计算器',
+                            '上传模版：借助变体文案编写器',
+                            '作图： KovaScape图片生成器+Gemini+lmarena',
+                            '创意搜集：每周定期1小时搜集Pinterest的素材',
+                            '新工具持续开发中……'
+                        ],
+                        outputs: ['重点任务清单', 'SKU大表', '独立站To-do List'],
+                        notes: '★ 此模块为重要工具与流程执行标准'
+                    }
+                ]
+            }
+        ];
+
+        const APOLLO_NEW_SOP_TREE = {
+            id: 'apollo_new',
+            title: "阿波罗-新品期 SOP",
+            icon: 'rocket',
+            color: 'bg-emerald-600',
+            description: '以流量为导向，快速获取精准流量，稳定转化率',
+            children: [
+                {
+                    title: "定义与目标",
+                    icon: 'target',
+                    color: 'bg-blue-500',
+                    children: [
+                        { title: "新品定义", tasks: ["未达到出单稳定期的产品"] },
+                        { title: "核心目标", tasks: ["以流量为导向", "尽快得到精准流量", "稳定转化率", "让商品进入出单稳定的老品期"] }
+                    ]
+                },
+                {
+                    title: "低客单价商品策略 (<$80)",
+                    icon: 'trending-up',
+                    color: 'bg-green-500',
+                    children: [
+                        {
+                            title: "预算分配",
+                            tasks: ["自动广告: 20%", "手动广告: 40%", "SBV: 40%"]
+                        },
+                        {
+                            title: "自动广告设置",
+                            children: [
+                                { title: "紧密匹配", tasks: ["建议竞价"] },
+                                { title: "宽泛匹配", tasks: ["建议竞价"] },
+                                { title: "同类商品", tasks: ["建议竞价"] }
+                            ]
+                        },
+                        {
+                            title: "手动广告设置",
+                            children: [
+                                { title: "精准匹配*3", tasks: ["类目高流量词", "竞价: 建议竞价 * 1.2"] },
+                            ]
+                        },
+                        { title: "SBV ", tasks: ["同精准广告词", "竞价: 建议竞价"] }
+                    ]
+                },
+                {
+                    title: "高客单价商品策略 (>$80)",
+                    icon: 'crown',
+                    color: 'bg-purple-500',
+                    children: [
+                        {
+                            title: "预算分配",
+                            tasks: ["自动广告*3: 10%", "手动精准*3: 50%","SBV: 10%", "SD商品投放: 10%","SD浏览再营销: 20%"]
+                        },
+                        {
+                            title: "自动广告",
+                            tasks: ["高中低出价", "不断向上推动竞价，直到有曝光为止","紧密匹配"]
+                        },
+                        {
+                            title: "手动广告",
+                            tasks: ["类目高相关词", "建议竞价 * 1.5"]
+                        },
+                        { title: "SD商品投放", tasks: ["VCPM竞价模式"] },
+                        { title: "SD浏览再营销", tasks: [] }
+                    ]
+                },
+                {
+                    title: "特殊问题处理",
+                    icon: 'alert-circle',
+                    color: 'bg-orange-500',
+                    children: [
+                        {
+                            title: "曝光不足",
+                            tasks: ["检查竞价是否过低", "检查关键词相关性", "适当提高竞价测试"]
+                        },
+                        {
+                            title: "建议竞价过高",
+                            tasks: ["测试广泛匹配，精准匹配，商品投放","每周测试3-5个广告活动,每个活动15-25个长尾词,每次活动预算5-10美金"]
+                        },
+                        {
+                            title: "点击率低",
+                            tasks: ["优化主图", "检查价格竞争力", "检查是否有 Review"]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        const APOLLO_MATURE_SOP_TREE = {
+            id: 'apollo_mature',
+            title: "阿波罗-老品期 SOP",
+            icon: 'layers',
+            color: 'bg-indigo-600',
+            description: '以利润为导向，控制 ACOS，优化流量结构',
+            children: [
+                {
+                    title: "定义与目标",
+                    icon: 'target',
+                    color: 'bg-blue-500',
+                    children: [
+                        { title: "老品定义", tasks: ["已达到出单稳定期的产品"] },
+                        { title: "核心目标", tasks: ["以利润为导向", "控制 ACOS", "流量从自动向手动精准转移"] }
+                    ]
+                },
+                {
+                    title: "低客单价老品架构 - 通用",
+                    icon: 'bar-chart-2',
+                    color: 'bg-teal-500',
+                    children: [
+                        {
+                            title: "流量转移策略",
+                            children: [
+                                { title: "自动广告", tasks: ["预算 20%", "出单转移到手动广泛","开拓优质词"] },
+                                { title: "手动广泛", tasks: ["预算 40%", "出单转移到手动精准","承接优质流量"] },
+                                { title: "手动精准", tasks: ["预算 20%", "承接优质流量"] },
+                                { title: "SP-类目投放", tasks: ["预算 20%", "出单转移到手动精准-SP商品投放"] },
+                                { title: "精否", tasks: ["转移投放后在原投放做精否"] }
+                            ]
+                        },
+                        {
+                            title: "优化节奏",
+                            tasks: [
+                                "一周下调1-2次价格,若 ACOS > 过去7天预期 -> 下调竞价则bid下调20%",
+                                "每周通过客户搜索词报告转移投放词",
+                                "第三方长尾词每周20-30个用广泛测试"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "高客单价老品架构",
+                    icon: 'crown',
+                    color: 'bg-purple-500',
+                    children: [
+                        {
+                            title: "流量布局",
+                            children: [
+                                { title: "自动广告", tasks: ["10%预算","找到合适词","出单词转移到手动广泛"] },
+                                { title: "手动精准", tasks: ["50-60%预算","承接手动广泛的优质词", "另外选5个大词做手动投放"] },
+                                { title: "SD-Remarkting", tasks: ["20%预算","高客单价用户思考周期长,需要引流"] },
+                                { title: "SD-Category", tasks: ["10%预算", "VCPM竞价模式", "SD流量矩阵带来大量点击"] },
+                                { title: "精否", tasks: ["转移投放后在原投放做精否"] }
+                            ]
+                        },
+                        {
+                            title: "补充解释",
+                            children: [
+                                { title: "Remarketing (再营销)", tasks: ["SD 广告投放", "针对浏览过但未购买的用户"] },
+                                { title: "VCPM 竞价模式", tasks: ["用于品牌推广", "获得大量曝光"] }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "高级策略",
+                    icon: 'shield',
+                    color: 'bg-purple-500',
+                    children: [
+                        {
+                            title: "根基广告-一次性工作",
+                            children: [
+                                { title: "品牌流量保护-爱国者广告", tasks: ["ASIN定投"] },
+                                { title: "流量测试-自动广告", tasks: ["紧密匹配","替换匹配"] },
+                                { title: "主流量保护", tasks: ["搜索词报告前10的词","30天广告出单前五且订单>15转化率不低于平均20%",
+                                "SP(精准/词组/广泛三词根)/SBV(精准/词组)","全部TOS100+CPC*0.9"] }
+                                
+                            ]
+                            
+                        },
+                        {
+                            title: "增量任务-两至四周工作",
+                            children: [
+                                { title: "词根闭环测试海铺-由低到高", tasks: ["选取第三方工具长尾词+人工造词","SP词组+广泛"] },
+                                { title: "出单流量闭环-PER", tasks: ["出单词:0单<30天<三单-SP词组广泛+SB词组广泛","30天≥三单-SP三种+SB词组广泛","30天≥5单-精准TOS100+SBV广泛词组",
+                                "广告出单ASIN:30天＞1单-SP-ASIN"] },
+                                { title: "增量试探", tasks: ["SD-ASIN定投","SD类目",
+                                "SP-RES词根闭环从中到高重点增投客户搜索词-正常CPC","SP-ASIN定投","SP-ASIN类目投放-竞品品牌-价格段"] }
+                                
+                            ]
+                            
+                        }
+                    ]
+                },
+                {
+                    title: "低客单价老品 - 红海策略",
+                    icon: 'shield',
+                    color: 'bg-red-500',
+                    children: [
+                        { title: "主要挑战", tasks: ["CPC 高", "竞争激烈"] },
+                        { title: "应对策略", tasks: ["采用防御式投放", "避开大词恶性竞争", "深挖长尾词"] }
+                    ]
+                }
+            ]
+        };
+
+        const LINGXING_SOP_TREE = {
+            id: 'lingxing',
+            title: "领星广告运营策略",
+            icon: 'settings',
+            color: 'bg-cyan-600',
+            description: '领星ERP广告活动管理与优化策略',
+            children: [
+                {
+                    title: "一、调整广告 (前置)",
+                    icon: 'filter',
+                    color: 'bg-slate-500',
+                    children: [
+                        {
+                            title: "基础调整",
+                            tasks: ["除 SBV 增投 (在后台进行) 之外的所有广告调整"]
+                        }
+                    ]
+                },
+                {
+                    title: "二、广告活动",
+                    icon: 'layout',
+                    color: 'bg-blue-600',
+                    children: [
+                        {
+                            title: "1. 广告组合 (预算分配)",
+                            tasks: [
+                                "勾选所有站点，逐品搜索",
+                                "检查预算情况进行合理调整——结合月度目标"
+                            ]
+                        },
+                        {
+                            title: "2. 广告位 (BID调整)",
+                            tasks: [
+                                "长期看其在各个广告位的表现",
+                                "适当调整 BID (Top of Search / Product Pages)"
+                            ]
+                        },
+                        {
+                            title: "3. 看 ASIN (表现监控)",
+                            tasks: [
+                                "根据投放 ASIN 历史表现，表现差劲的及时更换继续观察",
+                                "特殊情况：预算集中跑大词且表现差 -> 组内精否 -> 预算分给其他词 -> 大词单拉控制预算测试"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "三、广告组",
+                    icon: 'layers',
+                    color: 'bg-indigo-600',
+                    children: [
+                        {
+                            title: "1. 搜索词处理",
+                            children: [
+                                {
+                                    title: "（1）否词处理",
+                                    children: [
+                                        {
+                                            title: "精准否",
+                                            tasks: [
+                                                "点击达到设定的三倍平均点击但仍未出单，且该词在竞品流量占比较低",
+                                                "转化率远低于平均，且花费较大，若有其他流量补足，且竞品流量占比低"
+                                            ]
+                                        },
+                                        {
+                                            title: "词组否",
+                                            tasks: [
+                                                "不相关词根否定",
+                                                "词频统计：高点击不出单的 / 超高 ACOS 且低相关性的"
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    title: "（2）搜索词分类",
+                                    children: [
+                                        {
+                                            title: "有点击无成交占比高、点击分散",
+                                            tasks: [
+                                                "出单搜索词集中 -> 关联性高：精准投放观察；关联性低：精否",
+                                                "出单搜索词分散 -> 另增投 PER 观察；或考虑更换匹配方式 / 调整 BID"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            title: "2. 关键词处理",
+                            children: [
+                                {
+                                    title: "曝光低 / 表现好 / 三高词",
+                                    tasks: [
+                                        "曝光低：增加 BID 做测试",
+                                        "各指标好：维稳，考虑增加该词在 SD、SB、SBV 的投放",
+                                        "点击多、CPC高、ACOS高 (自然位靠前)：适当降低 BID",
+                                        "点击多、CPC高、ACOS高 (无自然位)：结合竞品流量和历史表现，考虑是否保持",
+                                        "结合搜索词表现：考虑降低 BID，精细化投放，或测试其他方式"
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        const XIYOU_SOP_TREE = {
+            id: 'xiyou',
+            title: "西柚找词运营策略",
+            icon: 'pie-chart',
+            color: 'bg-rose-600',
+            description: '流量分析与补足策略',
+            children: [
+                {
+                    title: "一、西柚找词基础",
+                    icon: 'search',
+                    color: 'bg-orange-500',
+                    children: [
+                        { title: "1. 本品流量", tasks: [] },
+                        { title: "2. 竞品反查", tasks: [] },
+                        { title: "3. 本品竞品对比板", tasks: [] }
+                    ]
+                },
+                {
+                    title: "二、补足流量 & 监控投放",
+                    icon: 'target',
+                    color: 'bg-red-600',
+                    children: [
+                        { title: "1. 补足流量", tasks: [] },
+                        {
+                            title: "2. 监控主关键词 (广告位 vs 自然位)",
+                            children: [
+                                {
+                                    title: "场景 1：自然位广告位都靠前",
+                                    tasks: [
+                                        "现状：广告表现优异，词份额高，自然单占比高",
+                                        "动作：考虑小幅降低该词广告力度，观察整体单量和自然单占比",
+                                        "注意：有风险时或预算充足时，建议维稳"
+                                    ]
+                                },
+                                {
+                                    title: "场景 2：自然位落后，广告位靠前",
+                                    tasks: ["动作：继续观察广告表现和自然位变化"]
+                                },
+                                {
+                                    title: "场景 3：自然位靠前，广告位落后",
+                                    tasks: ["动作：看该词所处阶段及销量，判断是否需要广告猛冲补销量"]
+                                },
+                                {
+                                    title: "场景 4：自然位广告位都落后",
+                                    tasks: ["动作：适当提高该词 BID，提高广告位继续观察"]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        const LANCET_SOP_TREE = {
+            id: 'lancet',
+            title: "柳叶刀广告模型策略",
+            icon: 'activity',
+            color: 'bg-teal-600',
+            description: '打造极致性价比广告模型，实现“每一分钱都花在刀刃上”',
+            children: [
+                {
+                    title: "一、基础概念介绍",
+                    icon: 'lightbulb',
+                    color: 'bg-teal-700',
+                    children: [
+                        {
+                            title: "1. 核心理念与权重",
+                            tasks: [
+                                "核心逻辑：集中权重、降低无效花费",
+                                "权重位置：仅体现在广告活动层级 (同一活动下共享)",
+                                "公式：Ad Rank = CPC Bid × Ad Grade (自然权重)",
+                                "CTR标准 (US)：及格 0.4% | 优秀 >1%",
+                                "贴标签理论：长尾词出单 -> 带动核心词权重"
+                            ]
+                        },
+                        {
+                            title: "2. 竞价 (Bid)",
+                            tasks: [
+                                "作用：抬升权重、竞争定位、控成本",
+                                "与CR关系：通过文案优化、广告位调整间接影响CR"
+                            ]
+                        },
+                        {
+                            title: "3. 广告阶梯 (4阶段)",
+                            tasks: [
+                                "阶段一：广告形态达标 (3:2:5)",
+                                "阶段二：ACOS 达到标准值",
+                                "阶段三：CTR 溢出",
+                                "阶段四：Top 单次 CPC 低于其余位置"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "二、模型框架 (4个广告组)",
+                    icon: 'layers',
+                    color: 'bg-cyan-600',
+                    children: [
+                        {
+                            title: "1. 广泛组 (跑词)",
+                            tasks: [
+                                "预算：10%-20%",
+                                "竞价：中等 (能跑出点击)",
+                                "操作：否掉不相关词；分类跑出词 (高CR入精准，低CR入低CR组)"
+                            ]
+                        },
+                        {
+                            title: "2. 高CR组-精准 (核心权重)",
+                            tasks: [
+                                "预算：70%-80% (花费占比达 90%)",
+                                "竞价：合理竞价",
+                                "目的：带动整个活动权重"
+                            ]
+                        },
+                        {
+                            title: "3. 低CR组 & 大词组 (精准)",
+                            tasks: [
+                                "预算：0% (初期暂不投放)",
+                                "竞价：低竞价 (无曝光)",
+                                "目的：待权重提升后再启用测试"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "三、广告形态诊断 (6种形态)",
+                    icon: 'bar-chart-2',
+                    color: 'bg-blue-600',
+                    children: [
+                        {
+                            title: "异常形态",
+                            tasks: [
+                                "形态1：90%在详情页 -> 竞价太低 -> 调高1.5倍",
+                                "形态2/3：点击分散/CTR异常 -> 竞价不合理 -> 差异化调控",
+                                "形态6：90%在首页首行 -> 竞价过高 -> CTR稳定后降价"
+                            ]
+                        },
+                        {
+                            title: "理想形态 (形态4)",
+                            tasks: [
+                                "特征：顶部:详情:其余 ≈ 3:2:5",
+                                "策略：重点维稳，逐步优化 CTR/CR"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "四、判断及调整策略",
+                    icon: 'scale',
+                    color: 'bg-indigo-600',
+                    children: [
+                        {
+                            title: "1. 手动广告调整",
+                            children: [
+                                {
+                                    title: "高曝光词",
+                                    tasks: [
+                                        "竞价高+转化高：小幅压竞价",
+                                        "竞价高+转化低：若超建议上限50%则关闭/降预算",
+                                        "竞价高+无转化：果断放弃"
+                                    ]
+                                },
+                                {
+                                    title: "中/低曝光词",
+                                    tasks: [
+                                        "高CTR+高转化：守住点击率，防流量被抢",
+                                        "低CTR：优先排查精准度，无效则放弃"
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            title: "2. 自动广告调整",
+                            tasks: [
+                                "高竞价+高CTR+高转化 -> 开手动重点投",
+                                "高竞价+高CTR+低转化 -> 拿掉 (自动无法控词)",
+                                "低竞价+低CTR+低转化 -> 放弃或加价测试"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    title: "五、新品与补充",
+                    icon: 'refresh-cw',
+                    color: 'bg-violet-600',
+                    children: [
+                        {
+                            title: "1. 新品打法",
+                            tasks: [
+                                "平板类：不开自动，直接广泛+精准，跑2周后开柳叶刀",
+                                "非平板类：老品带新品，日销100单后开SD"
+                            ]
+                        },
+                        {
+                            title: "2. 广告类型",
+                            tasks: [
+                                "SP：增曝光提销量",
+                                "SB：提品牌知名度 (移动端多投)",
+                                "SD：SKU多时做闭环",
+                                "SBV：视觉化引流 (看视频素材)"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        const JIANDAOYUN_FLOWS = {
+            development: [
+                { id: 'd1', title: '项目创建', icon: 'clipboard-list', role: '运营/开发', next: ['d2'] },
+                { id: 'd2', title: '开发-报价文件', icon: 'file-text', role: '开发', next: ['d3'] },
+                { id: 'd3', title: '老板审核', icon: 'shield', role: '老板', next: ['d4'] },
+                { id: 'd4', title: '采购-工厂报价', icon: 'file-input', role: '采购', next: ['d5'] },
+                { id: 'd5', title: '采购询价', icon: 'search', role: '采购', next: ['d6'] },
+                { id: 'd6', title: '采购主管审批', icon: 'check-square', role: '采购主管', next: ['d7'] },
+                { id: 'd7', title: '沈总审批', icon: 'shield', role: '沈总', next: ['d8'] },
+                { id: 'd8', title: '报价评估', icon: 'scale', role: '运营', next: ['d9'] },
+                { id: 'd9', title: '开发-打样文件', icon: 'file-text', role: '开发', next: ['d10'] },
+                { id: 'd10', title: '采购-打样单', icon: 'file-input', role: '采购', next: ['d11'] },
+                { id: 'd11', title: '采购-工厂打样', icon: 'package', role: '采购', next: ['d12'] },
+                { id: 'd12', title: '开发-样品审核', icon: 'check-square', role: '开发', next: ['d13'] },
+                { id: 'd13', title: '发起下单流程', icon: 'zap', role: '运营', next: ['d14'] },
+                { id: 'd14', title: '流程结束', icon: 'check-circle-2', role: '系统', next: [] }
+            ],
+            ordering: [
+                { id: 'o1', title: '下单流程创建', icon: 'clipboard-list', role: '运营', next: ['o2'] },
+                { id: 'o2', title: '新品开发流程/老品下单', icon: 'git-branch', role: '运营', type: 'decision', branches: [
+                    { label: '新品/变更', target: 'o3', desc: '新品或有变更' },
+                    { label: '老品翻单', target: 'o6', desc: '无变更翻单' }
+                ] 
+                },
+                { id: 'o3', title: '运营填写SKU-变更工厂/变更设计', icon: 'file-input', role: '运营', next: ['o4'] },
+                { id: 'o4', title: '运营评估通过-填下单文件', icon: 'check-square', role: '运营', next: ['o5'] },
+                { id: 'o5', title: '组长审批', icon: 'shield', role: '组长', next: ['o7'] },
+                { id: 'o6', title: '老品翻单子流程', icon: 'refresh-cw', role: '系统', next: ['o7'] },
+                { id: 'o7', title: '老板审批', icon: 'shield', role: '老板', next: ['o8', 'o9'] }, // Branching to o8 and o9
+                { id: 'o8', title: '新品开发-大货文件', icon: 'file-text', role: '开发', next: ['o9'] },
+                { id: 'o9', title: '新品开发-产前会签名', icon: 'file-text', role: '开发/采购', next: ['o10'] },
+                { id: 'o10', title: '采购反馈交期', icon: 'clock', role: '采购', next: ['o11', 'o13'] }, // Branching
+                { id: 'o11', title: '抄送数据中心-结束新品开发流程', icon: 'file-box', role: '数据中心', next: ['o12'] },
+                { id: 'o12', title: '运营评估交期', icon: 'scale', role: '运营', next: ['o14'] },
+                { id: 'o13', title: '采购查收大货文件', icon: 'check-square', role: '采购', next: ['o14'] },
+                { id: 'o14', title: '结束流程', icon: 'check-circle-2', role: '系统', next: [] }
+            ],
+            shipping: [
+                { id: 's1', title: 'SKU信息补充-数据模版', icon: 'file-input', role: '运营', next: ['s2'] },
+                { id: 's2', title: '运营-创建货件', icon: 'box', role: '运营', next: ['s3'] },
+                { id: 's3', title: '组长审批', icon: 'shield', role: '组长', next: ['s4'] },
+                { id: 's4', title: '发货控制-老板审核', icon: 'shield', role: '老板', next: ['s5'] },
+                { id: 's5', title: '运营提交-出货资料修改', icon: 'file-text', role: '运营', next: ['s6'] },
+                { id: 's6', title: '运营-填写FBA装箱信息', icon: 'file-input', role: '运营', next: ['s7'] },
+                { id: 's7', title: '交期预警抄送采购', icon: 'alert-circle', role: '系统', next: ['s8'] },
+                { id: 's8', title: '运营-出货明细填写', icon: 'clipboard-list', role: '运营', desc: '装车时间/品牌/首次提交时间/规格/材质', next: ['s9'] },
+                { id: 's9', title: 'SKU变更提醒', icon: 'activity', role: '系统', next: ['s10'] },
+                { id: 's10', title: '流程结束', icon: 'check-circle-2', role: '系统', next: [] }
+            ],
+            taicang: [
+                { id: 't1', title: '运营-备货单', icon: 'clipboard-list', role: '运营', next: ['t2'] },
+                { id: 't2', title: '填写站点/供应商/装车时间/选择采购', icon: 'file-input', role: '运营', next: ['t3'] },
+                { id: 't3', title: '填写备货单模版', icon: 'file-text', role: '运营', next: ['t4'] },
+                { id: 't4', title: '填写发货明细', icon: 'clipboard-list', role: '运营', next: ['t5'] },
+                { id: 't5', title: '采购审核', icon: 'check-square', role: '采购', next: ['t6'] },
+                { id: 't6', title: '流程结束', icon: 'check-circle-2', role: '系统', next: [] }
+            ],
+            skuChange: [
+                { id: 'sk1', title: '运营-SKU变更(用于组内组外调货)', icon: 'refresh-cw', role: '运营', next: ['sk2'] },
+                { id: 'sk2', title: '填写说明', icon: 'file-text', role: '运营', next: ['sk3'] },
+                { id: 'sk3', title: '选择工厂', icon: 'factory', role: '运营', next: ['sk4'] },
+                { id: 'sk4', title: '调货方式:工厂/仓库', icon: 'git-branch', role: '运营', next: ['sk5'] },
+                { id: 'sk5', title: '填写工厂/SKU/变更后SKU/数量', icon: 'file-input', role: '运营', next: ['sk6'] },
+                { id: 'sk6', title: '其他负责人审核', icon: 'check-square', role: '其他负责人', next: ['sk7'] },
+                { id: 'sk7', title: '提交人组长审核', icon: 'shield', role: '组长', next: ['sk8'] },
+                { id: 'sk8', title: '解锁流程', icon: 'zap', role: '系统', next: ['sk9'] },
+                { id: 'sk9', title: '其他负责人组长审核', icon: 'shield', role: '其他组长', next: ['sk10'] },
+                { id: 'sk10', title: '流程结束', icon: 'check-circle-2', role: '系统', next: [] }
+            ],
+            clearance: [
+                { id: 'cl1', title: '创建秒杀申请', icon: 'zap', role: '运营', next: ['cl2'] },
+                { id: 'cl2', title: 'LD/BD/奥莱/丢购物车', icon: 'filter', role: '运营', next: ['cl3'] },
+                { id: 'cl3', title: '活动开始时间/名称/明细', icon: 'file-input', role: '运营', next: ['cl4'] },
+                { id: 'cl4', title: '组长审批', icon: 'shield', role: '组长', next: ['cl5'] },
+                { id: 'cl5', title: '胡佳审批', icon: 'check-square', role: '胡佳', next: ['cl6'] },
+                { id: 'cl6', title: '数据处理', icon: 'database', role: '数据中心', next: ['cl7'] },
+                { id: 'cl7', title: '流程结束', icon: 'check-circle-2', role: '系统', next: [] }
+            ]
+        };
+        
+        const tabLabels = {
+            'development': '新品开发流程',
+            'ordering': '下单流程',
+            'shipping': '运营-出货资料',
+            'taicang': '太仓备货单',
+            'skuChange': 'SKU变更',
+            'clearance': '秒杀清仓申请'
+        };
+
+        const TreeNode = ({ node, level = 0, isLast = false }) => {
+            const hasChildren = node.children && node.children.length > 0;
+            const hasTasks = node.tasks && node.tasks.length > 0;
+            
+            return (
+                <div className={`relative ${level > 0 ? 'ml-8' : ''}`}>
+                {/* Connector Lines */}
+                {level > 0 && (
+                    <>
+                    {/* Vertical Line from parent */}
+                    <div className="absolute -left-4 top-0 w-px h-full bg-slate-300 -translate-x-1/2" 
+                        style={{ height: isLast ? '24px' : '100%' }}></div>
+                    {/* Horizontal Line to node */}
+                    <div className="absolute -left-4 top-6 w-4 h-px bg-slate-300"></div>
+                    </>
+                )}
+
+                {/* Node Content */}
+                <div className={`
+                    relative z-10 mb-6 rounded-xl border transition-all duration-300
+                    ${level === 0 ? `bg-slate-900 border-slate-900 text-white p-6 shadow-xl` : ''}
+                    ${level === 1 ? 'bg-white border-slate-200 p-5 shadow-sm hover:shadow-md hover:border-blue-300' : ''}
+                    ${level === 2 ? 'bg-slate-50 border-slate-200 p-4 border-l-4 border-l-blue-400' : ''}
+                    ${level >= 3 ? 'bg-slate-50 border-slate-100 p-3 border-l-2 border-l-slate-300' : ''}
+                `}>
+                    <div className="flex items-start gap-3">
+                    {node.icon && (
+                        <div className={`
+                        p-2 rounded-lg flex-shrink-0
+                        ${level === 0 ? 'bg-white/20' : `bg-slate-100 text-slate-600`}
+                        `}>
+                        <Icon name={node.icon} size={level === 0 ? 24 : 18} />
+                        </div>
+                    )}
+                    
+                    <div className="flex-1">
+                        <h3 className={`font-bold ${level === 0 ? 'text-xl' : 'text-lg'} ${level === 0 ? 'text-white' : 'text-slate-800'}`}>
+                        {node.title}
+                        </h3>
+                        {node.description && (
+                        <p className={`text-sm mt-1 ${level === 0 ? 'text-slate-300' : 'text-slate-500'}`}>
+                            {node.description}
+                        </p>
+                        )}
+
+                        {/* Render Tasks (Leaf Nodes) */}
+                        {hasTasks && (
+                        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {node.tasks.map((task, idx) => (
+                            <div key={idx} className="flex items-start gap-2 text-sm text-slate-700 bg-white p-2 rounded border border-slate-100">
+                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"></div>
+                                <span>{task}</span>
+                            </div>
+                            ))}
+                        </div>
+                        )}
+                    </div>
+                    </div>
+                </div>
+
+                {/* Children Recursion */}
+                {hasChildren && (
+                    <div className="relative">
+                    {/* Vertical line extension for children */}
+                    {level === 0 && (
+                        <div className="absolute left-8 top-0 w-px h-6 bg-slate-300"></div>
+                    )}
+                    
+                    <div className={`${level === 0 ? 'pl-8 pt-6' : ''}`}>
+                        {node.children.map((child, idx) => (
+                        <TreeNode 
+                            key={idx} 
+                            node={child} 
+                            level={level + 1} 
+                            isLast={idx === node.children.length - 1} 
+                        />
+                        ))}
+                    </div>
+                    </div>
+                )}
+                </div>
+            );
+        };
+
+        const FlowNode = ({ data }) => {
+            const isDecision = data.type === 'decision';
+            
+            return (
+                <div className="flex flex-col items-center">
+                <div className={`
+                    relative z-10 w-64 p-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center text-center bg-white
+                    ${isDecision ? 'border-amber-400 shadow-amber-100' : 'border-blue-200 shadow-blue-50'}
+                    shadow-lg hover:scale-105
+                `}>
+                    <div className={`
+                    p-2 rounded-full mb-3
+                    ${isDecision ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'}
+                    `}>
+                    <Icon name={data.icon} size={24} />
+                    </div>
+                    
+                    <h4 className="font-bold text-slate-800 mb-1">{data.title}</h4>
+                    <p className="text-xs text-slate-500 mb-2">{data.desc}</p>
+                    
+                    <div className="mt-auto pt-2 border-t border-dashed border-slate-200 w-full flex justify-center">
+                    <span className="text-xs font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded">
+                        {data.role}
+                    </span>
+                    </div>
+                </div>
+
+                {/* Connection Lines */}
+                {!isDecision && data.next && data.next.length > 0 && (
+                    <div className="h-8 w-px bg-slate-300 my-1"></div>
+                )}
+                
+                {/* Decision Branches */}
+                {isDecision && data.branches && (
+                    <div className="flex justify-center gap-12 mt-4 relative">
+                        {/* Visual connector lines for branches */}
+                    <div className="absolute top-0 left-1/2 w-px h-4 bg-slate-300 -translate-x-1/2" />
+                    <div className="absolute top-4 left-[20%] right-[20%] h-px bg-slate-300" />
+                    
+                    {data.branches.map((branch, idx) => (
+                        <div key={idx} className="flex flex-col items-center relative pt-4">
+                            <div className="absolute top-0 left-1/2 h-4 w-px bg-slate-300 -translate-x-1/2" />
+                            <div className={`px-2 py-1 rounded text-xs border ${idx === 0 ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-purple-50 text-purple-600 border-purple-200'}`}>
+                            {branch.label}
+                            </div>
+                            {branch.desc && <span className="text-[10px] text-slate-400 mt-1">{branch.desc}</span>}
+                        </div>
+                    ))}
+                    </div>
+                )}
+                </div>
+            );
+        };
+
+        function SOPTimelineDashboard() {
+            const [activeView, setActiveView] = useState('workflow'); 
+            const [activeAdsTab, setActiveAdsTab] = useState('apollo_new'); 
+            const [activeJiandaoyunTab, setActiveJiandaoyunTab] = useState('development');
+            const [selectedStep, setSelectedStep] = useState(null);
+            const [currentPhase, setCurrentPhase] = useState(SOP_DATA[0].id);
+            const [zoomLevel, setZoomLevel] = useState(1);
+            const [showScrollTop, setShowScrollTop] = useState(false);
+
+            useEffect(() => {
+                const handleScroll = () => {
+                    // Update current phase
+                    if (activeView === 'workflow') {
+                        const phases = SOP_DATA.map(p => document.getElementById(p.id));
+                        const scrollPosition = window.scrollY + 150; 
+                        phases.forEach((phase) => {
+                            if (phase && phase.offsetTop <= scrollPosition && (phase.offsetTop + phase.offsetHeight) > scrollPosition) {
+                                setCurrentPhase(phase.id);
+                            }
+                        });
+                    }
+                    
+                    // Show/hide scroll to top button
+                    if (window.scrollY > 300) {
+                        setShowScrollTop(true);
+                    } else {
+                        setShowScrollTop(false);
+                    }
+                };
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, [activeView]);
+
+            const scrollToPhase = (id) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    window.scrollTo({ top: element.offsetTop - 100, behavior: 'smooth' });
+                }
+                setCurrentPhase(id);
+            };
+
+            const scrollToTop = () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            const currentAdsTree = useMemo(() => {
+                switch(activeAdsTab) {
+                    case 'apollo_new': return APOLLO_NEW_SOP_TREE;
+                    case 'apollo_mature': return APOLLO_MATURE_SOP_TREE;
+                    case 'lingxing': return LINGXING_SOP_TREE;
+                    case 'xiyou': return XIYOU_SOP_TREE;
+                    case 'lancet': return LANCET_SOP_TREE;
+                    default: return APOLLO_NEW_SOP_TREE;
+                }
+            }, [activeAdsTab]);
+
+            return (
+                <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
+                    {/* Top Navigation Bar */}
+                    <header className="bg-white border-b border-slate-200 sticky top-0 z-20 px-6 py-3 shadow-sm">
+                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="bg-slate-900 p-2 rounded-lg">
+                                    <Icon name="layout" className="w-6 h-6 text-white" />
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-bold text-slate-800">公司标准化作业程序 (SOP)-南欧组</h1>
+                                    <p className="text-xs text-slate-500">Interactive Dashboard-KovaScape</p>
+                                </div>
+                            </div>
+                            
+                            {/* View Switcher */}
+                            <div className="flex bg-slate-100 p-1 rounded-lg">
+                                <button
+                                    onClick={() => setActiveView('workflow')}
+                                    className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${activeView === 'workflow' ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    通用全流程 SOP
+                                </button>
+                                <button
+                                    onClick={() => setActiveView('ads')}
+                                    className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${activeView === 'ads' ? 'bg-white shadow text-purple-600' : 'text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    广告投放 SOP
+                                </button>
+                                <button
+                                    onClick={() => setActiveView('jiandaoyun')}
+                                    className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${activeView === 'jiandaoyun' ? 'bg-white shadow text-orange-600' : 'text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    简道云 SOP
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 relative">
+                        {/* === VIEW 1: GENERAL WORKFLOW === */}
+                        {activeView === 'workflow' && (
+                            <div className="animate-in fade-in duration-500">
+                                {/* Quick Phase Nav */}
+                                <div className="flex bg-white border border-slate-200 p-2 rounded-xl overflow-x-auto gap-2 mb-8 shadow-sm no-scrollbar sticky top-24 z-10">
+                                    {SOP_DATA.map((phase) => {
+                                        const isActive = currentPhase === phase.id;
+                                        return (
+                                            <button
+                                                key={phase.id}
+                                                onClick={() => scrollToPhase(phase.id)}
+                                                className={`
+                                                    px-3 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 text-xs font-bold whitespace-nowrap
+                                                    ${isActive ? `bg-slate-800 text-white shadow-md` : 'text-slate-500 hover:bg-slate-100'}
+                                                `}
+                                            >
+                                                <Icon name={phase.icon} className="w-4 h-4" />
+                                                <span>{phase.title.split('：')[1]}</span>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+
+                                <div className="space-y-12">
+                                    {SOP_DATA.map((phase, index) => (
+                                        <section key={phase.id} id={phase.id} className="scroll-mt-40">
+                                            <div className="flex items-center gap-4 mb-6">
+                                                <div className={`w-12 h-12 rounded-xl ${phase.color} flex items-center justify-center shadow-lg text-white`}>
+                                                    <Icon name={phase.icon} size={24} />
+                                                </div>
+                                                <div>
+                                                    <h2 className="text-2xl font-bold text-slate-800">{phase.title}</h2>
+                                                    <p className="text-slate-500 font-medium">{phase.subtitle}</p>
+                                                </div>
+                                                <div className="flex-1 h-px bg-slate-200 ml-4"></div>
+                                            </div>
+
+                                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 pl-0 md:pl-4">
+                                                {phase.steps.map((step) => (
+                                                    <div 
+                                                        key={step.id}
+                                                        onClick={() => setSelectedStep(step)}
+                                                        className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-300 transition-all duration-300 cursor-pointer flex flex-col group overflow-hidden"
+                                                    >
+                                                        <div className={`h-1.5 w-full ${phase.color}`}></div>
+                                                        <div className="p-5 flex-1 flex flex-col">
+                                                            <div className="flex justify-between items-start mb-3">
+                                                                <span className={`text-xs font-black ${phase.text} bg-slate-50 px-2 py-1 rounded border ${phase.border}`}>
+                                                                    STEP {step.id}
+                                                                </span>
+                                                                <Icon name="chevron-right" className="w-5 h-5 text-slate-300 group-hover:text-blue-500 transition-colors" />
+                                                            </div>
+                                                            <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-blue-700 transition-colors">
+                                                                {step.title}
+                                                            </h3>
+                                                            <div className="space-y-1.5 mb-4 flex-1">
+                                                                {step.tasks.slice(0, 2).map((t, i) => (
+                                                                    <p key={i} className="text-xs text-slate-500 line-clamp-1 flex items-center gap-1.5">
+                                                                        <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                                                        {t}
+                                                                    </p>
+                                                                ))}
+                                                                {step.tasks.length > 2 && <p className="text-xs text-slate-400 pl-2.5">+ 更多 {step.tasks.length - 2} 项...</p>}
+                                                            </div>
+                                                            <div className="pt-4 mt-auto border-t border-slate-100 flex items-start gap-2">
+                                                                <Icon name="users" className="w-4 h-4 text-slate-400 mt-0.5" />
+                                                                <div className="flex flex-wrap gap-1">
+                                                                    <span className="text-xs font-bold text-slate-500">负责人:</span>
+                                                                    {step.roles.map((role, idx) => (
+                                                                        <span key={idx} className="text-xs text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">{role}</span>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </section>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* === VIEW 2: ADS SOP (5 TABS) === */}
+                        {activeView === 'ads' && (
+                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+                                {/* Tabs for Ads SOP */}
+                                <div className="flex justify-center mb-8">
+                                    <div className="bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm inline-flex flex-wrap gap-1 justify-center">
+                                        {[
+                                            { id: 'apollo_new', label: '阿波罗-新品期', icon: 'rocket' },
+                                            { id: 'apollo_mature', label: '阿波罗-老品期', icon: 'layers' },
+                                            { id: 'lingxing', label: '领星广告分析SOP', icon: 'settings' },
+                                            { id: 'xiyou', label: '西柚流量分析SOP', icon: 'pie-chart' },
+                                            { id: 'lancet', label: '柳叶刀模型SOP', icon: 'activity' }
+                                        ].map(tab => (
+                                            <button
+                                                key={tab.id}
+                                                onClick={() => setActiveAdsTab(tab.id)}
+                                                className={`
+                                                    px-4 py-2.5 rounded-lg flex items-center gap-2 text-sm font-bold transition-all duration-200 whitespace-nowrap
+                                                    ${activeAdsTab === tab.id 
+                                                        ? 'bg-slate-800 text-white shadow-md' 
+                                                        : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}
+                                                `}
+                                            >
+                                                <Icon name={tab.icon} className="w-4 h-4" />
+                                                {tab.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Mind Map Container (With Zoom) */}
+                                <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl p-4 min-h-[800px] overflow-hidden relative">
+                                    {/* Zoom Controls */}
+                                    <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
+                                        <button 
+                                            onClick={() => setZoomLevel(prev => Math.min(prev + 0.1, 2))}
+                                            className="p-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 text-slate-600"
+                                            title="放大"
+                                        >
+                                            <Icon name="zoom-in" className="w-5 h-5" />
+                                        </button>
+                                        <button 
+                                            onClick={() => setZoomLevel(prev => Math.max(prev - 0.1, 0.5))}
+                                            className="p-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 text-slate-600"
+                                            title="缩小"
+                                        >
+                                            <Icon name="zoom-out" className="w-5 h-5" />
+                                        </button>
+                                        <button 
+                                            onClick={() => setZoomLevel(1)}
+                                            className="p-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 text-slate-600"
+                                            title="重置"
+                                        >
+                                            <Icon name="move" className="w-5 h-5" />
+                                        </button>
+                                        <div className="bg-slate-800 text-white text-xs py-1 px-2 rounded text-center font-mono">
+                                            {Math.round(zoomLevel * 100)}%
+                                        </div>
+                                    </div>
+
+                                    {/* Scrollable Area */}
+                                    <div className="w-full h-full overflow-auto p-8">
+                                        <div 
+                                            style={{ 
+                                                transform: `scale(${zoomLevel})`, 
+                                                transformOrigin: 'top left',
+                                                minWidth: '800px',
+                                                maxWidth: '1200px',
+                                                margin: '0 auto',
+                                                transition: 'transform 0.2s ease-out'
+                                            }}
+                                        >
+                                            <TreeNode node={currentAdsTree} level={0} isLast={true} />
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="mt-6 text-center text-slate-400 text-sm">
+                                    广告投放策略 • {
+                                        activeAdsTab === 'apollo_new' ? '阿波罗-新品期' : 
+                                        activeAdsTab === 'apollo_mature' ? '阿波罗-老品期' : 
+                                        activeAdsTab === 'lingxing' ? '领星 ERP' : 
+                                        activeAdsTab === 'xiyou' ? '西柚找词' : 
+                                        '柳叶刀模型'
+                                    }
+                                </div>
+                            </div>
+                        )}
+
+                        {/* === VIEW 3: JIANDAOYUN SOP (NEW) === */}
+                        {activeView === 'jiandaoyun' && (
+                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
+                                {/* Tabs for Jiandaoyun SOP */}
+                                <div className="flex justify-center mb-8">
+                                    <div className="bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm inline-flex flex-wrap gap-1 justify-center">
+                                        {[
+                                            { id: 'development', label: '新品开发流程', icon: 'workflow' },
+                                            { id: 'ordering', label: '下单流程', icon: 'file-input' },
+                                            { id: 'shipping', label: '运营-出货资料', icon: 'truck' },
+                                            { id: 'taicang', label: '太仓备货单', icon: 'box' },
+                                            { id: 'skuChange', label: 'SKU变更', icon: 'refresh-cw' },
+                                            { id: 'clearance', label: '秒杀清仓申请', icon: 'percent' }
+                                        ].map(tab => (
+                                            <button
+                                                key={tab.id}
+                                                onClick={() => setActiveJiandaoyunTab(tab.id)}
+                                                className={`
+                                                    px-4 py-2.5 rounded-lg flex items-center gap-2 text-sm font-bold transition-all duration-200 whitespace-nowrap
+                                                    ${activeJiandaoyunTab === tab.id 
+                                                        ? 'bg-orange-600 text-white shadow-md' 
+                                                        : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}
+                                                `}
+                                            >
+                                                <Icon name={tab.icon} className="w-4 h-4" />
+                                                {tab.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Flowchart Container (With Zoom) */}
+                                <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl p-8 min-h-[800px] flex flex-col items-center relative overflow-hidden">
+                                     {/* Zoom Controls */}
+                                     <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
+                                        <button 
+                                            onClick={() => setZoomLevel(prev => Math.min(prev + 0.1, 2))}
+                                            className="p-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 text-slate-600"
+                                            title="放大"
+                                        >
+                                            <Icon name="zoom-in" className="w-5 h-5" />
+                                        </button>
+                                        <button 
+                                            onClick={() => setZoomLevel(prev => Math.max(prev - 0.1, 0.5))}
+                                            className="p-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 text-slate-600"
+                                            title="缩小"
+                                        >
+                                            <Icon name="zoom-out" className="w-5 h-5" />
+                                        </button>
+                                        <button 
+                                            onClick={() => setZoomLevel(1)}
+                                            className="p-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 text-slate-600"
+                                            title="重置"
+                                        >
+                                            <Icon name="move" className="w-5 h-5" />
+                                        </button>
+                                        <div className="bg-slate-800 text-white text-xs py-1 px-2 rounded text-center font-mono">
+                                            {Math.round(zoomLevel * 100)}%
+                                        </div>
+                                    </div>
+
+                                    <div className="w-full h-full overflow-auto flex flex-col items-center">
+                                        <div 
+                                            style={{ 
+                                                transform: `scale(${zoomLevel})`, 
+                                                transformOrigin: 'top center',
+                                                transition: 'transform 0.2s ease-out',
+                                                paddingTop: '20px',
+                                                paddingBottom: '20px'
+                                            }}
+                                            className="flex flex-col items-center w-full"
+                                        >
+                                            <h2 className="text-2xl font-bold text-slate-800 mb-8 flex items-center gap-2">
+                                                <Icon name="workflow" className="w-6 h-6 text-orange-600" />
+                                                {tabLabels[activeJiandaoyunTab]} 流程图
+                                            </h2>
+                                            
+                                            <div className="flex flex-col items-center space-y-2 w-full max-w-2xl">
+                                                {JIANDAOYUN_FLOWS[activeJiandaoyunTab].map((node, index) => (
+                                                    <React.Fragment key={node.id}>
+                                                        <FlowNode data={node} />
+                                                        
+                                                        {/* Render Down Arrow if not last */}
+                                                        {index < JIANDAOYUN_FLOWS[activeJiandaoyunTab].length - 1 && node.type !== 'decision' && (
+                                                            <div className="h-8 w-px bg-slate-300 my-1"></div>
+                                                        )}
+
+                                                        {/* Handle Decision Logic Visualization */}
+                                                        {node.type === 'decision' && node.branches && (
+                                                            <div className="flex flex-col w-full relative h-20 mb-4">
+                                                                {/* Vertical line out */}
+                                                                <div className="absolute left-1/2 -translate-x-1/2 top-0 h-4 w-px bg-slate-300"></div>
+                                                                
+                                                                {/* Horizontal branch line */}
+                                                                <div className="absolute left-[20%] right-[20%] top-4 h-px bg-slate-300 border-t border-slate-300"></div>
+                                                                
+                                                                {/* Branches */}
+                                                                <div className="flex justify-between w-full px-[15%] mt-4">
+                                                                    {/* Left Branch (No) */}
+                                                                    <div className="flex flex-col items-center">
+                                                                        <div className="h-4 w-px bg-red-300"></div>
+                                                                        <div className="px-3 py-1 bg-red-50 text-red-600 text-xs rounded border border-red-200 mt-1">
+                                                                            {node.branches[0].label}
+                                                                        </div>
+                                                                        <div className="text-[10px] text-slate-400 mt-1">{node.branches[0].desc}</div>
+                                                                        {/* Return path visual hint */}
+                                                                        <div className="text-[10px] text-slate-300 mt-1">⮌ 回退</div>
+                                                                    </div>
+
+                                                                    {/* Right Branch (Yes) */}
+                                                                    <div className="flex flex-col items-center">
+                                                                        <div className="h-4 w-px bg-green-300"></div>
+                                                                        <div className="px-3 py-1 bg-green-50 text-green-600 text-xs rounded border border-green-200 mt-1">
+                                                                            {node.branches[1].label}
+                                                                        </div>
+                                                                        <div className="h-4 w-px bg-slate-300 mt-2"></div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </React.Fragment>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="mt-6 text-center text-slate-400 text-sm">
+                                    基于简道云标准作业程序整理 • 可视化流程图
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Modal for Workflow Details (Same as before) */}
+                        {selectedStep && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setSelectedStep(null)}>
+                                <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in duration-300 mx-4" onClick={(e) => e.stopPropagation()}>
+                                    <div className="bg-slate-50 px-6 py-5 border-b border-slate-200 flex justify-between items-center">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">任务详情</span>
+                                                <span className="text-slate-400 text-sm">#{selectedStep.id}</span>
+                                            </div>
+                                            <h3 className="text-xl font-bold text-slate-900">{selectedStep.title}</h3>
+                                        </div>
+                                        <button onClick={() => setSelectedStep(null)} className="p-2 hover:bg-slate-200 rounded-full transition-colors">
+                                            <Icon name="x" className="w-5 h-5 text-slate-500" />
+                                        </button>
+                                    </div>
+                                    <div className="p-6 overflow-y-auto flex-1 space-y-6">
+                                        <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                                            <Icon name="users" className="w-5 h-5 text-blue-600 mt-0.5" />
+                                            <div>
+                                                <h4 className="text-sm font-bold text-blue-800 uppercase mb-1">责任人 / Owner</h4>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {selectedStep.roles.map(role => (
+                                                        <span key={role} className="bg-white px-2 py-1 rounded border border-blue-200 text-blue-700 text-sm font-medium">{role}</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {selectedStep.tools && selectedStep.tools.length > 0 && (
+                                            <div>
+                                                <h4 className="text-sm font-bold text-slate-500 uppercase mb-2 flex items-center gap-2">
+                                                    <Icon name="briefcase" className="w-4 h-4" /> 推荐工具
+                                                </h4>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {selectedStep.tools.map(tool => (
+                                                        <span key={tool} className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-sm font-medium border border-slate-200">{tool}</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div>
+                                            <h4 className="text-sm font-bold text-slate-500 uppercase mb-3 flex items-center gap-2">
+                                                <Icon name="clipboard-list" className="w-4 h-4" /> 执行清单
+                                            </h4>
+                                            <ul className="space-y-3">
+                                                {selectedStep.tasks.map((task, i) => (
+                                                    <li key={i} className="flex gap-3 text-slate-700">
+                                                        <Icon name="check-circle-2" className="w-5 h-5 text-slate-300 flex-shrink-0 mt-0.5" />
+                                                        <span>{task}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                        <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                                            <h4 className="text-sm font-bold text-emerald-800 uppercase mb-2 flex items-center gap-2">
+                                                <Icon name="file-text" className="w-4 h-4" /> 交付成果
+                                            </h4>
+                                            <ul className="list-disc list-inside text-emerald-900 text-sm space-y-1">
+                                                {selectedStep.outputs.map((o, i) => <li key={i}>{o}</li>)}
+                                            </ul>
+                                        </div>
+                                        {selectedStep.notes && (
+                                            <div className="flex gap-2 items-start text-amber-700 text-sm bg-amber-50 p-3 rounded-lg border border-amber-100">
+                                                <Icon name="alert-circle" className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                                                <span>{selectedStep.notes}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Scroll to Top Button */}
+                        <button 
+                            onClick={scrollToTop}
+                            className={`fixed bottom-8 right-8 p-3 bg-blue-600 text-white rounded-full shadow-lg transition-all duration-300 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 z-50 ${showScrollTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}
+                            title="回到顶部"
+                        >
+                            <Icon name="arrow-up" className="w-6 h-6" />
+                        </button>
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<SOPTimelineDashboard />);
+    </script>
+</body>
+</html>

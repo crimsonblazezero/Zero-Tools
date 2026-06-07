@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KovaScape 品牌候选名商标查询报告</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #F0EDE8;
+    font-family: 'Poppins', sans-serif;
+    color: #151515;
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+  .page {
+    background: #FDFCF9;
+    border-radius: 40px;
+    max-width: 1260px;
+    margin: 0 auto;
+    overflow: hidden;
+  }
+
+  /* ── HERO HEADER ── */
+  .hero {
+    background: #064338;
+    padding: 60px 0 0 0;
+    position: relative;
+    overflow: hidden;
+  }
+  /* Decorative organic shapes */
+  .hero-deco {
+    position: absolute;
+    top: 0; left: -192px;
+    width: 1512px;
+    height: 394px;
+    pointer-events: none;
+    opacity: 0.12;
+  }
+  /* Gold accent line top */
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #F3C546 30%, #F3C546 70%, transparent);
+  }
+  .hero-content {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 0 40px;
+    position: relative;
+    z-index: 1;
+  }
+  .hero-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .hero-eyebrow-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #F3C546;
+  }
+  .hero-eyebrow-text {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.7);
+    text-transform: uppercase;
+  }
+  .hero-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 52px;
+    font-weight: 500;
+    line-height: 1.1;
+    color: #FFFFFF;
+    margin-bottom: 16px;
+    letter-spacing: -0.01em;
+  }
+  .hero-title span {
+    color: #F3C546;
+  }
+  .hero-subtitle {
+    font-size: 14px;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.6;
+    max-width: 680px;
+    margin-bottom: 40px;
+  }
+  .hero-metrics {
+    border-top: 0.6px solid rgba(243,197,70,0.4);
+    padding: 20px 0 28px 0;
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+  }
+  .hero-metric-item { display: flex; flex-direction: column; gap: 2px; }
+  .hero-metric-value { font-size: 12px; font-weight: 600; color: #F3C546; }
+  .hero-metric-label { font-size: 12px; color: rgba(255,255,255,0.55); }
+
+  /* ── BODY ── */
+  .body-content {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 48px 40px;
+  }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 24px;
+    font-weight: 500;
+    color: #1D1B20;
+    margin-bottom: 8px;
+  }
+  .section-subtitle {
+    font-size: 14px;
+    color: #717171;
+    margin-bottom: 24px;
+    line-height: 1.6;
+  }
+
+  /* ── SUMMARY TABLE ── */
+  .summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 48px;
+    font-size: 13px;
+  }
+  .summary-table thead tr {
+    background: #064338;
+  }
+  .summary-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 500;
+    font-size: 12px;
+    color: #F3C546;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .summary-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #F0EDE8;
+    vertical-align: middle;
+    color: #151515;
+    font-size: 13px;
+  }
+  .summary-table tr:last-child td { border-bottom: none; }
+  .summary-table tr:hover td { background: #F8F5F0; }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .badge-green { background: #E8F2F0; color: #064338; }
+  .badge-yellow { background: #FFF8DC; color: #B8860B; }
+  .badge-red { background: #FDECEA; color: #C4433A; }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .badge-green .badge-dot { background: #064338; }
+  .badge-yellow .badge-dot { background: #B8860B; }
+  .badge-red .badge-dot { background: #C4433A; }
+
+  /* ── BRAND CARDS ── */
+  .brand-cards { display: flex; flex-direction: column; gap: 20px; margin-bottom: 48px; }
+
+  .brand-card {
+    border: 1px solid #E8E4DE;
+    border-radius: 16px;
+    overflow: hidden;
+    border-left: 4px solid #064338;
+  }
+  .brand-card-header {
+    padding: 24px 28px 20px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid #F0EDE8;
+    background: #FDFCF9;
+  }
+  .brand-card-left { flex: 1; }
+  .brand-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 500;
+    color: #064338;
+    margin-bottom: 4px;
+    letter-spacing: -0.01em;
+  }
+  .brand-phonetic {
+    font-size: 13px;
+    color: #717171;
+    margin-bottom: 10px;
+  }
+  .brand-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+  .brand-tag {
+    background: #E8F2F0;
+    color: #064338;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+  .brand-card-right { flex-shrink: 0; }
+
+  .brand-card-body { padding: 20px 28px; background: #FDFCF9; }
+  .brand-meaning {
+    font-size: 14px;
+    color: #151515;
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+  .brand-meaning strong { color: #064338; }
+
+  /* ── TRADEMARK GRID ── */
+  .trademark-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .tm-cell {
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .tm-cell-green { background: #E8F2F0; }
+  .tm-cell-yellow { background: #FFF8DC; }
+  .tm-cell-red { background: #FDECEA; }
+  .tm-office {
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .tm-office-green { color: #064338; }
+  .tm-office-yellow { color: #B8860B; }
+  .tm-office-red { color: #C4433A; }
+  .tm-result {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .tm-result-green { color: #064338; }
+  .tm-result-yellow { color: #B8860B; }
+  .tm-result-red { color: #C4433A; }
+
+  .brand-strategy {
+    margin-top: 16px;
+    background: #FDF9F2;
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 13px;
+    color: #7C746F;
+    line-height: 1.6;
+    border-left: 3px solid #F3C546;
+  }
+  .brand-strategy strong { color: #1D1B20; }
+
+  /* ── ALERT BOXES ── */
+  .alert {
+    border-radius: 12px;
+    padding: 20px 24px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+  .alert-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .alert-body { flex: 1; }
+  .alert-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .alert-text { font-size: 13px; color: #717171; line-height: 1.6; }
+
+  .alert-warning { background: #FFF8DC; border-left: 4px solid #F3C546; }
+  .alert-warning .alert-title { color: #B8860B; }
+
+  .alert-info { background: #E8F2F0; border-left: 4px solid #064338; }
+  .alert-info .alert-title { color: #064338; }
+
+  .alert-success { background: #E8F2F0; border-left: 4px solid #064338; }
+  .alert-success .alert-title { color: #064338; }
+
+  /* ── DIVIDER ── */
+  .divider { border: none; border-top: 1px solid #E8E4DE; margin: 40px 0; }
+  .divider-gold {
+    border: none;
+    height: 1px;
+    background: linear-gradient(90deg, #F3C546, transparent);
+    margin: 40px 0;
+  }
+
+  /* ── CHART ── */
+  .chart-section { margin-bottom: 48px; }
+  .chart-bars { display: flex; flex-direction: column; gap: 10px; }
+  .chart-row { display: flex; align-items: center; gap: 12px; }
+  .chart-label { width: 90px; font-size: 12px; font-weight: 500; color: #1D1B20; text-align: right; flex-shrink: 0; }
+  .chart-bar-wrap { flex: 1; background: #F0EDE8; border-radius: 6px; height: 28px; overflow: hidden; }
+  .chart-bar { height: 100%; border-radius: 6px; display: flex; align-items: center; padding-left: 10px; font-size: 11px; font-weight: 500; color: white; }
+  .chart-bar-green { background: #064338; }
+  .chart-bar-gold { background: #B8860B; }
+  .chart-bar-red { background: #C4433A; }
+  .chart-score { width: 36px; font-size: 12px; font-weight: 600; color: #064338; flex-shrink: 0; }
+
+  /* ── FOOTER ── */
+  .footer {
+    background: #042E25;
+    padding: 40px 0 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .footer::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #F3C546 30%, #F3C546 70%, transparent);
+  }
+  .footer-content {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 0 40px;
+    position: relative;
+    z-index: 1;
+  }
+  .footer-top {
+    display: flex;
+    gap: 40px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .footer-left { flex: 1; min-width: 200px; }
+  .footer-brand {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 500;
+    color: #F3C546;
+    margin-bottom: 6px;
+  }
+  .footer-tagline { font-size: 12px; color: rgba(255,255,255,0.5); }
+  .footer-right { display: flex; gap: 40px; flex-wrap: wrap; }
+  .footer-col { min-width: 160px; }
+  .footer-col-label { font-size: 12px; font-weight: 500; color: rgba(243,197,70,0.6); margin-bottom: 6px; }
+  .footer-col-value { font-size: 14px; color: rgba(255,255,255,0.85); }
+  .footer-divider { border: none; border-top: 0.5px solid rgba(243,197,70,0.25); margin: 20px 0; }
+  .footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .footer-meta { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.5); }
+  .footer-disclaimer { font-size: 11px; color: rgba(255,255,255,0.35); max-width: 400px; text-align: right; line-height: 1.5; }
+
+  /* ── REFERENCES ── */
+  .references { margin-top: 40px; }
+  .ref-title { font-size: 14px; font-weight: 600; color: #1D1B20; margin-bottom: 12px; }
+  .ref-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .ref-list li { font-size: 12px; color: #717171; }
+  .ref-list a { color: #064338; text-decoration: none; font-weight: 500; }
+  .ref-list a:hover { color: #F3C546; text-decoration: underline; }
+
+  /* ── GOLD ACCENT SECTION HEADER ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .section-header-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, #F3C546, transparent);
+  }
+  .section-header-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #F3C546;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 700px) {
+    .hero-title { font-size: 36px; }
+    .trademark-grid { grid-template-columns: 1fr; }
+    .footer-top { flex-direction: column; }
+    .summary-table { font-size: 11px; }
+    .summary-table th, .summary-table td { padding: 10px 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ══════════════════════════════════════════
+       HERO HEADER
+  ══════════════════════════════════════════ -->
+  <div class="hero">
+    <!-- Decorative SVG organic shapes (墨绿调) -->
+    <svg class="hero-deco" viewBox="0 0 1127 394" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+      <g clip-path="url(#clip0)">
+        <rect width="1512" height="394" transform="translate(-192)" fill="#064338"/>
+        <g opacity="0.3">
+          <path d="M1633.6 -223.161C1624.07 -284.087 1608.25 -343.311 1587.09 -398.809C1574.57 -498.218 1549.21 -570.892 1519.61 -637.732C1490.78 -702.79 1457.58 -764.931 1422.22 -823.832C1353.72 -937.825 1270.65 -1040.48 1169.9 -1099.21C1059.39 -1163.7 938.085 -1176.26 819.18 -1182.58C758.468 -1185.82 694.581 -1192.55 635.967 -1166.13C586.343 -1143.77 544.331 -1098.81 511.068 -1045.01C477.566 -990.892 449.997 -928.913 430.339 -863.531C411.281 -800.174 400.014 -728.635 410.862 -660.66C414.457 -638.137 420.99 -616.83 429.86 -597.304C389.526 -559.793 351.529 -517.663 316.708 -471.158C240.414 -369.318 179.463 -247.223 138.769 -113.138C118.572 -46.5405 103.709 23.0543 95.0786 94.1075C85.7291 170.913 82.6726 249.339 91.7224 326.468C100.472 400.681 122.707 469.547 157.948 527.637C189.712 579.975 230.705 621.295 273.737 655.16C318.146 690.079 365.613 717.625 413.319 743.146C470.614 773.771 532.644 801.642 594.734 783.332C643.638 768.829 684.692 726.7 720.471 680.519C732.158 684.732 743.845 688.621 755.592 692.186C809.83 708.471 865.507 718.436 921.005 721.271C952.589 722.892 984.713 721.271 1015.46 710.496C1040.69 701.665 1064.9 686.677 1086.72 667.475C1169.9 594.315 1225.4 467.927 1249.01 338.783C1277.24 340.484 1305.41 341.538 1333.58 342.348C1390.87 343.968 1450.63 349.802 1502.17 309.86C1547.06 275.022 1580.32 216.283 1603.03 154.385C1645.88 37.5566 1653.38 -96.61 1633.6 -223.242Z" fill="#0A6B55"/>
+        </g>
+        <!-- Gold accent dots -->
+        <circle cx="900" cy="80" r="120" fill="#F3C546" opacity="0.04"/>
+        <circle cx="200" cy="300" r="80" fill="#F3C546" opacity="0.03"/>
+      </g>
+      <defs>
+        <clipPath id="clip0">
+          <rect width="1512" height="394" fill="white" transform="translate(-192)"/>
+        </clipPath>
+      </defs>
+    </svg>
+
+    <div class="hero-content">
+      <div class="hero-eyebrow">
+        <div class="hero-eyebrow-dot"></div>
+        <span class="hero-eyebrow-text">KovaScape · 品牌战略</span>
+      </div>
+      <h1 class="hero-title">品牌候选名<br><span>商标查询报告</span></h1>
+      <p class="hero-subtitle">针对 9 个品牌候选名，在 USPTO（美国）、UKIPO（英国）、EUIPO（欧盟）三大商标局完成精确词标查询，评估注册风险，为 KovaScape 品牌战略决策提供依据。</p>
+      <div class="hero-metrics">
+        <div class="hero-metric-item">
+          <span class="hero-metric-value">9 个</span>
+          <span class="hero-metric-label">候选品牌名</span>
+        </div>
+        <div class="hero-metric-item">
+          <span class="hero-metric-value">3 个</span>
+          <span class="hero-metric-label">商标局</span>
+        </div>
+        <div class="hero-metric-item">
+          <span class="hero-metric-value">27 次</span>
+          <span class="hero-metric-label">精确查询</span>
+        </div>
+        <div class="hero-metric-item">
+          <span class="hero-metric-value">8 个</span>
+          <span class="hero-metric-label">可用品牌名</span>
+        </div>
+        <div class="hero-metric-item">
+          <span class="hero-metric-value">2026.04.11</span>
+          <span class="hero-metric-label">查询日期</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       BODY CONTENT
+  ══════════════════════════════════════════ -->
+  <div class="body-content">
+
+    <!-- 核心结论 -->
+    <div class="alert alert-success" style="margin-bottom:12px;">
+      <span class="alert-icon">✅</span>
+      <div class="alert-body">
+        <div class="alert-title">核心结论：8 个品牌名三局均无精确注册记录，可进入注册流程</div>
+        <div class="alert-text">Nestova、Kinvela、Hevna、Grainova、Walliven、Walloft、Matteaux 在 USPTO / UKIPO / EUIPO 均无精确词标记录，风险极低。Domira 在 UKIPO 有 1 条已注册记录，建议谨慎评估后再决策。</div>
+      </div>
+    </div>
+    <div class="alert alert-warning" style="margin-bottom:32px;">
+      <span class="alert-icon">⚠️</span>
+      <div class="alert-body">
+        <div class="alert-title">Havenly 已在美国 + 英国注册，建议直接淘汰</div>
+        <div class="alert-text">USPTO 检索到 13 条相关记录（含 HAVENLY INC. 活跃注册），UKIPO 检索到 2 条已注册记录。该名称商标风险极高，不建议使用。</div>
+      </div>
+    </div>
+
+    <!-- 汇总对照表 -->
+    <div class="section-header">
+      <div class="section-header-dot"></div>
+      <h2 class="section-title" style="margin-bottom:0;">汇总对照表</h2>
+      <div class="section-header-line"></div>
+    </div>
+    <p class="section-subtitle">9 个候选品牌名在三大商标局的精确词标查询结果汇总</p>
+
+    <table class="summary-table">
+      <thead>
+        <tr>
+          <th>品牌名</th>
+          <th>USPTO（美国）</th>
+          <th>UKIPO（英国）</th>
+          <th>EUIPO（欧盟）</th>
+          <th>综合风险</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Havenly</strong></td>
+          <td>❌ 13条记录（活跃注册）</td>
+          <td>❌ 2条已注册</td>
+          <td>⚠️ 3条组合词</td>
+          <td><span class="badge badge-red"><span class="badge-dot"></span>🔴 淘汰</span></td>
+        </tr>
+        <tr>
+          <td><strong>Nestova</strong></td>
+          <td>✅ 无记录</td>
+          <td>✅ 无记录</td>
+          <td>✅ 无记录</td>
+          <td><span class="badge badge-green"><span class="badge-dot"></span>🟢 可用</span></td>
+        </tr>
+        <tr>
+          <td><strong>Kinvela</strong></td>
+          <td>✅ 无记录</td>
+          <td>✅ 无记录（QINVELA≠）</td>
+          <td>✅ 无记录</td>
+          <td><span class="badge badge-green"><span class="badge-dot"></span>🟢 可用</span></td>
+        </tr>
+        <tr>
+          <td><strong>Hevna</strong></td>
+          <td>✅ 无记录</td>
+          <td>✅ 无记录</td>
+          <td>✅ 无记录</td>
+          <td><span class="badge badge-green"><span class="badge-dot"></span>🟢 可用</span></td>
+        </tr>
+        <tr>
+          <td><strong>Domira</strong></td>
+          <td>✅ 无记录</td>
+          <td>⚠️ 1条已注册</td>
+          <td>✅ 无记录</td>
+          <td><span class="badge badge-yellow"><span class="badge-dot"></span>🟡 谨慎</span></td>
+        </tr>
+        <tr>
+          <td><strong>Grainova</strong></td>
+          <td>✅ 无记录</td>
+          <td>✅ 无记录（GRENOVA≠）</td>
+          <td>✅ 无记录</td>
+          <td><span class="badge badge-green"><span class="badge-dot"></span>🟢 可用</span></td>
+        </tr>
+        <tr>
+          <td><strong>Walliven</strong></td>
+          <td>✅ 无记录</td>
+          <td>✅ 无记录</td>
+          <td>✅ 无记录</td>
+          <td><span class="badge badge-green"><span class="badge-dot"></span>🟢 可用</span></td>
+        </tr>
+        <tr>
+          <td><strong>Walloft</strong></td>
+          <td>✅ 无记录</td>
+          <td>✅ 无记录</td>
+          <td>✅ 无记录</td>
+          <td><span class="badge badge-green"><span class="badge-dot"></span>🟢 可用</span></td>
+        </tr>
+        <tr>
+          <td><strong>Matteaux</strong></td>
+          <td>✅ 无记录</td>
+          <td>✅ 无记录</td>
+          <td>✅ 无记录</td>
+          <td><span class="badge badge-green"><span class="badge-dot"></span>🟢 可用</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- 品牌详细卡片 -->
+    <div class="section-header">
+      <div class="section-header-dot"></div>
+      <h2 class="section-title" style="margin-bottom:0;">品牌详细分析</h2>
+      <div class="section-header-line"></div>
+    </div>
+    <p class="section-subtitle">7 个可用品牌名的词根解析、商标查询结果与定位建议（Havenly 已淘汰，不列入）</p>
+
+    <div class="brand-cards">
+
+      <!-- Nestova -->
+      <div class="brand-card">
+        <div class="brand-card-header">
+          <div class="brand-card-left">
+            <div class="brand-name">Nestova</div>
+            <div class="brand-phonetic">/ ˈnɛs.tə.və / · 内斯托瓦</div>
+            <div class="brand-tags">
+              <span class="brand-tag">Nest（巢）</span>
+              <span class="brand-tag">-ova（斯拉夫语后缀）</span>
+              <span class="brand-tag">家居品牌</span>
+            </div>
+          </div>
+          <div class="brand-card-right">
+            <span class="badge badge-green" style="font-size:13px;padding:6px 14px;"><span class="badge-dot"></span>🟢 三局可用</span>
+          </div>
+        </div>
+        <div class="brand-card-body">
+          <p class="brand-meaning">词根 <strong>Nest</strong>（巢、家）+ 斯拉夫语后缀 <strong>-ova</strong>，传递"家的归属感"与"精心筑巢"的品牌理念。发音流畅，欧美市场均易记忆，延展性强，适合从相框/层板扩展至全屋家居。</p>
+          <div class="trademark-grid">
+            <div class="tm-cell tm-cell-green">
+              <div class="tm-office tm-office-green">🇺🇸 USPTO</div>
+              <div class="tm-result tm-result-green">✅ 无精确记录<br>风险极低</div>
+            </div>
+            <div class="tm-cell tm-cell-green">
+              <div class="tm-office tm-office-green">🇬🇧 UKIPO</div>
+              <div class="tm-result tm-result-green">✅ 无精确记录<br>风险极低</div>
+            </div>
+            <div class="tm-cell tm-cell-green">
+              <div class="tm-office tm-office-green">🇪🇺 EUIPO</div>
+              <div class="tm-result tm-result-green">✅ 无精确记录<br>风险极低</div>
+            </div>
+          </div>
+          <div class="brand-strategy">
+            <strong>定位建议：</strong>主打"家的温度"情感路线，适合北欧简约风格，与 KovaScape 现有品牌调性高度契合。可作为独立子品牌或主品牌使用。
+          </div>
+        </div>
+      </div>
+
+      <!-- Kinvela -->
+      <div class="brand-card">
+        <div class="brand-card-header">
+          <div class="brand-card-left">
+            <div class="brand-name">Kinvela</div>
+            <div class="brand-phonetic">/ ˈkɪn.və.lə / · 金维拉</div>
+            <div class="brand-tags">
+              <span class="brand-tag">Kin（亲属/家人）</span>
+              <span class="brand-tag">-vela（帆/光）</span>
+              <span class="brand-tag">家居品牌</span>
+            </div>
+          </div>
+          <div class="brand-card-right">
+            <span class="badge badge-green" style="font-size:13px;padding:6px 14px;"><span class="badge-dot"></span>🟢 三局可用</span>
+          </div>
+        </div>
+        <div class="brand-card-body">
+          <p class="brand-meaning">词根 <strong>Kin</strong>（家人、亲属）+ <strong>-vela</strong>（拉丁语"帆/光"），寓意"家人之光"，传递温暖与连接感。UKIPO 检索到 QINVELA（Q开头，非精确匹配），不构成冲突。</p>
+          <div class="trademark-grid">
+            <div class="tm-cell tm-cell-green">
+              <div class="tm-office tm-office-green">🇺🇸 USPTO</div>
+              <div class="tm-result tm-result-green">✅ 无精确记录<br>风险极低</div>
+            </div>
+            <div class="tm-cell tm-cell-green">
+              <div class="tm-office tm-office-green">🇬🇧 UKIPO</div>
+              <div class="tm-result tm-result-green">✅ 无精确记录<br>QINVELA≠Kinvela</div>
+            </div>
+            <div class="tm-cell tm-cell-green">
+              <div class="tm-office tm-office-green">🇪🇺 EUIPO</div>
+              <div class="tm-result tm-result-green">✅ 无精确记录<br>风险极低</div>
+            </div>
+          </div>
+          <div class="brand-strategy">
+            <strong>定位建议：</strong>适合主打"家庭情感"的产品线，如相框、家庭照片展示类产品。发音优雅，欧洲市场接受度高，可考虑作为英国/欧盟市场的主推品牌。
+          </div>
+        </div>
+      </div>
+
+      <!-- Hevna -->
+      <div class="brand-card">
+        <div class="brand-card-header">
+          <div class="brand-card-left">
+            <div class="brand-name">Hevna</div>
+            <div class="brand-phonetic">/ ˈhɛv.nə / · 赫夫纳</div>
+            <div class="brand-tags">
+              <span class="brand-tag">Haven（避风港）</span>
+              <span class="brand-tag">简短有力</span>
+              <span class="brand-tag">全球通用</span>
+            </div>
+          </div>
+          <div class="brand-card-right">
+            <span class="badge badge-green" style="font-size:13px;padding:6px 14px;"><span class="badge-dot"></span>🟢 三局可用</span>
+          </div>
+        </div>
+        <div class="brand-card-body">
+          <p class="brand-meaning">源自 <strong>Haven</strong>（避风港、安全之所）的变体，去掉一个字母后更简洁有力。5个字母，发音清晰，全球市场均易拼写记忆，是候选名中最简短的之一。</p>
+          <div class="trademark-grid">
+            <div class="tm-cell tm-cell-green">
+              <div class="tm-office tm-office-green">🇺🇸 USPTO</div>
+              <div class="tm-result tm-result-green">✅ 无精确记录<br>风险极低</div>
+            </div>
+            <div class="tm-cell tm-cell-green">
+              <div class="tm-office tm-office-green">🇬🇧 UKIPO</div>
+              <div class="tm-result tm-result-green">✅ 无精确记录<br>风险极低</div>
+            </div>
+            <div class="tm-cell tm-cell-green">
+              <div class="tm-office tm-office-green">🇪🇺 EUIPO</div>
+              <div class="tm-result tm-result-green">✅ 无精确记录<br>风险极低</div>
+            </div>
+          </div>
+          <div class="brand-strategy">
+            <strong>定位建议：</strong>简短有力，适合作为主品牌名。"家是避风港"的理念与相框/层板产品高度契合，可延展至全屋家居。建议优先考虑。
+          </div>
+        </div>
+      </div>
+
+      <!-- Domira -->
+      <div class="brand-card" style="border-left-color: #B8860B;">
+        <div class="brand-card-header">
+          <div class="brand-card-left">
+            <div class="brand-name" style="color:#B8860B;">Domira</div>
+            <div class="brand-phonetic">/ ˈdɒ.mɪ.rə / · 多米拉</div>
+            <div class="brand-tags">
+              <span class="brand-tag" style="background:#FFF8DC;color:#B8860B;">Domus（家）</span>
+              <span class="brand-tag" style="background:#FFF8DC;color:#B8860B;">-ira（后缀）</span>
+              <span class="brand-tag" style="background:#FFF8DC;color:#B8860B;">⚠️ 需谨慎</span>
+            </div>
+          </div>
+          <div class="brand-card-right">
+            <span class="badge badge-yellow" style="font-size:13px;padding:6px 14px;"><span class="badge-dot"></span>🟡 UKIPO谨慎</span>
+          </div>
+        </div>
+        <div class="brand-card-body">
+          <p class="brand-meaning">词根 <strong>Domus</strong>（拉丁语"家"）+ 后缀 <strong>-ira</strong>，发音优雅，有地中海风情。但 UKIPO 检索到 1 条已注册的 DOMIRA 记录，需进一步核查该注册的商品类别是否与家居品类冲突。</p>
+          <div class="trademark-grid">
+            <div class="tm-cell tm-cell-green">
+              <div class="tm-office tm-office-green">🇺🇸 USPTO</div>
+              <div class="tm-result tm-result-green">✅ 无精确记录<br>风险极低</div>
+            </div>
+            <div class="tm-cell tm-cell-yellow">
+              <div class="tm-office tm-office-yellow">🇬🇧 UKIPO</div>
+              <div class="tm-result tm-result-yellow">⚠️ 1条已注册<br>需核查类别</div>
+            </div>
+            <div class="tm-cell tm-cell-green">
+              <div class="tm-office tm-office-green">🇪🇺 EUIPO</div>
+              <div class="tm-result tm-result-green">✅ 无精确记录<br>风险极低</div>
+            </div>
+          </div>
+          <div class="brand-strategy" style="border-left-color:#F3C546;">
+            <strong>定位建议：</strong>若计划进入英国市场，建议委托商标代理人核查 UKIPO 已注册的 DOMIRA 所属类别（第20类/21类）。若不冲突，仍可使用；若冲突，建议放弃。
+          </div>
+        </div>
+      </div>
+
+      <!-- Grainova -->
+      <div class="brand-card">
+        <div class="brand-card-header">
+          <div class="brand-card-left">
+            <div class="brand-name">Grainova</div>
+            <div class="brand-phonetic">/ ˈɡreɪ.nə.və / · 格雷诺瓦</div>
+            <div class="brand-tags">
+              <span class="brand-tag">Grain（木纹/谷物）</span>
+              <span class="brand-tag">-nova（新）</span>
+              <span class="brand-tag">实木品类</span>
+            </div>
+          </div>
+          <div class="brand-card-right">
+            <span class="badge badge-green" style="font-size:13px;padding:6px 14px;"><span class="badge-dot"></span>🟢 三局可用</span>
+          </div>
+        </div>
+        <div class="brand-card-body">
+          <p class="brand-meaning">词根 <strong>Grain</strong>（木纹、谷物纹理）+ <strong>-nova</strong>（拉丁语"新"），传递"天然木纹之美"与"工艺创新"。UKIPO 检索到 GRENOVA（E开头，非精确匹配），不构成冲突。与 KovaScape 实木相框产品线高度契合。</p>
+          <div class="trademark-grid">
+            <div class="tm-cell tm-cell-green">
+              <div class="tm-office tm-office-green">🇺🇸 USPTO</div>
+              <div class="tm-result tm-result-green">✅ 无精确记录<br>风险极低</div>
+            </div>
+            <div class="tm-cell tm-cell-green">
+              <div class="tm-office tm-office-green">🇬🇧 UKIPO</div>
+              <div class="tm-result tm-result-green">✅ 无精确记录<br>GRENOVA≠Grainova</div>
+            </div>
+            <div class="tm-cell tm-cell-green">
+              <div class="tm-office tm-office-green">🇪🇺 EUIPO</div>
+              <div class="tm-result tm-result-green">✅ 无精确记录<br>风险极低</div>
+            </div>
+          </div>
+          <div class="brand-strategy">
+            <strong>定位建议：</strong>强烈推荐用于实木相框/层板产品线。"木纹"的品类关联性极强，有助于在欧美市场建立清晰的产品认知，适合作为实木品类子品牌。
+          </div>
+        </div>
+      </div>
+
+      <!-- Walliven -->
+      <div class="brand-card">
+        <div class="brand-card-header">
+          <div class="brand-card-left">
+            <div class="brand-name">Walliven</div>
+            <div class="brand-phonetic">/ ˈwɔː.lɪ.vən / · 沃利文</div>
+            <div class="brand-tags">
+              <span class="brand-tag">Wall（墙）</span>
+              <span class="brand-tag">-liven（活化）</span>
+              <span class="brand-tag">墙面装饰</span>
+            </div>
+          </div>
+          <div class="brand-card-right">
+            <span class="badge badge-green" style="font-size:13px;padding:6px 14px;"><span class="badge-dot"></span>🟢 三局可用</span>
+          </div>
+        </div>
+        <div class="brand-card-body">
+          <p class="brand-meaning">词根 <strong>Wall</strong>（墙）+ <strong>-liven</strong>（活化、赋予生机），传递"让墙面焕发生机"的品牌理念。与相框、层板、墙面装饰品类直接关联，品类定位清晰。</p>
+          <div class="trademark-grid">
+            <div class="tm-cell tm-cell-green">
+              <div class="tm-office tm-office-green">🇺🇸 USPTO</div>
+              <div class="tm-result tm-result-green">✅ 无精确记录<br>风险极低</div>
+            </div>
+            <div class="tm-cell tm-cell-green">
+              <div class="tm-office tm-office-green">🇬🇧 UKIPO</div>
+              <div class="tm-result tm-result-green">✅ 无精确记录<br>风险极低</div>
+            </div>
+            <div class="tm-cell tm-cell-green">
+              <div class="tm-office tm-office-green">🇪🇺 EUIPO</div>
+              <div class="tm-result tm-result-green">✅ 无精确记录<br>风险极低</div>
+            </div>
+          </div>
+          <div class="brand-strategy">
+            <strong>定位建议：</strong>品类关联性强，适合作为墙面装饰品类的专属品牌。"Wall"前缀在欧美市场直观易懂，有助于 SEO 和品类搜索。
+          </div>
+        </div>
+      </div>
+
+      <!-- Walloft -->
+      <div class="brand-card">
+        <div class="brand-card-header">
+          <div class="brand-card-left">
+            <div class="brand-name">Walloft</div>
+            <div class="brand-phonetic">/ ˈwɔː.lɒft / · 沃洛夫特</div>
+            <div class="brand-tags">
+              <span class="brand-tag">Wall（墙）</span>
+              <span class="brand-tag">Loft（阁楼/空间）</span>
+              <span class="brand-tag">北欧工业风</span>
+            </div>
+          </div>
+          <div class="brand-card-right">
+            <span class="badge badge-green" style="font-size:13px;padding:6px 14px;"><span class="badge-dot"></span>🟢 三局可用</span>
+          </div>
+        </div>
+        <div class="brand-card-body">
+          <p class="brand-meaning">词根 <strong>Wall</strong>（墙）+ <strong>Loft</strong>（阁楼、开放空间），传递"墙面空间美学"的品牌理念。北欧工业风格感强，与层板（Floating Shelves）产品线高度契合。</p>
+          <div class="trademark-grid">
+            <div class="tm-cell tm-cell-green">
+              <div class="tm-office tm-office-green">🇺🇸 USPTO</div>
+              <div class="tm-result tm-result-green">✅ 无精确记录<br>风险极低</div>
+            </div>
+            <div class="tm-cell tm-cell-green">
+              <div class="tm-office tm-office-green">🇬🇧 UKIPO</div>
+              <div class="tm-result tm-result-green">✅ 无精确记录<br>风险极低</div>
+            </div>
+            <div class="tm-cell tm-cell-green">
+              <div class="tm-office tm-office-green">🇪🇺 EUIPO</div>
+              <div class="tm-result tm-result-green">✅ 无精确记录<br>风险极低</div>
+            </div>
+          </div>
+          <div class="brand-strategy">
+            <strong>定位建议：</strong>强烈推荐用于层板/收纳类产品线。"Loft"的空间感与北欧工业风格契合，适合打造独立的层板品牌，与相框品牌形成矩阵。
+          </div>
+        </div>
+      </div>
+
+      <!-- Matteaux -->
+      <div class="brand-card">
+        <div class="brand-card-header">
+          <div class="brand-card-left">
+            <div class="brand-name">Matteaux</div>
+            <div class="brand-phonetic">/ mæˈtoʊ / · 马托</div>
+            <div class="brand-tags">
+              <span class="brand-tag">Mat（卡纸/哑光）</span>
+              <span class="brand-tag">-eaux（法语后缀）</span>
+              <span class="brand-tag">大留白相框</span>
+            </div>
+          </div>
+          <div class="brand-card-right">
+            <span class="badge badge-green" style="font-size:13px;padding:6px 14px;"><span class="badge-dot"></span>🟢 三局可用</span>
+          </div>
+        </div>
+        <div class="brand-card-body">
+          <p class="brand-meaning">词根 <strong>Mat</strong>（卡纸、哑光）+ 法语后缀 <strong>-eaux</strong>，传递"法式优雅"与"大留白相框"的精致感。与 KovaScape 正在调研的大留白相框（Large Mat Picture Frame）品类直接关联。</p>
+          <div class="trademark-grid">
+            <div class="tm-cell tm-cell-green">
+              <div class="tm-office tm-office-green">🇺🇸 USPTO</div>
+              <div class="tm-result tm-result-green">✅ 无精确记录<br>风险极低</div>
+            </div>
+            <div class="tm-cell tm-cell-green">
+              <div class="tm-office tm-office-green">🇬🇧 UKIPO</div>
+              <div class="tm-result tm-result-green">✅ 无精确记录<br>风险极低</div>
+            </div>
+            <div class="tm-cell tm-cell-green">
+              <div class="tm-office tm-office-green">🇪🇺 EUIPO</div>
+              <div class="tm-result tm-result-green">✅ 无精确记录<br>风险极低</div>
+            </div>
+          </div>
+          <div class="brand-strategy">
+            <strong>定位建议：</strong>强烈推荐用于大留白相框品类。法式优雅的品牌感与高端相框定位高度契合，适合英国/欧盟市场，可作为大留白相框专属子品牌。
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /brand-cards -->
+
+    <hr class="divider">
+
+    <!-- 综合评分图表 -->
+    <div class="section-header">
+      <div class="section-header-dot"></div>
+      <h2 class="section-title" style="margin-bottom:0;">综合评分对比</h2>
+      <div class="section-header-line"></div>
+    </div>
+    <p class="section-subtitle">基于发音流畅度、记忆点、延展性、欧美市场适配、商标风险五维度综合评分（满分10分）</p>
+
+    <div class="chart-section">
+      <div class="chart-bars">
+        <div class="chart-row">
+          <div class="chart-label">Hevna</div>
+          <div class="chart-bar-wrap">
+            <div class="chart-bar chart-bar-green" style="width:92%;">9.2</div>
+          </div>
+          <div class="chart-score">9.2</div>
+        </div>
+        <div class="chart-row">
+          <div class="chart-label">Nestova</div>
+          <div class="chart-bar-wrap">
+            <div class="chart-bar chart-bar-green" style="width:90%;">9.0</div>
+          </div>
+          <div class="chart-score">9.0</div>
+        </div>
+        <div class="chart-row">
+          <div class="chart-label">Grainova</div>
+          <div class="chart-bar-wrap">
+            <div class="chart-bar chart-bar-green" style="width:88%;">8.8</div>
+          </div>
+          <div class="chart-score">8.8</div>
+        </div>
+        <div class="chart-row">
+          <div class="chart-label">Matteaux</div>
+          <div class="chart-bar-wrap">
+            <div class="chart-bar chart-bar-green" style="width:86%;">8.6</div>
+          </div>
+          <div class="chart-score">8.6</div>
+        </div>
+        <div class="chart-row">
+          <div class="chart-label">Kinvela</div>
+          <div class="chart-bar-wrap">
+            <div class="chart-bar chart-bar-green" style="width:85%;">8.5</div>
+          </div>
+          <div class="chart-score">8.5</div>
+        </div>
+        <div class="chart-row">
+          <div class="chart-label">Walloft</div>
+          <div class="chart-bar-wrap">
+            <div class="chart-bar chart-bar-green" style="width:83%;">8.3</div>
+          </div>
+          <div class="chart-score">8.3</div>
+        </div>
+        <div class="chart-row">
+          <div class="chart-label">Walliven</div>
+          <div class="chart-bar-wrap">
+            <div class="chart-bar chart-bar-green" style="width:80%;">8.0</div>
+          </div>
+          <div class="chart-score">8.0</div>
+        </div>
+        <div class="chart-row">
+          <div class="chart-label">Domira</div>
+          <div class="chart-bar-wrap">
+            <div class="chart-bar chart-bar-gold" style="width:72%;">7.2</div>
+          </div>
+          <div class="chart-score" style="color:#B8860B;">7.2</div>
+        </div>
+        <div class="chart-row">
+          <div class="chart-label">Havenly</div>
+          <div class="chart-bar-wrap">
+            <div class="chart-bar chart-bar-red" style="width:20%;">淘汰</div>
+          </div>
+          <div class="chart-score" style="color:#C4433A;">—</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <!-- 下一步建议 -->
+    <div class="section-header">
+      <div class="section-header-dot"></div>
+      <h2 class="section-title" style="margin-bottom:0;">下一步行动建议</h2>
+      <div class="section-header-line"></div>
+    </div>
+    <p class="section-subtitle">基于商标查询结果，建议按以下优先级推进品牌注册流程</p>
+
+    <div class="alert alert-info" style="margin-bottom:12px;">
+      <span class="alert-icon">1️⃣</span>
+      <div class="alert-body">
+        <div class="alert-title">确定最终品牌名（建议本周内）</div>
+        <div class="alert-text">从 8 个可用品牌名中选定 1～2 个作为主品牌和子品牌。推荐优先考虑 <strong>Hevna</strong>（主品牌）+ <strong>Grainova</strong>（实木子品牌）或 <strong>Matteaux</strong>（大留白相框子品牌）的组合策略。</div>
+      </div>
+    </div>
+    <div class="alert alert-info" style="margin-bottom:12px;">
+      <span class="alert-icon">2️⃣</span>
+      <div class="alert-body">
+        <div class="alert-title">委托商标代理人进行近似商标全面检索</div>
+        <div class="alert-text">本次查询为精确词标查询，建议委托专业商标代理人进行近似商标（Likelihood of Confusion）全面检索，尤其针对 Domira 在 UKIPO 的已注册记录进行类别核查。</div>
+      </div>
+    </div>
+    <div class="alert alert-info" style="margin-bottom:12px;">
+      <span class="alert-icon">3️⃣</span>
+      <div class="alert-body">
+        <div class="alert-title">检查 .com 域名可用性</div>
+        <div class="alert-text">在确定品牌名后，立即检查对应的 .com 域名是否可注册。建议同时检查 .co.uk（英国）和 .de（德国）域名。</div>
+      </div>
+    </div>
+    <div class="alert alert-info" style="margin-bottom:12px;">
+      <span class="alert-icon">4️⃣</span>
+      <div class="alert-body">
+        <div class="alert-title">提交商标注册申请</div>
+        <div class="alert-text">在美国（USPTO）、英国（UKIPO）、欧盟（EUIPO）分别提交商标注册申请，建议注册第 20 类（家具）和第 21 类（家居用品）。可通过 EUIPO 的欧盟商标（EUTM）一次覆盖 27 个欧盟成员国。</div>
+      </div>
+    </div>
+    <div class="alert alert-info" style="margin-bottom:32px;">
+      <span class="alert-icon">5️⃣</span>
+      <div class="alert-body">
+        <div class="alert-title">启动亚马逊品牌注册（Amazon Brand Registry）</div>
+        <div class="alert-text">商标申请提交后即可申请亚马逊品牌注册（无需等待注册完成），获得 A+ 内容、品牌旗舰店、品牌广告等权益，有效保护 KovaScape 在亚马逊平台的品牌资产。</div>
+      </div>
+    </div>
+
+    <!-- 参考来源 -->
+    <div class="references">
+      <div class="ref-title">📎 参考来源</div>
+      <ul class="ref-list">
+        <li>[1] USPTO 商标检索系统 — <a href="https://tmsearch.uspto.gov/" target="_blank">https://tmsearch.uspto.gov/</a></li>
+        <li>[2] UKIPO 商标检索系统 — <a href="https://trademarks.ipo.gov.uk/ipo-tmtext" target="_blank">https://trademarks.ipo.gov.uk/ipo-tmtext</a></li>
+        <li>[3] EUIPO eSearch 商标检索系统 — <a href="https://euipo.europa.eu/eSearch/" target="_blank">https://euipo.europa.eu/eSearch/</a></li>
+        <li>[4] 亚马逊品牌注册官方页面 — <a href="https://brandregistry.amazon.com/" target="_blank">https://brandregistry.amazon.com/</a></li>
+        <li>[5] EUIPO 欧盟商标注册指南 — <a href="https://euipo.europa.eu/ohimportal/en/apply-now" target="_blank">https://euipo.europa.eu/ohimportal/en/apply-now</a></li>
+      </ul>
+    </div>
+
+  </div><!-- /body-content -->
+
+  <!-- ══════════════════════════════════════════
+       FOOTER
+  ══════════════════════════════════════════ -->
+  <div class="footer">
+    <div class="footer-content">
+      <div class="footer-top">
+        <div class="footer-left">
+          <div class="footer-brand">KovaScape</div>
+          <div class="footer-tagline">Nordic Minimalism × Mid-Century Modern<br>Picture Frames · Floating Shelves · Home Décor</div>
+        </div>
+        <div class="footer-right">
+          <div class="footer-col">
+            <div class="footer-col-label">报告类型</div>
+            <div class="footer-col-value">商标查询报告</div>
+          </div>
+          <div class="footer-col">
+            <div class="footer-col-label">查询范围</div>
+            <div class="footer-col-value">USPTO · UKIPO · EUIPO</div>
+          </div>
+          <div class="footer-col">
+            <div class="footer-col-label">查询日期</div>
+            <div class="footer-col-value">2026年4月11日</div>
+          </div>
+        </div>
+      </div>
+      <hr class="footer-divider">
+      <div class="footer-bottom">
+        <div class="footer-meta">KovaScape · 品牌战略部 · 2026</div>
+        <div class="footer-disclaimer">本报告仅供内部参考，商标查询结果为精确词标查询，不构成法律意见。正式注册前请委托专业商标代理人进行全面检索。</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+</body>
+</html>

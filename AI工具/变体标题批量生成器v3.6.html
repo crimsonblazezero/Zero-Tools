@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Variation Batch Writer v36.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* 状态颜色 */
+        .limit-error { color: #dc2626; font-weight: 700; }
+        .limit-warn { color: #d97706; font-weight: 600; }
+        .limit-ok { color: #059669; font-weight: 600; }
+        
+        .bg-error { background-color: #fee2e2; }
+        .bg-warn { background-color: #fffbeb; }
+        
+        /* 滚动条 */
+        textarea::-webkit-scrollbar { width: 6px; }
+        textarea::-webkit-scrollbar-track { background: transparent; }
+        textarea::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        textarea::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* 选项卡激活样式 */
+        .tab-active {
+            background-color: #eff6ff; /* blue-50 */
+            border: 2px solid #2563eb;
+            color: #2563eb;
+            font-weight: 700;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        .tab-inactive {
+            background-color: transparent;
+            border: 2px solid transparent;
+            color: #64748b;
+            font-weight: 500;
+        }
+        .tab-inactive:hover {
+            background-color: #f8fafc;
+            color: #334155;
+        }
+
+        /* 编辑框 */
+        .editable-field {
+            width: 100%;
+            resize: vertical;
+            border: 1px solid transparent;
+            background: transparent;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem; /* 12px */
+            line-height: 1.25rem;
+            transition: all 0.2s;
+        }
+        .editable-field:focus {
+            background: white;
+            border-color: #3b82f6;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+        }
+        tr:hover .editable-field { background: #f8fafc; }
+        tr:hover .editable-field:focus { background: white; }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 模态框动画 */
+        .modal {
+            transition: opacity 0.25s ease;
+        }
+        body.modal-active {
+            overflow-x: hidden;
+            overflow-y: visible !important;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col h-screen overflow-hidden">
+
+    <!-- 顶部导航 -->
+    <div class="bg-white border-b border-slate-200 shadow-sm z-30 shrink-0">
+        <div class="max-w-[1920px] mx-auto px-6 h-16 flex justify-between items-center gap-6">
+            
+            <!-- Logo & Title -->
+            <div class="flex items-center gap-3 shrink-0">
+                <div class="bg-indigo-600 w-9 h-9 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-md">V</div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-800 tracking-tight">Variation Batch Writer</h1>
+                </div>
+            </div>
+
+            <!-- Central Controls: Tabs & Market -->
+            <div class="flex-1 flex items-center gap-6 justify-center">
+                <!-- Tabs (Larger) -->
+                <div class="flex bg-slate-100 p-1.5 rounded-lg">
+                    <button onclick="switchTab('frame')" id="btn-tab-frame" class="tab-active px-8 py-2 text-sm rounded-md transition-all">🖼️ 相框</button>
+                    <button onclick="switchTab('shelf')" id="btn-tab-shelf" class="tab-inactive px-8 py-2 text-sm rounded-md transition-all">🪵 层板</button>
+                </div>
+
+                <!-- Market (Smaller) -->
+                <div class="flex items-center gap-2">
+                    <select id="targetMarket" onchange="changeMarket()" class="bg-white border border-slate-300 text-xs font-semibold text-slate-600 rounded px-2 py-1.5 outline-none cursor-pointer hover:border-indigo-400 transition-colors focus:ring-2 focus:ring-indigo-200">
+                        <option value="en">English (英语)</option>
+                        <option value="de">Deutsch (德语)</option>
+                        <option value="fr">Français (法语)</option>
+                        <option value="it">Italiano (意语)</option>
+                        <option value="es">Español (西语)</option>
+                        <option value="jp">日本語 (日语)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-3 shrink-0">
+                <div style="display:none;"><span id="custom-dict-badge" class="hidden"></span></div>
+                
+                <button onclick="performUndo()" id="btn-undo" disabled class="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-500 px-3 py-1.5 rounded-md text-xs font-bold transition-colors border border-slate-200 shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
+                    撤销
+                </button>
+
+                <button onclick="clearAllData()" class="flex items-center gap-1.5 bg-white hover:bg-red-50 text-red-500 px-3 py-1.5 rounded-md text-xs font-bold transition-colors border border-red-200 shadow-sm group">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    清空
+                </button>
+
+                <!-- Help Button -->
+                <button onclick="toggleModal('help-modal')" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-indigo-100 text-slate-500 hover:text-indigo-600 font-bold transition-colors flex items-center justify-center border border-slate-200">
+                    ?
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="flex-1 flex overflow-hidden max-w-[1920px] mx-auto w-full p-4 lg:p-6 gap-6">
+        
+        <!-- 左侧输入区 -->
+        <div class="w-[480px] flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden shrink-0">
+            
+            <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
+                
+                <!-- 1. 模板配置区 -->
+                <div class="p-5 border-b border-slate-100 bg-slate-50/50">
+                    <h3 class="font-bold text-slate-700 text-xs uppercase tracking-wider mb-4 flex justify-between items-center">
+                        <span>1. 父体模板</span>
+                        <span id="mode-badge" class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-[10px] font-semibold">相框模式</span>
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <!-- 标题模板 -->
+                        <div class="relative group">
+                            <div class="flex justify-between items-center mb-1.5">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase">A. 标题模板</label>
+                                <button onclick="clearField('templateTitle')" class="text-[10px] text-slate-400 hover:text-red-500 transition-colors">清空</button>
+                            </div>
+                            <textarea id="templateTitle" rows="3" class="w-full p-3 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 transition-all resize-none shadow-sm" placeholder="在此粘贴父体标题..." oninput="validateTemplate()"></textarea>
+                            <div id="template-validation-msg" class="text-[10px] mt-1.5 min-h-[1rem]"></div>
+                        </div>
+
+                        <!-- 五点模板 -->
+                        <div class="relative group">
+                            <div class="flex justify-between items-center mb-1.5">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase">B. 五点模板</label>
+                                <button onclick="clearField('templateBullets')" class="text-[10px] text-slate-400 hover:text-red-500 transition-colors">清空</button>
+                            </div>
+                            <textarea id="templateBullets" rows="5" class="w-full p-3 border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 transition-all resize-none shadow-sm" placeholder="在此粘贴父体五点描述..."></textarea>
+                        </div>
+
+                        <!-- 自动解析按钮 -->
+                        <button onclick="parseTemplate(this)" class="w-full text-[11px] bg-white border border-indigo-200 text-indigo-600 px-2 py-2 rounded-md hover:bg-indigo-50 transition-all shadow-sm font-medium flex items-center justify-center gap-1.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" /></svg>
+                            自动解析属性
+                        </button>
+
+                        <!-- 旧属性配置 -->
+                        <div class="bg-white p-3 rounded-lg border border-slate-200 mt-2 shadow-sm">
+                            <div class="text-[10px] font-bold text-slate-400 uppercase mb-2.5">需替换的旧属性</div>
+                            <div class="grid grid-cols-2 gap-2.5">
+                                <input type="text" id="oldSize" class="w-full p-2 border border-slate-200 rounded text-xs focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200 transition-all" placeholder="旧尺寸 (如 4x6)">
+                                <input type="text" id="oldMaterial" class="w-full p-2 border border-slate-200 rounded text-xs focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200 transition-all" placeholder="旧材质 (如 Oak)">
+                                <input type="text" id="oldColor" class="w-full p-2 border border-slate-200 rounded text-xs focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200 transition-all" placeholder="旧颜色 (如 Natural)">
+                                <input type="text" id="oldPack" class="w-full p-2 border border-slate-200 rounded text-xs focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200 transition-all" placeholder="旧套数 (如 1)">
+                                
+                                <div id="field-matted-config" class="col-span-2">
+                                    <input type="text" id="oldMatted" class="w-full p-2 border border-slate-200 rounded text-xs focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200 transition-all" placeholder="旧卡纸 (如 3.5x5)">
+                                </div>
+
+                                <div id="field-unit-config" class="col-span-2 hidden">
+                                    <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase">输出目标单位</label>
+                                    <div class="flex gap-3">
+                                        <label class="flex items-center gap-1.5 text-xs cursor-pointer text-slate-600"><input type="radio" name="targetUnit" value="inch" checked onchange="regenerate()" class="text-indigo-600 focus:ring-indigo-500"> <span>英寸 / Inch</span></label>
+                                        <label class="flex items-center gap-1.5 text-xs cursor-pointer text-slate-600"><input type="radio" name="targetUnit" value="cm" onchange="regenerate()" class="text-indigo-600 focus:ring-indigo-500"> <span>厘米 / CM</span></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. 数据录入区 -->
+                <div class="p-5 flex-col">
+                    <h3 class="font-bold text-indigo-700 text-xs uppercase tracking-wider mb-3">2. 变体数据</h3>
+                    
+                    <div class="flex flex-col space-y-3">
+                        <div class="flex flex-col">
+                            <div class="flex justify-between text-[10px] text-slate-500 mb-1.5">
+                                <span class="font-bold">A. 主数据 (支持中/英/混合)</span>
+                                <span class="text-slate-400">材质 | 尺寸 | 颜色 | 套数 | SKU</span>
+                            </div>
+                            <textarea id="mainInput" rows="5" class="w-full p-2.5 border border-indigo-200 bg-indigo-50/10 rounded-lg text-xs font-mono whitespace-pre resize-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all" placeholder="粘贴 Excel 数据..."></textarea>
+                        </div>
+
+                        <div id="input-matted-box" class="flex flex-col">
+                            <div class="flex justify-between text-[10px] text-slate-500 mb-1.5">
+                                <span class="font-bold">B. 卡纸数据</span>
+                                <span class="text-orange-500">无卡纸填 N/A</span>
+                            </div>
+                            <textarea id="mattedInput" rows="2" class="w-full p-2.5 border border-orange-200 bg-orange-50/10 rounded-lg text-xs font-mono whitespace-pre resize-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all" placeholder="3.5x5&#10;N/A"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 flex gap-2">
+                        <button onclick="loadDemo()" class="text-[10px] text-slate-400 hover:text-indigo-600 underline transition-colors">载入示例</button>
+                    </div>
+                </div>
+
+                <!-- 3. 文本批量替换 -->
+                <div class="p-5 border-t border-slate-100 bg-purple-50/20">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-purple-700 text-xs uppercase tracking-wider flex items-center gap-2">
+                            <span>🔁 3. 文本批量替换</span>
+                        </h3>
+                        <button onclick="addReplacementRow()" class="text-[10px] bg-white border border-purple-200 text-purple-700 px-2 py-1 rounded hover:bg-purple-50 transition-colors">+ 新增</button>
+                    </div>
+                    <div id="replacement-container" class="space-y-2">
+                        <div class="replacement-row grid grid-cols-7 gap-2 items-center">
+                            <input type="text" class="col-span-3 p-1.5 border border-purple-200 rounded text-xs placeholder-slate-300 focus:border-purple-500 replace-old" placeholder="旧文本">
+                            <div class="col-span-1 text-center text-slate-300">➜</div>
+                            <input type="text" class="col-span-2 p-1.5 border border-purple-200 rounded text-xs placeholder-slate-300 focus:border-purple-500 replace-new" placeholder="新文本">
+                            <button onclick="this.parentElement.remove()" class="col-span-1 text-[10px] text-red-400 hover:text-red-600 text-center">删除</button>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center mt-2">
+                         <p class="text-[9px] text-slate-400">应用于标题和五点</p>
+                         <button onclick="applyReplacementsToTable()" class="text-[10px] bg-purple-600 text-white px-2 py-1 rounded hover:bg-purple-700 shadow-sm transition-colors">仅执行替换</button>
+                    </div>
+                </div>
+
+                <!-- 4. 自定义字典区 -->
+                <div class="p-5 border-t border-slate-100 bg-yellow-50/20">
+                    <details class="group">
+                        <summary class="flex justify-between items-center font-bold text-yellow-700 text-xs uppercase tracking-wider cursor-pointer select-none">
+                            <span class="flex items-center gap-2">
+                                <span>🛠️ 4. 自定义字典</span>
+                                <span class="text-[9px] bg-yellow-100 text-yellow-800 px-1.5 rounded border border-yellow-200">自动保存</span>
+                            </span>
+                            <span class="transition-transform group-open:rotate-180 text-yellow-500">▼</span>
+                        </summary>
+                        <div class="mt-3 text-xs text-slate-600 space-y-2">
+                            <textarea id="customDictInput" rows="4" class="w-full p-2 border border-yellow-200 bg-white rounded font-mono text-xs placeholder-slate-300 focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500" placeholder="中文=TargetValue (一行一条)"></textarea>
+                        </div>
+                    </details>
+                </div>
+            </div>
+
+            <!-- 底部按钮 -->
+            <div class="p-4 border-t border-slate-200 bg-white z-10 sticky bottom-0">
+                 <button onclick="generate()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg text-sm shadow-md transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                    生成
+                </button>
+            </div>
+        </div>
+
+        <!-- 右侧结果区 -->
+        <div class="flex-1 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <h3 class="font-bold text-green-700 text-xs uppercase tracking-wider">生成结果</h3>
+                <div class="flex gap-2">
+                    <!-- 一键修复按钮 -->
+                    <button onclick="fixAllCapitalization()" class="bg-yellow-50 border border-yellow-200 text-yellow-700 hover:bg-yellow-100 text-xs py-1.5 px-3 rounded shadow-sm transition-colors font-bold flex items-center gap-1">
+                        ✨ 一键修复大小写
+                    </button>
+                    
+                    <button onclick="exportCSV()" class="bg-green-600 hover:bg-green-700 text-white text-xs py-1.5 px-3 rounded shadow-sm transition-colors font-bold flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                        导出 Excel
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-auto custom-scrollbar bg-white">
+                <table class="min-w-full divide-y divide-slate-100">
+                    <thead class="bg-slate-50 sticky top-0 z-10 shadow-sm">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-500 uppercase w-28 border-r border-slate-100">SKU</th>
+                            <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-500 uppercase w-1/3">标题</th>
+                            <th class="px-2 py-3 text-center text-[10px] font-bold text-slate-500 uppercase w-12 border-l border-slate-100">Len</th>
+                            <th class="px-2 py-3 text-center text-[10px] font-bold text-slate-500 uppercase w-16">Check</th>
+                            <th class="px-4 py-3 text-left text-[10px] font-bold text-slate-500 uppercase border-l border-slate-100">五点描述</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultBody" class="divide-y divide-slate-50 text-xs">
+                        <!-- 结果生成区 -->
+                        <tr>
+                            <td colspan="5" class="py-20 text-center text-slate-400 italic">
+                                <div class="flex flex-col items-center gap-2">
+                                    <span class="text-2xl">👈</span>
+                                    <span>请在左侧选择目标站点并输入数据</span>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="p-2 border-t border-slate-100 bg-slate-50 text-[10px] text-slate-400 flex justify-between px-4">
+                <span id="status-msg">系统就绪 - v36.0 (Fix: DE/FR/IT Colors & JP Shelf)</span>
+                <span id="row-count">0 条数据</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 帮助模态框 -->
+    <div id="help-modal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50" onclick="toggleModal('help-modal')"></div>
+        
+        <div class="modal-container bg-white w-11/12 md:w-1/2 mx-auto rounded-lg shadow-2xl z-50 overflow-y-auto max-h-[90vh] transform transition-all scale-95">
+            <div class="modal-content py-4 text-left px-6">
+                <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                    <p class="text-xl font-bold text-slate-700">📖 使用说明</p>
+                    <div class="modal-close cursor-pointer z-50" onclick="toggleModal('help-modal')">
+                        <svg class="fill-current text-black" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18"><path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"></path></svg>
+                    </div>
+                </div>
+                <div class="my-5 space-y-4 text-sm text-slate-600">
+                    <div class="flex gap-3"><div class="font-bold text-indigo-600 w-4">1)</div><div><strong class="text-slate-800">标题五点自行输入：</strong>请将您的父体标题和五点描述粘贴到左上角的对应文本框中。</div></div>
+                    <div class="flex gap-3"><div class="font-bold text-indigo-600 w-4">2)</div><div><strong class="text-slate-800">解析属性：</strong>点击“自动解析属性”按钮，系统会自动提取标题中的尺寸、材质、颜色等信息填入旧属性框。</div></div>
+                    <div class="flex gap-3"><div class="font-bold text-indigo-600 w-4">3)</div><div><strong class="text-slate-800">属性不对可自行修改：</strong>如果自动解析有误，请手动修正“需替换的旧属性”区域的内容。如卡纸尺寸，直接复制粘贴模版里的尺寸数据即可</div></div>
+                    <div class="flex gap-3"><div class="font-bold text-indigo-600 w-4">4)</div><div><strong class="text-slate-800">粘贴变体数据：</strong>从 Excel 中复制变体数据，顺序必须为：<code class="bg-slate-100 px-1 rounded">材质 | 尺寸 | 颜色 | 套数 | SKU</code>。支持中英文混合。</div></div>
+                    <div class="flex gap-3"><div class="font-bold text-indigo-600 w-4">5)</div><div><strong class="text-slate-800">粘贴对应卡纸数据：</strong>如果是相框模式，请在下方独立粘贴卡纸尺寸（与上方行行对应）。</div></div>
+                    <div class="flex gap-3"><div class="font-bold text-indigo-600 w-4">6)</div><div><strong class="text-slate-800">文本批量替换：</strong>如果有其他特定文本需要修改（如 "Live Edge" -> "Flat Edge"），请使用批量替换功能。</div></div>
+                    <div class="flex gap-3"><div class="font-bold text-indigo-600 w-4">7)</div><div><strong class="text-slate-800">自定义字典：</strong>支持自定义特殊的颜色或材质翻译（格式：中文=目标值），优先于系统内置翻译。</div></div>
+                    <div class="flex gap-3"><div class="font-bold text-indigo-600 w-4">8)</div><div><strong class="text-slate-800">一键修复：</strong>如果标题大小写检查出问题，点击结果栏上方的“一键修复大小写”，所有标题将自动修正为 Title Case 格式。</div></div>
+                </div>
+                <div class="flex justify-end pt-2">
+                    <button class="px-4 py-2 bg-indigo-600 p-3 rounded-lg text-white hover:bg-indigo-700 transition-colors text-sm" onclick="toggleModal('help-modal')">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let CURRENT_MODE = 'frame';
+        let HISTORY_STACK = []; 
+        let TARGET_MARKET = 'en';
+
+        // --- Core Definitions Moved to Top for Stability ---
+        const MATERIAL_KEYS = [
+            'OAK', 'WALNUT', 'PINE', 'SOLID_WOOD', 'METAL', 'ALUMINUM', 'MDF', 'GLASS', 'BAMBOO', 'ACRYLIC', 'PLASTIC', 'ELM', 'MAPLE', 'BEECH', 'CHERRY', 'WENGE', 'GOLDEN_SANDALWOOD', 'TEAK'
+        ];
+
+        const COLOR_KEYS = [
+            'BLACK', 'WHITE', 'GOLD', 'SILVER', 'GREY', 'RED', 'BLUE', 'NATURAL', 'BROWN', 'WALNUT_COL', 'RUSTIC', 'DARK_GREY', 'BEIGE', 'CHERRY_COL', 'MAPLE_COL', 'TEAK_COL', 'GREEN', 'PURPLE', 'YELLOW', 'PINK'
+        ];
+
+        // Synonyms dictionary to help parsing derived words (e.g. natürlich -> NATURAL)
+        const PARSING_SYNONYMS = {
+            'NATURAL': ['natürliche', 'naturelle', 'naturale', 'natural'],
+            'RUSTIC': ['rustikale', 'rustique', 'rustico', 'ラスティック調', 'ラスティック'],
+            'OAK': ['eichen', 'chêne'],
+            'WALNUT': ['nussbaum', 'noyer', 'noce', 'nogal'],
+            'PINE': ['kiefer', 'pin', 'pino'],
+            // Add more common adjectives/declensions here if needed
+        };
+
+        // Suffixes that indicate a color word is likely the primary color
+        const COLOR_SUFFIXES = {
+            en: ['color', 'finish', 'colour'],
+            de: ['farbe', 'lackierung'],
+            fr: ['couleur', 'finition', 'coloris'],
+            it: ['colore', 'finitura'],
+            es: ['color', 'acabado'],
+            jp: ['カラー', '色']
+        };
+
+        const TRANSLATIONS = {
+            'OAK': { en: 'Oak', de: 'Eiche', fr: 'Chêne', it: 'Quercia', es: 'Roble', jp: 'オーク' },
+            'WALNUT': { en: 'Walnut', de: 'Nussbaum', fr: 'Noyer', it: 'Noce', es: 'Nogal', jp: 'ウォールナット' },
+            'PINE': { en: 'Pine', de: 'Kiefer', fr: 'Pin', it: 'Pino', es: 'Pino', jp: 'パイン' },
+            'SOLID_WOOD': { en: 'Solid Wood', de: 'Massivholz', fr: 'Bois Massif', it: 'Legno Massiccio', es: 'Madera Maciza', jp: '無垢材' },
+            'METAL': { en: 'Metal', de: 'Metall', fr: 'Métal', it: 'Metallo', es: 'Metal', jp: '金属' },
+            'ALUMINUM': { en: 'Aluminum', de: 'Aluminium', fr: 'Aluminium', it: 'Alluminio', es: 'Aluminio', jp: 'アルミ' },
+            'MDF': { en: 'MDF', de: 'MDF', fr: 'MDF', it: 'MDF', es: 'MDF', jp: 'MDF' },
+            'GLASS': { en: 'Glass', de: 'Glas', fr: 'Verre', it: 'Vetro', es: 'Vidrio', jp: 'ガラス' },
+            'BAMBOO': { en: 'Bamboo', de: 'Bambus', fr: 'Bambou', it: 'Bambù', es: 'Bambú', jp: '竹' },
+            'ACRYLIC': { en: 'Acrylic', de: 'Acryl', fr: 'Acrylique', it: 'Acrilico', es: 'Acrílico', jp: 'アクリル' },
+            'PLASTIC': { en: 'Plastic', de: 'Kunststoff', fr: 'Plastique', it: 'Plastica', es: 'Plástico', jp: 'プラスチック' },
+            'ELM': { en: 'Elm', de: 'Ulme', fr: 'Orme', it: 'Olmo', es: 'Olmo', jp: 'エルム' },
+            'MAPLE': { en: 'Maple', de: 'Ahorn', fr: 'Érable', it: 'Acero', es: 'Arce', jp: 'メープル' },
+            'BEECH': { en: 'Beech', de: 'Buche', fr: 'Hêtre', it: 'Faggio', es: 'Haya', jp: 'ブナ' },
+            'CHERRY': { en: 'Cherry', de: 'Kirschbaum', fr: 'Merisier', it: 'Ciliegio', es: 'Cerezo', jp: 'チェリー' },
+            'WENGE': { en: 'Wenge', de: 'Wenge', fr: 'Wengé', it: 'Wengé', es: 'Wengué', jp: 'ウェンジ' },
+            'GOLDEN_SANDALWOOD': { en: 'Golden Sandalwood', de: 'Goldenes Sandelholz', fr: 'Santal Doré', it: 'Sandalo Dorato', es: 'Sándalo Dorado', jp: '黄金檀' },
+            'TEAK': { en: 'Teak', de: 'Teak', fr: 'Teck', it: 'Teca', es: 'Teca', jp: 'チーク' },
+
+            'BLACK': { en: 'Black', de: 'Schwarz', fr: 'Noir', it: 'Nero', es: 'Negro', jp: 'ブラック' },
+            'WHITE': { en: 'White', de: 'Weiß', fr: 'Blanc', it: 'Bianco', es: 'Blanco', jp: 'ホワイト' },
+            'GOLD': { en: 'Gold', de: 'Gold', fr: 'Or', it: 'Oro', es: 'Oro', jp: 'ゴールド' },
+            'SILVER': { en: 'Silver', de: 'Silber', fr: 'Argent', it: 'Argento', es: 'Plata', jp: 'シルバー' },
+            'GREY': { en: 'Grey', de: 'Grau', fr: 'Gris', it: 'Grigio', es: 'Gris', jp: 'グレー' },
+            'RED': { en: 'Red', de: 'Rot', fr: 'Rouge', it: 'Rosso', es: 'Rojo', jp: 'レッド' },
+            'BLUE': { en: 'Blue', de: 'Blau', fr: 'Bleu', it: 'Blu', es: 'Azul', jp: 'ブルー' },
+            'NATURAL': { en: 'Natural', de: 'Natur', fr: 'Naturel', it: 'Naturale', es: 'Natural', jp: 'ナチュラル' },
+            'BROWN': { en: 'Brown', de: 'Braun', fr: 'Marron', it: 'Marrone', es: 'Marrón', jp: 'ブラウン' },
+            'WALNUT_COL': { en: 'Walnut', de: 'Nussbaumfarbe', fr: 'Noyer', it: 'Noce', es: 'Nogal', jp: 'ウォールナット色' },
+            'RUSTIC': { en: 'Rustic', de: 'Rustikal', fr: 'Rustique', it: 'Rustico', es: 'Rústico', jp: 'ラスティック' },
+            'DARK_GREY': { en: 'Dark Grey', de: 'Dunkelgrau', fr: 'Gris Foncé', it: 'Grigio Scuro', es: 'Gris Oscuro', jp: 'ダークグレー' },
+            'BEIGE': { en: 'Beige', de: 'Beige', fr: 'Beige', it: 'Beige', es: 'Beige', jp: 'ベージュ' },
+            'CHERRY_COL': { en: 'Cherry', de: 'Kirschrot', fr: 'Cerise', it: 'Ciliegia', es: 'Cereza', jp: 'チェリー色' },
+            'MAPLE_COL': { en: 'Maple', de: 'Ahornfarbe', fr: 'Érable', it: 'Acero', es: 'Arce', jp: 'メープル色' },
+            'TEAK_COL': { en: 'Teak', de: 'Teakfarbe', fr: 'Teck', it: 'Teca', es: 'Teca', jp: 'チーク色' },
+            'GREEN': { en: 'Green', de: 'Grün', fr: 'Vert', it: 'Verde', es: 'Verde', jp: 'グリーン' },
+            'PURPLE': { en: 'Purple', de: 'Lila', fr: 'Violet', it: 'Viola', es: 'Morado', jp: 'パープル' },
+            'YELLOW': { en: 'Yellow', de: 'Gelb', fr: 'Jaune', it: 'Giallo', es: 'Amarillo', jp: 'イエロー' },
+            'PINK': { en: 'Pink', de: 'Rosa', fr: 'Rose', it: 'Rosa', es: 'Rosa', jp: 'ピンク' }
+        };
+
+        const LOCALE_RULES = {
+            en: { packRegex: /Pack of\s*(\d+)|Set of\s*(\d+)|(\d+)\s*Pack|(\d+)-Pack|(\d+)\s*Piece|(\d+)\s*Pc/i, packFormat: 'Pack of {n}', mattedRegex: /Matted to\s+(\d+(?:[.,]\d+)?\s*[xX]\s*\d+(?:[.,]\d+)?)/i },
+            de: { packRegex: /(\d+)er\s*Set|Set\s*von\s*(\d+)|(\d+)\s*Stück|Packung\s*mit\s*(\d+)|(\d+)-?tlg\.|(\d+)-?teilig/i, packFormat: '{n}er Set', mattedRegex: /(?:mit\s*)?Passepartout\s+(?:für\s+)?(\d+(?:[.,]\d+)?\s*[xX]\s*\d+(?:[.,]\d+)?)/i },
+            fr: { packRegex: /Lot\s*de\s*(\d+)|Set\s*de\s*(\d+)|(\d+)\s*Pièces|(\d+)\s*Pcs|(\d+)\s*unités|(\d+)\s*paquets?/i, packFormat: 'Lot de {n}', mattedRegex: /(?:avec\s*)?passe-partout\s+(?:pour\s+)?(?:photo\s+)?(\d+(?:[.,]\d+)?\s*[xX]\s*\d+(?:[.,]\d+)?)/i },
+            it: { packRegex: /Set\s*di\s*(\d+)|(\d+)\s*Pezzi|Confezione\s*da\s*(\d+)/i, packFormat: 'Set di {n}', mattedRegex: /(?:con\s*)?passepartout\s+(?:per\s+)?(?:foto\s+)?(\d+(?:[.,]\d+)?\s*[xX]\s*\d+(?:[.,]\d+)?)/i },
+            es: { packRegex: /Juego\s*de\s*(\d+)|Set\s*de\s*(\d+)|(\d+)\s*Piezas|Paquete\s*de\s*(\d+)|(\d+)\s*Unidad(es)?/i, packFormat: 'Juego de {n}', mattedRegex: /(?:con\s*)?paspartú\s+(?:para\s+)?(\d+(?:[.,]\d+)?\s*[xX]\s*\d+(?:[.,]\d+)?)/i },
+            jp: { packRegex: /(\d+)点\s*セット|(\d+)枚\s*セット|(\d+)個\s*セット|Pack\s*of\s*(\d+)|(\d+)入|(\d+)個組/i, packFormat: '{n}点セット', mattedRegex: /(?:マット付き|対応写真サイズ)[:\s]*(\d+(?:[.,]\d+)?\s*[xX]\s*\d+(?:[.,]\d+)?)/i }
+        };
+
+        const STOP_WORDS_MAP = {
+            en: ['a', 'an', 'the', 'and', 'but', 'or', 'nor', 'for', 'so', 'yet', 'at', 'by', 'in', 'of', 'on', 'to', 'up', 'with', 'from', 'as', 'into', 'like', 'over', 'after', 'cm', 'mm', 'inch'],
+            de: ['und', 'oder', 'aber', 'denn', 'doch', 'als', 'wie', 'für', 'mit', 'ohne', 'gegen', 'bei', 'von', 'aus', 'zu', 'nach', 'in', 'an', 'auf', 'über', 'unter', 'vor', 'hinter', 'zwischen', 'der', 'die', 'das', 'dem', 'den', 'des', 'ein', 'eine', 'einer', 'eines', 'einem', 'cm', 'mm'],
+            fr: ['le', 'la', 'les', 'un', 'une', 'des', 'et', 'ou', 'mais', 'donc', 'or', 'ni', 'car', 'à', 'de', 'pour', 'avec', 'sans', 'dans', 'sur', 'sous', 'par', 'chez', 'entre', 'vers', 'cm', 'mm', 'en'],
+            it: ['il', 'lo', 'la', 'i', 'gli', 'le', 'un', 'uno', 'una', 'e', 'o', 'ma', 'se', 'perché', 'di', 'a', 'da', 'in', 'con', 'su', 'per', 'tra', 'fra', 'cm', 'mm'],
+            es: ['el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas', 'y', 'o', 'pero', 'si', 'que', 'de', 'a', 'en', 'con', 'por', 'para', 'sin', 'sobre', 'entre', 'cm', 'mm'],
+            jp: []
+        };
+
+        const SHELF_STD_INCH = [8, 12, 16, 20, 24, 30, 32, 36, 40, 48, 55, 66, 72];
+        const SHELF_STD_CM = [40, 50, 60, 70, 80, 90, 100, 120, 140, 150, 160, 180, 200];
+
+        // --- Large Dictionary Moved Here ---
+        const INPUT_MAP = {
+            '橡木': 'OAK', 'oak': 'OAK', 'eiche': 'OAK', 'chêne': 'OAK', 'roble': 'OAK', 'quercia': 'OAK', 'オーク': 'OAK',
+            '胡桃木': 'WALNUT', 'walnut': 'WALNUT', 'nussbaum': 'WALNUT', 'noyer': 'WALNUT', 'nogal': 'WALNUT', 'noce': 'WALNUT', 'ウォールナット': 'WALNUT',
+            '松木': 'PINE', 'pine': 'PINE', 'kiefer': 'PINE', 'pin': 'PINE', 'pino': 'PINE', 'パイン': 'PINE',
+            '实木': 'SOLID_WOOD', 'solid wood': 'SOLID_WOOD', 'massivholz': 'SOLID_WOOD', 'bois massif': 'SOLID_WOOD', 'madera maciza': 'SOLID_WOOD', 'legno massiccio': 'SOLID_WOOD', '無垢材': 'SOLID_WOOD',
+            '金属': 'METAL', 'metal': 'METAL', 'metall': 'METAL', 'métal': 'METAL', 'metallo': 'METAL', '金属': 'METAL',
+            '铝合金': 'ALUMINUM', 'aluminum': 'ALUMINUM', 'aluminium': 'ALUMINUM', 'alluminio': 'ALUMINUM', 'aluminio': 'ALUMINUM', 'アルミ': 'ALUMINUM',
+            'mdf': 'MDF', '玻璃': 'GLASS', 'glass': 'GLASS', 'glas': 'GLASS', 'verre': 'GLASS', 'vidrio': 'GLASS', 'vetro': 'GLASS', 'ガラス': 'GLASS',
+            '竹': 'BAMBOO', 'bamboo': 'BAMBOO', 'bambus': 'BAMBOO', 'bambou': 'BAMBOO', 'bambú': 'BAMBOO', 'bambù': 'BAMBOO', '竹': 'BAMBOO',
+            '亚克力': 'ACRYLIC', 'acrylic': 'ACRYLIC', 'acryl': 'ACRYLIC', 'acrylique': 'ACRYLIC', 'acrilico': 'ACRYLIC', 'acrílico': 'ACRYLIC', 'アクリル': 'ACRYLIC',
+            '塑料': 'PLASTIC', 'plastic': 'PLASTIC', 'plastik': 'PLASTIC', 'kunststoff': 'PLASTIC', 'plastique': 'PLASTIC', 'plástico': 'PLASTIC', 'plastica': 'PLASTIC', 'プラスチック': 'PLASTIC',
+            '榆木': 'ELM', 'elm': 'ELM', 'ulme': 'ELM', 'orme': 'ELM', 'olmo': 'ELM', 'エルム': 'ELM',
+            '枫木': 'MAPLE', 'maple': 'MAPLE', 'ahorn': 'MAPLE', 'érable': 'MAPLE', 'arce': 'MAPLE', 'acero': 'MAPLE', 'メープル': 'MAPLE',
+            '榉木': 'BEECH', 'beech': 'BEECH', 'buche': 'BEECH', 'hêtre': 'BEECH', 'haya': 'BEECH', 'faggio': 'BEECH', 'ブナ': 'BEECH',
+            '樱桃木': 'CHERRY', 'cherry': 'CHERRY', 'kirschbaum': 'CHERRY', 'cerisier': 'CHERRY', 'cerezo': 'CHERRY', 'ciliegio': 'CHERRY', 'チェリー': 'CHERRY',
+            '鸡翅木': 'WENGE', 'wenge': 'WENGE', 'wengé': 'WENGE', 'wengué': 'WENGE', 'ウェンジ': 'WENGE',
+            '黄金檀': 'GOLDEN_SANDALWOOD', 'golden sandalwood': 'GOLDEN_SANDALWOOD',
+            '柚木': 'TEAK', 'teak': 'TEAK', 'teck': 'TEAK', 'teca': 'TEAK', 'チーク': 'TEAK',
+
+            '黑色': 'BLACK', 'black': 'BLACK', 'schwarz': 'BLACK', 'noir': 'BLACK', 'negro': 'BLACK', 'nero': 'BLACK', 'ブラック': 'BLACK', '黒': 'BLACK',
+            '白色': 'WHITE', 'white': 'WHITE', 'weiß': 'WHITE', 'blanc': 'WHITE', 'blanco': 'WHITE', 'bianco': 'WHITE', 'ホワイト': 'WHITE', '白': 'WHITE',
+            '金色': 'GOLD', 'gold': 'GOLD', 'or': 'GOLD', 'oro': 'GOLD', 'ゴールド': 'GOLD', '金': 'GOLD',
+            '银色': 'SILVER', 'silver': 'SILVER', 'silber': 'SILVER', 'argent': 'SILVER', 'plata': 'SILVER', 'argento': 'SILVER', 'シルバー': 'SILVER', '銀': 'SILVER',
+            '灰色': 'GREY', 'grey': 'GREY', 'gray': 'GREY', 'grau': 'GREY', 'gris': 'GREY', 'grigio': 'GREY', 'グレー': 'GREY', '灰': 'GREY',
+            '红色': 'RED', 'red': 'RED', 'rot': 'RED', 'rouge': 'RED', 'rojo': 'RED', 'rosso': 'RED', 'レッド': 'RED', '赤': 'RED',
+            '蓝色': 'BLUE', 'blue': 'BLUE', 'blau': 'BLUE', 'bleu': 'BLUE', 'azul': 'BLUE', 'blu': 'BLUE', 'ブルー': 'BLUE', '青': 'BLUE',
+            '原木色': 'NATURAL', '原木': 'NATURAL', '自然色': 'NATURAL', 'natural': 'NATURAL', 'natur': 'NATURAL', 'naturel': 'NATURAL', 'naturale': 'NATURAL', 'ナチュラル': 'NATURAL',
+            '棕色': 'BROWN', '致欧色': 'BROWN', '褐色': 'BROWN', '咖啡色': 'BROWN', 'brown': 'BROWN', 'braun': 'BROWN', 'brun': 'BROWN', 'marrón': 'BROWN', 'marrone': 'BROWN', 'ブラウン': 'BROWN', '茶色': 'BROWN',
+            '胡桃色': 'WALNUT_COL', '深胡桃': 'WALNUT_COL', '深胡桃色': 'WALNUT_COL', '黑胡桃': 'WALNUT_COL', 'dark walnut': 'WALNUT_COL', 'nussbaumfarbe': 'WALNUT_COL',
+            '复古色': 'RUSTIC', '复古': 'RUSTIC', 'rustic': 'RUSTIC', 'rustikal': 'RUSTIC', 'rustique': 'RUSTIC', 'rústico': 'RUSTIC', 'rustico': 'RUSTIC', 'ラスティック': 'RUSTIC',
+            '深灰色': 'DARK_GREY', 'dark grey': 'DARK_GREY', 'dunkelgrau': 'DARK_GREY', 'gris foncé': 'DARK_GREY', 'gris oscuro': 'DARK_GREY', 'grigio scuro': 'DARK_GREY', 'ダークグレー': 'DARK_GREY',
+            '米色': 'BEIGE', '杏色': 'BEIGE', 'beige': 'BEIGE', 'ベージュ': 'BEIGE',
+            '樱桃色': 'CHERRY_COL', 'cherry color': 'CHERRY_COL',
+            '枫木色': 'MAPLE_COL', 'maple color': 'MAPLE_COL',
+            '柚木色': 'TEAK_COL', 'teak color': 'TEAK_COL',
+            '绿色': 'GREEN', '绿': 'GREEN', 'green': 'GREEN', 'grün': 'GREEN', 'vert': 'GREEN', 'verde': 'GREEN', 'グリーン': 'GREEN', '緑': 'GREEN',
+            '紫色': 'PURPLE', '紫': 'PURPLE', 'purple': 'PURPLE', 'lila': 'PURPLE', 'violet': 'PURPLE', 'viola': 'PURPLE', 'morado': 'PURPLE', 'パープル': 'PURPLE',
+            '黄色': 'YELLOW', '黄': 'YELLOW', 'yellow': 'YELLOW', 'gelb': 'YELLOW', 'jaune': 'YELLOW', 'giallo': 'YELLOW', 'amarillo': 'YELLOW', 'イエロー': 'YELLOW',
+            '粉色': 'PINK', '粉': 'PINK', 'pink': 'PINK', 'rosa': 'PINK', 'rose': 'PINK', 'rosa': 'PINK', 'ピンク': 'PINK'
+        };
+
+        window.onload = function() {
+            const savedDict = localStorage.getItem('ks_custom_dict');
+            if(savedDict) {
+                document.getElementById('customDictInput').value = savedDict;
+            }
+            switchTab('frame'); 
+            updateUndoButton();
+            changeMarket(); 
+        };
+
+        document.getElementById('customDictInput').addEventListener('input', function(e) {
+            localStorage.setItem('ks_custom_dict', e.target.value);
+        });
+
+        function changeMarket() {
+            TARGET_MARKET = document.getElementById('targetMarket').value;
+            const radios = document.getElementsByName('targetUnit');
+            if (['us', 'en', 'uk'].includes(TARGET_MARKET)) {
+                radios[0].checked = true; 
+            } else {
+                radios[1].checked = true; 
+            }
+            validateTemplate(); 
+            regenerate();
+        }
+
+        function getCustomMappings() {
+            const raw = document.getElementById('customDictInput').value;
+            if (!raw.trim()) return {};
+            const map = {};
+            raw.split('\n').forEach(line => {
+                if (!line.trim()) return;
+                const parts = line.split(/[=：:]/);
+                if (parts.length >= 2) {
+                    const key = parts[0].trim().toLowerCase();
+                    const val = parts[1].trim();
+                    if(key && val) map[key] = val;
+                }
+            });
+            return map;
+        }
+
+        function switchTab(mode) {
+            CURRENT_MODE = mode;
+            document.getElementById('btn-tab-frame').className = mode === 'frame' ? 'tab-active px-8 py-2 text-sm rounded-md transition-all' : 'tab-inactive px-8 py-2 text-sm rounded-md transition-all';
+            document.getElementById('btn-tab-shelf').className = mode === 'shelf' ? 'tab-active px-8 py-2 text-sm rounded-md transition-all' : 'tab-inactive px-8 py-2 text-sm rounded-md transition-all';
+            
+            const mattedConfig = document.getElementById('field-matted-config');
+            const mattedInputBox = document.getElementById('input-matted-box');
+            const unitConfig = document.getElementById('field-unit-config');
+            const modeBadge = document.getElementById('mode-badge');
+            
+            if (mode === 'frame') {
+                mattedConfig.classList.remove('hidden');
+                mattedInputBox.classList.remove('hidden');
+                unitConfig.classList.add('hidden');
+                modeBadge.innerText = '相框模式';
+                modeBadge.className = 'bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px]';
+                document.getElementById('oldSize').placeholder = "旧尺寸 (e.g. 4x6)";
+            } else {
+                mattedConfig.classList.add('hidden');
+                mattedInputBox.classList.add('hidden');
+                unitConfig.classList.remove('hidden');
+                modeBadge.innerText = '层板模式';
+                modeBadge.className = 'bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-[10px]';
+                document.getElementById('oldSize').placeholder = "旧长度 (e.g. 24\")";
+            }
+            validateTemplate();
+        }
+
+        function smartTranslate(input) {
+            if (!input) return "";
+            let text = input.trim();
+            const lowerText = text.toLowerCase();
+
+            const customMap = getCustomMappings();
+            if (customMap[lowerText]) return customMap[lowerText];
+            for (const key of Object.keys(customMap)) {
+                 if (lowerText.includes(key)) return customMap[key];
+            }
+
+            let canonicalKey = null;
+            
+            if (INPUT_MAP[lowerText]) canonicalKey = INPUT_MAP[lowerText];
+            
+            if (!canonicalKey) {
+                const cleanText = text.replace(/[\u4e00-\u9fa5]/g, '').trim().toLowerCase();
+                if (cleanText && INPUT_MAP[cleanText]) canonicalKey = INPUT_MAP[cleanText];
+                
+                if (!canonicalKey) {
+                    for (const key of Object.keys(INPUT_MAP)) {
+                        if (lowerText.includes(key)) {
+                            canonicalKey = INPUT_MAP[key];
+                            break; 
+                        }
+                    }
+                }
+            }
+
+            if (canonicalKey && TRANSLATIONS[canonicalKey]) {
+                const localizedVal = TRANSLATIONS[canonicalKey][TARGET_MARKET];
+                if (localizedVal) return localizedVal;
+                return TRANSLATIONS[canonicalKey]['en'];
+            }
+
+            const cleanText = text.replace(/[\u4e00-\u9fa5]/g, '').trim();
+            if (cleanText.length > 0) return cleanText;
+            
+            return text;
+        }
+
+        function findClosest(num, arr) {
+            return arr.reduce((prev, curr) => Math.abs(curr - num) < Math.abs(prev - num) ? curr : prev);
+        }
+
+        function detectUnitStyle(sizeStr) {
+            if (!sizeStr) return null;
+            if (sizeStr.includes('"') || sizeStr.includes('”') || sizeStr.includes('“')) return '"';
+            if (sizeStr.match(/\b inch\b/i)) return ' inch'; 
+            if (sizeStr.match(/inch/i)) return 'inch'; 
+            if (sizeStr.match(/\b in\b/i)) return ' in';
+            if (sizeStr.match(/cm/i)) return 'cm';
+            return null; 
+        }
+
+        function normalizeShelfSize(inputStr, preferredStyle) {
+            if (!inputStr) return "";
+            const numMatch = inputStr.match(/(\d+(\.\d+)?)/);
+            if (!numMatch) return inputStr;
+            let val = parseFloat(numMatch[0]);
+            
+            // Check original input string for mm/cm clues to convert to Inch correctly
+            if (inputStr.toLowerCase().includes('mm') || (val > 100 && !inputStr.toLowerCase().includes('cm'))) { 
+                 val = val / 25.4; 
+            } else if (inputStr.toLowerCase().includes('cm')) {
+                val = val / 2.54; 
+            }
+
+            const targetUnit = document.querySelector('input[name="targetUnit"]:checked').value;
+            
+            // --- JP Special Logic v36.0 ---
+            if (TARGET_MARKET === 'jp') {
+                if (targetUnit === 'inch') {
+                    const closest = findClosest(val, SHELF_STD_INCH);
+                    return `${closest}インチ`; // No quotes for JP Inch
+                } else {
+                    const valCm = val * 2.54;
+                    const closest = findClosest(valCm, SHELF_STD_CM);
+                    return `${closest}`; // No unit suffix for JP CM
+                }
+            }
+            // ------------------------------
+
+            if (targetUnit === 'inch') {
+                const closest = findClosest(val, SHELF_STD_INCH);
+                const suffix = (preferredStyle && preferredStyle !== 'cm') ? preferredStyle : '"';
+                return `${closest}${suffix}`; 
+            } else {
+                const valCm = val * 2.54;
+                const closest = findClosest(valCm, SHELF_STD_CM);
+                return `${closest}cm`;
+            }
+        }
+
+        function cleanFrameSize(s) {
+            if (!s) return "";
+            let str = s.replace(/["“”]/g, '').replace(/[×*]/g, 'x');
+            if (!str.toLowerCase().includes('cm')) str = str.replace(/\s/g, '');
+            return str;
+        }
+        
+        function getCaseErrors(title) {
+            if (!title) return [];
+            if (TARGET_MARKET === 'jp') return [];
+
+            const errors = [];
+            // v27.0 Fix: Aggressive punctuation removal for better splitting
+            const cleanTitle = title.replace(/[^a-zA-Z0-9\u00C0-\u00FF\u0100-\u024F]+/g, " ");
+            const words = cleanTitle.split(/\s+/);
+            const stopWords = STOP_WORDS_MAP[TARGET_MARKET] || STOP_WORDS_MAP.en;
+
+            for (let word of words) {
+                if (!word) continue;
+                if (/^[\d"xX.]+$/.test(word)) continue;
+                if (stopWords.includes(word.toLowerCase())) continue;
+                if (word.startsWith('{') && word.endsWith('}')) continue;
+
+                const firstChar = word.charAt(0);
+                if (firstChar === firstChar.toLowerCase() && firstChar !== firstChar.toUpperCase()) {
+                    errors.push(word);
+                }
+            }
+            return [...new Set(errors)];
+        }
+
+        function clearField(id) {
+            document.getElementById(id).value = '';
+            if (id === 'templateTitle') validateTemplate();
+        }
+
+        function findAttributeInTitle(title, allowedKeys, options = {}) {
+            const valToKey = {};
+            for (const [key, langs] of Object.entries(TRANSLATIONS)) {
+                if (allowedKeys && !allowedKeys.includes(key)) continue;
+                for (const transVal of Object.values(langs)) {
+                    valToKey[transVal.toLowerCase()] = key;
+                }
+            }
+            
+            // v36.0: Add synonyms to valToKey map for robust parsing
+            if (PARSING_SYNONYMS) {
+                for (const [key, synonyms] of Object.entries(PARSING_SYNONYMS)) {
+                    if (allowedKeys && !allowedKeys.includes(key)) continue;
+                    for (const syn of synonyms) {
+                        valToKey[syn.toLowerCase()] = key;
+                    }
+                }
+            }
+
+            const potentialMatches = [];
+            for (const [val, key] of Object.entries(valToKey)) {
+                const safeVal = val.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                let regex;
+                if (TARGET_MARKET === 'jp') {
+                     regex = new RegExp(safeVal, 'i');
+                } else {
+                     regex = new RegExp(`\\b${safeVal}\\b`, 'i');
+                }
+                
+                const match = title.match(regex);
+                if (match) {
+                    // Check if this match is followed by a "color suffix" (e.g. "Color", "Finish")
+                    let hasSuffix = false;
+                    if (options.checkSuffix) {
+                        const suffixes = COLOR_SUFFIXES[TARGET_MARKET] || COLOR_SUFFIXES.en;
+                        // Look ahead for suffixes.
+                        // Simple check: slice string after match, check if it starts with space + suffix
+                        const after = title.slice(match.index + match[0].length);
+                        for(let suf of suffixes) {
+                            // Regex to check if immediately followed by suffix (ignoring case/punctuation)
+                            if (new RegExp(`^[^a-zA-Z0-9]*${suf}`, 'i').test(after)) {
+                                hasSuffix = true;
+                                break;
+                            }
+                        }
+                    }
+                    potentialMatches.push({ 
+                        key, 
+                        val, 
+                        index: match.index, 
+                        len: val.length,
+                        hasSuffix: hasSuffix
+                    });
+                }
+            }
+
+            if (potentialMatches.length === 0) return "";
+
+            // Scoring/Sorting Logic
+            potentialMatches.sort((a, b) => {
+                // 1. Priority: Has explicit suffix (e.g. "Natural Color" > "Rustic")
+                if (options.checkSuffix) {
+                    if (a.hasSuffix && !b.hasSuffix) return -1;
+                    if (!a.hasSuffix && b.hasSuffix) return 1;
+                }
+
+                // 2. Priority: Position
+                // If finding Color (options.preferLast), later index is better.
+                // If finding Material, earlier index is better (default).
+                if (options.preferLast) {
+                    if (a.index !== b.index) return b.index - a.index; // Descending index
+                } else {
+                    if (a.index !== b.index) return a.index - b.index; // Ascending index
+                }
+                
+                // 3. Length (Longer match preferred if indices same)
+                return b.len - a.len;
+            });
+
+            let regex;
+            if (TARGET_MARKET === 'jp') {
+                regex = new RegExp(potentialMatches[0].val, 'i');
+            } else {
+                regex = new RegExp(`\\b${potentialMatches[0].val}\\b`, 'i');
+            }
+            const m = title.match(regex);
+            return m ? m[0] : potentialMatches[0].val;
+        }
+
+        function parseTemplate(btn) {
+            const template = document.getElementById('templateTitle').value;
+            if (!template) { alert("请先粘贴参考标题！"); return; }
+            
+            let warnings = [];
+            
+            let foundPack = false;
+            const rulesToCheck = [LOCALE_RULES[TARGET_MARKET], LOCALE_RULES.en];
+            for (const rule of rulesToCheck) {
+                if (!rule) continue;
+                const match = template.match(rule.packRegex);
+                if (match) {
+                    for (let i = 1; i < match.length; i++) {
+                        if (match[i]) {
+                            document.getElementById('oldPack').value = match[i];
+                            foundPack = true;
+                            break;
+                        }
+                    }
+                }
+                if(foundPack) break;
+            }
+            if(!foundPack) warnings.push("套数");
+
+            const foundMat = findAttributeInTitle(template, MATERIAL_KEYS);
+            if (foundMat) document.getElementById('oldMaterial').value = foundMat;
+            
+            let tempTitle = template;
+            if(foundMat) tempTitle = tempTitle.replace(foundMat, "");
+            
+            // Fix v35: Pass preferLast:true and checkSuffix:true for Colors
+            const foundCol = findAttributeInTitle(tempTitle, COLOR_KEYS, { preferLast: true, checkSuffix: true });
+            if (foundCol) document.getElementById('oldColor').value = foundCol;
+
+            if (CURRENT_MODE === 'frame') {
+                const sizeMatch = template.match(/(\d+(\.\d+)?)\s*[xX]\s*(\d+(\.\d+)?)/);
+                if (sizeMatch) document.getElementById('oldSize').value = sizeMatch[0].replace(/\s/g, '');
+                else warnings.push("尺寸");
+                
+                let mattedRegex = LOCALE_RULES[TARGET_MARKET]?.mattedRegex || LOCALE_RULES.en.mattedRegex;
+                if (TARGET_MARKET === 'jp' && !template.match(mattedRegex)) {
+                     mattedRegex = LOCALE_RULES.en.mattedRegex;
+                }
+                const mattedMatch = template.match(mattedRegex);
+                if (mattedMatch) document.getElementById('oldMatted').value = mattedMatch[1].replace(/\s/g, '');
+            } else {
+                // v36.0 Fix: JP Shelf Size Regex needs to support JP units to capture correctly
+                let shelfRegex;
+                if (TARGET_MARKET === 'jp') {
+                    shelfRegex = /(\d+(?:\.\d+)?)\s*(?:cm|mm|センチ|ミリ|インチ|["“”])/i;
+                } else {
+                    shelfRegex = /(\d+(?:\.\d+)?)\s*(?:inch|in|cm|["“”])/i;
+                }
+                
+                const shelfSizeMatch = template.match(shelfRegex);
+                if (shelfSizeMatch) document.getElementById('oldSize').value = shelfSizeMatch[0];
+                else warnings.push("长度");
+            }
+
+            if (warnings.length > 0) alert(`⚠️ 部分属性未识别：\n• ${warnings.join("\n• ")}`);
+            else {
+                const originalText = btn.innerText;
+                btn.innerText = "✅ 成功";
+                setTimeout(() => { btn.innerText = originalText; }, 1500);
+            }
+        }
+
+        function validateTemplate() {
+            const title = document.getElementById('templateTitle').value.trim();
+            const msgDiv = document.getElementById('template-validation-msg');
+            if (!title) { msgDiv.innerHTML = ''; return; }
+            const len = title.length;
+            const caseErrors = getCaseErrors(title);
+            let html = '';
+            if (len > 200) html += `<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded font-bold">超长: ${len}</span>`;
+            else html += `<span class="bg-green-100 text-green-700 px-2 py-0.5 rounded">长度合格: ${len}</span>`;
+            if (caseErrors.length > 0) html += `<span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded font-bold ml-2">⚠️ 小写: ${caseErrors.join(', ')}</span>`;
+            else if (TARGET_MARKET !== 'jp') html += `<span class="bg-green-100 text-green-700 px-2 py-0.5 rounded ml-2">大小写合格</span>`;
+            msgDiv.innerHTML = html;
+        }
+
+        function addReplacementRow() {
+            const container = document.getElementById('replacement-container');
+            if (container.children.length >= 4) { alert("最多支持4组！"); return; }
+            const div = document.createElement('div');
+            div.className = 'replacement-row grid grid-cols-7 gap-2 items-center';
+            div.innerHTML = `<input type="text" class="col-span-3 p-1.5 border border-purple-200 rounded text-xs placeholder-slate-300 focus:border-purple-500 replace-old" placeholder="旧文本"><div class="col-span-1 text-center text-slate-300">➜</div><input type="text" class="col-span-2 p-1.5 border border-purple-200 rounded text-xs placeholder-slate-300 focus:border-purple-500 replace-new" placeholder="新文本"><button onclick="this.parentElement.remove()" class="col-span-1 text-[10px] text-red-400 hover:text-red-600 text-center">删除</button>`;
+            container.appendChild(div);
+        }
+
+        function replaceTitleText(title) {
+            const rows = document.querySelectorAll('.replacement-row');
+            let newTitle = title;
+            rows.forEach(row => {
+                const oldText = row.querySelector('.replace-old').value.trim();
+                const newText = row.querySelector('.replace-new').value.trim();
+                if (oldText) {
+                    const escapedOld = oldText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const regex = new RegExp(escapedOld, 'gi');
+                    newTitle = newTitle.replace(regex, newText);
+                }
+            });
+            return newTitle;
+        }
+
+        function fixAllCapitalization() {
+            saveState(); 
+            const textareas = document.querySelectorAll('.title-area');
+            textareas.forEach(ta => {
+                const errors = getCaseErrors(ta.value);
+                if (errors.length > 0) {
+                    let fixedTitle = ta.value;
+                    errors.forEach(word => {
+                        const fixedWord = word.charAt(0).toUpperCase() + word.slice(1);
+                        const safeWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                        const letterClass = "[a-zA-Z0-9\\u00C0-\\u00FF\\u0100-\\u024F]";
+                        const regex = new RegExp(`(^|[^${letterClass.slice(1, -1)}])(${safeWord})(?![${letterClass.slice(1, -1)}])`, 'g');
+                        fixedTitle = fixedTitle.replace(regex, '$1' + fixedWord);
+                    });
+                    ta.value = fixedTitle;
+                    validateAndRender(ta);
+                }
+            });
+            alert("✅ 所有标题大小写修复完成！");
+        }
+
+        function saveState() {
+            const rows = document.querySelectorAll('#resultBody tr');
+            const currentState = [];
+            rows.forEach(tr => {
+                const titleArea = tr.querySelector('.title-area');
+                if (titleArea) {
+                    currentState.push({
+                        sku: tr.cells[0].innerText,
+                        title: titleArea.value,
+                        bullets: tr.querySelector('.bullets-area').value
+                    });
+                }
+            });
+            if (currentState.length > 0) {
+                HISTORY_STACK.push(currentState);
+                if (HISTORY_STACK.length > 20) HISTORY_STACK.shift();
+                updateUndoButton();
+            }
+        }
+
+        function performUndo() {
+            if (HISTORY_STACK.length === 0) return;
+            const prevState = HISTORY_STACK.pop();
+            renderTableFromState(prevState);
+            updateUndoButton();
+        }
+
+        function clearAllData() {
+            saveState(); 
+            document.getElementById('templateTitle').value = "";
+            document.getElementById('templateBullets').value = "";
+            document.getElementById('oldSize').value = "";
+            document.getElementById('oldMaterial').value = "";
+            document.getElementById('oldColor').value = "";
+            document.getElementById('oldPack').value = "";
+            document.getElementById('oldMatted').value = "";
+            document.getElementById('mainInput').value = "";
+            document.getElementById('mattedInput').value = "";
+            document.getElementById('resultBody').innerHTML = `<tr><td colspan="5" class="py-20 text-center text-slate-400 italic">
+                                <div class="flex flex-col items-center gap-2">
+                                    <span class="text-2xl">👈</span>
+                                    <span>请在左侧选择目标站点并输入数据</span>
+                                </div>
+                            </td></tr>`;
+            document.getElementById('row-count').innerText = "0 条数据";
+            document.getElementById('template-validation-msg').innerHTML = "";
+        }
+
+        function updateUndoButton() {
+            const btn = document.getElementById('btn-undo');
+            btn.disabled = HISTORY_STACK.length === 0;
+            if (HISTORY_STACK.length > 0) {
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                btn.classList.add('hover:bg-slate-200', 'text-slate-600');
+            } else {
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                btn.classList.remove('hover:bg-slate-200', 'text-slate-600');
+            }
+        }
+
+        function renderTableFromState(stateData) {
+            const tbody = document.getElementById('resultBody');
+            tbody.innerHTML = "";
+            let count = 0;
+            if (!stateData || stateData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-20 text-center text-slate-400 italic">已撤销至空状态</td></tr>`;
+                document.getElementById('row-count').innerText = `0 条数据`;
+                return;
+            }
+            stateData.forEach(item => {
+                count++;
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-mono text-slate-600 truncate max-w-[120px] border-r border-slate-100 align-top" title="${item.sku}">${item.sku}</td>
+                    <td class="px-2 py-2 relative align-top">
+                        <textarea class="editable-field title-area" rows="3" oninput="validateAndRender(this)">${item.title}</textarea>
+                        <div class="validation-msg text-[10px] mt-1 text-orange-600 font-medium hidden"></div>
+                    </td>
+                    <td class="px-2 py-3 text-center text-xs count-cell border-l border-slate-100 align-top">0</td>
+                    <td class="px-2 py-3 text-center text-[10px] status-cell align-top">-</td>
+                    <td class="px-2 py-2 align-top relative">
+                        <textarea class="editable-field bullets-area h-full pb-6" rows="5" oninput="validateBullets(this)">${item.bullets || ''}</textarea>
+                        <div class="bullet-count absolute bottom-3 right-4 text-[9px] text-slate-400 bg-white/90 px-1.5 py-0.5 rounded border border-slate-100 pointer-events-none">0/500</div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+                validateAndRender(tr.querySelector('.title-area'));
+                validateBullets(tr.querySelector('.bullets-area'));
+            });
+            document.getElementById('row-count').innerText = `${count} 条数据`;
+        }
+
+        function validateAndRender(textarea) {
+            const tr = textarea.closest('tr');
+            const title = textarea.value;
+            const len = title.length;
+            const countCell = tr.querySelector('.count-cell');
+            const statusCell = tr.querySelector('.status-cell');
+            const msgDiv = tr.querySelector('.validation-msg');
+            countCell.innerText = len;
+            const isOverLimit = len > 200;
+            const caseErrors = getCaseErrors(title);
+            const isCaseError = caseErrors.length > 0;
+            textarea.classList.remove('bg-error', 'bg-warn');
+            countCell.classList.remove('limit-error', 'limit-warn', 'limit-ok');
+            msgDiv.classList.add('hidden');
+            let statusHtml = '';
+            if (isOverLimit) {
+                textarea.classList.add('bg-error');
+                countCell.classList.add('limit-error');
+                statusHtml = '<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold">超长</span>';
+            } else if (isCaseError) {
+                textarea.classList.add('bg-warn');
+                countCell.classList.add('limit-warn');
+                statusHtml = '<span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-bold">大小写</span>';
+            } else {
+                countCell.classList.add('limit-ok');
+                statusHtml = '<span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-full">合格</span>';
+            }
+            if (isCaseError) {
+                msgDiv.innerHTML = `⚠️ 小写: ${caseErrors.join(', ')}`;
+                msgDiv.classList.remove('hidden');
+            }
+            if (isOverLimit && isCaseError) statusHtml = '<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-bold">超长+大小写</span>';
+            statusCell.innerHTML = statusHtml;
+        }
+
+        function validateBullets(textarea) {
+            const len = textarea.value.length;
+            const limit = 500;
+            const container = textarea.closest('td');
+            const counter = container.querySelector('.bullet-count');
+            if (counter) {
+                counter.innerText = `${len}/${limit}`;
+                if (len > limit) {
+                    counter.className = "bullet-count absolute bottom-3 right-4 text-[9px] px-1.5 py-0.5 rounded border border-red-200 bg-red-50 text-red-600 font-bold transition-colors";
+                    counter.innerText += " (超长)";
+                    textarea.classList.add('bg-error');
+                } else {
+                    counter.className = "bullet-count absolute bottom-3 right-4 text-[9px] text-slate-400 bg-white/90 px-1.5 py-0.5 rounded border border-slate-100 pointer-events-none transition-colors";
+                    textarea.classList.remove('bg-error');
+                }
+            }
+        }
+
+        function processText(templateText, vars) {
+            const { oldSize, newSize, oldMaterial, newMaterial, oldColor, newColor, oldPackNum, newPackNumVal, oldMatted, rawMatted } = vars;
+            let text = templateText;
+            let replacementsMade = false;
+
+            // 1. Pack Replacement (Updated v35.0)
+            const patterns = [];
+            
+            // Generic / English base patterns
+            patterns.push(
+                { r: `Set of\\s+${oldPackNum}`, fmt: `Set of ${newPackNumVal}` },
+                { r: `Pack of\\s+${oldPackNum}`, fmt: `Pack of ${newPackNumVal}` },
+                { r: `${oldPackNum}\\s+Packs?`, fmt: `${newPackNumVal} ${newPackNumVal==='1'?'Pack':'Packs'}` },
+                { r: `${oldPackNum}-Pack`, fmt: `${newPackNumVal}-Pack` }
+            );
+
+            if (TARGET_MARKET === 'de') {
+                 patterns.push(
+                    { r: `${oldPackNum}[-\\s]*er\\s*Set`, fmt: `${newPackNumVal}er Set` }, 
+                    { r: `Set\\s*von\\s*${oldPackNum}`, fmt: `Set von ${newPackNumVal}` },
+                    { r: `${oldPackNum}\\s*Stück`, fmt: `${newPackNumVal} Stück` },
+                    { r: `${oldPackNum}\\s*Stk\\.?`, fmt: `${newPackNumVal} Stk.` },
+                    { r: `${oldPackNum}[-\\s]*teilig`, fmt: `${newPackNumVal}-teilig` }, 
+                    { r: `${oldPackNum}[-\\s]*tlg\\.?`, fmt: `${newPackNumVal}-tlg.` }, 
+                    { r: `Packung\\s*mit\\s*${oldPackNum}`, fmt: `Packung mit ${newPackNumVal}` }
+                 );
+            }
+            
+            if (TARGET_MARKET === 'fr') {
+                 patterns.push(
+                    { r: `Lot\\s*de\\s*${oldPackNum}`, fmt: `Lot de ${newPackNumVal}` },
+                    { r: `Set\\s*de\\s*${oldPackNum}`, fmt: `Set de ${newPackNumVal}` },
+                    { r: `${oldPackNum}\\s*Pièces`, fmt: `${newPackNumVal} Pièces` },
+                    { r: `${oldPackNum}\\s*pieces`, fmt: `${newPackNumVal} Pièces` },
+                    { r: `${oldPackNum}\\s*pcs`, fmt: `${newPackNumVal} pcs` },
+                    { r: `${oldPackNum}\\s*Pcs`, fmt: `${newPackNumVal} Pcs` },
+                    { r: `${oldPackNum}\\s*unités`, fmt: `${newPackNumVal} unités` },
+                    { r: `${oldPackNum}\\s*unite`, fmt: `${newPackNumVal} unités` },
+                    { r: `${oldPackNum}\\s*paquet(s)?`, fmt: `${newPackNumVal} paquet${newPackNumVal==='1'?'':'s'}` },
+                    { r: `${oldPackNum}\\s*Paquet(s)?`, fmt: `${newPackNumVal} Paquet${newPackNumVal==='1'?'':'s'}` }
+                 );
+            }
+
+            if (TARGET_MARKET === 'it') {
+                 patterns.push(
+                    { r: `Set\\s*di\\s*${oldPackNum}`, fmt: `Set di ${newPackNumVal}` },
+                    { r: `${oldPackNum}\\s*Pezzi`, fmt: `${newPackNumVal} Pezzi` },
+                    { r: `Confezione\\s*da\\s*${oldPackNum}`, fmt: `Confezione da ${newPackNumVal}` }
+                 );
+            }
+
+            if (TARGET_MARKET === 'es') {
+                 patterns.push(
+                    { r: `Juego\\s*de\\s*${oldPackNum}`, fmt: `Juego de ${newPackNumVal}` },
+                    { r: `Set\\s*de\\s*${oldPackNum}`, fmt: `Set de ${newPackNumVal}` },
+                    { r: `${oldPackNum}\\s*Piezas`, fmt: `${newPackNumVal} Piezas` },
+                    { r: `${oldPackNum}\\s*Unidad(es)?`, fmt: `${newPackNumVal} Unidad${newPackNumVal==='1'?'':'es'}` }, // Handles singular/plural
+                    { r: `Paquete\\s*de\\s*${oldPackNum}`, fmt: `Paquete de ${newPackNumVal}` },
+                    { r: `${oldPackNum}\\s*Paquete(s)?`, fmt: `${newPackNumVal} Paquete${newPackNumVal==='1'?'':'s'}` },
+                    { r: `Pack\\s*de\\s*${oldPackNum}`, fmt: `Pack de ${newPackNumVal}` },
+                    { r: `${oldPackNum}\\s*Envase(s)?`, fmt: `${newPackNumVal} Envase${newPackNumVal==='1'?'':'s'}` }
+                 );
+            }
+
+            if (TARGET_MARKET === 'jp') {
+                 patterns.push(
+                    { r: `${oldPackNum}点\\s*セット`, fmt: `${newPackNumVal}点セット` },
+                    { r: `${oldPackNum}枚\\s*セット`, fmt: `${newPackNumVal}枚セット` },
+                    { r: `${oldPackNum}個\\s*セット`, fmt: `${newPackNumVal}個セット` },
+                    { r: `${oldPackNum}個?組`, fmt: `${newPackNumVal}個組` }, 
+                    { r: `${oldPackNum}枚組`, fmt: `${newPackNumVal}枚組` },
+                    { r: `${oldPackNum}本組`, fmt: `${newPackNumVal}本組` },
+                    { r: `${oldPackNum}個?入`, fmt: `${newPackNumVal}個入` }  
+                 );
+            }
+
+            for (let p of patterns) {
+                let regex;
+                if (TARGET_MARKET === 'jp') {
+                    regex = new RegExp(p.r, 'gi'); 
+                } else {
+                    let startB = /^\w/.test(p.r) || /^\d/.test(p.r) ? '\\b' : '';
+                    let endB = /\w$/.test(p.r) ? '\\b' : '';
+                    regex = new RegExp(`${startB}${p.r}${endB}`, 'gi');
+                }
+                
+                if (regex.test(text)) {
+                    console.log(`[Pack Check] Replaced pattern '${p.r}' with '${p.fmt}'`);
+                    text = text.replace(regex, p.fmt);
+                    replacementsMade = true;
+                }
+            }
+
+            if (oldSize && newSize) {
+                if (TARGET_MARKET === 'jp') {
+                     const safeOld = oldSize.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                     text = text.replace(new RegExp(safeOld, 'g'), newSize);
+                } else {
+                     text = text.split(oldSize).join(newSize);
+                     if (CURRENT_MODE === 'frame') {
+                        text = text.split(oldSize.replace('x', ' x ')).join(newSize.replace('x', ' x '));
+                        text = text.split(oldSize.replace('x', ' by ')).join(newSize.replace('x', ' by '));
+                     }
+                }
+            }
+
+            if (oldMaterial && newMaterial) {
+                let regex;
+                if (TARGET_MARKET === 'jp') regex = new RegExp(oldMaterial.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                else regex = new RegExp('\\b' + oldMaterial.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi');
+                text = text.replace(regex, newMaterial);
+            }
+
+            if (oldColor && newColor) {
+                let regex;
+                if (TARGET_MARKET === 'jp') regex = new RegExp(oldColor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                else regex = new RegExp('\\b' + oldColor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi');
+                text = text.replace(regex, newColor);
+            }
+
+            if (CURRENT_MODE === 'frame' && oldMatted) {
+                 if (!rawMatted || ['N/A','NONE','','无'].includes(rawMatted.toUpperCase())) {
+                     const prefix = (TARGET_MARKET==='en') ? "Matted to" : "Passepartout"; 
+                     const r = new RegExp(`${prefix}\\s*${oldMatted.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i');
+                     text = text.replace(r, "");
+                 } else {
+                     text = text.replace(new RegExp(oldMatted.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), cleanFrameSize(rawMatted));
+                 }
+            }
+
+            text = replaceTitleText(text);
+            text = text.replace(/\s+/g, ' ').replace(/ ,/g, ',').trim();
+            
+            return text;
+        }
+
+        function generate() {
+            saveState();
+
+            let templateTitle = document.getElementById('templateTitle').value.trim();
+            let templateBullets = document.getElementById('templateBullets').value.trim();
+            
+            if (!templateTitle && !templateBullets) { alert("请至少填写标题模板或五点模板其中之一！"); return; }
+
+            const oldSize = document.getElementById('oldSize').value.trim();
+            const oldMaterial = document.getElementById('oldMaterial').value.trim();
+            const oldColor = document.getElementById('oldColor').value.trim();
+            const oldPackNum = document.getElementById('oldPack').value.trim();
+            const oldMatted = document.getElementById('oldMatted').value.trim();
+            const oldSizeStyle = CURRENT_MODE === 'shelf' ? detectUnitStyle(oldSize) : null;
+
+            const mainLines = document.getElementById('mainInput').value.trim().split('\n');
+            const mattedLines = CURRENT_MODE === 'frame' ? document.getElementById('mattedInput').value.trim().split('\n') : [];
+            const tbody = document.getElementById('resultBody');
+            tbody.innerHTML = "";
+            let count = 0;
+
+            mainLines.forEach((line, index) => {
+                if (!line.trim()) return;
+                count++;
+                
+                let parts = line.includes('\t') ? line.split('\t') : line.split(/,|，/);
+                parts = parts.map(p => p.trim());
+                while(parts.length < 5) parts.push("");
+                let [rawMaterial, rawSize, rawColor, rawPack, sku] = parts;
+                
+                let newSize = "";
+                if (CURRENT_MODE === 'frame') {
+                    newSize = cleanFrameSize(rawSize);
+                } else {
+                    newSize = normalizeShelfSize(rawSize, oldSizeStyle);
+                }
+                const newMaterial = smartTranslate(rawMaterial);
+                const newColor = smartTranslate(rawColor);
+                let newPackNumVal = rawPack.replace(/[^\d]/g, ''); 
+                if (!newPackNumVal) newPackNumVal = rawPack;
+                
+                let rawMatted = (index < mattedLines.length) ? mattedLines[index].trim() : "N/A";
+
+                const vars = { oldSize, newSize, oldMaterial, newMaterial, oldColor, newColor, oldPackNum, newPackNumVal, oldMatted, rawMatted };
+
+                let newTitle = "";
+                if (templateTitle) {
+                    newTitle = processText(templateTitle, vars);
+                }
+
+                let newBullets = "";
+                if (templateBullets) {
+                    newBullets = processText(templateBullets, vars);
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-mono text-slate-600 truncate max-w-[120px] border-r border-slate-100 align-top" title="${sku}">${sku||'-'}</td>
+                    <td class="px-2 py-2 relative align-top">
+                        <textarea class="editable-field title-area" rows="3" oninput="validateAndRender(this)">${newTitle}</textarea>
+                        <div class="validation-msg text-[10px] mt-1 text-orange-600 font-medium hidden"></div>
+                    </td>
+                    <td class="px-2 py-3 text-center text-xs count-cell border-l border-slate-100 align-top">0</td>
+                    <td class="px-2 py-3 text-center text-[10px] status-cell align-top">-</td>
+                    <td class="px-2 py-2 align-top relative">
+                        <textarea class="editable-field bullets-area h-full pb-6" rows="5" oninput="validateBullets(this)">${newBullets}</textarea>
+                        <div class="bullet-count absolute bottom-3 right-4 text-[9px] text-slate-400 bg-white/90 px-1.5 py-0.5 rounded border border-slate-100 pointer-events-none">0/500</div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+                validateAndRender(tr.querySelector('.title-area'));
+                validateBullets(tr.querySelector('.bullets-area'));
+            });
+            document.getElementById('row-count').innerText = `${count} 条数据`;
+        }
+
+        function applyReplacementsToTable() {
+            saveState(); 
+            const titleTextareas = document.querySelectorAll('.title-area');
+            const bulletTextareas = document.querySelectorAll('.bullets-area');
+            
+            titleTextareas.forEach(ta => {
+                ta.value = replaceTitleText(ta.value);
+                validateAndRender(ta);
+            });
+            bulletTextareas.forEach(ta => {
+                ta.value = replaceTitleText(ta.value);
+            });
+        }
+
+        function exportCSV() {
+            let csv = "\uFEFFSKU,Title,Length,Status,Bullet Points\n";
+            document.querySelectorAll('#resultBody tr').forEach(tr => {
+                if(tr.querySelector('.title-area')) {
+                    const title = tr.querySelector('.title-area').value.replace(/"/g, '""');
+                    const bullets = tr.querySelector('.bullets-area').value.replace(/"/g, '""');
+                    csv += `"${tr.cells[0].innerText}","${title}",${tr.cells[2].innerText},"${tr.cells[3].innerText}","${bullets}"\n`;
+                }
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url; a.download = `title_batch_export_${new Date().toISOString().slice(0,10)}.csv`;
+            a.click();
+        }
+
+        function loadDemo() {
+            saveState();
+            // Set German market for demo if user hasn't changed
+            document.getElementById('targetMarket').value = 'jp';
+            changeMarket();
+
+            if (CURRENT_MODE === 'frame') {
+                document.getElementById('templateTitle').value = "KovaScape フォトフレーム、4×6インチ写真用フレーム、無垢オーク材製フォトフレーム、強化ガラス付き4×6インチフォトフレーム、壁掛け・卓上ディスプレイ用3.5×5インチ写真対応マット付き4×6インチ木製フレーム、1個入り、ブルー";
+                document.getElementById('templateBullets').value = "• 無垢オーク材フレーム。\n• 4×6インチ写真用。\n• 壁掛け・卓上両用。";
+                document.getElementById('mainInput').value = `黑胡桃	27x40	原木色	1	KS-JP-01\n松木	A4	黑色	2	KS-JP-02`;
+                document.getElementById('mattedInput').value = `24x36\nN/A`;
+            } else {
+                document.getElementById('templateTitle').value = "KovaScape ウォールシェルフ、60cmオーク壁掛け棚、キッチン用木製棚、2個セット、ラスティック";
+                document.getElementById('templateBullets').value = "• 無垢オーク材。\n• 簡単取り付け。\n• 耐荷重15kg。";
+                document.getElementById('mainInput').value = `黑胡桃	90cm	深胡桃色	1	KS-Shelf-JP-01\nMDF	40cm	白色	4	KS-Shelf-JP-02`;
+            }
+            validateTemplate();
+            setTimeout(parseTemplate, 100);
+        }
+        
+        function regenerate() {
+            if (document.getElementById('mainInput').value) generate();
+        }
+
+        function toggleModal(modalID){
+            document.getElementById(modalID).classList.toggle("opacity-0");
+            document.getElementById(modalID).classList.toggle("pointer-events-none");
+            document.body.classList.toggle("modal-active");
+        }
+    </script>
+</body>
+</html>

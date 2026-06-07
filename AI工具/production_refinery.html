@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KovaScape · 生产排产提纯与甘特图面板</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#F0EDE8;font-family:'Poppins', sans-serif;min-height:100vh}
+.page{background:#FDFCF9;border-radius:40px;max-width:1600px;margin:24px auto;overflow:hidden;box-shadow:0 8px 40px rgba(6,67,56,0.12)}
+.hero{background:#064338;padding:40px 56px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-60px;right:-60px;width:300px;height:300px;border-radius:50%;border:1px solid rgba(243,197,70,0.15);pointer-events:none}
+.hero-eyebrow{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.hero-dot{width:8px;height:8px;border-radius:50%;background:#F3C546}
+.hero-eyebrow-text{font-size:11px;font-weight:500;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:1.5px}
+.hero-title{font-family:'Playfair Display',serif;font-size:36px;font-weight:500;color:#fff;line-height:1.2;margin-bottom:8px}
+.hero-subtitle{font-size:13px;color:rgba(255,255,255,0.65)}
+
+.tabs{display:flex;background:#042E25;padding:0 56px;gap:0}
+.tab{padding:14px 24px;font-size:13px;font-weight:500;color:rgba(255,255,255,0.55);cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s;white-space:nowrap}
+.tab:hover{color:rgba(255,255,255,0.85)}
+.tab.active{color:#F3C546;border-bottom-color:#F3C546}
+.tab-content{display:none;padding:40px 56px}
+.tab-content.active{display:block}
+
+.section-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:500;color:#1D1B20;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.section-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,#F3C546,transparent)}
+
+/* Upload Section */
+.upload-zone{border:2px dashed #C8C4BE;border-radius:16px;padding:40px;text-align:center;cursor:pointer;transition:all 0.2s;background:#FDFCF9;margin-bottom:24px}
+.upload-zone:hover, .upload-zone.drag-over{border-color:#064338;background:#E8F2F0}
+.upload-icon{font-size:36px;margin-bottom:12px}
+.upload-title{font-family:'Playfair Display',serif;font-size:18px;color:#1D1B20;margin-bottom:6px}
+.upload-desc{font-size:12px;color:#717171}
+.file-input{display:none}
+
+/* Column Mapper UI */
+.mapper-card{background:#F8F5F0;border:1px solid #E8E4DE;border-radius:16px;padding:24px;margin-bottom:28px}
+.mapper-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));gap:16px;margin-bottom:20px}
+.mapper-field{display:flex;flex-direction:column;gap:6px}
+.mapper-field label{font-size:11px;font-weight:600;color:#717171;text-transform:uppercase;letter-spacing:0.5px}
+.mapper-field select{padding:8px 12px;border:1px solid #E8E4DE;border-radius:8px;font-size:13px;color:#1D1B20;background:#fff;outline:none}
+.mapper-field select:focus{border-color:#064338}
+
+/* Filters & Actions */
+.filter-bar{background:#F8F5F0;border:1px solid #E8E4DE;border-radius:16px;padding:20px 24px;margin-bottom:28px;display:flex;flex-wrap:wrap;gap:16px;align-items:center}
+.filter-input{padding:8px 12px;border:1px solid #E8E4DE;border-radius:8px;font-size:13px;outline:none;width:240px}
+.filter-input:focus{border-color:#064338}
+.btn{padding:9px 20px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all 0.2s}
+.btn-primary{background:#064338;color:#fff}
+.btn-primary:hover{background:#042E25}
+.btn-secondary{background:#fff;color:#064338;border:1px solid #064338}
+.btn-secondary:hover{background:#E8F2F0}
+.btn-gold{background:#F3C546;color:#064338}
+.btn-gold:hover{background:#e6b83a}
+.result-info{margin-left:auto;font-size:12px;color:#717171}
+.result-info span{color:#064338;font-weight:600}
+
+/* Data Table */
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid #E8E4DE;margin-bottom:24px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead tr{background:#064338}
+th{padding:12px;text-align:left;color:#F3C546;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid #F0EDE8;color:#1D1B20;white-space:nowrap}
+tr:hover td{background:#F8F5F0}
+
+/* Gantt Chart Custom Styles */
+.gantt-wrap{overflow-x:auto;margin-bottom:28px;background:#fff;border:1px solid #E8E4DE;border-radius:16px;padding:24px}
+.gantt-container{min-width:1000px}
+.gantt-header{display:flex;background:#064338;border-radius:10px 10px 0 0;height:44px;align-items:center}
+.gantt-col-label{width:200px;flex-shrink:0;padding:10px 16px;font-size:11px;color:#F3C546;font-weight:500;text-transform:uppercase;letter-spacing:0.5px}
+.gantt-timeline-header{flex:1;position:relative;height:100%;overflow:hidden}
+.gantt-tick-label{position:absolute;font-size:9px;color:rgba(255,255,255,0.65);transform:translateX(-50%);top:14px;white-space:nowrap}
+.gantt-tick-label.month-start{color:#F3C546;font-weight:600}
+.gantt-row{display:flex;align-items:center;border-bottom:1px solid #F0EDE8;min-height:48px}
+.gantt-row:hover{background:#F8F5F0}
+.gantt-row-label{width:200px;flex-shrink:0;padding:8px 16px}
+.gantt-row-label-sku{font-size:11px;font-weight:600;font-family:monospace;color:#1D1B20}
+.gantt-row-label-factory{font-size:9px;color:#717171;margin-top:2px}
+.gantt-bars{flex:1;position:relative;height:48px}
+.gantt-bar{position:absolute;height:16px;border-radius:4px;display:flex;align-items:center;padding:0 8px;font-size:9px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;top:16px}
+.gantt-bar-prod{background:#E8A020} /* Production */
+.gantt-bar-transit{background:#3F6BA6} /* Transit */
+.gantt-bar-suggest{background:repeating-linear-gradient(90deg,#E8A020 0,#E8A020 6px,transparent 6px,transparent 10px);border:1.5px dashed #E8A020;color:#7A4400}
+.gantt-tick-bg{position:absolute;top:0;bottom:0;width:1px;background:rgba(0,0,0,0.05)}
+.gantt-tick-bg.month-start{background:rgba(6,67,56,0.12)}
+.gantt-today-line{position:absolute;top:0;bottom:0;width:2px;background:#F3C546;z-index:3}
+
+.gantt-legend{display:flex;gap:16px;margin-top:16px;flex-wrap:wrap}
+.gantt-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:#717171}
+.gantt-legend-dot{width:12px;height:12px;border-radius:3px}
+
+.empty-state{text-align:center;padding:60px 40px;color:#B0ABA5}
+.empty-state-icon{font-size:48px;margin-bottom:12px}
+.empty-state-title{font-family:'Playfair Display',serif;font-size:20px;color:#717171;margin-bottom:6px}
+
+.footer{background:#042E25;padding:24px 56px;display:flex;align-items:center;justify-content:space-between;color:rgba(255,255,255,0.5);font-size:12px}
+.footer-brand{font-family:'Playfair Display',serif;font-size:16px;color:#F3C546}
+
+/* Custom Tooltip */
+.gantt-tooltip{position:fixed;background:#1D1B20;color:#fff;padding:8px 12px;border-radius:8px;font-size:11px;pointer-events:none;z-index:9999;display:none;line-height:1.6;box-shadow:0 4px 12px rgba(0,0,0,0.25)}
+</style>
+</head>
+<body>
+<div class="gantt-tooltip" id="gantt-tooltip"></div>
+<div class="page">
+  <div class="hero">
+    <div class="hero-eyebrow">
+      <div class="hero-dot"></div>
+      <span class="hero-eyebrow-text">KovaScape · 供应链管理 · 组级二次提纯</span>
+    </div>
+    <div class="hero-title">排产提纯与甘特图</div>
+    <div class="hero-subtitle" id="hero-subtitle">上传公司级预测与排产 CSV 报表，自动提纯本组数据并绘制生产排产甘特图。</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('tab-upload')">⬆️ 上传并映射</div>
+    <div class="tab" onclick="switchTab('tab-data')">📋 提纯数据明细</div>
+    <div class="tab" onclick="switchTab('tab-gantt')">📅 生产排产甘特图</div>
+  </div>
+
+  <!-- TAB 1: Upload & Mapping -->
+  <div id="tab-upload" class="tab-content active">
+    <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+      <div class="upload-icon">📥</div>
+      <div class="upload-title">拖拽公司排产 CSV 文件至此，或点击选择</div>
+      <div class="upload-desc">支持格式: .csv, .xlsx, .xls</div>
+      <input type="file" class="file-input" id="file-input" accept=".csv,.xlsx,.xls" onchange="handleFile(event)">
+    </div>
+
+    <div class="mapper-card" id="mapper-card" style="display:none">
+      <div class="section-title">字段映射与配置</div>
+      <p style="font-size:12px;color:#717171;margin-bottom:16px">系统自动识别了部分列名。若有偏差，请手动调整以确保正确提纯数据。</p>
+      <div class="mapper-grid" id="mapper-grid">
+        <!-- Generated dynamically in JS -->
+      </div>
+      <button class="btn btn-primary" onclick="processData()">🚀 开始提纯并推演</button>
+    </div>
+  </div>
+
+  <!-- TAB 2: Refined Data Detail -->
+  <div id="tab-data" class="tab-content">
+    <div id="data-empty" class="empty-state">
+      <div class="empty-state-icon">📂</div>
+      <div class="empty-state-title">暂无数据</div>
+      <div class="empty-state-desc">请先在「上传并映射」标签页上传数据</div>
+    </div>
+    <div id="data-content" style="display:none">
+      <div class="filter-bar">
+        <input type="text" class="filter-input" id="search-sku" placeholder="搜索 SKU / 负责人 / 工厂..." oninput="filterData()">
+        <button class="btn btn-secondary" onclick="clearFilters()">重置</button>
+        <button class="btn btn-gold" onclick="exportCSV()">📤 导出本组提纯数据 (CSV)</button>
+        <div class="result-info">本组共提纯出 <span id="refined-count">0</span> 行记录</div>
+      </div>
+      <div class="table-wrap">
+        <table id="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>SKU</th>
+              <th>SPU/品名</th>
+              <th>销量预测</th>
+              <th>建议采购量</th>
+              <th>生产工厂</th>
+              <th>排产交期</th>
+              <th>箱规 (Pcs/Box)</th>
+            </tr>
+          </thead>
+          <tbody id="data-tbody">
+            <!-- Rendered dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: Gantt Chart -->
+  <div id="tab-gantt" class="tab-content">
+    <div id="gantt-empty" class="empty-state">
+      <div class="empty-state-icon">📅</div>
+      <div class="empty-state-title">暂无排产图</div>
+      <div class="empty-state-desc">请先在「上传并映射」标签页上传并完成提纯</div>
+    </div>
+    <div id="gantt-content" style="display:none">
+      <div class="gantt-legend">
+        <div class="gantt-legend-item"><div class="gantt-legend-dot gantt-bar-prod"></div><span>建议生产周期 (15天)</span></div>
+        <div class="gantt-legend-item"><div class="gantt-legend-dot gantt-bar-transit"></div><span>建议海运在途 (30天)</span></div>
+        <div class="gantt-legend-item"><div class="gantt-legend-dot" style="background:#F3C546"></div><span>今日节点 (Today)</span></div>
+      </div>
+      <div class="gantt-wrap">
+        <div class="gantt-container" id="gantt-container">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-brand">KovaScape AI-Ops</div>
+    <div class="footer-meta">本地安全模式 · 小组定制版 v1.0</div>
+  </div>
+</div>
+
+<script>
+// Key team SKUs to perform "Secondary Refinement" (过滤我们组关心的数据)
+// 在实际中可以由用户在界面修改，这里作为硬编码策略
+const TEAM_SKU_PATTERNS = ["1520", "相框", "FRAME", "WOOD", "Kova", "TEST"];
+
+let rawHeaders = [];
+let rawData = [];
+let refinedData = [];
+
+// Columns configuration mapping
+const configMapping = {
+  sku: { label: "SKU 列名", keywords: ["sku", "msku", "产品sku", "编码"] },
+  spu: { label: "SPU/品名", keywords: ["spu", "品名", "产品名称", "分类"] },
+  forecast: { label: "销量预测", keywords: ["forecast", "预测", "日均销量", "建议dms"] },
+  purchase: { label: "建议采购量", keywords: ["purchase", "采购量", "建议翻单", "建议采购", "排产建议"] },
+  factory: { label: "生产工厂", keywords: ["factory", "工厂", "供应商", "生产厂家"] },
+  delivery: { label: "排产交期", keywords: ["delivery", "交期", "交货日期", "预计交期"] },
+  box_size: { label: "箱规 (盒/箱)", keywords: ["box", "箱规", "装箱量", "每箱数量"] }
+};
+
+function switchTab(tabId) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  
+  const selectedTab = Array.from(document.querySelectorAll('.tab')).find(t => t.getAttribute('onclick').includes(tabId));
+  if(selectedTab) selectedTab.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+  
+  if (tabId === 'tab-gantt' && refinedData.length > 0) {
+    renderGanttChart();
+  }
+}
+
+// Drag & Drop
+const uploadZone = document.getElementById('upload-zone');
+['dragenter', 'dragover'].forEach(eventName => {
+  uploadZone.addEventListener(eventName, e => {
+    e.preventDefault();
+    uploadZone.classList.add('drag-over');
+  }, false);
+});
+['dragleave', 'drop'].forEach(eventName => {
+  uploadZone.addEventListener(eventName, e => {
+    e.preventDefault();
+    uploadZone.classList.remove('drag-over');
+  }, false);
+});
+uploadZone.addEventListener('drop', e => {
+  const dt = e.dataTransfer;
+  const files = dt.files;
+  if (files.length > 0) {
+    document.getElementById('file-input').files = files;
+    handleFile({ target: { files: files } });
+  }
+}, false);
+
+function handleFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    const data = evt.target.result;
+    let workbook;
+    if (file.name.endsWith('.csv')) {
+      workbook = XLSX.read(data, { type: 'binary', codepage: 65001 }); // UTF-8
+    } else {
+      workbook = XLSX.read(data, { type: 'binary' });
+    }
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    
+    // Parse JSON
+    const parsed = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    if (parsed.length > 0) {
+      rawHeaders = parsed[0].map(h => String(h).trim());
+      rawData = parsed.slice(1).map(row => {
+        let obj = {};
+        rawHeaders.forEach((h, i) => {
+          obj[h] = row[i] !== undefined ? row[i] : "";
+        });
+        return obj;
+      });
+      
+      showColumnMapper();
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function showColumnMapper() {
+  const grid = document.getElementById('mapper-grid');
+  grid.innerHTML = "";
+  
+  Object.keys(configMapping).forEach(key => {
+    const config = configMapping[key];
+    const matchedHeader = autoMatchHeader(config.keywords);
+    
+    const fieldDiv = document.createElement('div');
+    fieldDiv.className = 'mapper-field';
+    
+    const label = document.createElement('label');
+    label.innerText = config.label;
+    
+    const select = document.createElement('select');
+    select.id = `map-${key}`;
+    
+    // Add empty option
+    const emptyOpt = document.createElement('option');
+    emptyOpt.value = "";
+    emptyOpt.innerText = "-- 请选择 --";
+    select.appendChild(emptyOpt);
+    
+    rawHeaders.forEach(h => {
+      const opt = document.createElement('option');
+      opt.value = h;
+      opt.innerText = h;
+      if (h === matchedHeader) {
+        opt.selected = true;
+      }
+      select.appendChild(opt);
+    });
+    
+    fieldDiv.appendChild(label);
+    fieldDiv.appendChild(select);
+    grid.appendChild(fieldDiv);
+  });
+  
+  document.getElementById('mapper-card').style.display = 'block';
+}
+
+function autoMatchHeader(keywords) {
+  for (let kw of keywords) {
+    for (let h of rawHeaders) {
+      if (h.toLowerCase().includes(kw.toLowerCase())) {
+        return h;
+      }
+    }
+  }
+  return "";
+}
+
+function processData() {
+  const maps = {};
+  Object.keys(configMapping).forEach(key => {
+    maps[key] = document.getElementById(`map-${key}`).value;
+  });
+  
+  if (!maps.sku) {
+    alert("请确保映射了 SKU 列，否则无法过滤本组核心数据！");
+    return;
+  }
+  
+  // Secondary Refinement: 提纯过滤本组 SKU
+  refinedData = rawData.filter(row => {
+    const skuVal = String(row[maps.sku] || "").toUpperCase();
+    // 检查是否符合我们组的 SKU 特征
+    return TEAM_SKU_PATTERNS.some(pat => skuVal.includes(pat.toUpperCase()));
+  }).map(row => {
+    // Normalization
+    return {
+      sku: row[maps.sku] || "",
+      spu: maps.spu ? row[maps.spu] : "未知",
+      forecast: maps.forecast ? parseFloat(row[maps.forecast]) || 0 : 0,
+      purchase: maps.purchase ? parseInt(row[maps.purchase]) || 0 : 0,
+      factory: maps.factory ? row[maps.factory] : "默认工厂",
+      delivery: maps.delivery ? formatDateString(row[maps.delivery]) : getFutureDateString(15),
+      box_size: maps.box_size ? parseInt(row[maps.box_size]) || 0 : 0
+    };
+  });
+  
+  // Update UI Elements
+  document.getElementById('refined-count').innerText = refinedData.length;
+  renderDataTable(refinedData);
+  
+  // Toggle Visibility
+  document.getElementById('data-empty').style.display = 'none';
+  document.getElementById('data-content').style.display = 'block';
+  document.getElementById('gantt-empty').style.display = 'none';
+  document.getElementById('gantt-content').style.display = 'block';
+  
+  // Go to detail tab
+  switchTab('tab-data');
+}
+
+function formatDateString(val) {
+  if (!val) return "";
+  // Check if excel date serialization
+  if (typeof val === 'number') {
+    const dateObj = XLSX.SSF.parse_date_code(val);
+    const m = String(dateObj.m).padStart(2, '0');
+    const d = String(dateObj.d).padStart(2, '0');
+    return `${dateObj.y}-${m}-${d}`;
+  }
+  // Try parsing string date
+  const parsed = Date.parse(val);
+  if (!isNaN(parsed)) {
+    const dObj = new Date(parsed);
+    const m = String(dObj.getMonth() + 1).padStart(2, '0');
+    const d = String(dObj.getDate()).padStart(2, '0');
+    return `${dObj.getFullYear()}-${m}-${d}`;
+  }
+  return String(val);
+}
+
+function getFutureDateString(days) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const date = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${date}`;
+}
+
+function renderDataTable(data) {
+  const tbody = document.getElementById('data-tbody');
+  tbody.innerHTML = "";
+  
+  data.forEach((row, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td style="font-family: monospace; font-weight:600">${row.sku}</td>
+      <td>${row.spu}</td>
+      <td>${row.forecast}</td>
+      <td>${row.purchase}</td>
+      <td>${row.factory}</td>
+      <td>${row.delivery}</td>
+      <td>${row.box_size || '--'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function filterData() {
+  const q = document.getElementById('search-sku').value.trim().toUpperCase();
+  if (!q) {
+    renderDataTable(refinedData);
+    return;
+  }
+  
+  const filtered = refinedData.filter(row => {
+    return String(row.sku).toUpperCase().includes(q) ||
+           String(row.spu).toUpperCase().includes(q) ||
+           String(row.factory).toUpperCase().includes(q);
+  });
+  renderDataTable(filtered);
+}
+
+function clearFilters() {
+  document.getElementById('search-sku').value = "";
+  renderDataTable(refinedData);
+}
+
+function exportCSV() {
+  if (refinedData.length === 0) return;
+  const headers = ["SKU", "SPU/品名", "销量预测", "建议采购量", "生产工厂", "排产交期", "每箱规格"];
+  const rows = refinedData.map(row => [
+    row.sku, row.spu, row.forecast, row.purchase, row.factory, row.delivery, row.box_size
+  ]);
+  
+  let csvContent = "data:text/csv;charset=utf-8,\ufeff"; // Add UTF-8 BOM
+  csvContent += headers.join(",") + "\n";
+  rows.forEach(r => {
+    csvContent += r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",") + "\n";
+  });
+  
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", "kovascape_refined_production_plan.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// 📅 Gantt Chart Generation Logic
+function renderGanttChart() {
+  const container = document.getElementById('gantt-container');
+  container.innerHTML = "";
+  
+  if (refinedData.length === 0) return;
+  
+  // Calculate Timeline Bounds
+  const today = new Date();
+  let minDate = new Date();
+  minDate.setDate(minDate.getDate() - 10); // Start 10 days before today
+  
+  let maxDate = new Date();
+  maxDate.setDate(maxDate.getDate() + 60); // End 60 days from today
+  
+  const totalDays = Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24));
+  
+  // Gantt Header & Timelines
+  const headerDiv = document.createElement('div');
+  headerDiv.className = 'gantt-header';
+  
+  const colLabel = document.createElement('div');
+  colLabel.className = 'gantt-col-label';
+  colLabel.innerText = "产品 / SKU";
+  headerDiv.appendChild(colLabel);
+  
+  const timelineHeader = document.createElement('div');
+  timelineHeader.className = 'gantt-timeline-header';
+  
+  // Render ticks (every 10 days)
+  for (let i = 0; i <= totalDays; i += 10) {
+    const tickDate = new Date(minDate.getTime() + i * 24 * 60 * 60 * 1000);
+    const leftPct = (i / totalDays) * 100;
+    
+    const tickLabel = document.createElement('div');
+    tickLabel.className = 'gantt-tick-label';
+    if (tickDate.getDate() <= 10) {
+      tickLabel.classList.add('month-start');
+      tickLabel.innerText = `${tickDate.getMonth() + 1}/${tickDate.getDate()}`;
+    } else {
+      tickLabel.innerText = `${tickDate.getDate()}`;
+    }
+    tickLabel.style.left = `${leftPct}%`;
+    timelineHeader.appendChild(tickLabel);
+  }
+  headerDiv.appendChild(timelineHeader);
+  container.appendChild(headerDiv);
+  
+  // Gantt Rows
+  refinedData.forEach(row => {
+    const deliveryDate = new Date(Date.parse(row.delivery));
+    if (isNaN(deliveryDate)) return;
+    
+    // Order Date (assumed 15 days before delivery date)
+    const orderDate = new Date(deliveryDate.getTime() - 15 * 24 * 60 * 60 * 1000);
+    
+    // FBA Arrival Date (assumed 30 days after delivery date for sea transit)
+    const fbaDate = new Date(deliveryDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+    
+    const rowDiv = document.createElement('div');
+    rowDiv.className = 'gantt-row';
+    
+    const rowLabel = document.createElement('div');
+    rowLabel.className = 'gantt-row-label';
+    
+    const skuSpan = document.createElement('div');
+    skuSpan.className = 'gantt-row-label-sku';
+    skuSpan.innerText = row.sku;
+    
+    const factorySpan = document.createElement('div');
+    factorySpan.className = 'gantt-row-label-factory';
+    factorySpan.innerText = `${row.factory} · ${row.spu}`;
+    
+    rowLabel.appendChild(skuSpan);
+    rowLabel.appendChild(factorySpan);
+    rowDiv.appendChild(rowLabel);
+    
+    const barsDiv = document.createElement('div');
+    barsDiv.className = 'gantt-bars';
+    
+    // Render Background ticks
+    for (let i = 0; i <= totalDays; i += 10) {
+      const leftPct = (i / totalDays) * 100;
+      const bgLine = document.createElement('div');
+      bgLine.className = 'gantt-tick-bg';
+      const tickDate = new Date(minDate.getTime() + i * 24 * 60 * 60 * 1000);
+      if (tickDate.getDate() <= 10) {
+        bgLine.classList.add('month-start');
+      }
+      bgLine.style.left = `${leftPct}%`;
+      barsDiv.appendChild(bgLine);
+    }
+    
+    // Today Marker
+    const todayOffset = Math.ceil((today - minDate) / (1000 * 60 * 60 * 24));
+    if (todayOffset >= 0 && todayOffset <= totalDays) {
+      const todayLine = document.createElement('div');
+      todayLine.className = 'gantt-today-line';
+      todayLine.style.left = `${(todayOffset / totalDays) * 100}%`;
+      barsDiv.appendChild(todayLine);
+    }
+    
+    // 1. Production Bar
+    const prodStartOffset = (orderDate - minDate) / (1000 * 60 * 60 * 24);
+    const prodWidthDays = 15;
+    const prodLeft = (prodStartOffset / totalDays) * 100;
+    const prodWidth = (prodWidthDays / totalDays) * 100;
+    
+    if (prodLeft + prodWidth > 0 && prodLeft < 100) {
+      const prodBar = document.createElement('div');
+      prodBar.className = 'gantt-bar gantt-bar-prod';
+      prodBar.style.left = `${Math.max(0, prodLeft)}%`;
+      prodBar.style.width = `${Math.min(100 - prodLeft, prodWidth)}%`;
+      prodBar.innerText = `排产生产 (${row.purchase} Pcs)`;
+      
+      setupTooltip(prodBar, `
+        <strong>生产排产计划</strong><br>
+        工厂: ${row.factory}<br>
+        下单日: ${orderDate.toLocaleDateString()}<br>
+        预计交期: ${deliveryDate.toLocaleDateString()}<br>
+        数量: ${row.purchase} Pcs
+      `);
+      barsDiv.appendChild(prodBar);
+    }
+    
+    // 2. Transit Bar
+    const transitStartOffset = (deliveryDate - minDate) / (1000 * 60 * 60 * 24);
+    const transitWidthDays = 30;
+    const transitLeft = (transitStartOffset / totalDays) * 100;
+    const transitWidth = (transitWidthDays / totalDays) * 100;
+    
+    if (transitLeft + transitWidth > 0 && transitLeft < 100) {
+      const transitBar = document.createElement('div');
+      transitBar.className = 'gantt-bar gantt-bar-transit';
+      transitBar.style.left = `${Math.max(0, transitLeft)}%`;
+      transitBar.style.width = `${Math.min(100 - transitLeft, transitWidth)}%`;
+      transitBar.innerText = "建议在途海运";
+      
+      setupTooltip(transitBar, `
+        <strong>海运建议在途</strong><br>
+        出运日: ${deliveryDate.toLocaleDateString()}<br>
+        预计入FBA仓日: ${fbaDate.toLocaleDateString()}<br>
+        预估运输时长: 30 天
+      `);
+      barsDiv.appendChild(transitBar);
+    }
+    
+    rowDiv.appendChild(barsDiv);
+    container.appendChild(rowDiv);
+  });
+}
+
+function setupTooltip(el, text) {
+  const tooltip = document.getElementById('gantt-tooltip');
+  el.addEventListener('mousemove', e => {
+    tooltip.innerHTML = text;
+    tooltip.style.left = `${e.clientX + 15}px`;
+    tooltip.style.top = `${e.clientY + 15}px`;
+    tooltip.style.display = 'block';
+  });
+  el.addEventListener('mouseleave', () => {
+    tooltip.style.display = 'none';
+  });
+}
+</script>
+</body>
+</html>

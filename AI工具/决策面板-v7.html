@@ -1,0 +1,3197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KovaScape · 决策总表面板 v8</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- ── 试算DMS 模态框 ── -->
+    <div id="sim-modal-overlay" class="sim-modal-overlay" style="display:none" onclick="if(event.target===this)closeSimModal()">
+      <div class="sim-modal">
+        <div class="sim-modal-header">
+          <div>
+            <div class="sim-modal-title">🧮 试算 DMS</div>
+            <div class="sim-modal-subtitle">输入目标建议出运量 → 反推所需 DMS · 不影响原始数据，确认后才写入</div>
+          </div>
+          <button class="sim-modal-close" onclick="closeSimModal()">✕</button>
+        </div>
+        <div class="sim-modal-body">
+          <div class="sim-notice">
+            <strong>⚠️ 试算说明：</strong>此功能仅做预览，<strong>不会自动修改任何 DMS</strong>。<br>
+            反推公式：<code style="background:#FFF3CD;padding:1px 5px;border-radius:3px">DMS = (目标出运量 + FBA在库 + 在途批次量 + 已计划出运批次量 + 国内成品仓 − 安全库存) ÷ 目标覆盖天数</code><br>
+            ⚠️ 验算误差说明：正推含装箱取整(ceil)，验算值可能比目标值大 0~(box_size−1) 件，属正常现象。<br>
+            试算完成后，可选择「全部应用」或勾选部分行「应用选中」，才会写入运营DMS。
+          </div>
+          <div class="sim-input-row">
+            <div class="sim-input-group">
+              <label>目标建议出运量（件）</label>
+              <input type="number" id="sim-target-ship" class="sim-input" placeholder="如：500" min="0" step="1">
+            </div>
+            <div class="sim-input-group">
+              <label>目标覆盖天数（可选，留空用原值）</label>
+              <input type="number" id="sim-target-days" class="sim-input" placeholder="留空=原值" min="1" step="1">
+            </div>
+            <button class="sim-calc-btn" onclick="runSimCalc()">▶ 开始试算</button>
+          </div>
+          <div id="sim-result-area"></div>
+        </div>
+        <div class="sim-modal-footer">
+          <span style="font-size:12px;color:#717171" id="sim-footer-hint">试算后可选择应用方式</span>
+          <div style="margin-left:auto;display:flex;gap:10px;flex-wrap:wrap">
+            <button class="sim-apply-sel-btn" id="sim-apply-sel-btn" onclick="applySimSelected()" style="display:none">✅ 应用选中行</button>
+            <button class="sim-apply-all-btn" id="sim-apply-all-btn" onclick="applySimAll()" style="display:none">⚡ 全部应用</button>
+            <button class="sim-cancel-btn" onclick="closeSimModal()">关闭</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#F0EDE8;font-family:'Poppins',sans-serif;min-height:100vh}
+.page{background:#FDFCF9;border-radius:40px;max-width:1600px;margin:24px auto;overflow:hidden;box-shadow:0 8px 40px rgba(6,67,56,0.12)}
+.hero{background:#064338;padding:48px 56px 0;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-60px;right:-60px;width:300px;height:300px;border-radius:50%;border:1px solid rgba(243,197,70,0.15);pointer-events:none}
+.hero-eyebrow{display:flex;align-items:center;gap:8px;margin-bottom:20px}
+.hero-dot{width:8px;height:8px;border-radius:50%;background:#F3C546}
+.hero-eyebrow-text{font-size:11px;font-weight:500;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:1.5px}
+.hero-title{font-family:'Playfair Display',serif;font-size:40px;font-weight:500;color:#fff;line-height:1.2;margin-bottom:8px}
+.hero-subtitle{font-size:13px;color:rgba(255,255,255,0.65)}
+.hero-metrics{display:flex;border-top:0.6px solid rgba(243,197,70,0.4);margin-top:36px}
+.hero-metric{flex:1;padding:20px 0 20px 24px;border-right:0.6px solid rgba(243,197,70,0.2)}
+.hero-metric:first-child{padding-left:0}
+.hero-metric:last-child{border-right:none}
+.hero-metric-value{font-family:'Playfair Display',serif;font-size:30px;font-weight:500;color:#F3C546;line-height:1}
+.hero-metric-value.red{color:#FF8A80}
+.hero-metric-value.orange{color:#FFD180}
+.hero-metric-label{font-size:11px;color:rgba(255,255,255,0.55);margin-top:4px;text-transform:uppercase;letter-spacing:0.5px}
+.tabs{display:flex;background:#042E25;padding:0 56px;gap:0;overflow-x:auto}
+.tab{padding:14px 24px;font-size:13px;font-weight:500;color:rgba(255,255,255,0.55);cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s;white-space:nowrap}
+.tab:hover{color:rgba(255,255,255,0.85)}
+.tab.active{color:#F3C546;border-bottom-color:#F3C546}
+.tab-content{display:none;padding:40px 56px}
+.tab-content.active{display:block}
+.section-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:500;color:#1D1B20;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.section-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,#F3C546,transparent)}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px}
+.chart-card{background:#FDFCF9;border:1px solid #E8E4DE;border-radius:16px;overflow:hidden}
+.chart-card-header{padding:16px 20px;border-bottom:1px solid #F0EDE8;display:flex;align-items:center;justify-content:space-between}
+.chart-card-title{font-size:13px;font-weight:600;color:#1D1B20}
+.chart-card-body{padding:20px}
+.bar-chart{display:flex;flex-direction:column;gap:10px}
+.bar-row{display:flex;align-items:center;gap:10px}
+.bar-label{font-size:11px;color:#717171;width:110px;flex-shrink:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;height:22px;background:#F0EDE8;border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:8px;min-width:2px;transition:width 0.6s ease}
+.bar-fill-green{background:#064338}.bar-fill-red{background:#C4433A}.bar-fill-orange{background:#E8A020}
+.bar-fill-gold{background:#F3C546}.bar-fill-gray{background:#9E9E9E}.bar-fill-blue{background:#3F6BA6}.bar-fill-purple{background:#5B3FA6}
+.bar-value{font-size:10px;color:#fff;font-weight:500;white-space:nowrap}
+.bar-count{font-size:11px;color:#717171;width:50px;flex-shrink:0;text-align:right}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.stat-card{background:#FDFCF9;border:1px solid #E8E4DE;border-radius:14px;padding:20px 22px}
+.stat-label{font-size:11px;color:#717171;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px}
+.stat-value{font-family:'Playfair Display',serif;font-size:36px;font-weight:500;color:#064338;line-height:1;margin-bottom:4px}
+.stat-value.orange{color:#B8860B}
+.stat-sub{font-size:11px;color:#717171}
+.filter-bar{background:#F8F5F0;border:1px solid #E8E4DE;border-radius:16px;padding:24px;margin-bottom:28px}
+.filter-bar-title{font-family:'Playfair Display',serif;font-size:15px;font-weight:500;color:#1D1B20;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.filter-bar-title::before{content:'';display:inline-block;width:3px;height:15px;background:#064338;border-radius:2px}
+.filter-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.filter-group label{display:block;font-size:11px;font-weight:500;color:#717171;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
+.filter-group select,.filter-group input{width:100%;padding:8px 12px;border:1px solid #E8E4DE;border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;color:#1D1B20;background:#fff;outline:none;transition:border-color 0.2s}
+.filter-group select:focus,.filter-group input:focus{border-color:#064338}
+.filter-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{padding:9px 20px;border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all 0.2s}
+.btn-primary{background:#064338;color:#fff}.btn-primary:hover{background:#042E25}
+.btn-secondary{background:#fff;color:#064338;border:1px solid #064338}.btn-secondary:hover{background:#E8F2F0}
+.btn-gold{background:#F3C546;color:#064338}.btn-gold:hover{background:#e6b83a}
+.btn-danger{background:#C4433A;color:#fff}.btn-danger:hover{background:#a33530}
+.btn-sm{padding:5px 12px;font-size:12px}
+.result-count{font-size:13px;color:#717171;margin-left:auto}
+.result-count span{font-weight:600;color:#064338}
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid #E8E4DE}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead tr{background:#064338}
+th{padding:11px 12px;text-align:left;color:#F3C546;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid #F0EDE8;color:#1D1B20;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#F8F5F0}
+tr.modified td{background:#FFFBEC!important}
+tr.modified td:nth-child(2){border-left:3px solid #F3C546}
+tr.selected td{background:#EDF5FF!important}
+tr.selected.modified td{background:#FFF8DC!important}
+.tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
+.tag-us{background:#FFF8DC;color:#B8860B}.tag-uk{background:#E8F2F0;color:#064338}
+.tag-de{background:#FDECEA;color:#C4433A}.tag-ca{background:#EDE8F5;color:#5B3FA6}
+.tag-jp{background:#FDE8F0;color:#A63F6B}.tag-other{background:#F0EDE8;color:#717171}
+.tag-urgent{background:#FDECEA;color:#C4433A}.tag-soon{background:#FFF8DC;color:#B8860B}
+.tag-normal{background:#F0EDE8;color:#717171}.tag-ok{background:#E8F2F0;color:#064338}
+.tag-high{background:#FDECEA;color:#C4433A}.tag-mid{background:#FFF8DC;color:#B8860B}
+.tag-low{background:#E8F2F0;color:#064338}.tag-safe{background:#E8F2F0;color:#064338}
+.spu-tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:500;background:#E8F2F0;color:#064338;border:1px solid rgba(6,67,56,0.2);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+.spu-tag.unmapped{background:#F0EDE8;color:#B0ABA5;border-color:#E8E4DE}
+.pagination{display:flex;align-items:center;gap:8px;margin-top:16px;justify-content:flex-end;flex-wrap:wrap}
+.page-btn{padding:6px 12px;border-radius:6px;border:1px solid #E8E4DE;background:#fff;font-size:12px;cursor:pointer;font-family:'Poppins',sans-serif}
+.page-btn:hover{background:#E8F2F0;border-color:#064338}
+.page-btn.active{background:#064338;color:#fff;border-color:#064338}
+.page-btn:disabled{opacity:0.4;cursor:not-allowed}
+
+/* DMS 编辑输入框 */
+.dms-cell{position:relative;display:flex;align-items:center;gap:4px}
+.dms-input{width:70px;padding:4px 8px;border:1px solid #E8E4DE;border-radius:6px;font-family:'Poppins',sans-serif;font-size:12px;color:#1D1B20;background:#fff;outline:none;transition:border-color 0.2s}
+.dms-input:focus{border-color:#064338;background:#FFFBEC}
+.dms-input.overridden{border-color:#F3C546;background:#FFFBEC;font-weight:600;color:#B8860B}
+.dms-sys{font-size:10px;color:#B0ABA5;text-decoration:line-through}
+.dms-reset{background:none;border:none;cursor:pointer;color:#B0ABA5;font-size:12px;padding:2px;line-height:1}
+.dms-reset:hover{color:#C4433A}
+
+/* 产品状态选择 */
+.status-select{padding:4px 8px;border:1px solid #E8E4DE;border-radius:6px;font-family:'Poppins',sans-serif;font-size:11px;color:#1D1B20;background:#fff;outline:none;cursor:pointer}
+.status-select:focus{border-color:#064338}
+
+/* 允许出运 彩色按钮 */
+.ship-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:none;transition:all 0.2s;white-space:nowrap}
+.ship-btn.allow{background:#E8F2F0;color:#064338;border:1px solid rgba(6,67,56,0.3)}
+.ship-btn.allow:hover{background:#d0e8e2}
+.ship-btn.deny{background:#FDECEA;color:#C4433A;border:1px solid rgba(196,67,58,0.3)}
+.ship-btn.deny:hover{background:#f5d5d3}
+
+/* 批量操作工具栏 */
+.bulk-bar{background:#064338;border-radius:12px;padding:14px 20px;margin-bottom:16px;display:none;align-items:center;gap:12px;flex-wrap:wrap}
+.bulk-bar.visible{display:flex}
+.bulk-bar-count{font-size:13px;font-weight:600;color:#F3C546;white-space:nowrap}
+.bulk-bar-sep{width:1px;height:24px;background:rgba(255,255,255,0.2);flex-shrink:0}
+.bulk-bar label{font-size:11px;color:rgba(255,255,255,0.7);white-space:nowrap}
+.bulk-input{padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;font-family:'Poppins',sans-serif;font-size:12px;width:80px;outline:none}
+.bulk-input::placeholder{color:rgba(255,255,255,0.4)}
+.bulk-input:focus{border-color:#F3C546;background:rgba(255,255,255,0.15)}
+.bulk-select{padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);color:#fff;font-family:'Poppins',sans-serif;font-size:12px;outline:none;cursor:pointer}
+.bulk-select option{background:#064338;color:#fff}
+.bulk-apply-btn{padding:6px 16px;border-radius:6px;background:#F3C546;color:#064338;font-family:'Poppins',sans-serif;font-size:12px;font-weight:600;border:none;cursor:pointer;transition:all 0.2s}
+.bulk-apply-btn:hover{background:#e6b83a}
+.bulk-clear-btn{padding:6px 14px;border-radius:6px;background:transparent;color:rgba(255,255,255,0.7);font-family:'Poppins',sans-serif;font-size:12px;border:1px solid rgba(255,255,255,0.3);cursor:pointer;transition:all 0.2s}
+.bulk-clear-btn:hover{background:rgba(255,255,255,0.1);color:#fff}
+
+/* checkbox 样式 */
+input[type=checkbox].row-check{width:15px;height:15px;cursor:pointer;accent-color:#064338}
+input[type=checkbox]#select-all{width:15px;height:15px;cursor:pointer;accent-color:#F3C546}
+
+/* 甘特图 */
+.gantt-wrap{overflow-x:auto;margin-bottom:28px}
+.gantt-container{min-width:1100px}
+.gantt-header{display:flex;background:#064338;border-radius:10px 10px 0 0;padding:0;height:44px;position:relative}
+.gantt-col-label{width:220px;flex-shrink:0;padding:10px 14px;font-size:11px;color:#F3C546;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center}
+.gantt-timeline-header{flex:1;position:relative;overflow:hidden}
+.gantt-tick-label{position:absolute;font-size:9px;color:rgba(255,255,255,0.65);transform:translateX(-50%);top:6px;white-space:nowrap}
+.gantt-tick-label.month-start{color:#F3C546;font-weight:600;font-size:10px}
+.gantt-tick-line{position:absolute;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.12)}
+.gantt-tick-line.month-start{background:rgba(243,197,70,0.35)}
+.gantt-row{display:flex;align-items:center;border-bottom:1px solid #F0EDE8;min-height:56px;position:relative}
+.gantt-row:hover{background:#F8F5F0}
+.gantt-row-label{width:220px;flex-shrink:0;padding:8px 14px}
+.gantt-row-label-msku{font-size:10px;font-family:monospace;color:#1D1B20;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gantt-row-label-name{font-size:10px;color:#717171;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+.gantt-bars{flex:1;position:relative;height:56px}
+.gantt-today-line{position:absolute;top:0;bottom:0;width:2px;background:#F3C546;opacity:0.9;z-index:3}
+.gantt-tick-bg{position:absolute;top:0;bottom:0;width:1px;background:rgba(0,0,0,0.05);z-index:0}
+.gantt-tick-bg.month-start{background:rgba(6,67,56,0.12)}
+/* 条形 */
+.gantt-bar{position:absolute;height:14px;border-radius:4px;display:flex;align-items:center;padding:0 6px;font-size:9px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;cursor:pointer;transition:opacity 0.15s;z-index:1}
+.gantt-bar:hover{opacity:0.82}
+.gantt-bar-stock{background:#064338;top:4px}
+.gantt-bar-transit{background:#3F6BA6;top:4px}
+.gantt-bar-planned{background:#5B3FA6;top:20px}
+.gantt-bar-prod{background:#E8A020;top:20px}
+.gantt-bar-reorder{background:#C4433A;top:36px}
+.gantt-bar-suggest{background:repeating-linear-gradient(90deg,#E8A020 0,#E8A020 6px,transparent 6px,transparent 10px);border:1.5px dashed #E8A020;color:#7A4400;top:36px;opacity:0.85}
+/* 到货节点标记 */
+.gantt-node{position:absolute;z-index:4;cursor:pointer}
+.gantt-node-line{position:absolute;width:2px;background:currentColor;top:0;height:56px;opacity:0.7}
+.gantt-node-diamond{position:absolute;width:8px;height:8px;transform:rotate(45deg) translateX(-50%);left:1px}
+.gantt-node-label{position:absolute;font-size:8px;font-weight:700;white-space:nowrap;transform:translateX(-50%);top:44px;left:1px}
+.gantt-legend{display:flex;gap:16px;margin-bottom:12px;flex-wrap:wrap}
+.gantt-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:#717171}
+.gantt-legend-dot{width:12px;height:12px;border-radius:3px}
+.gantt-legend-diamond{width:10px;height:10px;transform:rotate(45deg);flex-shrink:0}
+.gantt-tooltip{position:fixed;background:#1D1B20;color:#fff;padding:8px 12px;border-radius:8px;font-size:11px;pointer-events:none;z-index:9999;display:none;max-width:240px;line-height:1.6}
+
+/* 上传区域 */
+.upload-two-col{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px}
+.upload-card{border:2px dashed #C8C4BE;border-radius:16px;padding:32px 24px;text-align:center;cursor:pointer;transition:all 0.2s;background:#FDFCF9;position:relative}
+.upload-card:hover,.upload-card.drag-over{border-color:#064338;background:#E8F2F0}
+.upload-card.optional{background:#F8F5F0}
+.upload-card-badge{position:absolute;top:12px;right:12px;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.badge-required{background:#FDECEA;color:#C4433A}
+.badge-optional{background:#F0EDE8;color:#717171}
+.badge-loaded{background:#E8F2F0;color:#064338}
+.upload-icon{font-size:32px;margin-bottom:8px}
+.upload-title{font-family:'Playfair Display',serif;font-size:16px;color:#1D1B20;margin-bottom:6px}
+.upload-desc{font-size:12px;color:#717171;line-height:1.5}
+.upload-hint{font-size:11px;color:#B0ABA5;margin-top:6px}
+.upload-status{margin-top:12px;padding:10px 14px;border-radius:8px;font-size:12px;display:none}
+.upload-status.success{background:#E8F2F0;color:#064338;border-left:4px solid #064338;display:block}
+.upload-status.error{background:#FDECEA;color:#C4433A;border-left:4px solid #C4433A;display:block}
+.upload-status.info{background:#FFF8DC;color:#B8860B;border-left:4px solid #F3C546;display:block}
+.sku-map-status{display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:8px;font-size:12px;margin-bottom:16px}
+.sku-map-status.loaded{background:#E8F2F0;color:#064338;border:1px solid rgba(6,67,56,0.2)}
+.sku-map-status.empty{background:#F8F5F0;color:#717171;border:1px solid #E8E4DE}
+.sku-map-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sku-map-dot.green{background:#064338}.sku-map-dot.gray{background:#B0ABA5}
+
+/* 修改汇总栏 */
+.edit-summary{background:#FFFBEC;border:1px solid #F3C546;border-radius:12px;padding:16px 20px;margin-bottom:20px;display:none}
+.edit-summary.visible{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.edit-summary-text{font-size:13px;color:#B8860B;font-weight:500}
+.edit-summary-count{font-family:'Playfair Display',serif;font-size:22px;color:#B8860B;font-weight:500}
+
+/* 导出面板 */
+.export-panel{background:#F8F5F0;border:1px solid #E8E4DE;border-radius:16px;padding:24px;margin-bottom:28px}
+.export-panel-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:500;color:#1D1B20;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.export-panel-title::before{content:'';display:inline-block;width:3px;height:16px;background:#064338;border-radius:2px}
+.export-options{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.export-option{display:flex;align-items:center;gap:8px;padding:12px 16px;border-radius:10px;border:1px solid #E8E4DE;background:#fff;cursor:pointer;transition:all 0.2s}
+.export-option:hover{border-color:#064338;background:#E8F2F0}
+.export-option.selected{border-color:#064338;background:#E8F2F0}
+.export-option input[type=radio]{accent-color:#064338}
+.export-option-label{font-size:13px;font-weight:500;color:#1D1B20}
+.export-option-desc{font-size:11px;color:#717171;margin-top:2px}
+
+.insight-box{background:#FDF9F2;border:1px solid #E8E4DE;border-radius:12px;padding:18px 22px;margin-bottom:24px}
+.insight-title{font-size:12px;font-weight:600;color:#064338;margin-bottom:8px}
+.insight-list{list-style:none;display:flex;flex-direction:column;gap:5px}
+.insight-list li{font-size:12px;color:#717171;padding-left:14px;position:relative}
+.insight-list li::before{content:'→';position:absolute;left:0;color:#F3C546}
+.empty-state{text-align:center;padding:80px 40px;color:#B0ABA5}
+.empty-state-icon{font-size:48px;margin-bottom:16px}
+.empty-state-title{font-family:'Playfair Display',serif;font-size:22px;color:#717171;margin-bottom:8px}
+.empty-state-desc{font-size:13px;line-height:1.6}
+.footer{background:#042E25;padding:28px 56px;display:flex;align-items:center;justify-content:space-between}
+.footer-brand{font-family:'Playfair Display',serif;font-size:18px;color:#F3C546}
+.footer-meta{font-size:12px;color:rgba(255,255,255,0.5)}
+.anom-red{background:#FDECEA!important;color:#C4433A!important;font-weight:600}
+    .anom-yellow{background:#FFF8DC!important;color:#B8860B!important;font-weight:600}
+    .small-text{font-size:10px;color:#717171}
+    .date-cell{font-size:11px}
+    .date-cell.warn{color:#C4433A;font-weight:600}
+    .date-cell.soon{color:#B8860B}
+    /* DMS修改对比样式 */
+    .dms-changed{color:#064338;font-weight:600}
+    .dms-old{font-size:10px;color:#B0ABA5;font-weight:400;margin-left:2px}
+    /* 冻结列表格容器 */
+    .table-wrap-frozen{overflow-x:auto;border-radius:12px;border:1px solid #E8E4DE;position:relative}
+    .table-frozen{width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
+    .table-frozen thead tr{background:#064338}
+    .table-frozen th{padding:11px 12px;text-align:left;color:#F3C546;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;position:sticky;top:0;z-index:2;background:#064338}
+    .table-frozen td{padding:9px 12px;border-bottom:1px solid #F0EDE8;color:#1D1B20;white-space:nowrap}
+    .table-frozen tr:last-child td{border-bottom:none}
+    .table-frozen tr:hover td{background:#F8F5F0}
+    .table-frozen tr.modified td{background:#FFFBEC!important}
+    .table-frozen tr.modified td:nth-child(2){border-left:3px solid #F3C546}
+    .table-frozen tr.selected td{background:#EDF5FF!important}
+    .table-frozen tr.selected.modified td{background:#FFF8DC!important}
+    /* 合计行（紧贴表头，固定在顶部） */
+    #filter-tfoot td{padding:6px 12px;font-size:11px;font-weight:600;color:#064338;border-bottom:2px solid #064338;white-space:nowrap;background:#F0EDE8;position:sticky;top:34px;z-index:2}
+    #filter-tfoot .col-freeze{background:#F0EDE8;z-index:4}
+    .sum-label{display:none}
+    .sum-val{font-family:'Playfair Display',serif;font-size:13px;color:#064338}
+    /* 冻结列（左侧固定） */
+    .col-freeze{position:sticky;z-index:3;background:#FDFCF9}
+    .col-freeze-0{left:0}
+    .col-freeze-1{left:40px}
+    .col-freeze-2{left:80px}
+    .col-freeze-3{left:120px}
+    .table-frozen thead .col-freeze{background:#064338;z-index:4}
+    .table-frozen tr:hover .col-freeze{background:#F8F5F0}
+    .table-frozen tr.modified .col-freeze{background:#FFFBEC!important}
+    .table-frozen tr.selected .col-freeze{background:#EDF5FF!important}
+    .table-frozen tr.selected.modified .col-freeze{background:#FFF8DC!important}
+    .col-freeze-shadow{box-shadow:3px 0 8px rgba(0,0,0,0.1)}
+    /* ══ 版本对比 Tab 样式 ══ */
+    .diff-banner{display:flex;align-items:center;gap:16px;background:#064338;border-radius:14px;padding:20px 28px;margin-bottom:28px;color:#fff}
+    .diff-banner-icon{font-size:32px}
+    .diff-banner-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:500;color:#F3C546}
+    .diff-banner-sub{font-size:12px;color:rgba(255,255,255,0.65);margin-top:4px}
+    .diff-banner-meta{margin-left:auto;font-size:12px;color:rgba(255,255,255,0.65);text-align:right;line-height:1.6}
+    .diff-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
+    .diff-card{border-radius:14px;padding:20px 24px;border:1px solid #E8E4DE;transition:all 0.2s}
+    .diff-card.clickable{cursor:pointer}
+    .diff-card.clickable:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(6,67,56,0.12)}
+    .diff-card.changed{background:#FFF8DC;border-color:#F3C546}
+    .diff-card.same{background:#E8F2F0;border-color:#064338}
+    .diff-card-label{font-size:11px;color:#717171;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
+    .diff-card-value{font-family:'Playfair Display',serif;font-size:36px;font-weight:500;color:#064338;line-height:1;margin-bottom:4px}
+    .diff-card.changed .diff-card-value{color:#B8860B}
+    .diff-card-sub{font-size:11px;color:#717171}
+    .diff-section{background:#FDFCF9;border:1px solid #E8E4DE;border-radius:14px;padding:20px 24px;margin-bottom:20px}
+    .diff-section-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:500;color:#1D1B20;margin-bottom:12px}
+    .diff-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+    .diff-chip{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:500;border:1px solid}
+    .diff-chip-added{background:#E8F5E9;color:#2E7D32;border-color:#A5D6A7}
+    .diff-chip-removed{background:#FDECEA;color:#C4433A;border-color:#FFCDD2}
+    .diff-chip-changed{background:#FFF8DC;color:#B8860B;border-color:#FFE082}
+    .diff-chip-same{background:#F0EDE8;color:#717171;border-color:#E8E4DE}
+    .diff-collapsible-header{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;padding:12px 0;border-bottom:1px solid #E8E4DE;margin-bottom:0}
+    .diff-collapsible-header:hover .diff-section-title{color:#064338}
+    .diff-collapse-icon{font-size:14px;color:#717171;transition:transform 0.2s;flex-shrink:0}
+    .diff-collapse-icon.open{transform:rotate(90deg)}
+    .diff-collapsible-body{overflow:hidden;transition:max-height 0.3s ease}
+    .diff-collapsible-body.collapsed{max-height:0!important}
+    .diff-filter-bar{background:#F8F5F0;border:1px solid #E8E4DE;border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .diff-filter-bar label{font-size:11px;font-weight:500;color:#717171;text-transform:uppercase;letter-spacing:0.5px}
+    .diff-filter-bar select{padding:6px 10px;border:1px solid #E8E4DE;border-radius:8px;font-family:'Poppins',sans-serif;font-size:12px;color:#1D1B20;background:#fff;outline:none}
+    .diff-filter-count{font-size:12px;color:#717171;margin-left:auto}
+    .diff-filter-count span{font-weight:600;color:#064338}
+    .diff-table-wrap{overflow-x:auto;border-radius:10px;border:1px solid #E8E4DE;margin-top:14px}
+    .diff-table{width:100%;border-collapse:collapse;font-size:12px}
+    .diff-table thead tr{background:#064338}
+    .diff-table th{padding:10px 12px;text-align:left;color:#F3C546;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap}
+    .diff-table td{padding:9px 12px;border-bottom:1px solid #F0EDE8;color:#1D1B20;white-space:nowrap}
+    .diff-table tr:last-child td{border-bottom:none}
+    .diff-table tr:hover td{background:#F8F5F0}
+    .diff-empty{text-align:center;color:#B0ABA5;padding:24px;font-size:12px}
+    .diff-tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600}
+    .diff-tag-added{background:#E8F5E9;color:#2E7D32}
+    .diff-tag-removed{background:#FDECEA;color:#C4433A}
+    .diff-tag-changed{background:#FFF8DC;color:#B8860B}
+    .row-added td{background:#F0FBF0!important}
+    .row-removed td{background:#FFF0F0!important}
+    .row-changed td{background:#FFFBEC!important}
+    .qty-up{color:#2E7D32;font-weight:600}
+    .qty-down{color:#C4433A;font-weight:600}
+    .qty-same{color:#717171}
+    /* MSKU完整显示 */
+    .msku-cell{font-family:monospace;font-size:10px;color:#1D1B20;white-space:nowrap}
+    .name-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:default}
+    /* 全局tooltip */
+    .cell-tooltip{position:fixed;background:#1D1B20;color:#fff;padding:6px 10px;border-radius:6px;font-size:11px;pointer-events:none;z-index:9999;display:none;max-width:320px;line-height:1.5;word-break:break-all}
+        /* ── 试算DMS 模态框 ── */
+        .sim-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px}
+        .sim-modal{background:#FDFCF9;border-radius:20px;width:100%;max-width:820px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(6,67,56,0.25);overflow:hidden}
+        .sim-modal-header{background:#064338;padding:20px 28px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+        .sim-modal-title{font-family:'Playfair Display',serif;font-size:18px;color:#F3C546;font-weight:500}
+        .sim-modal-subtitle{font-size:11px;color:rgba(255,255,255,0.6);margin-top:2px}
+        .sim-modal-close{background:none;border:none;color:rgba(255,255,255,0.7);font-size:20px;cursor:pointer;padding:4px 8px;border-radius:6px;line-height:1}
+        .sim-modal-close:hover{background:rgba(255,255,255,0.1);color:#fff}
+        .sim-modal-body{padding:24px 28px;overflow-y:auto;flex:1}
+        .sim-modal-footer{padding:16px 28px;border-top:1px solid #E8E4DE;display:flex;align-items:center;gap:12px;flex-shrink:0;background:#F8F5F0;flex-wrap:wrap}
+        .sim-input-row{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+        .sim-input-group{display:flex;flex-direction:column;gap:4px}
+        .sim-input-group label{font-size:11px;font-weight:500;color:#717171;text-transform:uppercase;letter-spacing:0.5px}
+        .sim-input{padding:8px 12px;border:1.5px solid #E8E4DE;border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;color:#1D1B20;background:#fff;outline:none;width:120px;transition:border-color 0.2s}
+        .sim-input:focus{border-color:#064338}
+        .sim-calc-btn{padding:9px 20px;border-radius:8px;background:#064338;color:#fff;font-family:'Poppins',sans-serif;font-size:13px;font-weight:500;border:none;cursor:pointer;transition:all 0.2s;white-space:nowrap}
+        .sim-calc-btn:hover{background:#042E25}
+        .sim-notice{background:#FFF8DC;border:1px solid #F3C546;border-radius:8px;padding:10px 14px;font-size:12px;color:#B8860B;margin-bottom:16px;line-height:1.5}
+        .sim-notice strong{color:#8B6914}
+        .sim-table-wrap{overflow-x:auto;border-radius:10px;border:1px solid #E8E4DE}
+        .sim-table{width:100%;border-collapse:collapse;font-size:12px}
+        .sim-table thead tr{background:#064338}
+        .sim-table th{padding:10px 12px;text-align:left;color:#F3C546;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap}
+        .sim-table td{padding:8px 12px;border-bottom:1px solid #F0EDE8;color:#1D1B20;white-space:nowrap}
+        .sim-table tr:last-child td{border-bottom:none}
+        .sim-table tr:hover td{background:#F8F5F0}
+        .sim-dms-new{font-weight:700;color:#064338;font-size:13px}
+        .sim-dms-old{font-size:10px;color:#B0ABA5;margin-left:4px}
+        .sim-ship-target{font-weight:600;color:#3F6BA6}
+        .sim-ship-orig{font-size:10px;color:#B0ABA5;margin-left:4px}
+        .sim-apply-all-btn{padding:9px 20px;border-radius:8px;background:#F3C546;color:#064338;font-family:'Poppins',sans-serif;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:all 0.2s}
+        .sim-apply-all-btn:hover{background:#e6b83a}
+        .sim-apply-sel-btn{padding:9px 20px;border-radius:8px;background:#fff;color:#064338;border:1.5px solid #064338;font-family:'Poppins',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s}
+        .sim-apply-sel-btn:hover{background:#E8F2F0}
+        .sim-cancel-btn{padding:9px 20px;border-radius:8px;background:transparent;color:#717171;border:1px solid #E8E4DE;font-family:'Poppins',sans-serif;font-size:13px;cursor:pointer;transition:all 0.2s}
+        .sim-cancel-btn:hover{background:#F0EDE8}
+        .sim-row-check{width:14px;height:14px;cursor:pointer;accent-color:#064338}
+        .sim-warn{color:#C4433A;font-size:11px}
+        .sim-ok{color:#064338;font-size:11px}
+        .sim-empty{text-align:center;padding:32px;color:#B0ABA5;font-size:13px}
+    
+    </style>
+</head>
+<body>
+<div class="gantt-tooltip" id="gantt-tooltip"></div>
+<div class="cell-tooltip" id="cell-tooltip"></div>
+<div class="page">
+
+<div class="hero">
+  <div class="hero-eyebrow">
+    <div class="hero-dot"></div>
+    <span class="hero-eyebrow-text">KovaScape · 供应链管理 · 决策总表面板 v8</span>
+  </div>
+  <div class="hero-title">决策总表分析</div>
+  <div class="hero-subtitle" id="hero-subtitle">请上传决策总表以加载数据</div>
+  <div class="hero-metrics">
+    <div class="hero-metric"><div class="hero-metric-value" id="m-total">—</div><div class="hero-metric-label">SKU 总数</div></div>
+    <div class="hero-metric"><div class="hero-metric-value red" id="m-urgent">—</div><div class="hero-metric-label">立即下单</div></div>
+    <div class="hero-metric"><div class="hero-metric-value orange" id="m-soon">—</div><div class="hero-metric-label">尽快下单</div></div>
+    <div class="hero-metric"><div class="hero-metric-value red" id="m-highrisk">—</div><div class="hero-metric-label">高风险 SKU</div></div>
+    <div class="hero-metric"><div class="hero-metric-value" id="m-reorder-skus">—</div><div class="hero-metric-label">有翻单需求</div></div>
+    <div class="hero-metric"><div class="hero-metric-value orange" id="m-reorder-total">—</div><div class="hero-metric-label">建议翻单总量</div></div>
+    <div class="hero-metric"><div class="hero-metric-value orange" id="m-modified">—</div><div class="hero-metric-label">已修改 DMS</div></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('tab-overview')">📊 总览看板</div>
+  <div class="tab" onclick="switchTab('tab-filter')">✏️ 数据筛选 &amp; DMS 编辑</div>
+  <div class="tab" onclick="switchTab('tab-gantt')">📅 在途甘特图</div>
+  <div class="tab" onclick="switchTab('tab-export')">📤 导出 &amp; 回传</div>
+  <div class="tab" onclick="switchTab('tab-compare')">🔄 版本对比</div>
+  <div class="tab" onclick="switchTab('tab-upload')">⬆️ 上传数据</div>
+</div>
+
+<!-- TAB 1: 总览看板 -->
+<div id="tab-overview" class="tab-content active">
+  <div id="overview-empty" class="empty-state">
+    <div class="empty-state-icon">📂</div>
+    <div class="empty-state-title">暂无数据</div>
+    <div class="empty-state-desc">请前往「上传数据」标签页上传决策总表<br>可同时上传 SKU 大表以补全商品名称和 SPU 品名</div>
+    <br><button class="btn btn-primary" onclick="switchTab('tab-upload')" style="margin-top:8px">前往上传 →</button>
+  </div>
+  <div id="overview-content" style="display:none">
+    <div class="insight-box"><div class="insight-title">⚡ 关键洞察</div><ul class="insight-list" id="insight-list"></ul></div>
+    <div class="section-title">库存总量概览</div>
+    <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat-card"><div class="stat-label">FBA 在库</div><div class="stat-value" id="s-fba-stock">—</div><div class="stat-sub">件 · 当前在亚马逊仓</div></div>
+      <div class="stat-card"><div class="stat-label">FBA 在途</div><div class="stat-value" id="s-fba-transit">—</div><div class="stat-sub">件 · 已发货在途中</div></div>
+      <div class="stat-card" id="card-domestic" onclick="quickFilterDomestic()" title="点击筛选国内仓有库存的SKU" style="cursor:pointer;transition:all 0.2s" onmouseenter="this.style.boxShadow='0 4px 16px rgba(6,67,56,0.15)';this.style.transform='translateY(-2px)'" onmouseleave="this.style.boxShadow='';this.style.transform=''"><div class="stat-label">国内成品仓 <span style="font-size:10px;color:#B0ABA5">点击筛选</span></div><div class="stat-value" id="s-domestic">—</div><div class="stat-sub">件 · 国内仓库存</div></div>
+      <div class="stat-card" id="card-fwd" onclick="quickFilterFwd()" title="点击筛选前置仓有库存的SKU" style="cursor:pointer;transition:all 0.2s" onmouseenter="this.style.boxShadow='0 4px 16px rgba(6,67,56,0.15)';this.style.transform='translateY(-2px)'" onmouseleave="this.style.boxShadow='';this.style.transform=''"><div class="stat-label">前置仓库存 <span style="font-size:10px;color:#B0ABA5">点击筛选</span></div><div class="stat-value" id="s-fwd-stock">—</div><div class="stat-sub">件 · 前置仓库存</div></div>
+      <div class="stat-card"><div class="stat-label">建议发运量</div><div class="stat-value orange" id="s-ship">—</div><div class="stat-sub">件 · 运营关心</div></div>
+      <div class="stat-card"><div class="stat-label">建议翻单量</div><div class="stat-value orange" id="s-reorder">—</div><div class="stat-sub">件 · 采购关心</div></div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-card-header"><div class="chart-card-title">紧急度分布</div><span id="urgency-total" style="font-size:11px;color:#717171"></span></div>
+        <div class="chart-card-body"><div class="bar-chart" id="urgency-chart"></div></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-header"><div class="chart-card-title">风险等级分布</div><span id="risk-total" style="font-size:11px;color:#717171"></span></div>
+        <div class="chart-card-body"><div class="bar-chart" id="risk-chart"></div></div>
+      </div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-card-header"><div class="chart-card-title">站点分布</div></div>
+        <div class="chart-card-body"><div class="bar-chart" id="site-chart"></div></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-header"><div class="chart-card-title">SPU 品名分布</div><span id="spu-mapped-count" style="font-size:11px;color:#717171"></span></div>
+        <div class="chart-card-body"><div class="bar-chart" id="spu-chart"></div></div>
+      </div>
+    </div>
+    <div class="section-title">🚨 立即下单 · 断货预警</div>
+    <div class="table-wrap">
+      <table><thead><tr>
+        <th>#</th><th>MSKU</th><th>SPU品名</th><th>商品名称</th><th>站点</th><th>负责人</th>
+        <th>风险</th><th>DMS(当前)</th><th>在库天数</th><th>在库+在途天数</th>
+        <th>FBA起始断货日</th><th>在途接力断货日</th><th>建议发运量</th><th>翻单工厂</th>
+      </tr></thead>
+      <tbody id="urgent-tbody"></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 2: 数据筛选 & DMS编辑 -->
+<div id="tab-filter" class="tab-content">
+  <div id="filter-empty" class="empty-state">
+    <div class="empty-state-icon">✏️</div>
+    <div class="empty-state-title">暂无数据</div>
+    <div class="empty-state-desc">请先上传决策总表</div>
+    <br><button class="btn btn-primary" onclick="switchTab('tab-upload')" style="margin-top:8px">前往上传 →</button>
+  </div>
+  <div id="filter-content" style="display:none">
+
+    <!-- 修改汇总栏 -->
+    <div class="edit-summary" id="edit-summary">
+      <div>
+        <div class="edit-summary-count" id="edit-count">0</div>
+        <div style="font-size:11px;color:#B8860B">条已修改</div>
+      </div>
+      <div class="edit-summary-text">DMS / 产品状态 / 允许出运 已修改，翻单量已实时重算</div>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button class="btn btn-gold btn-sm" onclick="switchTab('tab-export')">导出回传文件 →</button>
+        <button class="btn btn-secondary btn-sm" onclick="resetAllEdits()">重置全部修改</button>
+      </div>
+    </div>
+
+    <!-- 批量操作工具栏 -->
+    <div class="bulk-bar" id="bulk-bar">
+      <span class="bulk-bar-count">已选 <span id="bulk-count">0</span> 条</span>
+      <div class="bulk-bar-sep"></div>
+      <label>DMS 调整</label>
+      <select class="bulk-select" id="bulk-dms-op" style="width:90px">
+        <option value="set">设为固定值</option>
+        <option value="add">+固定值</option>
+        <option value="sub">-固定值</option>
+        <option value="pct_add">+百分比%</option>
+        <option value="pct_sub">-百分比%</option>
+      </select>
+      <input type="number" class="bulk-input" id="bulk-dms" placeholder="数值" step="0.1" min="0" style="width:70px">
+      <div class="bulk-bar-sep"></div>
+      <label>产品状态</label>
+      <select class="bulk-select" id="bulk-status">
+        <option value="">— 不修改 —</option>
+        <option value="常规品">常规品</option>
+        <option value="核心品">核心品</option>
+        <option value="清仓">清仓</option>
+      </select>
+      <div class="bulk-bar-sep"></div>
+      <label>允许出运</label>
+      <select class="bulk-select" id="bulk-allow-ship">
+        <option value="">— 不修改 —</option>
+        <option value="1">✅ 允许出运</option>
+        <option value="0">🚫 禁止出运</option>
+      </select>
+      <button class="bulk-apply-btn" onclick="applyBulkEdit()">批量应用</button>
+      <button class="bulk-clear-btn" onclick="clearSelection()">取消选择</button>
+          <div class="bulk-bar-sep"></div>
+          <button class="bulk-apply-btn" style="background:#3F6BA6;color:#fff" onclick="openSimModal()">🧮 试算DMS</button>
+        </div>
+
+    <div class="filter-bar">
+      <div class="filter-bar-title">多维筛选</div>
+      <div class="filter-grid">
+        <div class="filter-group"><label>SPU 品名</label><select id="f-spu" onchange="applyFilters()"><option value="">全部品名</option></select></div>
+        <div class="filter-group"><label>紧急度</label><select id="f-urgency" onchange="applyFilters()"><option value="">全部</option><option>立即下单</option><option>尽快下单</option><option>一般</option><option>充足</option></select></div>
+        <div class="filter-group"><label>风险等级</label><select id="f-risk" onchange="applyFilters()"><option value="">全部</option><option>高风险</option><option>中风险</option><option>低风险</option><option>安全</option><option value="__blank__">空白/未设置</option></select></div>
+        <div class="filter-group"><label>站点</label><select id="f-site" onchange="applyFilters()"><option value="">全部站点</option><option value="美国">🇺🇸 美国</option><option value="英国">🇬🇧 英国</option><option value="德国">🇩🇪 德国</option><option value="加拿大">🇨🇦 加拿大</option><option value="日本">🇯🇵 日本</option></select></div>
+        <div class="filter-group"><label>负责人</label><select id="f-owner" onchange="applyFilters()"><option value="">全部</option></select></div>
+        <div class="filter-group"><label>翻单工厂</label><select id="f-factory" onchange="applyFilters()"><option value="">全部工厂</option></select></div>
+        <div class="filter-group"><label>翻单需求</label><select id="f-reorder" onchange="applyFilters()"><option value="">全部</option><option value="yes">有翻单需求</option><option value="no">无翻单需求</option></select></div>
+        <div class="filter-group"><label>已修改</label><select id="f-modified" onchange="applyFilters()"><option value="">全部</option><option value="yes">仅已修改</option></select></div>
+        <div class="filter-group"><label>关键词</label><input type="text" id="f-keyword" placeholder="MSKU / 商品名..." oninput="applyFilters()"></div>
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-primary" onclick="applyFilters()">筛选</button>
+        <button class="btn btn-secondary" onclick="resetFilters()">重置筛选</button>
+        <button class="btn btn-sm" style="background:#E8F2F0;color:#064338;border:1px solid #064338" onclick="quickFilterDomestic()">🏭 国内仓有货</button>
+        <button class="btn btn-sm" style="background:#E8F2F0;color:#064338;border:1px solid #064338" onclick="quickFilterFwd()">📦 前置仓有货</button>
+        <div class="result-count">显示 <span id="result-count">0</span> / <span id="total-count">0</span> 条</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:12px;display:flex;align-items:center;gap:8px;font-size:12px;color:#717171;flex-wrap:wrap">
+      <span>💡 直接在表格中编辑</span>
+      <span style="background:#FFFBEC;border:1px solid #F3C546;padding:2px 8px;border-radius:4px;color:#B8860B">DMS</span>
+      <span>、</span>
+      <span style="background:#E8F2F0;border:1px solid #064338;padding:2px 8px;border-radius:4px;color:#064338">产品状态</span>
+      <span>、</span>
+      <span style="background:#E8F2F0;border:1px solid #064338;padding:2px 8px;border-radius:4px;color:#064338">允许出运</span>
+      <span>实时重算批量操作</span>
+    </div>
+
+    <div class="table-wrap-frozen">
+      <table id="main-table" class="table-frozen">
+        <thead><tr>
+          <th class="col-freeze col-freeze-0" style="width:40px"><input type="checkbox" id="select-all" onchange="toggleSelectAll(this)"></th>
+          <th class="col-freeze col-freeze-1" style="width:40px">#</th>
+          <th class="col-freeze col-freeze-2 col-freeze-shadow" style="min-width:180px">MSKU</th>
+          <th style="min-width:100px">SPU品名</th>
+          <th style="min-width:140px;display:none">商品名称</th><th>站点</th><th>负责人</th>
+          <th>紧急度</th><th>风险</th>
+          <th>系统DMS</th><th title="点击输入框可修改，修改后所有断货日和发运量实时重算">运营DMS ✏️</th>
+          <th>FBA在库</th><th>FBA在途</th>
+          <th title="国内成品仓库存（件）">国内仓</th><th title="前置仓库存（件）">前置仓</th>
+          <th>在库天数</th><th>在库+在途天数</th>
+          <th title="仅凭FBA在库维持销售的断货日">FBA起始断货日</th>
+          <th title="FBA在库+在途接力后的断货日（随DMS重算）">在途接力后断货日 🔄</th>
+          <th title="FBA在库+在途+已计划出运接力后的断货日（随DMS重算）">已计划出运断货日 🔄</th>
+          <th>已计划出运批次</th>
+          <th title="建议发运量（运营关心）= 目标需求 - 当前FBA在库/在途/已计划出运，随DMS重算">建议发运量 🔄</th>
+          <th title="国内仓发运量（件），匹配建议国内仓发运量_件">国内仓发运量</th>
+          <th title="前置仓发运量（件），匹配前置仓发运量_件">前置仓发运量</th>
+          <th>前置仓发运日</th><th>建议发运时间</th>
+          <th>产品状态 ✏️</th><th>允许出运 ✏️</th>
+        </tr>
+        <tr id="filter-tfoot"></tr>
+        </thead>
+        <tbody id="filter-tbody"></tbody>
+      </table>
+    </div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+</div>
+
+<!-- TAB 3: 甘特图 -->
+<div id="tab-gantt" class="tab-content">
+  <div id="gantt-empty" class="empty-state">
+    <div class="empty-state-icon">📅</div>
+    <div class="empty-state-title">暂无数据</div>
+    <div class="empty-state-desc">请先上传决策总表</div>
+    <br><button class="btn btn-primary" onclick="switchTab('tab-upload')" style="margin-top:8px">前往上传 →</button>
+  </div>
+  <div id="gantt-content" style="display:none">
+    <div class="filter-bar" style="margin-bottom:20px">
+      <div class="filter-bar-title">甘特图筛选</div>
+      <div class="filter-grid">
+        <div class="filter-group"><label>SPU 品名</label><select id="g-spu" onchange="renderGantt()"><option value="">全部</option></select></div>
+        <div class="filter-group"><label>站点</label><select id="g-site" onchange="renderGantt()"><option value="">全部</option><option value="美国">🇺🇸 美国</option><option value="英国">🇬🇧 英国</option><option value="德国">🇩🇪 德国</option><option value="加拿大">🇨🇦 加拿大</option><option value="日本">🇯🇵 日本</option></select></div>
+        <div class="filter-group"><label>负责人</label><select id="g-owner" onchange="renderGantt()"><option value="">全部</option></select></div>
+        <div class="filter-group"><label>仅显示有批次</label><select id="g-hasdata" onchange="renderGantt()"><option value="yes">是</option><option value="">否（全部）</option></select></div>
+        <div class="filter-group"><label>断货筛选</label><select id="g-stockout" onchange="renderGantt()"><option value="">全部</option><option value="14">⚠️ 14天内断货</option><option value="30">🟡 30天内断货</option><option value="60">60天内断货</option></select></div>
+        <div class="filter-group"><label>SKU 搜索</label><input type="text" id="g-sku-search" placeholder="输入MSKU关键词..." oninput="renderGantt()"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <button class="btn btn-danger btn-sm" onclick="ganttFilterStockout(14)">🚨 一键筛选14天断货</button>
+        <button class="btn btn-sm" style="background:#FFF8DC;color:#B8860B;border:1px solid #F3C546" onclick="ganttFilterStockout(30)">⚠️ 30天断货</button>
+        <button class="btn btn-secondary btn-sm" onclick="ganttClearStockout()">清除断货筛选</button>
+      </div>
+    </div>
+    <div class="gantt-legend">
+      <div class="gantt-legend-item"><div class="gantt-legend-dot" style="background:#064338"></div>FBA在库可售期</div>
+      <div class="gantt-legend-item"><div class="gantt-legend-dot" style="background:#3F6BA6"></div>FBA在途批次</div>
+      <div class="gantt-legend-item"><div class="gantt-legend-dot" style="background:#5B3FA6"></div>已计划出运批次</div>
+      <div class="gantt-legend-item"><div class="gantt-legend-dot" style="background:#C4433A"></div>建议翻单</div>
+      <div class="gantt-legend-item"><div class="gantt-legend-dot" style="background:#F3C546"></div>今日</div>
+    </div>
+    <div class="gantt-wrap" id="gantt-wrap"></div>
+  </div>
+</div>
+
+<!-- TAB 4: 导出 & 回传 -->
+<div id="tab-export" class="tab-content">
+  <div id="export-empty" class="empty-state">
+    <div class="empty-state-icon">📤</div>
+    <div class="empty-state-title">暂无数据</div>
+    <div class="empty-state-desc">请先上传决策总表</div>
+    <br><button class="btn btn-primary" onclick="switchTab('tab-upload')" style="margin-top:8px">前往上传 →</button>
+  </div>
+  <div id="export-content" style="display:none">
+    <div class="export-panel">
+      <div class="export-panel-title">选择导出范围</div>
+      <div class="export-options">
+        <label class="export-option selected" id="opt-all">
+          <input type="radio" name="export-scope" value="all" checked onchange="updateExportPreview()">
+          <div><div class="export-option-label">📋 全部数据</div><div class="export-option-desc">导出所有 SKU 的完整分析数据</div></div>
+        </label>
+        <label class="export-option" id="opt-modified">
+          <input type="radio" name="export-scope" value="modified" onchange="updateExportPreview()">
+          <div><div class="export-option-label">✏️ 仅已修改</div><div class="export-option-desc">仅导出修改过 DMS / 状态 / 出运的 SKU</div></div>
+        </label>
+        <label class="export-option" id="opt-filtered">
+          <input type="radio" name="export-scope" value="filtered" onchange="updateExportPreview()">
+          <div><div class="export-option-label">🔍 当前筛选结果</div><div class="export-option-desc">导出数据筛选页当前筛选结果</div></div>
+        </label>
+        <label class="export-option" id="opt-urgent">
+          <input type="radio" name="export-scope" value="urgent" onchange="updateExportPreview()">
+          <div><div class="export-option-label">🚨 立即下单</div><div class="export-option-desc">仅导出紧急度为「立即下单」的 SKU</div></div>
+        </label>
+      </div>
+      <div style="background:#E8F2F0;border-radius:8px;padding:12px 16px;font-size:13px;color:#064338;margin-bottom:16px">
+        预计导出 <strong id="export-preview-count">—</strong> 条记录
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="exportAnalysis()">📊 导出完整分析表（Excel）</button>
+        <button class="btn btn-gold" onclick="exportReturnTemplate()">🔄 导出回传模板（系统回传用）</button>
+        <button class="btn btn-secondary" onclick="exportDmsChangeLog()" id="btn-dms-log" style="border-color:#5B3FA6;color:#5B3FA6">📋 导出DMS修改记录</button>
+      </div>
+    </div>
+
+    <div class="section-title">回传模板说明</div>
+    <div style="background:#FDF9F2;border:1px solid #E8E4DE;border-radius:12px;padding:20px 24px;margin-bottom:24px">
+      <p style="font-size:13px;color:#1D1B20;margin-bottom:12px">回传模板包含以下字段，其中 <strong style="color:#064338">绿色字段</strong> 为可修改项：</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">
+        <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">ID（系统ID，只读）</div>
+        <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">MSKU（只读）</div>
+        <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">ERP SKU（只读）</div>
+        <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">ASIN（只读）</div>
+        <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">父ASIN（只读）</div>
+        <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">店铺ID（只读）</div>
+        <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">站点（只读）</div>
+        <div style="padding:8px 12px;border-radius:8px;background:#E8F2F0;font-size:12px;color:#064338;font-weight:600">✏️ 产品状态（常规品/核心品/清仓）</div>
+        <div style="padding:8px 12px;border-radius:8px;background:#E8F2F0;font-size:12px;color:#064338;font-weight:600">✏️ 运营预估DMS</div>
+        <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">等级（自动计算）</div>
+        <div style="padding:8px 12px;border-radius:8px;background:#E8F2F0;font-size:12px;color:#064338;font-weight:600">✏️ 是否允许出运（1=允许/0=禁止）</div>
+        <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">运营负责人（只读）</div>
+        <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">来源（固定为 excel）</div>
+        <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">备注（只读）</div>
+        <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">更新人（只读）</div>
+        <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">更新时间（自动填写）</div>
+      </div>
+    </div>
+
+    <div class="section-title">已修改 SKU 预览</div>
+    <div id="modified-preview-wrap">
+      <div style="text-align:center;padding:40px;color:#B0ABA5;font-size:13px">暂无修改记录</div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 5: 版本对比 -->
+<div id="tab-compare" class="tab-content">
+  <!-- 空状态 -->
+  <div id="compare-empty" class="empty-state">
+    <div class="empty-state-icon">🔄</div>
+    <div class="empty-state-title">暂无对比数据</div>
+    <div class="empty-state-desc">请前往「上传数据」标签页，分别上传<strong>上次决策总表</strong>和<strong>本次决策总表</strong><br>系统将自动对比两版之间的变化</div>
+    <br><button class="btn btn-primary" onclick="switchTab('tab-upload')" style="margin-top:8px">前往上传 →</button>
+  </div>
+  <div id="compare-content" style="display:none">
+    <!-- banner -->
+    <div class="diff-banner">
+      <div class="diff-banner-icon">🔄</div>
+      <div>
+        <div class="diff-banner-title">决策版本对比</div>
+        <div class="diff-banner-sub">对比上次与本次决策总表的差异，快速定位变化</div>
+      </div>
+      <div class="diff-banner-meta" id="diff-banner-meta">—</div>
+    </div>
+    <!-- 汇总卡片 -->
+    <div class="diff-summary-grid" id="diff-summary-grid"></div>
+    <!-- 导出按钮 -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;padding:14px 18px;background:#F8F5F0;border-radius:10px;border:1px solid #E8E4DE">
+      <div style="flex:1;font-size:13px;font-weight:500;color:#1D1B20">📋 对比结果支持导出 Excel，包含所有对比维度</div>
+      <button class="btn btn-gold" onclick="exportDecCompareExcel()">📥 导出对比结果 Excel</button>
+    </div>
+    <!-- 筛选器 -->
+    <div class="diff-filter-bar" id="diff-filter-bar">
+      <label>筛选：</label>
+      <label>站点</label>
+      <select id="df-site" onchange="applyDecDiffFilters()"><option value="">全部站点</option></select>
+      <label>负责人</label>
+      <select id="df-owner" onchange="applyDecDiffFilters()"><option value="">全部</option></select>
+      <label>变化类型</label>
+      <select id="df-change-type" onchange="applyDecDiffFilters()">
+        <option value="">全部</option>
+        <option value="added">新增SKU</option>
+        <option value="removed">移除SKU</option>
+        <option value="changed">翻单变化</option>
+      </select>
+      <div class="diff-filter-count" id="diff-filter-count">共 <span>0</span> 条记录</div>
+    </div>
+    <!-- SKU变化区块 -->
+    <div class="diff-section" id="diff-sku-section">
+      <div class="diff-collapsible-header" onclick="toggleDiffSection('sku-body','sku-icon')">
+        <div class="diff-section-title" style="margin-bottom:0;flex:1">SKU 变化（新增 / 移除 / 翻单量变化）</div>
+        <span class="diff-collapse-icon open" id="sku-icon">▶</span>
+        <span style="font-size:11px;color:#717171;margin-left:4px">点击折叠</span>
+      </div>
+      <div class="diff-chips" id="diff-sku-chips" style="margin-top:12px"></div>
+      <div class="diff-collapsible-body" id="sku-body" style="max-height:2000px">
+        <div class="diff-table-wrap">
+          <table class="diff-table">
+            <thead><tr>
+              <th>变化</th><th>MSKU</th><th>SPU品名</th><th>商品名称</th><th>站点</th><th>负责人</th>
+              <th>上次翻单量</th><th>本次翻单量</th><th>翻单变化</th><th>上次紧急度</th><th>本次紧急度</th>
+            </tr></thead>
+            <tbody id="diff-sku-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- 站点维度区块 -->
+    <div class="diff-section" id="diff-site-section">
+      <div class="diff-collapsible-header" onclick="toggleDiffSection('site-body','site-icon')">
+        <div class="diff-section-title" style="margin-bottom:0;flex:1">站点维度汇总</div>
+        <span class="diff-collapse-icon" id="site-icon">▶</span>
+        <span style="font-size:11px;color:#717171;margin-left:4px">点击展开</span>
+      </div>
+      <div class="diff-chips" id="diff-site-chips" style="margin-top:12px"></div>
+      <div class="diff-collapsible-body collapsed" id="site-body" style="max-height:0">
+        <div class="diff-table-wrap">
+          <table class="diff-table">
+            <thead><tr><th>站点</th><th>上次SKU数</th><th>本次SKU数</th><th>SKU变化</th><th>上次翻单总量</th><th>本次翻单总量</th><th>翻单变化</th></tr></thead>
+            <tbody id="diff-site-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <!-- 工厂维度区块 -->
+    <div class="diff-section" id="diff-factory-section">
+      <div class="diff-collapsible-header" onclick="toggleDiffSection('factory-body','factory-icon')">
+        <div class="diff-section-title" style="margin-bottom:0;flex:1">翻单工厂变化</div>
+        <span class="diff-collapse-icon" id="factory-icon">▶</span>
+        <span style="font-size:11px;color:#717171;margin-left:4px">点击展开</span>
+      </div>
+      <div class="diff-chips" id="diff-factory-chips" style="margin-top:12px"></div>
+      <div class="diff-collapsible-body collapsed" id="factory-body" style="max-height:0">
+        <div class="diff-table-wrap">
+          <table class="diff-table">
+            <thead><tr><th>工厂</th><th>上次SKU数</th><th>本次SKU数</th><th>上次翻单量</th><th>本次翻单量</th><th>翻单变化</th></tr></thead>
+            <tbody id="diff-factory-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 6: 上传数据 -->
+<div id="tab-upload" class="tab-content">
+  <div class="section-title">上传数据文件</div>
+  <div id="sku-map-status-bar" class="sku-map-status empty">
+    <div class="sku-map-dot gray" id="sku-map-dot"></div>
+    <span id="sku-map-status-text">SKU大表未加载 · 商品名称将使用决策表原始数据</span>
+  </div>
+  <div class="upload-two-col">
+    <div>
+      <div class="upload-card" id="upload-card-dec"
+           onclick="document.getElementById('file-input-dec').click()"
+           ondragover="event.preventDefault();this.classList.add('drag-over')"
+           ondragleave="this.classList.remove('drag-over')"
+           ondrop="handleDropDec(event)">
+        <div class="upload-card-badge badge-required" id="badge-dec">必须上传</div>
+        <div class="upload-icon">📊</div>
+        <div class="upload-title">决策总表</div>
+        <div class="upload-desc">支持 .csv / .xlsx 格式<br>需包含「负责人」「MSKU」「紧急度」等字段</div>
+        <div class="upload-hint">CSV 自动跳过第2行（名词解释）和第3行（计算公式）</div>
+        <input type="file" id="file-input-dec" accept=".csv,.xlsx,.xls" onchange="handleFileUploadDec(event)" style="display:none">
+      </div>
+      <div class="upload-status" id="upload-status-dec"></div>
+    </div>
+    <div>
+      <div class="upload-card optional" id="upload-card-sku"
+           onclick="document.getElementById('file-input-sku').click()"
+           ondragover="event.preventDefault();this.classList.add('drag-over')"
+           ondragleave="this.classList.remove('drag-over')"
+           ondrop="handleDropSku(event)">
+        <div class="upload-card-badge badge-optional" id="badge-sku">可选上传</div>
+        <div class="upload-icon">🗂️</div>
+        <div class="upload-title">SKU 大表</div>
+        <div class="upload-desc">支持 .xlsx 格式<br>读取「1_ SKU大表」Sheet 中的 MSKU → 品名 + SPU品名 映射</div>
+        <div class="upload-hint">上传后可按 SPU 品名筛选，并补全决策表中缺失的商品名称</div>
+        <input type="file" id="file-input-sku" accept=".xlsx,.xls" onchange="handleFileUploadSku(event)" style="display:none">
+      </div>
+      <div class="upload-status" id="upload-status-sku"></div>
+    </div>
+  </div>
+
+  <!-- 排产交期上传卡片（独立一行，宽度与上方两列对齐） -->
+  <div id="prod-ship-status-bar" class="sku-map-status empty" style="margin-top:4px">
+    <div class="sku-map-dot gray" id="prod-ship-dot"></div>
+    <span id="prod-ship-status-text">排产交期未加载 · 甘特图将使用决策表建议发运时间（AR列）</span>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px">
+    <div>
+      <div class="upload-card optional" id="upload-card-prod"
+           onclick="document.getElementById('file-input-prod').click()"
+           ondragover="event.preventDefault();this.classList.add('drag-over')"
+           ondragleave="this.classList.remove('drag-over')"
+           ondrop="handleDropProd(event)">
+        <div class="upload-card-badge badge-optional" id="badge-prod">可选上传</div>
+        <div class="upload-icon">🏭</div>
+        <div class="upload-title">排产翻单表</div>
+        <div class="upload-desc">支持 .xlsx 格式<br>读取「采购单明细」Sheet 中 MSKU → AD列（预期发货日）映射</div>
+        <div class="upload-hint">上传后甘特图建议发运日期将替换为工厂实际交期，覆盖范围预测更准确</div>
+        <input type="file" id="file-input-prod" accept=".xlsx,.xls" onchange="handleFileUploadProd(event)" style="display:none">
+      </div>
+      <div class="upload-status" id="upload-status-prod"></div>
+    </div>
+    <div style="display:flex;align-items:center;padding:20px 24px;background:#F8F5F0;border-radius:16px;border:1px solid #E8E4DE">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:#064338;margin-bottom:8px">📌 联动说明</div>
+        <div style="font-size:12px;color:#717171;line-height:1.8">
+          <div>• 决策面板先出，甘特图用 <strong>AR列建议发运时间</strong> 作乐观估计</div>
+          <div>• 排产面板出来后（约3-5天），上传排产翻单表</div>
+          <div>• 系统自动用 <strong>AD列预期发货日</strong> 替换甘特图发运节点</div>
+          <div>• 替换后甘特图变为「实际交期版」，覆盖范围预测更准确</div>
+          <div style="margin-top:6px;color:#C4433A;font-size:11px">⚠ 若某 MSKU 在排产表中无匹配，保留原建议发运日期</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 上次决策总表对比上传（独立一行） -->
+  <div id="prev-dec-status-bar" class="sku-map-status empty" style="margin-top:4px">
+    <div class="sku-map-dot gray" id="prev-dec-dot"></div>
+    <span id="prev-dec-status-text">上次决策总表未加载 · 上传后可在「版本对比」Tab查看变化</span>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px">
+    <div>
+      <div class="upload-card optional" id="upload-card-prev-dec"
+           onclick="document.getElementById('file-input-prev-dec').click()"
+           ondragover="event.preventDefault();this.classList.add('drag-over')"
+           ondragleave="this.classList.remove('drag-over')"
+           ondrop="handleDropPrevDec(event)">
+        <div class="upload-card-badge badge-optional" id="badge-prev-dec">可选上传</div>
+        <div class="upload-icon">🔄</div>
+        <div class="upload-title">上次决策总表</div>
+        <div class="upload-desc">支持 .csv / .xlsx 格式<br>上传后与本次决策总表自动对比，显示SKU和翻单量变化</div>
+        <div class="upload-hint">CSV 自动跳过第2行（名词解释）和第3行（计算公式）</div>
+        <input type="file" id="file-input-prev-dec" accept=".csv,.xlsx,.xls" onchange="handleFileUploadPrevDec(event)" style="display:none">
+      </div>
+      <div class="upload-status" id="upload-status-prev-dec"></div>
+    </div>
+    <div style="display:flex;align-items:center;padding:20px 24px;background:#F8F5F0;border-radius:16px;border:1px solid #E8E4DE">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:#064338;margin-bottom:8px">📌 版本对比说明</div>
+        <div style="font-size:12px;color:#717171;line-height:1.8">
+          <div>• 上传上次决策总表作为对比基准</div>
+          <div>• 系统自动对比 SKU 增减、翻单量变化、紧急度变化</div>
+          <div>• 支持按站点、负责人、变化类型筛选</div>
+          <div>• 对比结果可导出 Excel（含站点汇总、工厂汇总）</div>
+          <div style="margin-top:6px;color:#064338;font-size:11px">✅ 上传本次决策总表后自动触发对比</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="upload-preview" style="display:none">
+    <div class="section-title" style="margin-top:8px">上传数据预览（前20条）</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px" id="upload-stats"></div>
+    <div class="table-wrap">
+      <table><thead><tr>
+        <th>#</th><th>MSKU</th><th>SPU品名</th><th>商品名称</th><th>站点</th><th>负责人</th>
+        <th>紧急度</th><th>风险</th><th>系统DMS</th><th>FBA在库</th><th>FBA在途</th><th>在库天数</th><th>建议翻单量</th><th>翻单工厂</th>
+      </tr></thead>
+      <tbody id="upload-tbody"></tbody></table>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:12px">
+      <button class="btn btn-primary" onclick="applyUploadedData()">✅ 应用此数据</button>
+      <button class="btn btn-secondary" onclick="cancelUpload()">取消</button>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <div class="footer-brand">KovaScape</div>
+  <div class="footer-meta" id="footer-meta">决策总表分析面板 v5 · 请上传数据</div>
+</div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// 全局状态
+// ══════════════════════════════════════════
+// ══════════════════════════════════════════
+    // ⚙️ 运营人员配置 — 加新人只需在此数组添加名字
+    // ══════════════════════════════════════════
+    const ALLOWED_OWNERS = ['王祎', '化一博'];
+
+    let ALL_DATA = [];
+    let filteredData = [];
+    let currentPage = 1;
+    const PAGE_SIZE = 50;
+    let pendingData = null;
+    let skuMap = {};
+    let skuMapLoaded = false;
+    // 快速筛选状态：国内仓 / 前置仓
+    let filterDomesticActive = false;
+    let filterFwdActive = false;
+
+// 排产交期映射：{ msku: 'YYYY-MM-DD' }（来自排产翻单表 AD列）
+let prodShipMap = {};
+let prodShipLoaded = false;
+
+// 编辑状态存储：{ msku: { dms_override, prod_status, allow_ship } }
+let editMap = {};
+
+// 选中状态：Set of msku
+let selectedMskus = new Set();
+
+// ══════════════════════════════════════════
+// DMS 重算逻辑
+// ══════════════════════════════════════════
+function getEffectiveDMS(r) {
+  const edit = editMap[r.msku];
+  if (edit && edit.dms_override !== undefined && edit.dms_override !== null && edit.dms_override !== '') {
+    return parseFloat(edit.dms_override) || r.dms;
+  }
+  return r.dms;
+}
+
+function recalcRow(r, _dmsOverrideForSim) {
+  const dms = _dmsOverrideForSim !== undefined ? _dmsOverrideForSim : getEffectiveDMS(r);
+  if (!dms || dms <= 0) return r;
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x.toISOString().slice(0,10); };
+
+  // ── 断货日计算（随DMS重算，逐批次接力）──
+      const days_stock = Math.floor(r.fba_stock / dms);
+      const stockout1  = addDays(today, days_stock);
+
+      // 解析批次字符串，返回 [{qty, eta}] 按ETA升序
+      function parseBatches(str) {
+        if (!str || str === '—' || str.trim() === '' || str === 'nan') return [];
+        const batches = [];
+        str.split(/[;；]/).forEach(part => {
+          const m = part.trim().match(/(\d+)件?@(\d{2}-\d{2})/);
+          if (m) {
+            const qty = parseInt(m[1]);
+            const [mo, dy] = m[2].split('-').map(Number);
+            // 推断年份：若该日期已过今天，则用明年
+            const thisYear = today.getFullYear();
+            let d = new Date(thisYear, mo - 1, dy);
+            if (d < today) d = new Date(thisYear + 1, mo - 1, dy);
+            batches.push({ qty, eta: d });
+          }
+        });
+        batches.sort((a, b) => a.eta - b.eta);
+        return batches;
+      }
+
+      // 逐批次接力计算断货日
+      function calcRelayStockout(startDate, startQty, batches) {
+        let stockoutDate = addDays(new Date(startDate), Math.floor(startQty / dms));
+        for (const b of batches) {
+          const prevSO = new Date(stockoutDate);
+          const relayStart = b.eta > prevSO ? b.eta : prevSO;
+          stockoutDate = addDays(relayStart, Math.floor(b.qty / dms));
+        }
+        return stockoutDate;
+      }
+
+      // stockout2：FBA在库 + 在途批次逐批接力
+      const transitBatches = parseBatches(r.transit_batches);
+      const stockout2_calc = calcRelayStockout(today, r.fba_stock, transitBatches);
+
+      // stockout3：在 stockout2 基础上，继续接力已计划出运批次
+      const plannedBatches = parseBatches(r.planned_batches);
+      const stockout3_calc = calcRelayStockout(new Date(stockout2_calc), 0, plannedBatches);
+
+      // days_transit / days_planned：保持向后兼容（用于表格显示）
+      const days_transit = Math.round((new Date(stockout2_calc) - today) / 86400000);
+      const days_planned = Math.round((new Date(stockout3_calc) - today) / 86400000);
+
+  // ── 基础参数 ──
+  const lead_time   = r.lead_time   || 105;
+  const target_days = r.target_days || (lead_time + 58);
+  const domestic    = r.domestic    || 0;
+  const fwd_stock   = r.fwd_stock   || 0;
+  // 装箱入数：原表优先，原表为空/≤1时用SKU大表兜底，最终fallback 1
+  const box_size    = (r.box_reorder && r.box_reorder > 1) ? r.box_reorder : 1;
+
+  // ── 安全库存反推（固定，不随DMS变化）──
+  const orig_target_demand = r.target_demand || 0;
+  const orig_dms = r.dms || dms;
+  const safety_stock = Math.max(0, orig_target_demand - target_days * orig_dms);
+
+  // ── 解析在途批次和已计划出运批次（汇总所有批次总量）──
+  function parseTotalQty(str) {
+    if (!str || str === '—' || str.trim() === '' || str === 'nan') return 0;
+    let total = 0;
+    str.split(/[;；]/).forEach(part => {
+      const m = part.trim().match(/(\d+)件?@/);
+      if (m) total += parseInt(m[1]);
+    });
+    return total;
+  }
+
+  // ── 解析在途最早到货日 eta（距今天的天数，动态基准）──
+      function parseEtaDays(batchStr) {
+        const matches = [...(batchStr || '').matchAll(/@(\d{2}-\d{2})/g)];
+        if (!matches.length) return 0;
+        let minDays = Infinity;
+        for (const m of matches) {
+          const [mo, dy] = m[1].split('-').map(Number);
+          // 推断年份：日期已过今天则用明年
+          const thisYear = today.getFullYear();
+          let d = new Date(thisYear, mo - 1, dy);
+          if (d < today) d = new Date(thisYear + 1, mo - 1, dy);
+          const days = Math.round((d - today) / 86400000);
+          if (days < minDays) minDays = days;
+        }
+        return minDays === Infinity ? 0 : Math.max(0, minDays);
+      }
+
+      const transit_qty = parseTotalQty(r.transit_batches);
+      const planned_qty = parseTotalQty(r.planned_batches);
+      const eta = parseEtaDays(r.transit_batches);
+
+  // ── 近段/远段分界（基于在途最早到货日 eta）──
+  // 近段：[eta, eta+45]，固定45天窗口
+  // 远段：[eta+45, target_day]
+  const near_demand = 45 * dms;
+  const far_start   = eta + 45;
+  const far_demand  = Math.max(0, target_days - far_start) * dms;
+
+  // 在途覆盖近段的量
+  const near_transit_qty  = Math.min(transit_qty, near_demand);
+  // 在途剩余（覆盖近段后）
+  const transit_remaining = Math.max(0, transit_qty - near_transit_qty);
+  // 近段缺口（在途不够覆盖近段时）
+  const near_gap = Math.max(0, near_demand - near_transit_qty);
+
+  // ── 建议翻单量（采购关心）──
+  // 翻单_raw = 远段需求 - max(在途剩余, 近段缺口 + 安全库存) - 国内仓 - 在产
+  const fba_after_eta = Math.max(0, (r.fba_stock || 0) - eta * dms);
+  const deduction = Math.max(transit_remaining, near_gap + safety_stock);
+  const gap_reorder_raw = Math.max(0, far_demand - deduction - domestic - fba_after_eta - planned_qty);
+
+  let suggest_reorder = 0;
+  if (gap_reorder_raw > 0) {
+    // 守卫规则①：翻单<10件 且 短缺天数<7天 → 归零
+    const shortage_days = dms > 0 ? gap_reorder_raw / dms : 0;
+    if (gap_reorder_raw < 10 && shortage_days < 7) {
+      suggest_reorder = 0;
+    }
+    // 守卫规则②：翻单<10件 且 短缺天数≥7天 → 补到最小起订量
+    else if (gap_reorder_raw < 10 && shortage_days >= 7) {
+      const min_order = Math.max(10, box_size);
+      suggest_reorder = box_size > 1 ? Math.ceil(min_order / box_size) * box_size : min_order;
+    }
+    // 正常情况：装箱取整（ceil）
+    else {
+      suggest_reorder = box_size > 1 ? Math.ceil(gap_reorder_raw / box_size) * box_size : Math.round(gap_reorder_raw);
+    }
+  }
+
+  // ── 建议发运量（运营关心）= 国内仓 + 在产 + 翻单 ──
+  // 目标需求 = target_days × DMS + safety_stock
+  const target_demand_new = target_days * dms + safety_stock;
+  // 已有库存（FBA在库 + 在途 + 已计划出运）
+  const existing_supply = r.fba_stock + transit_qty + planned_qty;
+  const raw_ship_gap = Math.max(0, target_demand_new - existing_supply);
+
+  // 国内仓可发运部分
+  const dom_ship = Math.min(domestic, raw_ship_gap);
+
+  // 各来源分别取整（国内仓用round，翻单用ceil）
+  const dom_ship_rounded = box_size > 1 ? Math.round(dom_ship / box_size) * box_size : dom_ship;
+  const reorder_rounded  = suggest_reorder; // 翻单已在上方取整
+
+  const suggest_ship = Math.round(dom_ship_rounded + reorder_rounded);
+
+  // ── 前置仓发运：直接使用决策表原始数据（r.fwd_ship_qty），不在面板重算 ──
+
+      return {
+        ...r,
+        days_stock, days_transit, days_planned,
+        stockout1, stockout2_calc, stockout3_calc,
+        suggest_reorder, suggest_ship,
+        _dms_effective: dms
+      };
+}
+
+// ══════════════════════════════════════════
+// 编辑操作
+// ══════════════════════════════════════════
+function onDmsChange(msku, val) {
+  if (!editMap[msku]) editMap[msku] = {};
+  editMap[msku].dms_override = val === '' ? null : parseFloat(val);
+  updateEditSummary();
+  updateHeroModified();
+  // 局部更新：只刷新该行的计算字段，不重渲染整个表格（避免滚动位置重置）
+  patchRowCalc(msku);
+}
+
+// 局部更新某行的计算字段（DMS修改后调用，保持滚动位置）
+function patchRowCalc(msku) {
+  const r = ALL_DATA.find(x => x.msku === msku);
+  if (!r) return;
+  const rc = recalcRow(r);
+  const dms = getEffectiveDMS(r);
+  const edit = editMap[msku] || {};
+  const dmsOverridden = edit.dms_override !== undefined && edit.dms_override !== null;
+  const modified = isModified(msku);
+
+  // 找到该行（通过 data-msku 属性）
+  const tr = document.querySelector(`tr[data-msku="${CSS.escape(msku)}"]`);
+  if (!tr) { renderFilterTable(); return; } // 找不到行时降级为全量渲染
+
+  // 更新 tr 的 class
+  const selected = selectedMskus.has(msku);
+  let trClass = '';
+  if (selected && modified) trClass = 'selected modified';
+  else if (selected) trClass = 'selected';
+  else if (modified) trClass = 'modified';
+  tr.className = trClass;
+
+  // 更新 DMS 输入框样式（overridden 状态）
+  const dmsInput = tr.querySelector('.dms-input');
+  if (dmsInput) {
+    dmsInput.className = 'dms-input' + (dmsOverridden ? ' overridden' : '');
+    // 更新重置按钮
+    const dmsCell = tr.querySelector('.dms-cell');
+    if (dmsCell) {
+      const existingReset = dmsCell.querySelector('.dms-reset');
+      if (dmsOverridden && !existingReset) {
+        const btn = document.createElement('button');
+        btn.className = 'dms-reset';
+        btn.title = '重置为系统值';
+        btn.textContent = '✕';
+        btn.onclick = () => resetDms(msku);
+        dmsCell.appendChild(btn);
+      } else if (!dmsOverridden && existingReset) {
+        existingReset.remove();
+      }
+    }
+  }
+
+  // 更新各计算列（按列索引定位）
+  const tds = tr.querySelectorAll('td');
+  // 列顺序：0=checkbox,1=序号,2=msku,3=spu,4=name(hidden),5=site,6=owner,7=urgency,8=risk,
+  //         9=dms_sys,10=dms_input,11=fba_stock,12=fba_transit,13=domestic,14=fwd_stock,
+  //         15=days_stock,16=days_transit,17=so1,18=so2,19=so3,
+  //         20=planned_batches,21=suggest_ship,22=dom_ship_qty,23=fwd_ship_qty,
+  //         24=fwd_ship,25=ship_time,...
+  if (tds.length < 25) { renderFilterTable(); return; }
+
+  // days_stock (col 15)
+  tds[15].textContent = rc.days_stock;
+  tds[15].className = rc.days_stock === 0 ? 'anom-red' : rc.days_stock < 30 ? 'anom-yellow' : '';
+
+  // days_transit (col 16)
+  tds[16].textContent = rc.days_transit;
+  tds[16].className = rc.days_transit < 30 ? 'anom-yellow' : '';
+
+  // stockout1 (col 17) - FBA断货日（随DMS重算）
+  const so1 = rc.stockout1 || '—';
+  tds[17].textContent = so1;
+  tds[17].className = stockoutClass(so1);
+
+  // stockout2 (col 18) - 在途接力断货日（随DMS重算）
+  const so2_new = rc.stockout2_calc || '—';
+  tds[18].textContent = so2_new;
+  tds[18].className = stockoutClass(so2_new);
+
+  // stockout3 (col 19) - 已计划出运断货日（随DMS重算）
+  const so3_new = rc.stockout3_calc || '—';
+  tds[19].textContent = so3_new;
+  tds[19].className = stockoutClass(so3_new);
+
+  // suggest_ship (col 21) - 建议发运量
+  // 未改DMS：显示原始值（公司AI算好的）；改了DMS：显示估算值并标注
+  if (dmsOverridden) {
+    const newShip = rc.suggest_ship || 0;
+    tds[21].innerHTML = `<span class="dms-changed">${newShip} <span class="dms-old" title="未改DMS时以公司系统原始值为准">⚠️估算</span></span>`;
+  } else {
+    tds[21].textContent = r.suggest_ship || 0;
+  }
+
+  // suggest_reorder (col 22) - 建议翻单量
+  // 未改DMS：显示原始值（公司AI算好的）；改了DMS：显示估算值并标注
+  if (dmsOverridden) {
+    const newReorder = rc.suggest_reorder || 0;
+    tds[22].innerHTML = `<strong class="dms-changed">${newReorder} <span class="dms-old" title="未改DMS时以公司系统原始值为准">⚠️估算</span></strong>`;
+  } else {
+    tds[22].innerHTML = `<strong>${r.suggest_reorder || 0}</strong>`;
+  }
+}
+
+function onStatusChange(msku, val) {
+  if (!editMap[msku]) editMap[msku] = {};
+  editMap[msku].prod_status = val;
+  updateEditSummary();
+  updateHeroModified();
+}
+
+function onAllowShipChange(msku, val) {
+  if (!editMap[msku]) editMap[msku] = {};
+  editMap[msku].allow_ship = val ? 1 : 0;
+  updateEditSummary();
+  updateHeroModified();
+  renderFilterTable();
+}
+
+function resetDms(msku) {
+  if (editMap[msku]) {
+    delete editMap[msku].dms_override;
+    if (Object.keys(editMap[msku]).length === 0) delete editMap[msku];
+  }
+  updateEditSummary();
+  renderFilterTable();
+  updateHeroModified();
+}
+
+function resetAllEdits() {
+  if (!confirm('确认重置所有修改？')) return;
+  editMap = {};
+  updateEditSummary();
+  renderFilterTable();
+  updateHeroModified();
+}
+
+function isModified(msku) {
+  const e = editMap[msku];
+  if (!e) return false;
+  return (e.dms_override !== undefined && e.dms_override !== null) ||
+         e.prod_status !== undefined || e.allow_ship !== undefined;
+}
+
+function getModifiedCount() {
+  return Object.keys(editMap).filter(k => isModified(k)).length;
+}
+
+function updateEditSummary() {
+  const cnt = getModifiedCount();
+  const el = document.getElementById('edit-summary');
+  const countEl = document.getElementById('edit-count');
+  if (cnt > 0) {
+    el.classList.add('visible');
+    countEl.textContent = cnt;
+  } else {
+    el.classList.remove('visible');
+  }
+}
+
+function updateHeroModified() {
+  const cnt = getModifiedCount();
+  document.getElementById('m-modified').textContent = cnt > 0 ? cnt : '—';
+}
+
+// ══════════════════════════════════════════
+// 批量操作
+// ══════════════════════════════════════════
+function toggleSelectAll(cb) {
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageData = filteredData.slice(start, start + PAGE_SIZE);
+  pageData.forEach(r => {
+    if (cb.checked) selectedMskus.add(r.msku);
+    else selectedMskus.delete(r.msku);
+  });
+  renderFilterTable();
+  updateBulkBar();
+}
+
+function toggleRowSelect(msku, checked) {
+  if (checked) selectedMskus.add(msku);
+  else selectedMskus.delete(msku);
+  updateBulkBar();
+  // 更新全选框状态
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageData = filteredData.slice(start, start + PAGE_SIZE);
+  const allSelected = pageData.length > 0 && pageData.every(r => selectedMskus.has(r.msku));
+  const selectAll = document.getElementById('select-all');
+  if (selectAll) selectAll.checked = allSelected;
+}
+
+function updateBulkBar() {
+  const cnt = selectedMskus.size;
+  const bar = document.getElementById('bulk-bar');
+  const countEl = document.getElementById('bulk-count');
+  countEl.textContent = cnt;
+  if (cnt > 0) bar.classList.add('visible');
+  else bar.classList.remove('visible');
+}
+
+function clearSelection() {
+  selectedMskus.clear();
+  updateBulkBar();
+  renderFilterTable();
+}
+
+function applyBulkEdit() {
+  if (selectedMskus.size === 0) { alert('请先勾选要修改的行'); return; }
+  const dmsVal = document.getElementById('bulk-dms').value.trim();
+  const dmsOp = document.getElementById('bulk-dms-op').value;
+  const statusVal = document.getElementById('bulk-status').value;
+  const allowShipVal = document.getElementById('bulk-allow-ship').value;
+
+  if (!dmsVal && !statusVal && !allowShipVal) {
+    alert('请至少填写一项要批量修改的内容');
+    return;
+  }
+
+  let count = 0;
+  selectedMskus.forEach(msku => {
+    if (!editMap[msku]) editMap[msku] = {};
+    if (dmsVal !== '') {
+      const num = parseFloat(dmsVal);
+      if (!isNaN(num)) {
+        const r = ALL_DATA.find(x => x.msku === msku);
+        const baseDms = (editMap[msku].dms_override !== undefined && editMap[msku].dms_override !== null)
+          ? editMap[msku].dms_override
+          : (r ? r.dms : 0);
+        let newDms;
+        if (dmsOp === 'set') {
+          newDms = num;
+        } else if (dmsOp === 'add') {
+          newDms = Math.max(0, baseDms + num);
+        } else if (dmsOp === 'sub') {
+          newDms = Math.max(0, baseDms - num);
+        } else if (dmsOp === 'pct_add') {
+          newDms = Math.max(0, baseDms * (1 + num / 100));
+        } else if (dmsOp === 'pct_sub') {
+          newDms = Math.max(0, baseDms * (1 - num / 100));
+        } else {
+          newDms = num;
+        }
+        editMap[msku].dms_override = Math.round(newDms * 100) / 100;
+      }
+    }
+    if (statusVal !== '') {
+      editMap[msku].prod_status = statusVal;
+    }
+    if (allowShipVal !== '') {
+      editMap[msku].allow_ship = parseInt(allowShipVal);
+    }
+    count++;
+  });
+
+  // 清空批量输入
+  document.getElementById('bulk-dms').value = '';
+  document.getElementById('bulk-status').value = '';
+  document.getElementById('bulk-allow-ship').value = '';
+
+  updateEditSummary();
+  updateHeroModified();
+  renderFilterTable();
+  alert(`✅ 已批量修改 ${count} 条记录`);
+}
+
+    // ══════════════════════════════════════════
+    // 试算DMS（反推）
+    // ══════════════════════════════════════════
+    let simResults = []; // [{msku, origDms, newDms, origShip, targetShip, feasible}]
+
+    function openSimModal() {
+      if (selectedMskus.size === 0) { alert('请先勾选要试算的行'); return; }
+      document.getElementById('sim-target-ship').value = '';
+      document.getElementById('sim-target-days').value = '';
+      document.getElementById('sim-result-area').innerHTML = '<div class="sim-empty">请输入目标出运量后点击「开始试算」</div>';
+      document.getElementById('sim-apply-all-btn').style.display = 'none';
+      document.getElementById('sim-apply-sel-btn').style.display = 'none';
+      document.getElementById('sim-footer-hint').textContent = '试算后可选择应用方式';
+      simResults = [];
+      document.getElementById('sim-modal-overlay').style.display = 'flex';
+    }
+
+    function closeSimModal() {
+      document.getElementById('sim-modal-overlay').style.display = 'none';
+    }
+
+    function runSimCalc() {
+      const targetShipVal = document.getElementById('sim-target-ship').value.trim();
+      const targetDaysVal = document.getElementById('sim-target-days').value.trim();
+      if (targetShipVal === '') { alert('请输入目标建议出运量'); return; }
+      const targetShip = parseFloat(targetShipVal);
+      if (isNaN(targetShip) || targetShip < 0) { alert('目标出运量请输入有效数字'); return; }
+
+      simResults = [];
+      const mskuList = [...selectedMskus];
+
+      mskuList.forEach(msku => {
+        const r = ALL_DATA.find(x => x.msku === msku);
+        if (!r) return;
+        const origDms = getEffectiveDMS(r);
+        const lead_time = r.lead_time || 105;
+        const origTargetDays = r.target_days || (lead_time + 30);
+        const usedTargetDays = targetDaysVal !== '' ? parseFloat(targetDaysVal) : origTargetDays;
+        if (isNaN(usedTargetDays) || usedTargetDays <= 0) return;
+
+        // 反推：与正推对齐，使用相同字段和逻辑
+        // ① 在途用批次字符串解析值（与正推一致，而非CSV原始fba_transit字段）
+        // ② 已计划出运用批次字符串解析值（与正推一致）
+        // ③ 前置仓不计入（正推中前置仓走独立通道，不参与suggest_ship计算）
+        // ④ 补上safety_stock（正推目标需求 = target_days×DMS + safety_stock）
+        // ⑤ 装箱取整误差不可消除：目标出运量不一定是整箱倍数，验算值会≥目标值，误差范围[0, box_size-1]
+        function _parseTotalQtyForSim(str) {
+          if (!str || str === '—' || str.trim() === '' || str === 'nan') return 0;
+          let total = 0;
+          str.split(/[;；]/).forEach(part => {
+            const m = part.trim().match(/(\d+)件?@/);
+            if (m) total += parseInt(m[1]);
+          });
+          return total;
+        }
+        const fba_stock   = r.fba_stock || 0;
+        const transit_qty = _parseTotalQtyForSim(r.transit_batches);  // ← 与正推一致
+        const planned_qty = _parseTotalQtyForSim(r.planned_batches);  // ← 与正推一致
+        const domestic    = r.domestic || 0;
+        // 安全库存（与正推一致：基于原始DMS固定计算）
+        const orig_target_demand = r.target_demand || 0;
+        const orig_dms_for_sim   = r.dms || 1;
+        const safety_stock_sim   = Math.max(0, orig_target_demand - usedTargetDays * orig_dms_for_sim);
+        // 反推公式：target_demand = targetShip + FBA在库 + 在途(批次) + 已计划(批次) + 国内仓 + safety_stock
+        // 推导：正推 suggest_ship ≈ target_days×DMS + safety_stock - FBA在库 - 在途 - 已计划 - 国内仓
+        //       → DMS = (targetShip + FBA在库 + 在途 + 已计划 + 国内仓 - safety_stock) / target_days
+        const target_demand_sim = targetShip + fba_stock + transit_qty + planned_qty + domestic - safety_stock_sim;
+        const newDms = Math.max(0.01, Math.round((target_demand_sim / usedTargetDays) * 100) / 100);
+
+        // 用新DMS正向验算出运量
+        const rc = recalcRow(r, newDms);
+        const verifiedShip = rc.suggest_ship || 0;
+        const origShip = recalcRow(r).suggest_ship || 0;
+        const box_size_sim = (r.box_reorder && r.box_reorder > 1) ? r.box_reorder : 1;
+
+        simResults.push({
+          msku, origDms, newDms, origShip, targetShip,
+          verifiedShip, usedTargetDays, origTargetDays,
+          fba_stock, transit_qty, planned_qty, domestic,
+          safety_stock_sim, box_size_sim,
+          feasible: newDms > 0,
+          selected: true
+        });
+      });
+
+      renderSimResults();
+    }
+
+    function renderSimResults() {
+      const area = document.getElementById('sim-result-area');
+      if (!simResults.length) {
+        area.innerHTML = '<div class="sim-empty">无可试算数据</div>';
+        return;
+      }
+
+      const rows = simResults.map((s, idx) => {
+        const dmsChange = s.newDms > s.origDms ? '↑' : s.newDms < s.origDms ? '↓' : '=';
+        const dmsColor = s.newDms > s.origDms ? '#C4433A' : s.newDms < s.origDms ? '#064338' : '#717171';
+        const diff = s.verifiedShip - s.targetShip;
+        const diffNote = diff === 0
+          ? '<span class="sim-ok">✓ 精确</span>'
+          : '<span class="sim-warn">+' + diff + '件（整箱取整，box=' + s.box_size_sim + '）</span>';
+        const daysNote = s.usedTargetDays !== s.origTargetDays
+          ? '<span style="font-size:10px;color:#B8860B"> (自定义' + s.usedTargetDays + '天)</span>'
+          : '<span style="font-size:10px;color:#B0ABA5"> (' + s.origTargetDays + '天)</span>';
+        return '<tr>' +
+          '<td><input type="checkbox" class="sim-row-check" ' + (s.selected ? 'checked' : '') + ' onchange="simResults[' + idx + '].selected=this.checked;updateSimFooter()">' +
+          '<td style="font-family:monospace;font-size:10px;max-width:160px;overflow:hidden;text-overflow:ellipsis">' + s.msku + '</td>' +
+          '<td><span class="sim-dms-new" style="color:' + dmsColor + '">' + s.newDms + ' ' + dmsChange + '</span><span class="sim-dms-old">原' + s.origDms + '</span>' + daysNote + '</td>' +
+          '<td><span class="sim-ship-target">' + s.targetShip + '</span><span class="sim-ship-orig">原' + s.origShip + '</span></td>' +
+          '<td>' + diffNote + '</td>' +
+          '<td style="font-size:11px;color:#717171">' + s.fba_stock + ' + ' + s.transit_qty + ' + ' + s.planned_qty + '</td>' +
+          '</tr>';
+      }).join('');
+
+      area.innerHTML =
+        '<div class="sim-table-wrap">' +
+        '<table class="sim-table">' +
+        '<thead><tr>' +
+        '<th style="width:32px"><input type="checkbox" class="sim-row-check" id="sim-select-all" checked onchange="simToggleAll(this)"></th>' +
+        '<th>MSKU</th>' +
+        '<th>反推DMS（新→原）</th>' +
+        '<th>目标出运量（原出运量）</th>' +
+        '<th>验算误差</th>' +
+        '<th>在库+在途+已计划</th>' +
+        '</tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+        '</table></div>';
+
+      document.getElementById('sim-apply-all-btn').style.display = '';
+      document.getElementById('sim-apply-sel-btn').style.display = '';
+      updateSimFooter();
+    }
+
+    function simToggleAll(cb) {
+      simResults.forEach((s, idx) => { s.selected = cb.checked; });
+      renderSimResults();
+      // 恢复全选框状态
+      const allCb = document.getElementById('sim-select-all');
+      if (allCb) allCb.checked = cb.checked;
+      updateSimFooter();
+    }
+
+    function updateSimFooter() {
+      const selCount = simResults.filter(s => s.selected).length;
+      document.getElementById('sim-footer-hint').textContent =
+        '已选 ' + selCount + ' / ' + simResults.length + ' 行 · 应用后将写入运营DMS（可在数据筛选页重置）';
+    }
+
+    function applySimAll() {
+      const toApply = simResults.filter(s => s.feasible);
+      _applySimRows(toApply, '全部');
+    }
+
+    function applySimSelected() {
+      const toApply = simResults.filter(s => s.selected && s.feasible);
+      if (!toApply.length) { alert('请先勾选要应用的行'); return; }
+      _applySimRows(toApply, '选中');
+    }
+
+    function _applySimRows(rows, label) {
+      if (!rows.length) { alert('无可应用的行'); return; }
+      const msg = '确认将 ' + rows.length + ' 条记录的运营DMS更新为试算结果？\n\n此操作会写入运营DMS，但不影响系统原始DMS。\n可在数据筛选页随时重置。';
+      if (!confirm(msg)) return;
+      rows.forEach(s => {
+        if (!editMap[s.msku]) editMap[s.msku] = {};
+        editMap[s.msku].dms_override = s.newDms;
+      });
+      updateEditSummary();
+      updateHeroModified();
+      renderFilterTable();
+      closeSimModal();
+      alert('✅ 已将 ' + rows.length + ' 条记录的运营DMS更新为试算结果（' + label + '）');
+    }
+
+    // recalcRow 支持传入自定义DMS（用于试算验算）
+    // 注意：原 recalcRow(r) 已支持从editMap读取，这里扩展支持第二参数覆盖
+    const _origRecalcRow = recalcRow;
+    
+// ══════════════════════════════════════════
+// 数据加载
+// ══════════════════════════════════════════
+function loadData(data) {
+  ALL_DATA = data;
+  filteredData = [...ALL_DATA];
+  editMap = {};
+  selectedMskus.clear();
+  const stats = calcStats(ALL_DATA);
+
+  ['overview-empty','filter-empty','gantt-empty','export-empty'].forEach(id => document.getElementById(id).style.display='none');
+  ['overview-content','filter-content','gantt-content','export-content'].forEach(id => document.getElementById(id).style.display='block');
+
+  renderHeroMetrics(stats);
+  renderCharts(stats, ALL_DATA);
+  renderUrgentTable(ALL_DATA);
+  renderFilterTable();
+  populateFactoryFilter(ALL_DATA);
+  populateSpuFilter(ALL_DATA);
+  populateGanttFilters(ALL_DATA);
+  updateInsights(stats);
+  renderGantt();
+  updateExportPreview();
+
+  const now = new Date();
+  const dateStr = now.toISOString().slice(0,10);
+  document.getElementById('hero-subtitle').textContent = `共 ${ALL_DATA.length} 条记录 · 加载于 ${dateStr}${skuMapLoaded?' · SKU大表已映射':''}`;
+  document.getElementById('footer-meta').textContent = `决策总表分析面板 v8 · ${dateStr}`;
+}
+
+// ══════════════════════════════════════════
+// 统计计算
+// ══════════════════════════════════════════
+function calcStats(data) {
+  const urgency={}, risk={}, site={}, owner={}, spu={};
+  let fba_stock=0, fba_transit=0, domestic_total=0, fwd_stock_total=0;
+  let reorder_total=0, ship_total=0, reorder_skus=0;
+  let urgent_now=0, urgent_soon=0, high_risk=0, spu_mapped=0;
+  data.forEach(r => {
+    const rc = recalcRow(r);
+    const u=r.urgency||''; if(u) urgency[u]=(urgency[u]||0)+1;
+    const rk=r.risk||''; if(rk) risk[rk]=(risk[rk]||0)+1;
+    const s=r.site||''; if(s) site[s]=(site[s]||0)+1;
+    const ow=r.owner||''; if(ow) owner[ow]=(owner[ow]||0)+1;
+    const sp=r.spu||''; if(sp){spu[sp]=(spu[sp]||0)+1;spu_mapped++;}
+    fba_stock+=r.fba_stock||0; fba_transit+=r.fba_transit||0;
+    domestic_total+=r.domestic||0; fwd_stock_total+=r.fwd_stock||0;
+    // 总览直接读取表格原始值（公司AI算好的），不用面板重算
+    const orig_reorder = r.suggest_reorder || 0;
+    const orig_ship = r.suggest_ship || 0;
+    if(orig_reorder>0){reorder_total+=orig_reorder;reorder_skus++;}
+    ship_total+=orig_ship;
+    if(u==='立即下单') urgent_now++;
+    if(u==='尽快下单') urgent_soon++;
+    if(rk==='高风险') high_risk++;
+  });
+  return {total:data.length,urgency,risk,site,owner,spu,fba_stock_total:fba_stock,fba_transit_total:fba_transit,domestic_total,fwd_stock_total,reorder_total,ship_total,reorder_skus,urgent_now,urgent_soon,high_risk,spu_mapped};
+}
+
+// ══════════════════════════════════════════
+// 渲染函数
+// ══════════════════════════════════════════
+function renderHeroMetrics(s) {
+  document.getElementById('m-total').textContent = s.total.toLocaleString();
+  document.getElementById('m-urgent').textContent = s.urgent_now;
+  document.getElementById('m-soon').textContent = s.urgent_soon;
+  document.getElementById('m-highrisk').textContent = s.high_risk;
+  document.getElementById('m-reorder-skus').textContent = s.reorder_skus;
+  document.getElementById('m-reorder-total').textContent = s.reorder_total;
+  document.getElementById('s-fba-stock').textContent = s.fba_stock_total.toLocaleString();
+  document.getElementById('s-fba-transit').textContent = s.fba_transit_total.toLocaleString();
+  document.getElementById('s-domestic').textContent = s.domestic_total.toLocaleString();
+  document.getElementById('s-fwd-stock').textContent = s.fwd_stock_total.toLocaleString();
+  document.getElementById('s-ship').textContent = s.ship_total.toLocaleString();
+  document.getElementById('s-reorder').textContent = s.reorder_total.toLocaleString();
+}
+
+function updateInsights(s) {
+  const list = document.getElementById('insight-list');
+  const spuCount = Object.keys(s.spu).length;
+  list.innerHTML = [
+    `${s.urgent_now} 个SKU处于"立即下单"状态，需本周内处理`,
+    `${s.high_risk} 个高风险SKU，建议优先核查断货日期`,
+    `${s.reorder_skus} 个SKU有翻单需求，建议翻单总量 ${s.reorder_total} 件`,
+    `FBA在途 ${s.fba_transit_total.toLocaleString()} 件，国内仓 ${s.domestic_total.toLocaleString()} 件，前置仓 ${s.fwd_stock_total.toLocaleString()} 件`,
+    skuMapLoaded ? `SKU大表已映射：${s.spu_mapped} 个SKU已关联SPU品名，涵盖 ${spuCount} 个品类` : `美国站 ${s.site['美国']||0} 个SKU，英国站 ${s.site['英国']||0} 个SKU`,
+  ].map(i=>`<li>${i}</li>`).join('');
+}
+
+function renderCharts(stats, data) {
+  const urgencyColors={'立即下单':'bar-fill-red','尽快下单':'bar-fill-orange','一般':'bar-fill-gray','充足':'bar-fill-green'};
+  const urgencyTotal=Object.values(stats.urgency).reduce((a,b)=>a+b,0);
+  document.getElementById('urgency-total').textContent=urgencyTotal+' SKU';
+  document.getElementById('urgency-chart').innerHTML=Object.entries(stats.urgency).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{
+    const pct=urgencyTotal?(v/urgencyTotal*100).toFixed(1):0;
+    return `<div class="bar-row"><div class="bar-label">${k}</div><div class="bar-track"><div class="bar-fill ${urgencyColors[k]||'bar-fill-gray'}" style="width:${pct}%"><span class="bar-value">${v}</span></div></div><div class="bar-count">${pct}%</div></div>`;
+  }).join('');
+  const riskColors={'高风险':'bar-fill-red','中风险':'bar-fill-orange','低风险':'bar-fill-gold','安全':'bar-fill-green'};
+  const riskTotal=Object.values(stats.risk).reduce((a,b)=>a+b,0);
+  document.getElementById('risk-total').textContent=riskTotal+' SKU';
+  document.getElementById('risk-chart').innerHTML=Object.entries(stats.risk).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{
+    const pct=riskTotal?(v/riskTotal*100).toFixed(1):0;
+    return `<div class="bar-row"><div class="bar-label">${k}</div><div class="bar-track"><div class="bar-fill ${riskColors[k]||'bar-fill-gray'}" style="width:${pct}%"><span class="bar-value">${v}</span></div></div><div class="bar-count">${pct}%</div></div>`;
+  }).join('');
+  const siteColors={'美国':'bar-fill-gold','英国':'bar-fill-green','德国':'bar-fill-red','加拿大':'bar-fill-purple','日本':'bar-fill-blue'};
+  const siteTotal=Object.values(stats.site).reduce((a,b)=>a+b,0);
+  document.getElementById('site-chart').innerHTML=Object.entries(stats.site).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{
+    const pct=siteTotal?(v/siteTotal*100).toFixed(1):0;
+    return `<div class="bar-row"><div class="bar-label">${k}</div><div class="bar-track"><div class="bar-fill ${siteColors[k]||'bar-fill-gray'}" style="width:${pct}%"><span class="bar-value">${v}</span></div></div><div class="bar-count">${pct}%</div></div>`;
+  }).join('');
+  const spuTotal=Object.values(stats.spu).reduce((a,b)=>a+b,0);
+  document.getElementById('spu-mapped-count').textContent=skuMapLoaded?`${spuTotal}个已映射`:'';
+  document.getElementById('spu-chart').innerHTML=spuTotal>0?Object.entries(stats.spu).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([k,v])=>{
+    const pct=(v/spuTotal*100).toFixed(1);
+    return `<div class="bar-row"><div class="bar-label" style="width:140px;font-size:10px">${k}</div><div class="bar-track"><div class="bar-fill bar-fill-green" style="width:${pct}%"><span class="bar-value">${v}</span></div></div><div class="bar-count">${pct}%</div></div>`;
+  }).join(''):'<div style="text-align:center;color:#B0ABA5;padding:20px;font-size:12px">请上传SKU大表以查看SPU品名分布</div>';
+  const reorderData=data.filter(r=>recalcRow(r).suggest_reorder>0);
+  const factoryMap={};
+  reorderData.forEach(r=>{const f=r.reorder_factory||'未知';factoryMap[f]=(factoryMap[f]||0)+1;});
+  const factoryEl=document.getElementById('factory-chart');
+  if(factoryEl){
+    const factoryTotal=Object.values(factoryMap).reduce((a,b)=>a+b,0)||1;
+    factoryEl.innerHTML=Object.entries(factoryMap).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{
+      const pct=(v/factoryTotal*100).toFixed(1);
+      return `<div class="bar-row"><div class="bar-label" style="width:160px">${k}</div><div class="bar-track"><div class="bar-fill bar-fill-green" style="width:${pct}%"><span class="bar-value">${v}个SKU</span></div></div><div class="bar-count">${pct}%</div></div>`;
+    }).join('');
+  }
+}
+
+function renderUrgentTable(data) {
+  const urgentData=data.filter(r=>r.urgency==='立即下单').sort((a,b)=>a.days_stock-b.days_stock);
+  const tbody=document.getElementById('urgent-tbody');
+  if(!urgentData.length){tbody.innerHTML='<tr><td colspan="14" style="text-align:center;color:#717171;padding:24px">暂无立即下单数据</td></tr>';return;}
+  tbody.innerHTML=urgentData.map((r,i)=>{
+    const rc=recalcRow(r);
+    const dms=getEffectiveDMS(r);
+    const modified=isModified(r.msku);
+    const so2Class = r.stockout2 ? 'date-cell soon' : 'date-cell';
+    return `<tr${modified?' class="modified"':''}>
+      <td>${i+1}</td>
+      <td style="font-family:monospace;font-size:10px;max-width:160px;overflow:hidden;text-overflow:ellipsis">${r.msku}</td>
+      <td>${r.spu?`<span class="spu-tag">${r.spu}</span>`:'<span class="spu-tag unmapped">—</span>'}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis">${r.name||'—'}</td>
+      <td><span class="tag tag-${siteClass(r.site)}">${r.site}</span></td>
+      <td>${r.owner}</td>
+      <td>${riskTag(r.risk)}</td>
+      <td style="font-weight:600;color:${modified?'#B8860B':'#064338'}">${dms}</td>
+      <td class="${rc.days_stock===0?'anom-red':''}">${rc.days_stock}</td>
+      <td>${rc.days_transit}</td>
+      <td style="color:#C4433A;font-size:11px">${rc.stockout1}</td>
+      <td class="${so2Class}">${r.stockout2||'—'}</td>
+      <td><strong>${r.suggest_ship||0}</strong></td>
+      <td style="font-size:11px">${r.reorder_factory||'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function populateFactoryFilter(data) {
+  const factories=[...new Set(data.map(r=>r.reorder_factory).filter(Boolean))].sort();
+  const sel=document.getElementById('f-factory');
+  while(sel.options.length>1)sel.remove(1);
+  factories.forEach(f=>{const o=document.createElement('option');o.value=f;o.textContent=f;sel.appendChild(o);});
+}
+
+function populateSpuFilter(data) {
+  const spus=[...new Set(data.map(r=>r.spu).filter(Boolean))].sort();
+  ['f-spu','g-spu'].forEach(id=>{
+    const sel=document.getElementById(id);
+    if(!sel)return;
+    while(sel.options.length>1)sel.remove(1);
+    spus.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});
+  });
+}
+
+function populateGanttFilters(data) {
+  // g-spu already handled by populateSpuFilter
+}
+
+// ══════════════════════════════════════════
+// 筛选
+// ══════════════════════════════════════════
+function applyFilters() {
+  if(!ALL_DATA.length)return;
+  const spu=document.getElementById('f-spu').value;
+  const urgency=document.getElementById('f-urgency').value;
+  const risk=document.getElementById('f-risk').value;
+  const site=document.getElementById('f-site').value;
+  const owner=document.getElementById('f-owner').value;
+  const factory=document.getElementById('f-factory').value;
+  const reorder=document.getElementById('f-reorder').value;
+  const modified=document.getElementById('f-modified').value;
+  const kw=document.getElementById('f-keyword').value.toLowerCase();
+  filteredData=ALL_DATA.filter(r=>{
+    if(spu&&r.spu!==spu)return false;
+    if(urgency&&r.urgency!==urgency)return false;
+    if(risk==='__blank__'&&r.risk!=='')return false;
+    else if(risk&&risk!=='__blank__'&&r.risk!==risk)return false;
+    if(site&&r.site!==site)return false;
+    if(owner&&r.owner!==owner)return false;
+    if(factory&&r.reorder_factory!==factory)return false;
+    if(reorder==='yes'&&!(recalcRow(r).suggest_reorder>0))return false;
+    if(reorder==='no'&&recalcRow(r).suggest_reorder>0)return false;
+    if(modified==='yes'&&!isModified(r.msku))return false;
+    if(kw&&!r.msku.toLowerCase().includes(kw)&&!r.name.toLowerCase().includes(kw)&&!(r.spu||'').toLowerCase().includes(kw))return false;
+    if(filterDomesticActive&&(r.domestic||0)<=0)return false;
+    if(filterFwdActive&&(r.fwd_stock||0)<=0)return false;
+    return true;
+  });
+  currentPage=1;
+  renderFilterTable();
+  updateExportPreview();
+}
+
+function resetFilters() {
+  ['f-spu','f-urgency','f-risk','f-site','f-owner','f-factory','f-reorder','f-modified'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-keyword').value='';
+  filterDomesticActive = false;
+  filterFwdActive = false;
+  updateQuickFilterBtnStyle();
+  filteredData=[...ALL_DATA];
+  currentPage=1;
+  renderFilterTable();
+}
+
+// 断货日期颜色辅助
+function stockoutClass(dateStr) {
+  if (!dateStr || dateStr === '—' || dateStr === 'NaN' || dateStr === 'undefined') return 'date-cell';
+  const d = new Date(dateStr);
+  if (isNaN(d)) return 'date-cell';
+  const today = new Date();
+  const diffDays = Math.floor((d - today) / (1000*60*60*24));
+  if (diffDays < 14) return 'date-cell warn';
+  if (diffDays < 30) return 'date-cell soon';
+  return 'date-cell';
+}
+
+function renderFilterTable() {
+  const total=filteredData.length;
+  const start=(currentPage-1)*PAGE_SIZE;
+  const pageData=filteredData.slice(start,start+PAGE_SIZE);
+  document.getElementById('result-count').textContent=total;
+  document.getElementById('total-count').textContent=ALL_DATA.length;
+  const tbody=document.getElementById('filter-tbody');
+  if(!pageData.length){tbody.innerHTML='<tr><td colspan="28" style="text-align:center;color:#717171;padding:24px">无匹配数据</td></tr>';renderPagination(0);return;}
+
+  // 更新全选框状态
+  const allSelected = pageData.length > 0 && pageData.every(r => selectedMskus.has(r.msku));
+  const selectAll = document.getElementById('select-all');
+  if (selectAll) selectAll.checked = allSelected;
+
+  tbody.innerHTML=pageData.map((r,i)=>{
+    const rc=recalcRow(r);
+    const dms=getEffectiveDMS(r);
+    const edit=editMap[r.msku]||{};
+    const modified=isModified(r.msku);
+    const selected=selectedMskus.has(r.msku);
+    const dmsOverridden=edit.dms_override!==undefined&&edit.dms_override!==null;
+    const prodStatus=edit.prod_status!==undefined?edit.prod_status:(r.prod_status||'常规品');
+    const allowShip=edit.allow_ship!==undefined?edit.allow_ship:(r.allow_ship!==undefined?r.allow_ship:1);
+
+    // 断货日期显示：未改DMS时直接读取原始值，改了DMS才重算
+    const so1 = dmsOverridden ? (rc.stockout1||'—') : ((r.stockout1&&r.stockout1!=='nan'&&r.stockout1!=='')?r.stockout1:'—');
+    const so2 = dmsOverridden ? (rc.stockout2_calc||'—') : ((r.stockout2&&r.stockout2!=='nan'&&r.stockout2!=='')?r.stockout2:'—');
+    const so3 = dmsOverridden ? (rc.stockout3_calc||'—') : ((r.stockout3&&r.stockout3!=='nan'&&r.stockout3!=='')?r.stockout3:'—');
+    // 建议发运时间：只显示最早日期
+        function extractEarliestDate(str) {
+          if (!str || str === 'nan' || str === '') return '—';
+          // 匹配完整日期格式 YYYY-MM-DD
+          const matches = [...str.matchAll(/(\d{4}-\d{1,2}-\d{1,2})/g)];
+          if (matches.length > 0) {
+            const dates = matches.map(m => m[1]).sort();
+            return dates[0];
+          }
+          // 匹配月-日格式 MM-DD
+          const matches2 = [...str.matchAll(/@(\d{1,2}-\d{1,2})/g)];
+          if (matches2.length > 0) {
+            return matches2[0][1];
+          }
+          return str;
+        }
+        const shipTime = extractEarliestDate(r.ship_time);
+    const fwdShip = (r.fwd_ship_date&&r.fwd_ship_date!=='nan'&&r.fwd_ship_date!=='')?r.fwd_ship_date:'—';
+    const plannedBatches = (r.planned_batches&&r.planned_batches!=='nan'&&r.planned_batches!=='')?r.planned_batches:'—';
+
+    let trClass = '';
+    if (selected && modified) trClass = 'selected modified';
+    else if (selected) trClass = 'selected';
+    else if (modified) trClass = 'modified';
+
+    return `<tr data-msku="${r.msku}"${trClass?' class="'+trClass+'"':''}>
+          <td class="col-freeze col-freeze-0"><input type="checkbox" class="row-check" ${selected?'checked':''} onchange="toggleRowSelect('${r.msku}',this.checked)"></td>
+          <td class="col-freeze col-freeze-1">${start+i+1}</td>
+          <td class="col-freeze col-freeze-2 col-freeze-shadow msku-cell" title="${r.msku}">${r.msku}</td>
+          <td>${r.spu?`<span class="spu-tag">${r.spu}</span>`:'<span class="spu-tag unmapped">—</span>'}</td>
+          <td class="name-cell" style="display:none" onmouseenter="showCellTooltip(event,'${(r.name||'').replace(/'/g,String.fromCharCode(39))}')" onmouseleave="hideCellTooltip()">${r.name||'—'}</td>
+          <td><span class="tag tag-${siteClass(r.site)}">${r.site}</span></td>
+          <td>${r.owner}</td>
+          <td>${urgencyTag(r.urgency)}</td>
+          <td>${riskTag(r.risk)}</td>
+          <td style="color:#B0ABA5;font-size:11px">${r.dms_sys||r.dms}</td>
+          <td>
+            <div class="dms-cell">
+              <input class="dms-input${dmsOverridden?' overridden':''}" type="number" step="0.1" min="0"
+                value="${dmsOverridden?edit.dms_override:''}"
+                placeholder="${r.dms}"
+                onchange="onDmsChange('${r.msku}',this.value)"
+                oninput="onDmsChange('${r.msku}',this.value)"
+                title="系统DMS: ${r.dms}，修改后所有断货日和发运量实时重算">
+              ${dmsOverridden?`<button class="dms-reset" onclick="resetDms('${r.msku}')" title="重置为系统值">✕</button>`:''}
+            </div>
+          </td>
+          <td class="${r.fba_stock===0?'anom-red':''}">${r.fba_stock}</td>
+          <td>${r.fba_transit}</td>
+          <td class="${(r.domestic||0)>0?'anom-yellow':''}">${r.domestic||0}</td>
+          <td class="${(r.fwd_stock||0)>0?'anom-yellow':''}">${r.fwd_stock||0}</td>
+          <td class="${rc.days_stock===0?'anom-red':rc.days_stock<30?'anom-yellow':''}">${rc.days_stock}</td>
+          <td class="${rc.days_transit<30?'anom-yellow':''}">${rc.days_transit}</td>
+          <td class="${stockoutClass(so1)}">${so1}</td>
+          <td class="${stockoutClass(so2)}">${so2}</td>
+          <td class="${stockoutClass(so3)}">${so3}</td>
+          <td class="small-text">${plannedBatches}</td>
+          <td>${dmsOverridden?`<span class="dms-changed">${rc.suggest_ship||0} <span class="dms-old" title="未改DMS时以公司系统原始值为准">⚠️估算</span></span>`:String(r.suggest_ship||0)}</td>
+          <td class="small-text">${r.dom_ship_qty||0}</td>
+          <td class="small-text">${r.fwd_ship_qty||0}</td>
+          <td class="small-text">${fwdShip}</td>
+          <td class="small-text">${shipTime}</td>
+          <td>
+            <select class="status-select" onchange="onStatusChange('${r.msku}',this.value)">
+              <option value="常规品"${prodStatus==='常规品'?' selected':''}>常规品</option>
+              <option value="核心品"${prodStatus==='核心品'?' selected':''}>核心品</option>
+              <option value="清仓"${prodStatus==='清仓'?' selected':''}>清仓</option>
+            </select>
+          </td>
+          <td>
+            <button class="ship-btn ${allowShip?'allow':'deny'}"
+              onclick="onAllowShipChange('${r.msku}',${allowShip?0:1})">
+              ${allowShip?'✅ 允许':'🚫 禁止'}
+            </button>
+          </td>
+        </tr>`;
+  }).join('');
+
+  // 渲染合计行（基于全部筛选结果，不限当前页）
+  const tfoot = document.getElementById('filter-tfoot');
+  if (tfoot) {
+    let sumFbaStock=0, sumFbaTransit=0, sumDomestic=0, sumFwd=0, sumShip=0, sumDomShip=0, sumFwdShip=0;
+    filteredData.forEach(r => {
+      const rc = recalcRow(r);
+      const edit = editMap[r.msku] || {};
+      const dmsOverridden = edit.dms_override !== undefined && edit.dms_override !== null;
+      sumFbaStock += r.fba_stock || 0;
+      sumFbaTransit += r.fba_transit || 0;
+      sumDomestic += r.domestic || 0;
+      sumFwd += r.fwd_stock || 0;
+      sumShip += dmsOverridden ? (rc.suggest_ship || 0) : (r.suggest_ship || 0);
+      sumDomShip += r.dom_ship_qty || 0;
+      sumFwdShip += r.fwd_ship_qty || 0;
+    });
+    const fmt = n => n.toLocaleString();
+    tfoot.innerHTML = `
+      <td class="col-freeze col-freeze-0"></td>
+      <td class="col-freeze col-freeze-1" style="font-size:10px;color:#717171">合计</td>
+      <td class="col-freeze col-freeze-2 col-freeze-shadow" style="font-size:10px;color:#717171">${filteredData.length} 条</td>
+      <td></td>
+      <td style="display:none"></td>
+      <td></td><td></td><td></td><td></td><td></td><td></td>
+      <td><span class="sum-val">${fmt(sumFbaStock)}</span><span class="sum-label">FBA在库</span></td>
+      <td><span class="sum-val">${fmt(sumFbaTransit)}</span><span class="sum-label">FBA在途</span></td>
+      <td><span class="sum-val">${fmt(sumDomestic)}</span><span class="sum-label">国内仓</span></td>
+      <td><span class="sum-val">${fmt(sumFwd)}</span><span class="sum-label">前置仓</span></td>
+      <td></td><td></td><td></td><td></td><td></td><td></td>
+      <td><span class="sum-val">${fmt(sumShip)}</span><span class="sum-label">发运量</span></td>
+      <td><span class="sum-val">${fmt(sumDomShip)}</span><span class="sum-label">国内仓发运</span></td>
+      <td><span class="sum-val">${fmt(sumFwdShip)}</span><span class="sum-label">前置仓发运</span></td>
+      <td></td><td></td><td></td>
+    `;
+  }
+
+  renderPagination(total);
+}
+
+function renderPagination(total) {
+  const totalPages=Math.ceil(total/PAGE_SIZE);
+  const pg=document.getElementById('pagination');
+  if(totalPages<=1){pg.innerHTML='';return;}
+  let html=`<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
+  for(let i=1;i<=totalPages;i++){
+    if(i===1||i===totalPages||Math.abs(i-currentPage)<=2)html+=`<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+    else if(Math.abs(i-currentPage)===3)html+='<span style="padding:0 4px;color:#717171">…</span>';
+  }
+  html+=`<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>›</button>`;
+  html+=`<span style="font-size:12px;color:#717171;margin-left:8px">共 ${total} 条 / ${totalPages} 页</span>`;
+  pg.innerHTML=html;
+}
+
+function goPage(p){const tp=Math.ceil(filteredData.length/PAGE_SIZE);if(p<1||p>tp)return;currentPage=p;renderFilterTable();}
+
+// ══════════════════════════════════════════
+// 甘特图
+// ══════════════════════════════════════════
+function renderGantt() {
+  if(!ALL_DATA.length)return;
+  const gSpu=document.getElementById('g-spu').value;
+  const gSite=document.getElementById('g-site').value;
+  const gOwner=document.getElementById('g-owner').value;
+  const gHasdata=document.getElementById('g-hasdata').value;
+  const gSkuSearch=(document.getElementById('g-sku-search')?.value||'').toLowerCase().trim();
+
+  let data=ALL_DATA.filter(r=>{
+    if(gSpu&&r.spu!==gSpu)return false;
+    if(gSite&&r.site!==gSite)return false;
+    if(gOwner&&r.owner!==gOwner)return false;
+    if(gSkuSearch&&!r.msku.toLowerCase().includes(gSkuSearch))return false;
+    return true;
+  });
+
+  // 解析批次字符串
+  // 支持格式：
+  //   "48件@06-24→TCY2(拉货单)"  (在途批次，带件字，带→仓库后缀)
+  //   "48件@07-24"               (计划出运批次，带件字)
+  //   "48@06-24"                 (旧格式，无件字)
+  // 多批次用 , ; 分隔
+  function parseBatches(str, year) {
+    if(!str||str==='—'||str.trim()===''||str==='nan')return[];
+    const batches=[];
+    str.split(/[;；]/).forEach(part=>{
+      part=part.trim();
+      // 匹配：数字(可选"件")@月-日，忽略后面的→...
+      const m=part.match(/(\d+)件?@(\d{1,2})-(\d{1,2})/);
+      if(m){
+        const qty=parseInt(m[1]);
+        const mo=parseInt(m[2])-1;
+        const dy=parseInt(m[3]);
+        const d=new Date(year,mo,dy);
+        batches.push({qty,date:d});
+      }
+    });
+    return batches;
+  }
+
+  // 解析建议发运时间字符串
+  // 格式："在产48件@2026-06-21; 翻单24件@2026-06-21"
+  // 返回：[{type:'在产'|'翻单', qty, date}]
+  function parseShipTime(str) {
+    if(!str||str==='—'||str.trim()===''||str==='nan')return[];
+    const items=[];
+    str.split(/[;；]/).forEach(part=>{
+      part=part.trim();
+      // 匹配：类型+数字件@完整日期 或 类型+数字件@月-日
+      const m=part.match(/(在产|翻单)?(\d+)件?@(\d{4}-\d{1,2}-\d{1,2}|\d{1,2}-\d{1,2})/);
+      if(m){
+        const type=m[1]||'建议';
+        const qty=parseInt(m[2]);
+        const dateStr=m[3];
+        let d;
+        if(dateStr.includes('-')&&dateStr.split('-').length===3){
+          // 完整日期 2026-06-21
+          const parts=dateStr.split('-');
+          d=new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]));
+        } else {
+          // 月-日
+          const parts=dateStr.split('-');
+          const today2=new Date();
+          d=new Date(today2.getFullYear(),parseInt(parts[0])-1,parseInt(parts[1]));
+        }
+        items.push({type,qty,date:d});
+      }
+    });
+    return items;
+  }
+
+  const today=new Date();
+  today.setHours(0,0,0,0);
+  const year=today.getFullYear();
+
+  if(gHasdata==='yes'){
+    data=data.filter(r=>{
+      const tb=parseBatches(r.transit_batches,year);
+      const pb=parseBatches(r.planned_batches,year);
+      return tb.length>0||pb.length>0||r.in_prod>0||recalcRow(r).suggest_reorder>0;
+    });
+  }
+
+  // 断货筛选
+  const gStockout=document.getElementById('g-stockout').value;
+  if(gStockout){
+    const days=parseInt(gStockout);
+    const cutoff=new Date(today.getTime()+days*86400000);
+    data=data.filter(r=>{
+      const rc=recalcRow(r);
+      const so1=rc.stockout1;
+      if(!so1||so1==='—')return false;
+      const d=new Date(so1);
+      return !isNaN(d)&&d<=cutoff;
+    });
+  }
+
+  if(!data.length){
+    document.getElementById('gantt-wrap').innerHTML='<div style="text-align:center;padding:40px;color:#B0ABA5;font-size:13px">无符合条件的数据</div>';
+    return;
+  }
+
+  const DAYS=180;
+  const endDate=new Date(today);
+  endDate.setDate(endDate.getDate()+DAYS);
+
+  function dateToX(d){
+    const diff=(d-today)/(1000*60*60*24);
+    return (diff/DAYS)*100;  // 允许负值，渲染时再裁剪
+  }
+  function dateToXClamped(d){return Math.max(0,Math.min(100,dateToX(d)));}
+  function daysToW(days){return Math.max(0.5,(days/DAYS)*100);}
+  function fmtDate(d){return `${d.getMonth()+1}/${d.getDate()}`;}
+
+  // ── 时间轴刻度：15天间隔，绝对日期 ──
+  const ticks=[];
+  let tickCur=new Date(today);
+  // 对齐到最近的15天整点（可选，直接从今日开始也可）
+  while(tickCur<=endDate){
+    const x=dateToX(tickCur);
+    const isMonthStart=tickCur.getDate()===1;
+    ticks.push({
+      label:`${tickCur.getMonth()+1}/${tickCur.getDate()}`,
+      x,
+      isMonthStart
+    });
+    const next=new Date(tickCur);
+    next.setDate(next.getDate()+15);
+    tickCur=next;
+  }
+
+  const todayX=dateToX(today);
+
+  // 表头刻度线 HTML
+  const tickHeaderHtml=ticks.map(t=>`
+    <div class="gantt-tick-line${t.isMonthStart?' month-start':''}" style="left:${t.x}%;height:100%"></div>
+    <div class="gantt-tick-label${t.isMonthStart?' month-start':''}" style="left:${t.x}%">${t.label}</div>
+  `).join('');
+
+  // 数据行背景刻度线 HTML（复用）
+  const tickBgHtml=ticks.map(t=>`
+    <div class="gantt-tick-bg${t.isMonthStart?' month-start':''}" style="left:${t.x}%"></div>
+  `).join('');
+
+  let html=`<div class="gantt-container">`;
+  html+=`<div class="gantt-header">
+    <div class="gantt-col-label">SKU</div>
+    <div class="gantt-timeline-header">
+      ${tickHeaderHtml}
+    </div>
+  </div>`;
+
+  data.slice(0,80).forEach(r=>{
+    const rc=recalcRow(r);
+    const dms=getEffectiveDMS(r);
+    const bars=[];
+    const nodes=[];  // 到货节点标记
+
+    // ── 层级设计（行高56px，4层）──
+    // 层1 top:4px  → FBA在库（墨绿）
+    // 层2 top:4px  → FBA在途（蓝色，与在库同层，时间上接续）
+    // 层3 top:20px → 已计划出运（紫色）
+    // 层4 top:36px → 建议发运（橙色虚线，来自ship_time字段）
+
+    // 1. FBA在库可售期（今日起，墨绿色，层1）
+    if(r.fba_stock>0&&dms>0){
+      const stockDays=Math.floor(r.fba_stock/dms);
+      const x=Math.max(0,todayX);
+      const endD=new Date(today.getTime()+stockDays*86400000);
+      const w=Math.min(daysToW(stockDays),100-x);
+      if(w>0.3){
+        bars.push(`<div class="gantt-bar gantt-bar-stock" style="left:${x}%;width:${w}%"
+          onmouseenter="showTooltip(event,'FBA在库\\n${r.fba_stock}件 · 可售${stockDays}天\\n今日 → ${fmtDate(endD)}')"
+          onmouseleave="hideTooltip()">
+          ${stockDays>5?r.fba_stock+'件':''}
+        </div>`);
+      }
+    }
+
+    // 2. FBA在途批次（蓝色，层1）
+    // 格式：48件@06-24→TCY2(拉货单)
+    // 节点 = 到货日（蓝色菱形），条 = 到货日起的可售期
+    const transitBatches=parseBatches(r.transit_batches,year);
+    transitBatches.forEach(b=>{
+      const arrX=dateToX(b.date);
+      if(arrX>100)return;
+      const clampedX=Math.max(0,arrX);
+      const arrivalDays=dms>0?Math.floor(b.qty/dms):0;
+      const endD=new Date(b.date.getTime()+arrivalDays*86400000);
+      const w=Math.min(daysToW(arrivalDays),100-clampedX);
+      if(w>0.3){
+        bars.push(`<div class="gantt-bar gantt-bar-transit" style="left:${clampedX}%;width:${w}%"
+          onmouseenter="showTooltip(event,'FBA在途\\n${b.qty}件\\n到货日：${fmtDate(b.date)}\\n可售至：${fmtDate(endD)}（${arrivalDays}天）')"
+          onmouseleave="hideTooltip()">
+          ${arrivalDays>3?b.qty+'件':''}
+        </div>`);
+      }
+      // 到货节点
+      if(arrX>=0&&arrX<=100){
+        nodes.push(`<div class="gantt-node" style="left:${arrX}%;color:#3F6BA6"
+          onmouseenter="showTooltip(event,'在途到货\\n${b.qty}件\\n${fmtDate(b.date)} 到FBA')"
+          onmouseleave="hideTooltip()">
+          <div class="gantt-node-line"></div>
+          <div class="gantt-node-diamond" style="background:#3F6BA6;top:0px"></div>
+          <div class="gantt-node-label" style="color:#3F6BA6">${fmtDate(b.date)}</div>
+        </div>`);
+      }
+    });
+
+    // 3. 已计划出运批次（紫色，层2）
+    // 格式：48件@07-24
+    // 节点 = 预计到货日（紫色菱形），条 = 到货日起的可售期
+    const plannedBatches=parseBatches(r.planned_batches,year);
+    plannedBatches.forEach(b=>{
+      const arrX=dateToX(b.date);
+      if(arrX>100)return;
+      const clampedX=Math.max(0,arrX);
+      const arrivalDays=dms>0?Math.floor(b.qty/dms):0;
+      const endD=new Date(b.date.getTime()+arrivalDays*86400000);
+      const w=Math.min(daysToW(arrivalDays),100-clampedX);
+      if(w>0.3){
+        bars.push(`<div class="gantt-bar gantt-bar-planned" style="left:${clampedX}%;width:${w}%"
+          onmouseenter="showTooltip(event,'已计划出运\\n${b.qty}件\\n预计到货：${fmtDate(b.date)}\\n可售至：${fmtDate(endD)}（${arrivalDays}天）')"
+          onmouseleave="hideTooltip()">
+          ${arrivalDays>3?b.qty+'件':''}
+        </div>`);
+      }
+      // 到货节点
+      if(arrX>=0&&arrX<=100){
+        nodes.push(`<div class="gantt-node" style="left:${arrX}%;color:#5B3FA6"
+          onmouseenter="showTooltip(event,'计划出运到货\\n${b.qty}件\\n${fmtDate(b.date)} 预计到FBA')"
+          onmouseleave="hideTooltip()">
+          <div class="gantt-node-line"></div>
+          <div class="gantt-node-diamond" style="background:#5B3FA6;top:14px"></div>
+          <div class="gantt-node-label" style="color:#5B3FA6;top:44px">${fmtDate(b.date)}</div>
+        </div>`);
+      }
+    });
+
+    // 4. 建议发运（橙色虚线，层3）
+    // 来自 ship_time 字段，格式：在产48件@2026-06-21; 翻单24件@2026-06-21
+    // 同一日期的在产+翻单合并为一条，显示总量
+    const shipItems=parseShipTime(r.ship_time);
+
+    // 检查是否有排产交期覆盖（prod_ship_date_override）
+    // 若有，用实际工厂交期替换建议发运日期，但保留数量
+    const prodOverride = r.prod_ship_date_override || null;
+
+    // 按日期合并：同一日期的在产+翻单合并
+    const shipByDate={};
+    shipItems.forEach(b=>{
+      const dk=fmtDate(b.date);
+      if(!shipByDate[dk]) shipByDate[dk]={date:b.date,totalQty:0,prodQty:0,reorderQty:0};
+      shipByDate[dk].totalQty+=b.qty;
+      if(b.type==='在产') shipByDate[dk].prodQty+=b.qty;
+      else shipByDate[dk].reorderQty+=b.qty;
+    });
+
+    Object.values(shipByDate).forEach(b=>{
+      // 若有排产交期覆盖，用实际交期替换发运日
+      const actualShipDate = prodOverride ? new Date(prodOverride) : b.date;
+      const isOverridden = prodOverride && fmtDate(actualShipDate)!==fmtDate(b.date);
+
+      const seaDays=35;
+      const arrDate=new Date(actualShipDate.getTime()+seaDays*86400000);
+      const arrX=dateToX(arrDate);
+      if(arrX>100)return;
+      const clampedX=Math.max(0,arrX);
+      const arrivalDays=dms>0?Math.floor(b.totalQty/dms):0;
+      const endD=new Date(arrDate.getTime()+arrivalDays*86400000);
+      const w=Math.min(daysToW(arrivalDays),100-clampedX);
+
+      // 构建tooltip：合并显示在产+翻单
+      const qtyDetail = b.prodQty>0&&b.reorderQty>0
+        ? `在产${b.prodQty}件 + 翻单${b.reorderQty}件`
+        : b.prodQty>0 ? `在产${b.prodQty}件` : `翻单${b.reorderQty}件`;
+      const overrideNote = isOverridden ? `\\n⚠️ 已用排产交期覆盖\\n原建议：${fmtDate(b.date)}` : '';
+
+      if(w>0.3){
+        bars.push(`<div class="gantt-bar gantt-bar-suggest" style="left:${clampedX}%;width:${w}%;${isOverridden?'border:1px solid #E8A020;':''}"
+          onmouseenter="showTooltip(event,'建议发运\\n合计 ${b.totalQty}件（${qtyDetail}）\\n发运日：${fmtDate(actualShipDate)}${overrideNote}\\n预计到FBA：${fmtDate(arrDate)}\\n可售至：${fmtDate(endD)}（${arrivalDays}天）')"
+          onmouseleave="hideTooltip()">
+          ${arrivalDays>3?b.totalQty+'件':''}
+        </div>`);
+      }
+      // 发运节点（菱形标在发运日）
+      const shipX=dateToX(actualShipDate);
+      if(shipX>=0&&shipX<=100){
+        nodes.push(`<div class="gantt-node" style="left:${shipX}%;color:#E8A020"
+          onmouseenter="showTooltip(event,'建议发运日\\n合计 ${b.totalQty}件（${qtyDetail}）\\n${fmtDate(actualShipDate)}${overrideNote}')"
+          onmouseleave="hideTooltip()">
+          <div class="gantt-node-line" style="border-left:2px dashed #E8A020;background:transparent"></div>
+          <div class="gantt-node-diamond" style="background:#E8A020;top:30px"></div>
+          <div class="gantt-node-label" style="color:#E8A020;top:44px">${fmtDate(actualShipDate)}</div>
+        </div>`);
+      }
+    });
+
+    html+=`<div class="gantt-row">
+      <div class="gantt-row-label">
+        <div class="gantt-row-label-msku" title="${r.msku}">${r.msku}</div>
+        <div class="gantt-row-label-name" title="${r.name||''}">${r.spu||r.name||'—'}</div>
+      </div>
+      <div class="gantt-bars">
+        ${tickBgHtml}
+        <div class="gantt-today-line" style="left:${todayX}%"></div>
+        ${bars.join('')}
+        ${nodes.join('')}
+      </div>
+    </div>`;
+  });
+
+  if(data.length>80){
+    html+=`<div style="text-align:center;padding:12px;font-size:12px;color:#717171">仅显示前80条，请使用筛选缩小范围</div>`;
+  }
+
+  html+=`</div>`;
+  document.getElementById('gantt-wrap').innerHTML=html;
+}
+
+function showTooltip(e,text){
+      const t=document.getElementById('gantt-tooltip');
+      t.innerHTML=text.replace(/\n/g,'<br>');
+      t.style.display='block';
+      t.style.left=(e.clientX+12)+'px';
+      t.style.top=(e.clientY-10)+'px';
+    }
+    function hideTooltip(){document.getElementById('gantt-tooltip').style.display='none';}
+
+    // 单元格tooltip（商品名称等）
+    function showCellTooltip(e, text) {
+      if (!text || text === '—') return;
+      const t = document.getElementById('cell-tooltip');
+      t.textContent = text;
+      t.style.display = 'block';
+      t.style.left = (e.clientX + 12) + 'px';
+      t.style.top = (e.clientY - 10) + 'px';
+    }
+    function hideCellTooltip() {
+      document.getElementById('cell-tooltip').style.display = 'none';
+    }
+
+// 甘特图断货筛选快捷按钮
+function ganttFilterStockout(days) {
+  document.getElementById('g-stockout').value = String(days);
+  renderGantt();
+}
+
+function ganttClearStockout() {
+  document.getElementById('g-stockout').value = '';
+  renderGantt();
+}
+
+// ══════════════════════════════════════════
+// 导出
+// ══════════════════════════════════════════
+function getExportData() {
+  const scope=document.querySelector('input[name="export-scope"]:checked').value;
+  if(scope==='all')return ALL_DATA;
+  if(scope==='modified')return ALL_DATA.filter(r=>isModified(r.msku));
+  if(scope==='filtered')return filteredData;
+  if(scope==='urgent')return ALL_DATA.filter(r=>r.urgency==='立即下单');
+  return ALL_DATA;
+}
+
+function updateExportPreview() {
+  if(!ALL_DATA.length)return;
+  const data=getExportData();
+  document.getElementById('export-preview-count').textContent=data.length;
+  const modifiedData=ALL_DATA.filter(r=>isModified(r.msku));
+  const wrap=document.getElementById('modified-preview-wrap');
+  if(!modifiedData.length){
+    wrap.innerHTML='<div style="text-align:center;padding:40px;color:#B0ABA5;font-size:13px">暂无修改记录 · 请在「数据筛选」页修改 DMS / 产品状态 / 允许出运</div>';
+    return;
+  }
+  wrap.innerHTML=`<div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>MSKU</th><th>商品名称</th><th>站点</th><th>系统DMS</th><th>运营DMS</th><th>产品状态</th><th>允许出运</th><th>原翻单量</th><th>重算翻单量</th></tr></thead>
+    <tbody>${modifiedData.map((r,i)=>{
+      const edit=editMap[r.msku]||{};
+      const rc=recalcRow(r);
+      const prodStatus=edit.prod_status!==undefined?edit.prod_status:(r.prod_status||'常规品');
+      const allowShip=edit.allow_ship!==undefined?edit.allow_ship:(r.allow_ship!==undefined?r.allow_ship:1);
+      return `<tr class="modified">
+        <td>${i+1}</td>
+        <td style="font-family:monospace;font-size:10px">${r.msku}</td>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis">${r.name||'—'}</td>
+        <td><span class="tag tag-${siteClass(r.site)}">${r.site}</span></td>
+        <td style="color:#B0ABA5">${r.dms}</td>
+        <td style="font-weight:600;color:#B8860B">${edit.dms_override!==undefined&&edit.dms_override!==null?edit.dms_override:'—'}</td>
+        <td>${prodStatus}</td>
+        <td>${allowShip?'✅ 允许':'🚫 禁止'}</td>
+        <td style="color:#B0ABA5">${r.suggest_reorder||0}</td>
+        <td style="font-weight:600;color:#064338">${rc.suggest_reorder||0}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+function exportAnalysis() {
+  const data=getExportData();
+  if(!data.length){alert('无数据可导出');return;}
+  const headers=['MSKU','SPU品名','商品名称','站点','负责人','紧急度','风险等级','ABC×XYZ',
+    '系统DMS','运营DMS','有效DMS','FBA在库','FBA在途','在库天数','在库+在途天数',
+    'FBA起始断货日','在途接力断货日','已计划出运断货日','已计划出运批次','建议发运时间','前置仓发运日期',
+    '建议发运量','建议翻单量','翻单工厂','产品状态','允许出运'];
+  const rows=[headers];
+  data.forEach(r=>{
+    const rc=recalcRow(r);
+    const edit=editMap[r.msku]||{};
+    rows.push([r.msku,r.spu||'',r.name,r.site,r.owner,r.urgency,r.risk,r.abc_xyz,
+      r.dms,edit.dms_override!==undefined&&edit.dms_override!==null?edit.dms_override:'',getEffectiveDMS(r),
+      r.fba_stock,r.fba_transit,rc.days_stock,rc.days_transit,
+      rc.stockout1,r.stockout2||'',r.stockout3||'',r.planned_batches||'',r.ship_time||'',r.fwd_ship_date||'',
+      rc.suggest_ship,rc.suggest_reorder,r.reorder_factory,
+      edit.prod_status||r.prod_status||'常规品',
+      edit.allow_ship!==undefined?edit.allow_ship:(r.allow_ship!==undefined?r.allow_ship:1)]);
+  });
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'决策分析');
+  XLSX.writeFile(wb,`决策总表分析_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+function exportReturnTemplate() {
+  const data=getExportData();
+  if(!data.length){alert('无数据可导出');return;}
+  const now=new Date();
+  const nowStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0')+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  const headers=['ID','MSKU','ERP SKU','ASIN','父ASIN','店铺ID','站点','产品状态','运营预估DMS','等级','是否允许出运','运营负责人','来源','备注','更新人','更新时间'];
+  const rows=[headers];
+  data.forEach(r=>{
+    const edit=editMap[r.msku]||{};
+    const dmsOverride=edit.dms_override!==undefined&&edit.dms_override!==null?edit.dms_override:'';
+    const effectiveDms=dmsOverride!==''?parseFloat(dmsOverride):r.dms;
+    let grade=6;
+    if(effectiveDms>=10)grade=1;
+    else if(effectiveDms>=7)grade=2;
+    else if(effectiveDms>=5)grade=3;
+    else if(effectiveDms>=3)grade=4;
+    else if(effectiveDms>=1)grade=5;
+    const prodStatus=edit.prod_status!==undefined?edit.prod_status:(r.prod_status||'常规品');
+    const allowShip=edit.allow_ship!==undefined?edit.allow_ship:(r.allow_ship!==undefined?r.allow_ship:1);
+    rows.push([
+      r.sys_id||'',r.msku,r.erp_sku||r.msku,r.asin||'',r.parent_asin||'',r.shop_id||'',r.site,
+      prodStatus,dmsOverride!==''?dmsOverride:'',grade,allowShip,r.owner,'excel',
+      r.erp_sku?`ERP_sku:${r.erp_sku}`:'',r.owner,nowStr
+    ]);
+  });
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:10},{wch:30},{wch:30},{wch:14},{wch:14},{wch:8},{wch:8},{wch:10},{wch:12},{wch:6},{wch:12},{wch:10},{wch:8},{wch:30},{wch:10},{wch:18}];
+  XLSX.utils.book_append_sheet(wb,ws,'商品状态');
+  XLSX.writeFile(wb,`msku_status_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}.xlsx`);
+}
+
+function exportDmsChangeLog() {
+  const dmsModified = ALL_DATA.filter(r => {
+    const e = editMap[r.msku];
+    return e && e.dms_override !== undefined && e.dms_override !== null;
+  });
+  if (!dmsModified.length) {
+    alert('当前没有修改过DMS的SKU');
+    return;
+  }
+  const now = new Date();
+  const dateStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+  const timeStr = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  const nowStr = dateStr + ' ' + timeStr;
+
+  const headers = ['MSKU','SPU品名','商品名称','站点','负责人','系统DMS（原始）','运营DMS（修改后）','DMS变化','原建议翻单量','重算翻单量','原建议发运量','重算发运量','修改时间'];
+  const rows = [headers];
+
+  dmsModified.forEach(r => {
+    const edit = editMap[r.msku] || {};
+    const origDms = r.dms;
+    const newDms = edit.dms_override;
+    const rc = recalcRow(r);
+    const diff = (newDms - origDms).toFixed(2);
+    const dmsChange = newDms > origDms ? `↑ +${diff}` : `↓ ${diff}`;
+    rows.push([
+      r.msku,
+      r.spu || '',
+      r.name || '',
+      r.site,
+      r.owner,
+      origDms,
+      newDms,
+      dmsChange,
+      r.suggest_reorder || 0,
+      rc.suggest_reorder || 0,
+      r.suggest_ship || 0,
+      rc.suggest_ship || 0,
+      nowStr
+    ]);
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:30},{wch:15},{wch:30},{wch:8},{wch:10},{wch:14},{wch:14},{wch:12},{wch:14},{wch:14},{wch:14},{wch:14},{wch:18}];
+  XLSX.utils.book_append_sheet(wb, ws, 'DMS修改记录');
+  XLSX.writeFile(wb, `DMS修改记录_${dateStr.replace(/-/g,'')}${timeStr.replace(':','')}.xlsx`);
+}
+
+// ══════════════════════════════════════════
+// SKU大表处理
+// ══════════════════════════════════════════
+function handleDropSku(e){e.preventDefault();document.getElementById('upload-card-sku').classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f)processSkuFile(f);}
+function handleFileUploadSku(e){const f=e.target.files[0];if(f)processSkuFile(f);e.target.value='';}
+
+function processSkuFile(file) {
+  const status=document.getElementById('upload-status-sku');
+  status.className='upload-status info';status.textContent='正在解析 SKU 大表...';status.style.display='block';
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      let sheetName=wb.SheetNames.find(n=>n.includes('SKU大表')||n.includes('SKU'));
+      if(!sheetName)sheetName=wb.SheetNames[0];
+      const ws=wb.Sheets[sheetName];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      if(rows.length<2)throw new Error('SKU大表内容为空');
+      const headers=rows[0].map(h=>String(h).trim());
+      const mskuIdx=headers.findIndex(h=>h==='MSKU'||h==='msku');
+      const nameIdx=headers.findIndex(h=>h==='品名');
+      const spuIdx=headers.findIndex(h=>h==='SPU品名');
+      const boxIdx=headers.findIndex(h=>h==='装箱入数'||h==='箱规'||h==='装箱数');
+      if(mskuIdx<0)throw new Error('未找到 MSKU 列');
+      skuMap={};
+      let cnt=0;
+      for(let i=1;i<rows.length;i++){
+        const row=rows[i];
+        const msku=String(row[mskuIdx]||'').trim();
+        if(!msku)continue;
+        const boxVal=boxIdx>=0?parseInt(row[boxIdx]||0)||0:0;
+        skuMap[msku]={name:nameIdx>=0?String(row[nameIdx]||'').trim():'',spu:spuIdx>=0?String(row[spuIdx]||'').trim():'',box:boxVal};
+        cnt++;
+      }
+      skuMapLoaded=true;
+      updateSkuMapStatusBar();
+      document.getElementById('badge-sku').className='upload-card-badge badge-loaded';
+      document.getElementById('badge-sku').textContent='已加载';
+      status.className='upload-status success';
+      status.textContent=`✅ SKU大表解析成功：${cnt} 条映射记录（Sheet: ${sheetName}）`;
+      if(ALL_DATA.length>0){applySkuMapping(ALL_DATA);filteredData=[...ALL_DATA];const stats=calcStats(ALL_DATA);renderHeroMetrics(stats);renderCharts(stats,ALL_DATA);renderUrgentTable(ALL_DATA);renderFilterTable();populateSpuFilter(ALL_DATA);updateInsights(stats);renderGantt();}
+      if(pendingData)applySkuMapping(pendingData);
+    }catch(err){status.className='upload-status error';status.textContent='解析失败：'+err.message;}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function applySkuMapping(data){
+      if(!skuMapLoaded)return;
+      data.forEach(r=>{
+        const m=skuMap[r.msku];
+        if(m){
+          if(!r.name&&m.name)r.name=m.name;
+          r.spu=m.spu||'';
+          // 原表装箱量为空或≤1时，用SKU大表装箱入数兜底
+          if(m.box>1&&(!r.box_reorder||r.box_reorder<=1)){
+            r.box_reorder=m.box;
+          }
+        } else {
+          // 未匹配到SKU大表：从商品名称提取SPU（取第一个逗号前的部分）
+          if(!r.spu && r.name){
+            const commaIdx = r.name.indexOf(',');
+            r.spu = commaIdx > 0 ? r.name.slice(0, commaIdx).trim() : r.name.trim();
+          }
+        }
+      });
+    }
+
+function updateSkuMapStatusBar(){
+  const bar=document.getElementById('sku-map-status-bar');
+  const dot=document.getElementById('sku-map-dot');
+  const text=document.getElementById('sku-map-status-text');
+  if(skuMapLoaded){bar.className='sku-map-status loaded';dot.className='sku-map-dot green';text.textContent=`SKU大表已加载 · ${Object.keys(skuMap).length} 条映射记录 · 商品名称和SPU品名已自动补全`;}
+  else{bar.className='sku-map-status empty';dot.className='sku-map-dot gray';text.textContent='SKU大表未加载 · 商品名称将使用决策表原始数据';}
+}
+
+// ══════════════════════════════════════════
+// 排产翻单表处理（交期覆盖）
+// ══════════════════════════════════════════
+function handleDropProd(e){e.preventDefault();document.getElementById('upload-card-prod').classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f)processProdShipFile(f);}
+function handleFileUploadProd(e){const f=e.target.files[0];if(f)processProdShipFile(f);e.target.value='';}
+
+function processProdShipFile(file) {
+  const status=document.getElementById('upload-status-prod');
+  status.className='upload-status info';status.textContent='正在解析排产翻单表...';status.style.display='block';
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      // 优先找「采购单明细」Sheet，否则用第一个
+      let sheetName=wb.SheetNames.find(n=>n.includes('采购单明细')||n.includes('采购单'));
+      if(!sheetName)sheetName=wb.SheetNames[0];
+      const ws=wb.Sheets[sheetName];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      if(rows.length<2)throw new Error('排产翻单表内容为空');
+      const headers=rows[0].map(h=>String(h).trim());
+
+      // 查找 MSKU 列（支持多种列名）
+      const mskuIdx=headers.findIndex(h=>h==='MSKU'||h==='msku'||h==='商品名称'||h==='SKU');
+      // 查找 AD列（预期发货日）—— 先按列名找，找不到则用第30列（AD=第30列，0-indexed=29）
+      let shipDateIdx=headers.findIndex(h=>h==='预期发货日'||h==='预计发货日'||h==='发货日期'||h==='交期'||h==='预期交期');
+      if(shipDateIdx<0) shipDateIdx=29; // AD列 fallback（0-indexed）
+
+      if(mskuIdx<0)throw new Error('未找到 MSKU 列（支持：MSKU / 商品名称 / SKU）');
+
+      prodShipMap={};
+      let cnt=0;
+      let skipped=0;
+      for(let i=1;i<rows.length;i++){
+        const row=rows[i];
+        const msku=String(row[mskuIdx]||'').trim();
+        if(!msku)continue;
+        const rawDate=row[shipDateIdx];
+        if(!rawDate&&rawDate!==0)continue;
+
+        // 解析日期：支持 Excel 序列号、字符串日期
+        let dateStr='';
+        if(typeof rawDate==='number'){
+          // Excel 日期序列号转换
+          const d=new Date(Math.round((rawDate-25569)*86400*1000));
+          dateStr=d.toISOString().slice(0,10);
+        } else {
+          const s=String(rawDate).trim();
+          // 尝试解析各种日期格式
+          const d=new Date(s);
+          if(!isNaN(d)){
+            dateStr=d.toISOString().slice(0,10);
+          } else {
+            // 尝试 MM/DD/YYYY 或 YYYY/MM/DD
+            const m=s.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+            if(m) dateStr=`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+            else { skipped++; continue; }
+          }
+        }
+
+        // 若同一 MSKU 有多条记录，取最早的交期（最保守估计）
+        if(!prodShipMap[msku]||dateStr<prodShipMap[msku]){
+          prodShipMap[msku]=dateStr;
+          cnt++;
+        }
+      }
+
+      prodShipLoaded=true;
+      // 将交期写入 ALL_DATA
+      applyProdShipOverride();
+      updateProdShipStatusBar();
+      document.getElementById('badge-prod').className='upload-card-badge badge-loaded';
+      document.getElementById('badge-prod').textContent='已加载';
+      status.className='upload-status success';
+      const matchedCount=ALL_DATA.length>0?ALL_DATA.filter(r=>prodShipMap[r.msku]).length:0;
+      status.textContent=`✅ 排产翻单表解析成功：${cnt} 条交期记录（Sheet: ${sheetName}）${skipped>0?`，${skipped}条日期格式无法识别`:''}${ALL_DATA.length>0?`，匹配 ${matchedCount} 个MSKU`:''}`;
+      if(ALL_DATA.length>0) renderGantt();
+    }catch(err){status.className='upload-status error';status.textContent='解析失败：'+err.message;}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function applyProdShipOverride(){
+  if(!prodShipLoaded)return;
+  ALL_DATA.forEach(r=>{
+    const d=prodShipMap[r.msku];
+    if(d) r.prod_ship_date_override=d;
+    else delete r.prod_ship_date_override;
+  });
+}
+
+function updateProdShipStatusBar(){
+  const bar=document.getElementById('prod-ship-status-bar');
+  const dot=document.getElementById('prod-ship-dot');
+  const text=document.getElementById('prod-ship-status-text');
+  if(prodShipLoaded){
+    bar.className='sku-map-status loaded';
+    dot.className='sku-map-dot green';
+    const cnt=Object.keys(prodShipMap).length;
+    const matchedCount=ALL_DATA.length>0?ALL_DATA.filter(r=>prodShipMap[r.msku]).length:0;
+    text.textContent=`排产交期已加载 · ${cnt} 条记录 · 甘特图已切换为「实际交期版」${ALL_DATA.length>0?` · 匹配 ${matchedCount}/${ALL_DATA.length} 个MSKU`:''}`;
+  } else {
+    bar.className='sku-map-status empty';
+    dot.className='sku-map-dot gray';
+    text.textContent='排产交期未加载 · 甘特图将使用决策表建议发运时间（AR列）';
+  }
+}
+
+// ══════════════════════════════════════════
+// 决策总表处理
+// ══════════════════════════════════════════
+function handleDropDec(e){e.preventDefault();document.getElementById('upload-card-dec').classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f)processDecFile(f);}
+function handleFileUploadDec(e){const f=e.target.files[0];if(f)processDecFile(f);e.target.value='';}
+
+// 日期格式标准化：将 2026/6/3 或 2026/06/03 转为 2026-06-03
+    function normalizeDate(str) {
+      if (!str || str === 'nan' || str === '') return '';
+      // 已经是 YYYY-MM-DD 格式
+      if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+      // YYYY/M/D 或 YYYY/MM/DD 格式
+      const m = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+      if (m) {
+        return m[1] + '-' + m[2].padStart(2,'0') + '-' + m[3].padStart(2,'0');
+      }
+      return str;
+    }
+
+    function processDecFile(file) {
+  const status=document.getElementById('upload-status-dec');
+  status.className='upload-status info';status.textContent='正在解析文件...';status.style.display='block';
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      let rawRecords=[];
+      if(file.name.toLowerCase().endsWith('.csv')){
+        const text=new TextDecoder('utf-8').decode(e.target.result);
+        rawRecords=parseCSV(text);
+      }else{
+        const wb=XLSX.read(e.target.result,{type:'array'});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const allRows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        if(allRows.length<2)throw new Error('文件内容为空');
+        const headers=allRows[0];
+        const dataRows=allRows.slice(3);
+        rawRecords=dataRows.filter(row=>row&&row.some(c=>c!==undefined&&c!=='')).map(row=>{
+          const obj={};headers.forEach((h,i)=>{if(h)obj[h]=row[i]!==undefined?String(row[i]):'';});return obj;
+        });
+      }
+      const filtered=rawRecords.filter(r=>{const o=String(r['负责人']||'').trim();return ALLOWED_OWNERS.includes(o);});
+      if(!filtered.length){status.className='upload-status error';status.textContent='未找到 '+ALLOWED_OWNERS.join(' / ')+' 负责的数据';return;}
+      pendingData=filtered.map(r=>({
+        owner:String(r['负责人']||'').trim(),
+        msku:String(r['MSKU']||'').trim(),
+        erp_sku:String(r['ERP_SKU']||'').trim(),
+        asin:String(r['ASIN']||'').trim(),
+        parent_asin:String(r['父ASIN']||'').trim(),
+        shop_id:String(r['店铺ID']||'').trim(),
+        name:String(r['商品名称']||'').trim(),
+        spu:'',
+        site:String(r['站点']||'').trim(),
+        urgency:String(r['紧急度']||'').trim(),
+        risk:String(r['风险等级']||'').trim(),
+        abc_xyz:String(r['ABC×XYZ']||'').trim(),
+        dms:parseFloat(r['日均销量_DMS']||0)||0,
+        dms_sys:parseFloat(r['系统预测DMS']||r['日均销量_DMS']||0)||0,
+        fba_stock:parseInt(r['FBA在库_件']||0)||0,
+        fba_transit:parseInt(r['FBA在途_件']||0)||0,
+        transit_batches:String(r['FBA在途批次(日期=到FBA日)']||'').trim(),
+        in_prod:parseInt(r['在产数量_件']||0)||0,
+        domestic:parseInt(r['国内成品仓_件']||0)||0,
+        fwd_stock:parseInt(r['前置仓库存_件']||0)||0,
+        planned_ship:parseInt(r['已计划出运量_件']||0)||0,
+        days_stock:parseFloat(r['FBA在库可售天数']||0)||0,
+        days_transit:parseFloat(r['FBA在库+在途可售天数']||0)||0,
+        days_planned:parseFloat(r['FBA在库+在途+已计划出运可售天数']||0)||0,
+        stockout1:normalizeDate(String(r['FBA起始断货日']||'').trim()),
+        stockout2:normalizeDate(String(r['在途接力后断货日']||'').trim()),
+        // v5 新增字段
+        stockout3:normalizeDate(String(r['已计划出运断货日']||'').trim()),
+        planned_batches:String(r['已计划出运批次']||'').trim(),
+        fwd_ship_date:String(r['前置仓发运日期']||'').trim(),
+        fwd_arrival_date:String(r['前置仓入库日期']||'').trim(),
+        suggest_ship:parseInt(r['建议发运量_件']||0)||0,
+        suggest_reorder:parseInt(r['建议翻单数量_件']||0)||0,
+        ship_time:String(r['建议发运时间']||'').trim(),
+            dom_ship_qty:parseInt(r['建议国内仓发运量_件']||0)||0,
+            fwd_ship_qty:parseInt(r['前置仓发运量_件']||0)||0,
+        reorder_factory:String(r['翻单_工厂']||'').trim(),
+        in_prod_factory:String(r['在产_工厂']||'').trim(),
+        box_reorder:parseInt(r['装箱量_翻单(件/箱)']||1)||1,
+        lead_time:parseInt(r['供应链总提前期_天']||105)||105,
+        target_days:parseInt(r['目标覆盖天数_提前期加备货']||135)||135,
+        target_demand:parseFloat(r['目标需求_件']||0)||0,
+        prod_status:String(r['产品状态']||'常规品').trim()||'常规品',
+        allow_ship:parseInt(r['是否允许出运']!==undefined?r['是否允许出运']:1)||1,
+        sys_id:String(r['ID']||'').trim(),
+      }));
+      if(skuMapLoaded)applySkuMapping(pendingData);
+      showUploadPreview(pendingData);
+      document.getElementById('badge-dec').className='upload-card-badge badge-loaded';
+      document.getElementById('badge-dec').textContent='已加载';
+      status.className='upload-status success';
+      status.textContent=`✅ 解析成功：${filtered.length} 条记录（${ALLOWED_OWNERS.join(' / ')}组），点击「应用此数据」加载到面板`;
+    }catch(err){status.className='upload-status error';status.textContent='解析失败：'+err.message;}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseCSV(text){
+  const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+  if(!lines.length)return[];
+  const headers=splitCSVLine(lines[0]);
+  const dataLines=[];
+  for(let i=1;i<lines.length;i++){const line=lines[i].trim();if(!line)continue;if(i===1||i===2)continue;dataLines.push(lines[i]);}
+  return dataLines.map(line=>{const vals=splitCSVLine(line);const obj={};headers.forEach((h,i)=>{if(h)obj[h]=vals[i]!==undefined?vals[i]:'';});return obj;});
+}
+
+function splitCSVLine(line){
+  const result=[];let current='';let inQuotes=false;
+  for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){if(inQuotes&&line[i+1]==='"'){current+='"';i++;}else inQuotes=!inQuotes;}else if(ch===','&&!inQuotes){result.push(current.trim());current='';}else current+=ch;}
+  result.push(current.trim());return result;
+}
+
+function showUploadPreview(data){
+  document.getElementById('upload-preview').style.display='block';
+  const urgCount=data.filter(r=>r.urgency==='立即下单').length;
+  const reorderCount=data.filter(r=>r.suggest_reorder>0).length;
+  const highRiskCount=data.filter(r=>r.risk==='高风险').length;
+  const spuCount=new Set(data.map(r=>r.spu).filter(Boolean)).size;
+  document.getElementById('upload-stats').innerHTML=[
+    {label:'总记录数',val:data.length,color:'#064338'},
+    {label:'立即下单',val:urgCount,color:'#C4433A'},
+    {label:'有翻单需求',val:reorderCount,color:'#B8860B'},
+    {label:'高风险SKU',val:highRiskCount,color:'#C4433A'},
+    {label:'SPU品名数',val:spuCount,color:'#064338'},
+  ].map(s=>`<div style="background:#E8F2F0;border-radius:10px;padding:14px;text-align:center"><div style="font-family:'Playfair Display',serif;font-size:24px;color:${s.color}">${s.val}</div><div style="font-size:11px;color:#717171">${s.label}</div></div>`).join('');
+  document.getElementById('upload-tbody').innerHTML=data.slice(0,20).map((r,i)=>`
+    <tr><td>${i+1}</td><td style="font-family:monospace;font-size:10px">${r.msku}</td>
+    <td>${r.spu?`<span class="spu-tag">${r.spu}</span>`:'<span class="spu-tag unmapped">—</span>'}</td>
+    <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis">${r.name||'—'}</td>
+    <td>${r.site}</td><td>${r.owner}</td>
+    <td>${urgencyTag(r.urgency)}</td><td>${riskTag(r.risk)}</td>
+    <td>${r.dms}</td><td>${r.fba_stock}</td><td>${r.fba_transit}</td>
+    <td>${r.days_stock}</td><td>${r.suggest_reorder}</td>
+    <td style="font-size:11px">${r.reorder_factory||'—'}</td></tr>
+  `).join('');
+}
+
+function applyUploadedData(){if(!pendingData)return;loadData(pendingData);document.getElementById('upload-preview').style.display='none';pendingData=null;document.getElementById('file-input-dec').value='';if(PREV_DEC_DATA.length>0)runDecCompare();switchTab('tab-overview');}
+function cancelUpload(){pendingData=null;document.getElementById('upload-preview').style.display='none';document.getElementById('upload-status-dec').style.display='none';}
+
+// ══════════════════════════════════════════
+// 快速筛选：国内仓 / 前置仓
+// ══════════════════════════════════════════
+function quickFilterDomestic(){
+  if(!ALL_DATA.length)return;
+  filterDomesticActive = !filterDomesticActive;
+  filterFwdActive = false;
+  updateQuickFilterBtnStyle();
+  applyFilters();
+  switchTab('tab-filter');
+}
+function quickFilterFwd(){
+  if(!ALL_DATA.length)return;
+  filterFwdActive = !filterFwdActive;
+  filterDomesticActive = false;
+  updateQuickFilterBtnStyle();
+  applyFilters();
+  switchTab('tab-filter');
+}
+function updateQuickFilterBtnStyle(){
+  document.querySelectorAll('.filter-actions .btn-sm').forEach(btn=>{
+    if(btn.textContent.includes('国内仓有货')){
+      btn.style.background = filterDomesticActive ? '#064338' : '#E8F2F0';
+      btn.style.color = filterDomesticActive ? '#fff' : '#064338';
+    }
+    if(btn.textContent.includes('前置仓有货')){
+      btn.style.background = filterFwdActive ? '#064338' : '#E8F2F0';
+      btn.style.color = filterFwdActive ? '#fff' : '#064338';
+    }
+  });
+}
+
+// ══════════════════════════════════════════
+// 工具函数
+// ══════════════════════════════════════════
+function siteClass(s){const m={'美国':'us','英国':'uk','德国':'de','加拿大':'ca','日本':'jp'};return m[s]||'other';}
+function urgencyTag(u){const m={'立即下单':'urgent','尽快下单':'soon','一般':'normal','充足':'ok'};return `<span class="tag tag-${m[u]||'normal'}">${u||'—'}</span>`;}
+function riskTag(r){const m={'高风险':'high','中风险':'mid','低风险':'low','安全':'safe'};return `<span class="tag tag-${m[r]||'normal'}">${r||'—'}</span>`;}
+
+// ══════════════════════════════════════════
+// 版本对比
+// ══════════════════════════════════════════
+let PREV_DEC_DATA = [];
+let decDiffAllRows = [];
+let decDiffFiltered = [];
+
+function handleDropPrevDec(e){e.preventDefault();document.getElementById('upload-card-prev-dec').classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f)processDecFilePrev(f);}
+function handleFileUploadPrevDec(e){const f=e.target.files[0];if(f)processDecFilePrev(f);e.target.value='';}
+
+function processDecFilePrev(file) {
+  const status=document.getElementById('upload-status-prev-dec');
+  status.className='upload-status info';status.textContent='正在解析上次决策总表...';status.style.display='block';
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      let rawRecords=[];
+      if(file.name.toLowerCase().endsWith('.csv')){
+        const text=new TextDecoder('utf-8').decode(e.target.result);
+        rawRecords=parseCSV(text);
+      }else{
+        const wb=XLSX.read(e.target.result,{type:'array'});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const allRows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        if(allRows.length<2)throw new Error('文件内容为空');
+        const headers=allRows[0];
+        const dataRows=allRows.slice(3);
+        rawRecords=dataRows.filter(row=>row&&row.some(c=>c!==undefined&&c!=='')).map(row=>{
+          const obj={};headers.forEach((h,i)=>{if(h)obj[h]=row[i]!==undefined?String(row[i]):'';});return obj;
+        });
+      }
+      const filtered=rawRecords.filter(r=>{const o=String(r['负责人']||'').trim();return ALLOWED_OWNERS.includes(o);});
+      if(!filtered.length){status.className='upload-status error';status.textContent='未找到 '+ALLOWED_OWNERS.join(' / ')+' 负责的数据';return;}
+      PREV_DEC_DATA=filtered.map(r=>({
+        owner:String(r['负责人']||'').trim(),
+        msku:String(r['MSKU']||'').trim(),
+        name:String(r['商品名称']||'').trim(),
+        spu:'',
+        site:String(r['站点']||'').trim(),
+        urgency:String(r['紧急度']||'').trim(),
+        risk:String(r['风险等级']||'').trim(),
+        suggest_reorder:parseInt(r['建议翻单数量_件']||0)||0,
+        reorder_factory:String(r['翻单_工厂']||'').trim(),
+      }));
+      if(skuMapLoaded)applySkuMapping(PREV_DEC_DATA);
+      document.getElementById('badge-prev-dec').className='upload-card-badge badge-loaded';
+      document.getElementById('badge-prev-dec').textContent='已加载';
+      status.className='upload-status success';
+      status.textContent=`✅ 上次决策总表解析成功：${PREV_DEC_DATA.length} 条记录`;
+      updatePrevDecStatusBar();
+      if(ALL_DATA.length>0) runDecCompare();
+    }catch(err){status.className='upload-status error';status.textContent='解析失败：'+err.message;}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function updatePrevDecStatusBar(){
+  const bar=document.getElementById('prev-dec-status-bar');
+  const dot=document.getElementById('prev-dec-dot');
+  const text=document.getElementById('prev-dec-status-text');
+  if(PREV_DEC_DATA.length>0){
+    bar.className='sku-map-status loaded';
+    dot.className='sku-map-dot green';
+    text.textContent=`上次决策总表已加载 · ${PREV_DEC_DATA.length} 条记录 · 前往「版本对比」Tab查看变化`;
+  } else {
+    bar.className='sku-map-status empty';
+    dot.className='sku-map-dot gray';
+    text.textContent='上次决策总表未加载 · 上传后可在「版本对比」Tab查看变化';
+  }
+}
+
+function runDecCompare() {
+  if(!PREV_DEC_DATA.length || !ALL_DATA.length) return;
+  const prev=PREV_DEC_DATA, curr=ALL_DATA;
+  const prevMap={}, currMap={};
+  prev.forEach(r=>{prevMap[r.msku]=r;});
+  curr.forEach(r=>{currMap[r.msku]=r;});
+  const allMskus=new Set([...Object.keys(prevMap),...Object.keys(currMap)]);
+  const skuAdded=[], skuRemoved=[], skuChanged=[], skuSame=[];
+  allMskus.forEach(msku=>{
+    const p=prevMap[msku], c=currMap[msku];
+    if(!p){
+      skuAdded.push({msku,...c,prev_reorder:0,curr_reorder:c.suggest_reorder||0,change_type:'added',prev_urgency:'—',curr_urgency:c.urgency||'—'});
+    } else if(!c){
+      skuRemoved.push({msku,...p,prev_reorder:p.suggest_reorder||0,curr_reorder:0,change_type:'removed',prev_urgency:p.urgency||'—',curr_urgency:'—'});
+    } else {
+      const pr=p.suggest_reorder||0, cr=c.suggest_reorder||0;
+      if(pr!==cr||p.urgency!==c.urgency){
+        skuChanged.push({msku,...c,prev_reorder:pr,curr_reorder:cr,change_type:'changed',prev_urgency:p.urgency||'—',curr_urgency:c.urgency||'—'});
+      } else {
+        skuSame.push({msku,...c,prev_reorder:pr,curr_reorder:cr,change_type:'same',prev_urgency:p.urgency||'—',curr_urgency:c.urgency||'—'});
+      }
+    }
+  });
+  const siteMap={};
+  [...skuAdded,...skuRemoved,...skuChanged,...skuSame].forEach(r=>{
+    const s=r.site||'未知';
+    if(!siteMap[s])siteMap[s]={site:s,prev_sku:0,curr_sku:0,prev_reorder:0,curr_reorder:0};
+    if(r.change_type==='removed'){siteMap[s].prev_sku++;siteMap[s].prev_reorder+=r.prev_reorder;}
+    else if(r.change_type==='added'){siteMap[s].curr_sku++;siteMap[s].curr_reorder+=r.curr_reorder;}
+    else{siteMap[s].prev_sku++;siteMap[s].curr_sku++;siteMap[s].prev_reorder+=r.prev_reorder;siteMap[s].curr_reorder+=r.curr_reorder;}
+  });
+  const factoryMap={};
+  [...skuAdded,...skuRemoved,...skuChanged,...skuSame].forEach(r=>{
+    const f=r.reorder_factory||'未知';
+    if(!factoryMap[f])factoryMap[f]={factory:f,prev_sku:0,curr_sku:0,prev_reorder:0,curr_reorder:0};
+    if(r.change_type==='removed'){factoryMap[f].prev_sku++;factoryMap[f].prev_reorder+=r.prev_reorder;}
+    else if(r.change_type==='added'){factoryMap[f].curr_sku++;factoryMap[f].curr_reorder+=r.curr_reorder;}
+    else{factoryMap[f].prev_sku++;factoryMap[f].curr_sku++;factoryMap[f].prev_reorder+=r.prev_reorder;factoryMap[f].curr_reorder+=r.curr_reorder;}
+  });
+  decDiffAllRows=[...skuAdded,...skuRemoved,...skuChanged,...skuSame];
+  renderDecCompare({
+    skuAdded,skuRemoved,skuChanged,skuSame,
+    siteData:Object.values(siteMap),
+    factoryData:Object.values(factoryMap),
+    prevTotal:prev.length,currTotal:curr.length,
+    prevReorder:prev.reduce((a,r)=>a+(r.suggest_reorder||0),0),
+    currReorder:curr.reduce((a,r)=>a+(r.suggest_reorder||0),0),
+  });
+}
+
+function renderDecCompare(d) {
+  document.getElementById('compare-empty').style.display='none';
+  document.getElementById('compare-content').style.display='block';
+  const now=new Date();
+  document.getElementById('diff-banner-meta').innerHTML=
+    `上次：${d.prevTotal} 个SKU · 翻单 ${d.prevReorder} 件<br>本次：${d.currTotal} 个SKU · 翻单 ${d.currReorder} 件<br>对比时间：${now.toISOString().slice(0,10)}`;
+  const reorderDiff=d.currReorder-d.prevReorder;
+  const skuDiff=d.currTotal-d.prevTotal;
+  document.getElementById('diff-summary-grid').innerHTML=[
+    {label:'新增SKU',val:d.skuAdded.length,sub:'本次新出现的SKU',cls:d.skuAdded.length>0?'changed':'same'},
+    {label:'移除SKU',val:d.skuRemoved.length,sub:'上次有本次无的SKU',cls:d.skuRemoved.length>0?'changed':'same'},
+    {label:'翻单量变化SKU',val:d.skuChanged.length,sub:'翻单量或紧急度有变化',cls:d.skuChanged.length>0?'changed':'same'},
+    {label:'SKU总数变化',val:(skuDiff>=0?'+':'')+skuDiff,sub:`上次${d.prevTotal} → 本次${d.currTotal}`,cls:skuDiff!==0?'changed':'same'},
+    {label:'翻单总量变化',val:(reorderDiff>=0?'+':'')+reorderDiff,sub:`上次${d.prevReorder} → 本次${d.currReorder}`,cls:reorderDiff!==0?'changed':'same'},
+    {label:'无变化SKU',val:d.skuSame.length,sub:'翻单量和紧急度均未变化',cls:'same'},
+  ].map(c=>`<div class="diff-card ${c.cls}"><div class="diff-card-label">${c.label}</div><div class="diff-card-value">${c.val}</div><div class="diff-card-sub">${c.sub}</div></div>`).join('');
+  const sites=[...new Set(decDiffAllRows.map(r=>r.site).filter(Boolean))].sort();
+  const dfSite=document.getElementById('df-site');
+  while(dfSite.options.length>1)dfSite.remove(1);
+  sites.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;dfSite.appendChild(o);});
+  const owners=[...new Set(decDiffAllRows.map(r=>r.owner).filter(Boolean))].sort();
+  const dfOwner=document.getElementById('df-owner');
+  while(dfOwner.options.length>1)dfOwner.remove(1);
+  owners.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;dfOwner.appendChild(o);});
+  document.getElementById('diff-sku-chips').innerHTML=[
+    {label:`新增 ${d.skuAdded.length}`,cls:'diff-chip-added'},
+    {label:`移除 ${d.skuRemoved.length}`,cls:'diff-chip-removed'},
+    {label:`变化 ${d.skuChanged.length}`,cls:'diff-chip-changed'},
+    {label:`无变化 ${d.skuSame.length}`,cls:'diff-chip-same'},
+  ].map(c=>`<span class="diff-chip ${c.cls}">${c.label}</span>`).join('');
+  decDiffFiltered=[...decDiffAllRows];
+  renderDecDiffSkuTable(decDiffFiltered);
+  document.getElementById('diff-filter-count').innerHTML=`共 <span>${decDiffFiltered.length}</span> 条记录`;
+  renderDecDiffSiteTable(d.siteData);
+  document.getElementById('diff-site-chips').innerHTML=d.siteData.map(s=>{
+    const diff=s.curr_reorder-s.prev_reorder;
+    return `<span class="diff-chip ${diff>0?'diff-chip-added':diff<0?'diff-chip-removed':'diff-chip-same'}">${s.site}: ${diff>=0?'+':''}${diff}</span>`;
+  }).join('');
+  renderDecDiffFactoryTable(d.factoryData);
+  document.getElementById('diff-factory-chips').innerHTML=d.factoryData.map(f=>{
+    const diff=f.curr_reorder-f.prev_reorder;
+    return `<span class="diff-chip ${diff>0?'diff-chip-added':diff<0?'diff-chip-removed':'diff-chip-same'}">${f.factory}: ${diff>=0?'+':''}${diff}</span>`;
+  }).join('');
+}
+
+function renderDecDiffSkuTable(rows) {
+  const tbody=document.getElementById('diff-sku-tbody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="11" class="diff-empty">无匹配数据</td></tr>';return;}
+  tbody.innerHTML=rows.map(r=>{
+    const diff=r.curr_reorder-r.prev_reorder;
+    const diffStr=diff===0?'—':(diff>0?`<span class="qty-up">+${diff}</span>`:`<span class="qty-down">${diff}</span>`);
+    const tagCls=r.change_type==='added'?'diff-tag-added':r.change_type==='removed'?'diff-tag-removed':r.change_type==='changed'?'diff-tag-changed':'';
+    const tagLabel=r.change_type==='added'?'新增':r.change_type==='removed'?'移除':r.change_type==='changed'?'变化':'无变化';
+    const rowCls=r.change_type==='added'?'row-added':r.change_type==='removed'?'row-removed':r.change_type==='changed'?'row-changed':'';
+    return `<tr class="${rowCls}">
+      <td><span class="diff-tag ${tagCls}">${tagLabel}</span></td>
+      <td class="msku-cell" title="${r.msku}">${r.msku}</td>
+      <td>${r.spu?`<span class="spu-tag">${r.spu}</span>`:'<span class="spu-tag unmapped">—</span>'}</td>
+      <td class="name-cell" title="${r.name||''}">${r.name||'—'}</td>
+      <td><span class="tag tag-${siteClass(r.site)}">${r.site||'—'}</span></td>
+      <td>${r.owner||'—'}</td>
+      <td>${r.prev_reorder}</td>
+      <td>${r.curr_reorder}</td>
+      <td>${diffStr}</td>
+      <td>${urgencyTag(r.prev_urgency)}</td>
+      <td>${urgencyTag(r.curr_urgency)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderDecDiffSiteTable(rows) {
+  const tbody=document.getElementById('diff-site-tbody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="7" class="diff-empty">无数据</td></tr>';return;}
+  tbody.innerHTML=rows.sort((a,b)=>b.curr_reorder-a.curr_reorder).map(r=>{
+    const skuDiff=r.curr_sku-r.prev_sku;
+    const reorderDiff=r.curr_reorder-r.prev_reorder;
+    return `<tr>
+      <td><span class="tag tag-${siteClass(r.site)}">${r.site}</span></td>
+      <td>${r.prev_sku}</td><td>${r.curr_sku}</td>
+      <td>${skuDiff>=0?`<span class="qty-up">+${skuDiff}</span>`:`<span class="qty-down">${skuDiff}</span>`}</td>
+      <td>${r.prev_reorder}</td><td>${r.curr_reorder}</td>
+      <td>${reorderDiff>=0?`<span class="qty-up">+${reorderDiff}</span>`:`<span class="qty-down">${reorderDiff}</span>`}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderDecDiffFactoryTable(rows) {
+  const tbody=document.getElementById('diff-factory-tbody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="6" class="diff-empty">无数据</td></tr>';return;}
+  tbody.innerHTML=rows.sort((a,b)=>b.curr_reorder-a.curr_reorder).map(r=>{
+    const skuDiff=r.curr_sku-r.prev_sku;
+    const reorderDiff=r.curr_reorder-r.prev_reorder;
+    return `<tr>
+      <td>${r.factory}</td>
+      <td>${r.prev_sku}</td><td>${r.curr_sku}</td>
+      <td>${r.prev_reorder}</td><td>${r.curr_reorder}</td>
+      <td>${reorderDiff>=0?`<span class="qty-up">+${reorderDiff}</span>`:`<span class="qty-down">${reorderDiff}</span>`}</td>
+    </tr>`;
+  }).join('');
+}
+
+function applyDecDiffFilters() {
+  const site=document.getElementById('df-site').value;
+  const owner=document.getElementById('df-owner').value;
+  const changeType=document.getElementById('df-change-type').value;
+  decDiffFiltered=decDiffAllRows.filter(r=>{
+    if(site&&r.site!==site)return false;
+    if(owner&&r.owner!==owner)return false;
+    if(changeType&&r.change_type!==changeType)return false;
+    return true;
+  });
+  renderDecDiffSkuTable(decDiffFiltered);
+  document.getElementById('diff-filter-count').innerHTML=`共 <span>${decDiffFiltered.length}</span> 条记录`;
+}
+
+function toggleDiffSection(bodyId, iconId) {
+  const body=document.getElementById(bodyId);
+  const icon=document.getElementById(iconId);
+  const isCollapsed=body.classList.contains('collapsed');
+  if(isCollapsed){
+    body.classList.remove('collapsed');
+    body.style.maxHeight='2000px';
+    icon.classList.add('open');
+    icon.nextElementSibling.textContent='点击折叠';
+  } else {
+    body.classList.add('collapsed');
+    body.style.maxHeight='0';
+    icon.classList.remove('open');
+    icon.nextElementSibling.textContent='点击展开';
+  }
+}
+
+function exportDecCompareExcel() {
+  if(!decDiffAllRows.length){alert('暂无对比数据');return;}
+  const wb=XLSX.utils.book_new();
+  const h1=['变化类型','MSKU','SPU品名','商品名称','站点','负责人','上次翻单量','本次翻单量','翻单变化','上次紧急度','本次紧急度'];
+  const rows1=[h1];
+  decDiffAllRows.forEach(r=>{
+    const diff=r.curr_reorder-r.prev_reorder;
+    const typeLabel=r.change_type==='added'?'新增':r.change_type==='removed'?'移除':r.change_type==='changed'?'变化':'无变化';
+    rows1.push([typeLabel,r.msku,r.spu||'',r.name||'',r.site||'',r.owner||'',r.prev_reorder,r.curr_reorder,diff,r.prev_urgency,r.curr_urgency]);
+  });
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows1),'SKU对比明细');
+  const siteMap={};
+  decDiffAllRows.forEach(r=>{
+    const s=r.site||'未知';
+    if(!siteMap[s])siteMap[s]={site:s,prev_sku:0,curr_sku:0,prev_reorder:0,curr_reorder:0};
+    if(r.change_type==='removed'){siteMap[s].prev_sku++;siteMap[s].prev_reorder+=r.prev_reorder;}
+    else if(r.change_type==='added'){siteMap[s].curr_sku++;siteMap[s].curr_reorder+=r.curr_reorder;}
+    else{siteMap[s].prev_sku++;siteMap[s].curr_sku++;siteMap[s].prev_reorder+=r.prev_reorder;siteMap[s].curr_reorder+=r.curr_reorder;}
+  });
+  const h2=['站点','上次SKU数','本次SKU数','SKU变化','上次翻单总量','本次翻单总量','翻单变化'];
+  const rows2=[h2];
+  Object.values(siteMap).forEach(s=>{rows2.push([s.site,s.prev_sku,s.curr_sku,s.curr_sku-s.prev_sku,s.prev_reorder,s.curr_reorder,s.curr_reorder-s.prev_reorder]);});
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows2),'站点汇总');
+  const factoryMap={};
+  decDiffAllRows.forEach(r=>{
+    const f=r.reorder_factory||'未知';
+    if(!factoryMap[f])factoryMap[f]={factory:f,prev_sku:0,curr_sku:0,prev_reorder:0,curr_reorder:0};
+    if(r.change_type==='removed'){factoryMap[f].prev_sku++;factoryMap[f].prev_reorder+=r.prev_reorder;}
+    else if(r.change_type==='added'){factoryMap[f].curr_sku++;factoryMap[f].curr_reorder+=r.curr_reorder;}
+    else{factoryMap[f].prev_sku++;factoryMap[f].curr_sku++;factoryMap[f].prev_reorder+=r.prev_reorder;factoryMap[f].curr_reorder+=r.curr_reorder;}
+  });
+  const h3=['工厂','上次SKU数','本次SKU数','上次翻单量','本次翻单量','翻单变化'];
+  const rows3=[h3];
+  Object.values(factoryMap).forEach(f=>{rows3.push([f.factory,f.prev_sku,f.curr_sku,f.prev_reorder,f.curr_reorder,f.curr_reorder-f.prev_reorder]);});
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows3),'工厂汇总');
+  XLSX.writeFile(wb,`决策版本对比_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+function switchTab(id){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const tabs=['tab-overview','tab-filter','tab-gantt','tab-export','tab-compare','tab-upload'];
+  const idx=tabs.indexOf(id);
+  if(idx>=0)document.querySelectorAll('.tab')[idx].classList.add('active');
+  if(id==='tab-export')updateExportPreview();
+  if(id==='tab-gantt')renderGantt();
+}
+
+// 导出选项样式联动
+document.querySelectorAll('input[name="export-scope"]').forEach(radio=>{
+  radio.addEventListener('change',function(){
+    document.querySelectorAll('.export-option').forEach(el=>el.classList.remove('selected'));
+    this.closest('.export-option').classList.add('selected');
+    updateExportPreview();
+  });
+});
+
+init();
+    function init(){
+      // 动态填充负责人下拉（从 ALLOWED_OWNERS 生成，加新人自动出现）
+      ['f-owner','g-owner'].forEach(id=>{
+        const sel=document.getElementById(id);
+        if(!sel)return;
+        ALLOWED_OWNERS.forEach(name=>{
+          const o=document.createElement('option');
+          o.value=name; o.textContent=name;
+          sel.appendChild(o);
+        });
+      });
+    }
+</script>
+</body>
+</html>

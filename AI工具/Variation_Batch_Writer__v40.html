@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KovaScape · Variation Batch Writer v40.1</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#F0EDE8;font-family:'Poppins',sans-serif;min-height:100vh;padding:20px}
+.app-header{background:#064338;border-radius:20px 20px 0 0;padding:28px 36px 24px;position:relative;overflow:hidden;max-width:1440px;margin:0 auto}
+.app-header::before{content:'';position:absolute;top:-40px;right:-40px;width:200px;height:200px;border-radius:50%;border:1px solid rgba(243,197,70,0.15)}
+.app-header::after{content:'';position:absolute;bottom:-20px;right:80px;width:120px;height:120px;border-radius:50%;border:1px solid rgba(243,197,70,0.1)}
+.header-eyebrow{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.header-dot{width:7px;height:7px;border-radius:50%;background:#F3C546}
+.header-eyebrow span{font-size:11px;font-weight:500;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:1.5px}
+.header-title{font-family:'Playfair Display',serif;font-size:28px;font-weight:500;color:#fff;line-height:1.2}
+.header-title span{color:#F3C546}
+.header-sub{font-size:12px;color:rgba(255,255,255,0.55);margin-top:6px}
+.header-version{position:absolute;top:28px;right:36px;background:rgba(243,197,70,0.15);border:1px solid rgba(243,197,70,0.3);color:#F3C546;font-size:11px;font-weight:500;padding:4px 12px;border-radius:20px}
+.app-shell{background:#FDFCF9;border-radius:0 0 20px 20px;padding:28px 36px 36px;max-width:1440px;margin:0 auto}
+.mode-tabs{display:flex;gap:8px;margin-bottom:24px}
+.mode-tab{padding:8px 20px;border-radius:8px;border:1.5px solid #E8E4DE;background:#fff;font-family:'Poppins',sans-serif;font-size:13px;font-weight:500;color:#717171;cursor:pointer;transition:all .2s}
+.mode-tab.active{background:#064338;border-color:#064338;color:#fff}
+.mode-tab:hover:not(.active){border-color:#064338;color:#064338}
+.main-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:1100px){.main-layout{grid-template-columns:1fr}}
+.panel{background:#fff;border:1px solid #E8E4DE;border-radius:14px;overflow:hidden;margin-bottom:16px}
+.panel-header{background:#064338;padding:14px 20px;display:flex;align-items:center;justify-content:space-between}
+.panel-title{font-family:'Playfair Display',serif;font-size:15px;font-weight:500;color:#fff}
+.panel-badge{background:rgba(243,197,70,0.2);border:1px solid rgba(243,197,70,0.4);color:#F3C546;font-size:10px;font-weight:500;padding:2px 8px;border-radius:10px}
+.panel-body{padding:18px 20px}
+.form-row{margin-bottom:14px}
+.form-label{font-size:12px;font-weight:500;color:#1D1B20;margin-bottom:5px;display:block}
+.form-label .hint{font-weight:400;color:#717171;font-size:11px}
+input[type=text],select,textarea{width:100%;padding:8px 12px;border:1.5px solid #E8E4DE;border-radius:8px;font-family:'Poppins',sans-serif;font-size:13px;color:#1D1B20;background:#FDFCF9;transition:border-color .2s;outline:none}
+input[type=text]:focus,select:focus,textarea:focus{border-color:#064338}
+textarea{resize:vertical;line-height:1.6}
+.textarea-sm{min-height:70px}
+.textarea-md{min-height:100px}
+.textarea-lg{min-height:160px;font-family:'Courier New',monospace;font-size:12px}
+.ph-toolbar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;padding:10px 12px;background:#F8F5F0;border-radius:8px;border:1px solid #E8E4DE}
+.ph-toolbar-label{font-size:10px;font-weight:600;color:#717171;text-transform:uppercase;letter-spacing:0.8px;width:100%;margin-bottom:4px}
+.ph-btn{padding:4px 10px;border-radius:6px;border:1.5px solid #064338;background:#fff;color:#064338;font-family:'Courier New',monospace;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s}
+.ph-btn:hover{background:#064338;color:#fff}
+.ph-btn.mat{border-color:#B8860B;color:#B8860B}
+.ph-btn.mat:hover{background:#B8860B;color:#fff}
+.ta-wrap textarea{font-family:'Courier New',monospace;font-size:12.5px}
+.bullet-tabs{display:flex;gap:4px;margin-bottom:8px}
+.bullet-tab{padding:4px 12px;border-radius:6px;border:1.5px solid #E8E4DE;background:#fff;font-size:11px;font-weight:500;color:#717171;cursor:pointer;transition:all .15s}
+.bullet-tab.active{background:#064338;border-color:#064338;color:#fff}
+.bullet-pane{display:none}
+.bullet-pane.active{display:block}
+.data-table-wrap{overflow-x:auto;margin-bottom:12px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead tr{background:#064338}
+th{color:#F3C546;font-weight:500;padding:8px 10px;text-align:left;white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid #F0EDE8;color:#1D1B20;vertical-align:top}
+tr:hover td{background:#F8F5F0}
+.td-mono{font-family:'Courier New',monospace;font-size:11px}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-family:'Poppins',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:#064338;color:#fff}
+.btn-primary:hover{background:#042E25}
+.btn-gold{background:#F3C546;color:#064338;font-weight:600}
+.btn-gold:hover{background:#e0b430}
+.btn-outline{background:#fff;border:1.5px solid #064338;color:#064338}
+.btn-outline:hover{background:#064338;color:#fff}
+.btn-sm{padding:6px 14px;font-size:12px}
+.btn-danger{background:#FDECEA;border:1.5px solid #C4433A;color:#C4433A}
+.btn-danger:hover{background:#C4433A;color:#fff}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.alert{padding:10px 14px;border-radius:8px;font-size:12px;margin-bottom:12px;display:flex;align-items:flex-start;gap:8px}
+.alert-success{background:#E8F2F0;border-left:4px solid #064338;color:#064338}
+.alert-warning{background:#FFF8DC;border-left:4px solid #F3C546;color:#B8860B}
+.alert-info{background:#FDF9F2;border-left:4px solid #7C746F;color:#064338}
+.output-stats{display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.stat-chip{background:#E8F2F0;border:1px solid #064338;color:#064338;font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px}
+.lang-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px}
+.lang-chip{padding:6px 8px;border-radius:7px;border:1.5px solid #E8E4DE;background:#fff;font-size:11px;font-weight:500;color:#717171;cursor:pointer;text-align:center;transition:all .15s}
+.lang-chip.active{background:#064338;border-color:#064338;color:#fff}
+.lang-chip:hover:not(.active){border-color:#064338;color:#064338}
+.output-scroll{max-height:520px;overflow-y:auto;border:1px solid #E8E4DE;border-radius:10px}
+.output-row{padding:14px 16px;border-bottom:1px solid #F0EDE8}
+.output-row:last-child{border-bottom:none}
+.output-row-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.output-sku{font-size:11px;font-weight:600;color:#064338;background:#E8F2F0;padding:2px 8px;border-radius:10px}
+.output-field-label{font-size:10px;font-weight:600;color:#717171;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:3px;margin-top:8px}
+.output-text{font-size:12px;color:#1D1B20;line-height:1.6;background:#FDFCF9;padding:8px 10px;border-radius:6px;border:1px solid #F0EDE8;word-break:break-word;white-space:pre-wrap}
+.copy-btn{padding:3px 8px;border-radius:5px;border:1px solid #E8E4DE;background:#fff;font-size:10px;color:#717171;cursor:pointer;transition:all .15s}
+.copy-btn:hover{background:#064338;color:#fff;border-color:#064338}
+.char-counter{font-size:10px;color:#717171;text-align:right;margin-top:2px}
+.char-counter.warn{color:#B8860B}
+.char-counter.over{color:#C4433A;font-weight:600}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:#F0EDE8;border-radius:3px}
+::-webkit-scrollbar-thumb{background:#064338;border-radius:3px}
+.app-footer{background:#042E25;border-radius:0 0 20px 20px;padding:14px 36px;display:flex;align-items:center;justify-content:space-between;max-width:1440px;margin:0 auto}
+.footer-brand{font-family:'Playfair Display',serif;color:#F3C546;font-size:14px}
+.footer-meta{font-size:11px;color:rgba(255,255,255,0.45)}
+/* Dict tabs */
+.dict-lang-tabs{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap}
+.dict-lang-tab{padding:3px 10px;border-radius:5px;border:1px solid #E8E4DE;background:#fff;font-size:10px;font-weight:500;color:#717171;cursor:pointer;transition:all .15s}
+.dict-lang-tab.active{background:#064338;border-color:#064338;color:#fff}
+.dict-pane{display:none}
+.dict-pane.active{display:block}
+.dict-table{width:100%;border-collapse:collapse;font-size:11px}
+.dict-table th{background:#F8F5F0;color:#064338;font-weight:600;padding:5px 8px;text-align:left;border-bottom:1px solid #E8E4DE}
+.dict-table td{padding:4px 8px;border-bottom:1px solid #F0EDE8;font-family:'Poppins',sans-serif}
+.dict-table td:first-child{font-weight:500;color:#1D1B20;width:80px}
+.dict-table td:not(:first-child){color:#717171}
+.dict-table tr:hover td{background:#F8F5F0}
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="header-eyebrow"><div class="header-dot"></div><span>KovaScape · Internal Tool</span></div>
+  <div class="header-title">Variation Batch <span>Writer</span></div>
+  <div class="header-sub">占位符精准替换 · 内置多语言字典 · 批量生成变体文案</div>
+  <div class="header-version">v40.1</div>
+</div>
+
+<div class="app-shell">
+  <div class="mode-tabs">
+    <button class="mode-tab active" onclick="switchMode('frame')">🖼 相框模式</button>
+    <button class="mode-tab" onclick="switchMode('shelf')">📦 层板模式</button>
+  </div>
+
+  <div class="main-layout">
+    <!-- LEFT: Template + Dict -->
+    <div>
+      <!-- Language -->
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">语言 & 站点</div><div class="panel-badge">Language</div></div>
+        <div class="panel-body">
+          <div class="lang-grid" id="langGrid">
+            <div class="lang-chip active" data-lang="EN" onclick="selectLang(this)">🇺🇸 EN (US)</div>
+            <div class="lang-chip" data-lang="UK" onclick="selectLang(this)">🇬🇧 EN (UK)</div>
+            <div class="lang-chip" data-lang="DE" onclick="selectLang(this)">🇩🇪 DE</div>
+            <div class="lang-chip" data-lang="FR" onclick="selectLang(this)">🇫🇷 FR</div>
+            <div class="lang-chip" data-lang="IT" onclick="selectLang(this)">🇮🇹 IT</div>
+            <div class="lang-chip" data-lang="JP" onclick="selectLang(this)">🇯🇵 JP</div>
+          </div>
+          <div class="alert alert-info" style="margin-bottom:0">
+            <span>💡</span><span>DE / FR / IT 自动输出公制（cm）。<code>{SIZE}</code> / <code>{WIDTH}</code> 等"自动"占位符会根据所选语言切换单位。</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Template -->
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">模板编辑器</div><div class="panel-badge">Template</div></div>
+        <div class="panel-body">
+          <!-- Placeholder Toolbar -->
+          <div class="ph-toolbar">
+            <div class="ph-toolbar-label">点击插入占位符（先点文本框定位光标，再点此处插入）</div>
+            <div id="framePhs">
+              <button class="ph-btn" onclick="insertPh('{SIZE}')"><b>{SIZE}</b></button>
+              <button class="ph-btn" onclick="insertPh('{SIZE_IN}')"><b>{SIZE_IN}</b></button>
+              <button class="ph-btn" onclick="insertPh('{SIZE_CM}')"><b>{SIZE_CM}</b></button>
+              <button class="ph-btn mat" onclick="insertPh('{MAT}')"><b>{MAT}</b></button>
+              <button class="ph-btn mat" onclick="insertPh('{MAT_IN}')"><b>{MAT_IN}</b></button>
+              <button class="ph-btn mat" onclick="insertPh('{MAT_CM}')"><b>{MAT_CM}</b></button>
+              <button class="ph-btn" onclick="insertPh('{MATERIAL}')"><b>{MATERIAL}</b></button>
+              <button class="ph-btn" onclick="insertPh('{COLOR}')"><b>{COLOR}</b></button>
+              <button class="ph-btn" onclick="insertPh('{PACK}')"><b>{PACK}</b></button>
+              <button class="ph-btn" onclick="insertPh('{SKU}')"><b>{SKU}</b></button>
+            </div>
+            <div id="shelfPhs" style="display:none">
+              <button class="ph-btn" onclick="insertPh('{WIDTH}')"><b>{WIDTH}</b></button>
+              <button class="ph-btn" onclick="insertPh('{WIDTH_IN}')"><b>{WIDTH_IN}</b></button>
+              <button class="ph-btn" onclick="insertPh('{WIDTH_CM}')"><b>{WIDTH_CM}</b></button>
+              <button class="ph-btn mat" onclick="insertPh('{DEPTH}')"><b>{DEPTH}</b></button>
+              <button class="ph-btn mat" onclick="insertPh('{DEPTH_IN}')"><b>{DEPTH_IN}</b></button>
+              <button class="ph-btn mat" onclick="insertPh('{DEPTH_CM}')"><b>{DEPTH_CM}</b></button>
+              <button class="ph-btn" onclick="insertPh('{MATERIAL}')"><b>{MATERIAL}</b></button>
+              <button class="ph-btn" onclick="insertPh('{COLOR}')"><b>{COLOR}</b></button>
+              <button class="ph-btn" onclick="insertPh('{PACK}')"><b>{PACK}</b></button>
+              <button class="ph-btn" onclick="insertPh('{SKU}')"><b>{SKU}</b></button>
+            </div>
+          </div>
+
+          <!-- Title -->
+          <div class="form-row">
+            <label class="form-label">标题模板</label>
+            <div class="ta-wrap">
+              <textarea id="tplTitle" class="textarea-sm" placeholder="例：KovaScape {MATERIAL} Picture Frame {SIZE} with {MAT} Mat Opening, {COLOR}" oninput="updateCC(this,'ccTitle',200)"></textarea>
+            </div>
+            <div class="char-counter" id="ccTitle">0 / 200</div>
+          </div>
+
+          <!-- Bullets -->
+          <div class="form-row">
+            <label class="form-label">五点描述模板</label>
+            <div class="bullet-tabs">
+              <button class="bullet-tab active" onclick="switchBullet(0,this)">B1</button>
+              <button class="bullet-tab" onclick="switchBullet(1,this)">B2</button>
+              <button class="bullet-tab" onclick="switchBullet(2,this)">B3</button>
+              <button class="bullet-tab" onclick="switchBullet(3,this)">B4</button>
+              <button class="bullet-tab" onclick="switchBullet(4,this)">B5</button>
+            </div>
+            <div id="bp0" class="bullet-pane active"><textarea id="tplB0" class="textarea-md" placeholder="B1：痛点狙击" oninput="updateCC(this,'ccB0',500)"></textarea><div class="char-counter" id="ccB0">0 / 500</div></div>
+            <div id="bp1" class="bullet-pane"><textarea id="tplB1" class="textarea-md" placeholder="B2：场景沉浸" oninput="updateCC(this,'ccB1',500)"></textarea><div class="char-counter" id="ccB1">0 / 500</div></div>
+            <div id="bp2" class="bullet-pane"><textarea id="tplB2" class="textarea-md" placeholder="B3：硬核参数" oninput="updateCC(this,'ccB2',500)"></textarea><div class="char-counter" id="ccB2">0 / 500</div></div>
+            <div id="bp3" class="bullet-pane"><textarea id="tplB3" class="textarea-md" placeholder="B4：适用人群" oninput="updateCC(this,'ccB3',500)"></textarea><div class="char-counter" id="ccB3">0 / 500</div></div>
+            <div id="bp4" class="bullet-pane"><textarea id="tplB4" class="textarea-md" placeholder="B5：售后背书" oninput="updateCC(this,'ccB4',500)"></textarea><div class="char-counter" id="ccB4">0 / 500</div></div>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn btn-outline btn-sm" onclick="loadSampleTemplate()">📋 示例模板</button>
+            <button class="btn btn-outline btn-sm" onclick="clearTemplates()">🗑 清空</button>
+            <button class="btn btn-outline btn-sm" onclick="saveLocal()">💾 保存</button>
+            <button class="btn btn-outline btn-sm" onclick="loadLocal()">📂 读取</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Built-in Dictionary -->
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">内置多语言字典</div><div class="panel-badge">Dictionary</div></div>
+        <div class="panel-body">
+          <div class="alert alert-info" style="margin-bottom:12px">
+            <span>📖</span><span>数据中的材质/颜色（中文或英文）会自动查字典翻译为目标语言。可在下方自定义追加词条（格式：<b>原文=译文</b>，每行一条）。</span>
+          </div>
+          <div class="dict-lang-tabs">
+            <button class="dict-lang-tab active" onclick="switchDictTab('EN',this)">EN</button>
+            <button class="dict-lang-tab" onclick="switchDictTab('DE',this)">DE</button>
+            <button class="dict-lang-tab" onclick="switchDictTab('FR',this)">FR</button>
+            <button class="dict-lang-tab" onclick="switchDictTab('IT',this)">IT</button>
+            <button class="dict-lang-tab" onclick="switchDictTab('JP',this)">JP</button>
+          </div>
+          <div id="dictPane_EN" class="dict-pane active">
+            <table class="dict-table"><thead><tr><th>原文</th><th>材质 EN</th><th>颜色 EN</th></tr></thead><tbody id="dictBody_EN"></tbody></table>
+          </div>
+          <div id="dictPane_DE" class="dict-pane">
+            <table class="dict-table"><thead><tr><th>原文</th><th>材质 DE</th><th>颜色 DE</th></tr></thead><tbody id="dictBody_DE"></tbody></table>
+          </div>
+          <div id="dictPane_FR" class="dict-pane">
+            <table class="dict-table"><thead><tr><th>原文</th><th>材质 FR</th><th>颜色 FR</th></tr></thead><tbody id="dictBody_FR"></tbody></table>
+          </div>
+          <div id="dictPane_IT" class="dict-pane">
+            <table class="dict-table"><thead><tr><th>原文</th><th>材质 IT</th><th>颜色 IT</th></tr></thead><tbody id="dictBody_IT"></tbody></table>
+          </div>
+          <div id="dictPane_JP" class="dict-pane">
+            <table class="dict-table"><thead><tr><th>原文</th><th>材質 JP</th><th>色 JP</th></tr></thead><tbody id="dictBody_JP"></tbody></table>
+          </div>
+          <div style="margin-top:12px">
+            <label class="form-label">自定义追加词条 <span class="hint">（格式：原文=译文，每行一条，优先级高于内置）</span></label>
+            <textarea id="customDict" class="textarea-sm" placeholder="胡桃木=Walnut Wood&#10;原木色=Natural"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Data + Generate + Output -->
+    <div>
+      <!-- Frame Data -->
+      <div id="frameDataPanel" class="panel">
+        <div class="panel-header"><div class="panel-title">变体数据 — 相框</div><div class="panel-badge">Frame Data</div></div>
+        <div class="panel-body">
+          <div class="alert alert-info" style="margin-bottom:12px">
+            <span>📋</span><span>每行一个变体，Tab 或逗号分隔。<br>
+            列顺序：<b>SKU | 外框尺寸 | 材质 | 颜色 | 套数 | 卡纸尺寸（可选）</b><br>
+            尺寸格式：<code>4x6</code> / <code>4X6</code> / <code>4 x 6</code>（英寸）</span>
+          </div>
+          <textarea id="frameData" class="textarea-lg" placeholder="KS-F-4x6-BLK&#9;4x6&#9;木&#9;黑&#9;1&#9;3.5x5&#10;KS-F-5x7-WHT&#9;5x7&#9;木&#9;白&#9;1&#9;4x6&#10;KS-F-8x10-GLD&#9;8x10&#9;木&#9;金&#9;1&#9;5x7&#10;KS-F-11x14-BLK&#9;11x14&#9;橡木&#9;黑&#9;1&#9;8x10"></textarea>
+          <div class="btn-row">
+            <button class="btn btn-outline btn-sm" onclick="parseAndPreview()">🔍 解析预览</button>
+            <button class="btn btn-outline btn-sm" onclick="loadFrameSample()">📋 示例数据</button>
+            <button class="btn btn-danger btn-sm" onclick="document.getElementById('frameData').value=''">🗑 清空</button>
+          </div>
+          <div id="frameParsePreview" style="margin-top:12px"></div>
+        </div>
+      </div>
+
+      <!-- Shelf Data -->
+      <div id="shelfDataPanel" class="panel" style="display:none">
+        <div class="panel-header"><div class="panel-title">变体数据 — 层板</div><div class="panel-badge">Shelf Data</div></div>
+        <div class="panel-body">
+          <div class="alert alert-info" style="margin-bottom:12px">
+            <span>📋</span><span>每行一个变体，Tab 或逗号分隔。<br>
+            列顺序：<b>SKU | 宽度(英寸) | 深度(英寸) | 材质 | 颜色 | 套数</b></span>
+          </div>
+          <textarea id="shelfData" class="textarea-lg" placeholder="KS-S-24x6-BLK&#9;24&#9;6&#9;木&#9;黑&#9;1&#10;KS-S-36x6-WHT&#9;36&#9;6&#9;木&#9;白&#9;1&#10;KS-S-48x8-OAK&#9;48&#9;8&#9;橡木&#9;原木色&#9;2"></textarea>
+          <div class="btn-row">
+            <button class="btn btn-outline btn-sm" onclick="parseAndPreview()">🔍 解析预览</button>
+            <button class="btn btn-outline btn-sm" onclick="loadShelfSample()">📋 示例数据</button>
+            <button class="btn btn-danger btn-sm" onclick="document.getElementById('shelfData').value=''">🗑 清空</button>
+          </div>
+          <div id="shelfParsePreview" style="margin-top:12px"></div>
+        </div>
+      </div>
+
+      <!-- Generate -->
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">生成 & 导出</div><div class="panel-badge">Generate</div></div>
+        <div class="panel-body">
+          <div class="btn-row" style="margin-top:0">
+            <button class="btn btn-primary" onclick="generateAll()" style="flex:1;justify-content:center">⚡ 批量生成文案</button>
+            <button class="btn btn-gold" onclick="exportCSV()" style="flex:1;justify-content:center">📥 导出 CSV</button>
+          </div>
+          <div id="generateStatus" style="margin-top:10px"></div>
+        </div>
+      </div>
+
+      <!-- Output -->
+      <div class="panel" id="outputPanel" style="display:none">
+        <div class="panel-header">
+          <div class="panel-title">生成结果</div>
+          <div class="panel-badge" id="outputBadge">0 条</div>
+        </div>
+        <div class="panel-body" style="padding:12px">
+          <div class="output-stats" id="outputStats"></div>
+          <div class="output-scroll" id="outputScroll"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app-footer">
+  <div class="footer-brand">KovaScape</div>
+  <div class="footer-meta">Variation Batch Writer v40.1 · Placeholder-Based Precision · Internal Tool</div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  BUILT-IN MULTILINGUAL DICTIONARY
+//  材质 & 颜色 × EN / DE / FR / IT / JP
+// ══════════════════════════════════════════════════════════
+const DICT = {
+  material: {
+    // key: [EN, DE, FR, IT, JP]
+    '木':         ['Wood',         'Holz',          'Bois',          'Legno',         '木材'],
+    '实木':       ['Solid Wood',   'Massivholz',    'Bois Massif',   'Legno Massello','無垢材'],
+    '木材':       ['Wood',         'Holz',          'Bois',          'Legno',         '木材'],
+    'Wood':       ['Wood',         'Holz',          'Bois',          'Legno',         '木材'],
+    'Solid Wood': ['Solid Wood',   'Massivholz',    'Bois Massif',   'Legno Massello','無垢材'],
+    '橡木':       ['Oak Wood',     'Eichenholz',    'Bois de Chêne', 'Legno di Quercia','オーク材'],
+    'Oak':        ['Oak Wood',     'Eichenholz',    'Bois de Chêne', 'Legno di Quercia','オーク材'],
+    'Oak Wood':   ['Oak Wood',     'Eichenholz',    'Bois de Chêne', 'Legno di Quercia','オーク材'],
+    '胡桃木':     ['Walnut Wood',  'Walnussholz',   'Bois de Noyer', 'Legno di Noce', 'ウォールナット材'],
+    'Walnut':     ['Walnut Wood',  'Walnussholz',   'Bois de Noyer', 'Legno di Noce', 'ウォールナット材'],
+    'Walnut Wood':['Walnut Wood',  'Walnussholz',   'Bois de Noyer', 'Legno di Noce', 'ウォールナット材'],
+    '松木':       ['Pine Wood',    'Kiefernholz',   'Bois de Pin',   'Legno di Pino', 'パイン材'],
+    'Pine':       ['Pine Wood',    'Kiefernholz',   'Bois de Pin',   'Legno di Pino', 'パイン材'],
+    '竹':         ['Bamboo',       'Bambus',        'Bambou',        'Bambù',         '竹'],
+    'Bamboo':     ['Bamboo',       'Bambus',        'Bambou',        'Bambù',         '竹'],
+    '铝':         ['Aluminum',     'Aluminium',     'Aluminium',     'Alluminio',     'アルミニウム'],
+    'Aluminum':   ['Aluminum',     'Aluminium',     'Aluminium',     'Alluminio',     'アルミニウム'],
+    'Aluminium':  ['Aluminum',     'Aluminium',     'Aluminium',     'Alluminio',     'アルミニウム'],
+    'MDF':        ['MDF Wood',     'MDF-Holz',      'Bois MDF',      'Legno MDF',     'MDF材'],
+    'MDF Wood':   ['MDF Wood',     'MDF-Holz',      'Bois MDF',      'Legno MDF',     'MDF材'],
+    '榉木':       ['Beech Wood',   'Buchenholz',    'Bois de Hêtre', 'Legno di Faggio','ブナ材'],
+    'Beech':      ['Beech Wood',   'Buchenholz',    'Bois de Hêtre', 'Legno di Faggio','ブナ材'],
+    '柚木':       ['Teak Wood',    'Teakholz',      'Bois de Teck',  'Legno di Teak', 'チーク材'],
+    'Teak':       ['Teak Wood',    'Teakholz',      'Bois de Teck',  'Legno di Teak', 'チーク材'],
+    '铁':         ['Iron',         'Eisen',         'Fer',           'Ferro',         '鉄'],
+    'Iron':       ['Iron',         'Eisen',         'Fer',           'Ferro',         '鉄'],
+    '钢':         ['Steel',        'Stahl',         'Acier',         'Acciaio',       'スチール'],
+    'Steel':      ['Steel',        'Stahl',         'Acier',         'Acciaio',       'スチール'],
+    '亚克力':     ['Acrylic',      'Acryl',         'Acrylique',     'Acrilico',      'アクリル'],
+    'Acrylic':    ['Acrylic',      'Acryl',         'Acrylique',     'Acrilico',      'アクリル'],
+  },
+  color: {
+    // key: [EN, DE, FR, IT, JP]
+    '黑':         ['Black',        'Schwarz',       'Noir',          'Nero',          'ブラック'],
+    '黑色':       ['Black',        'Schwarz',       'Noir',          'Nero',          'ブラック'],
+    'Black':      ['Black',        'Schwarz',       'Noir',          'Nero',          'ブラック'],
+    '白':         ['White',        'Weiß',          'Blanc',         'Bianco',        'ホワイト'],
+    '白色':       ['White',        'Weiß',          'Blanc',         'Bianco',        'ホワイト'],
+    'White':      ['White',        'Weiß',          'Blanc',         'Bianco',        'ホワイト'],
+    '金':         ['Gold',         'Gold',          'Doré',          'Oro',           'ゴールド'],
+    '金色':       ['Gold',         'Gold',          'Doré',          'Oro',           'ゴールド'],
+    'Gold':       ['Gold',         'Gold',          'Doré',          'Oro',           'ゴールド'],
+    '银':         ['Silver',       'Silber',        'Argenté',       'Argento',       'シルバー'],
+    '银色':       ['Silver',       'Silber',        'Argenté',       'Argento',       'シルバー'],
+    'Silver':     ['Silver',       'Silber',        'Argenté',       'Argento',       'シルバー'],
+    '红':         ['Red',          'Rot',           'Rouge',         'Rosso',         'レッド'],
+    '红色':       ['Red',          'Rot',           'Rouge',         'Rosso',         'レッド'],
+    'Red':        ['Red',          'Rot',           'Rouge',         'Rosso',         'レッド'],
+    '蓝':         ['Blue',         'Blau',          'Bleu',          'Blu',           'ブルー'],
+    '蓝色':       ['Blue',         'Blau',          'Bleu',          'Blu',           'ブルー'],
+    'Blue':       ['Blue',         'Blau',          'Bleu',          'Blu',           'ブルー'],
+    '海军蓝':     ['Navy Blue',    'Marineblau',    'Bleu Marine',   'Blu Navy',      'ネイビーブルー'],
+    'Navy Blue':  ['Navy Blue',    'Marineblau',    'Bleu Marine',   'Blu Navy',      'ネイビーブルー'],
+    '墨绿':       ['Forest Green', 'Waldgrün',      'Vert Forêt',    'Verde Foresta', 'フォレストグリーン'],
+    'Forest Green':['Forest Green','Waldgrün',      'Vert Forêt',    'Verde Foresta', 'フォレストグリーン'],
+    '绿':         ['Green',        'Grün',          'Vert',          'Verde',         'グリーン'],
+    '绿色':       ['Green',        'Grün',          'Vert',          'Verde',         'グリーン'],
+    'Green':      ['Green',        'Grün',          'Vert',          'Verde',         'グリーン'],
+    '黄':         ['Yellow',       'Gelb',          'Jaune',         'Giallo',        'イエロー'],
+    '黄色':       ['Yellow',       'Gelb',          'Jaune',         'Giallo',        'イエロー'],
+    'Yellow':     ['Yellow',       'Gelb',          'Jaune',         'Giallo',        'イエロー'],
+    '棕':         ['Brown',        'Braun',         'Marron',        'Marrone',       'ブラウン'],
+    '棕色':       ['Brown',        'Braun',         'Marron',        'Marrone',       'ブラウン'],
+    'Brown':      ['Brown',        'Braun',         'Marron',        'Marrone',       'ブラウン'],
+    '灰':         ['Grey',         'Grau',          'Gris',          'Grigio',        'グレー'],
+    '灰色':       ['Grey',         'Grau',          'Gris',          'Grigio',        'グレー'],
+    'Grey':       ['Grey',         'Grau',          'Gris',          'Grigio',        'グレー'],
+    'Gray':       ['Grey',         'Grau',          'Gris',          'Grigio',        'グレー'],
+    '原木色':     ['Natural',      'Natur',         'Naturel',       'Naturale',      'ナチュラル'],
+    'Natural':    ['Natural',      'Natur',         'Naturel',       'Naturale',      'ナチュラル'],
+    '粉':         ['Pink',         'Rosa',          'Rose',          'Rosa',          'ピンク'],
+    '粉色':       ['Pink',         'Rosa',          'Rose',          'Rosa',          'ピンク'],
+    'Pink':       ['Pink',         'Rosa',          'Rose',          'Rosa',          'ピンク'],
+    '紫':         ['Purple',       'Lila',          'Violet',        'Viola',         'パープル'],
+    '紫色':       ['Purple',       'Lila',          'Violet',        'Viola',         'パープル'],
+    'Purple':     ['Purple',       'Lila',          'Violet',        'Viola',         'パープル'],
+    '橙':         ['Orange',       'Orange',        'Orange',        'Arancione',     'オレンジ'],
+    '橙色':       ['Orange',       'Orange',        'Orange',        'Arancione',     'オレンジ'],
+    'Orange':     ['Orange',       'Orange',        'Orange',        'Arancione',     'オレンジ'],
+    '米白':       ['Cream',        'Creme',         'Crème',         'Crema',         'クリーム'],
+    'Cream':      ['Cream',        'Creme',         'Crème',         'Crema',         'クリーム'],
+    '深棕':       ['Dark Brown',   'Dunkelbraun',   'Marron Foncé',  'Marrone Scuro', 'ダークブラウン'],
+    'Dark Brown': ['Dark Brown',   'Dunkelbraun',   'Marron Foncé',  'Marrone Scuro', 'ダークブラウン'],
+    '浅棕':       ['Light Brown',  'Hellbraun',     'Marron Clair',  'Marrone Chiaro','ライトブラウン'],
+    'Light Brown':['Light Brown',  'Hellbraun',     'Marron Clair',  'Marrone Chiaro','ライトブラウン'],
+  }
+};
+
+// Lang index mapping
+const LANG_IDX = { EN:0, UK:0, DE:1, FR:2, IT:3, JP:4 };
+
+// ══════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════
+let currentMode = 'frame';
+let currentLang = 'EN';
+let generatedRows = [];
+let lastFocusedTA = null;
+
+// Track focus
+document.addEventListener('focusin', e => {
+  if (e.target.tagName === 'TEXTAREA' && ['tplTitle','tplB0','tplB1','tplB2','tplB3','tplB4'].includes(e.target.id)) {
+    lastFocusedTA = e.target;
+  }
+});
+
+// ══════════════════════════════════════════════════════════
+//  INIT: Render dict tables
+// ══════════════════════════════════════════════════════════
+function renderDictTables() {
+  const langs = ['EN','DE','FR','IT','JP'];
+  const matKeys = Object.keys(DICT.material).filter(k => /[\u4e00-\u9fa5]/.test(k) || ['Wood','Solid Wood','Oak Wood','Walnut Wood','Pine Wood','Bamboo','Aluminum','MDF Wood','Beech Wood','Teak Wood','Iron','Steel','Acrylic'].includes(k));
+  const colorKeys = Object.keys(DICT.color).filter(k => /[\u4e00-\u9fa5]/.test(k) || ['Black','White','Gold','Silver','Red','Blue','Navy Blue','Forest Green','Green','Yellow','Brown','Grey','Natural','Pink','Purple','Orange','Cream','Dark Brown','Light Brown'].includes(k));
+  // Deduplicate
+  const matUniq = [...new Set(matKeys)];
+  const colorUniq = [...new Set(colorKeys)];
+
+  langs.forEach((lang, li) => {
+    const idx = LANG_IDX[lang];
+    const tbody = document.getElementById('dictBody_' + lang);
+    if (!tbody) return;
+    let html = '';
+    // Materials
+    matUniq.forEach(k => {
+      const v = DICT.material[k];
+      if (v) html += `<tr><td>${k}</td><td>${v[idx]||''}</td><td style="color:#bbb">—</td></tr>`;
+    });
+    // Colors
+    colorUniq.forEach(k => {
+      const v = DICT.color[k];
+      if (v) html += `<tr><td>${k}</td><td style="color:#bbb">—</td><td>${v[idx]||''}</td></tr>`;
+    });
+    tbody.innerHTML = html;
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+//  TRANSLATE
+// ══════════════════════════════════════════════════════════
+function getCustomDict() {
+  const raw = document.getElementById('customDict').value;
+  const d = {};
+  raw.split('\n').forEach(line => {
+    const eq = line.indexOf('=');
+    if (eq > 0) { d[line.slice(0,eq).trim()] = line.slice(eq+1).trim(); }
+  });
+  return d;
+}
+
+function translateVal(val, type, lang) {
+  if (!val) return '';
+  const custom = getCustomDict();
+  if (custom[val.trim()]) return custom[val.trim()];
+  const idx = LANG_IDX[lang] ?? 0;
+  const dict = type === 'material' ? DICT.material : DICT.color;
+  const entry = dict[val.trim()];
+  if (entry) return entry[idx] || val.trim();
+  return val.trim();
+}
+
+// ══════════════════════════════════════════════════════════
+//  MODE / LANG SWITCH
+// ══════════════════════════════════════════════════════════
+function switchMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-tab').forEach((t,i) => t.classList.toggle('active', (i===0&&mode==='frame')||(i===1&&mode==='shelf')));
+  document.getElementById('frameDataPanel').style.display = mode==='frame' ? '' : 'none';
+  document.getElementById('shelfDataPanel').style.display = mode==='shelf' ? '' : 'none';
+  document.getElementById('framePhs').style.display = mode==='frame' ? '' : 'none';
+  document.getElementById('shelfPhs').style.display = mode==='shelf' ? '' : 'none';
+}
+
+function selectLang(el) {
+  document.querySelectorAll('.lang-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  currentLang = el.dataset.lang;
+}
+
+function switchDictTab(lang, el) {
+  document.querySelectorAll('.dict-lang-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.dict-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById('dictPane_' + lang).classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════════
+//  PLACEHOLDER INSERTION
+// ══════════════════════════════════════════════════════════
+function insertPh(ph) {
+  const ta = lastFocusedTA || document.getElementById('tplTitle');
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  ta.value = ta.value.slice(0,s) + ph + ta.value.slice(e);
+  ta.selectionStart = ta.selectionEnd = s + ph.length;
+  ta.focus();
+  ta.dispatchEvent(new Event('input'));
+}
+
+// ══════════════════════════════════════════════════════════
+//  BULLET TABS
+// ══════════════════════════════════════════════════════════
+function switchBullet(idx, el) {
+  for(let i=0;i<5;i++) document.getElementById('bp'+i).classList.toggle('active', i===idx);
+  document.querySelectorAll('.bullet-tab').forEach((t,i) => t.classList.toggle('active', i===idx));
+}
+
+// ══════════════════════════════════════════════════════════
+//  CHAR COUNTER
+// ══════════════════════════════════════════════════════════
+function updateCC(ta, id, max) {
+  const len = ta.value.length;
+  const el = document.getElementById(id);
+  el.textContent = len + ' / ' + max;
+  el.className = 'char-counter' + (len > max ? ' over' : len > max*0.9 ? ' warn' : '');
+}
+
+// ══════════════════════════════════════════════════════════
+//  UNIT CONVERSION
+// ══════════════════════════════════════════════════════════
+function isMetric(lang) { return ['DE','FR','IT'].includes(lang); }
+
+function parseSize(str) {
+  if (!str) return null;
+  str = str.trim().replace(/in(ch(es)?)?/gi,'').trim();
+  const m = str.match(/^([\d.]+)\s*[x×X]\s*([\d.]+)$/i);
+  if (m) return { w: parseFloat(m[1]), h: parseFloat(m[2]) };
+  const s = str.match(/^([\d.]+)$/);
+  if (s) return { w: parseFloat(s[1]), h: null };
+  return null;
+}
+
+function inToCm(v) { return (v * 2.54).toFixed(1); }
+
+function fmtIn(w, h) { return h === null ? w + '"' : w + 'x' + h + '"'; }
+function fmtCm(w, h) { return h === null ? inToCm(w) + ' cm' : inToCm(w) + 'x' + inToCm(h) + ' cm'; }
+function fmtAuto(w, h, lang) { return isMetric(lang) ? fmtCm(w,h) : fmtIn(w,h); }
+
+// ══════════════════════════════════════════════════════════
+//  DATA PARSING
+// ══════════════════════════════════════════════════════════
+function splitRow(line) {
+  return line.includes('\t') ? line.split('\t').map(s=>s.trim()) : line.split(',').map(s=>s.trim());
+}
+
+function getFrameRows() {
+  const raw = document.getElementById('frameData').value.trim();
+  if (!raw) return [];
+  return raw.split('\n').filter(l=>l.trim()).map(line => {
+    const c = splitRow(line);
+    return { sku:c[0]||'', sizeRaw:c[1]||'', material:c[2]||'', color:c[3]||'', pack:c[4]||'1', matRaw:c[5]||'' };
+  });
+}
+
+function getShelfRows() {
+  const raw = document.getElementById('shelfData').value.trim();
+  if (!raw) return [];
+  return raw.split('\n').filter(l=>l.trim()).map(line => {
+    const c = splitRow(line);
+    return { sku:c[0]||'', widthRaw:c[1]||'', depthRaw:c[2]||'', material:c[3]||'', color:c[4]||'', pack:c[5]||'1' };
+  });
+}
+
+function parseAndPreview() {
+  if (currentMode === 'frame') {
+    const rows = getFrameRows();
+    showPreview('frameParsePreview', rows, 'frame');
+  } else {
+    const rows = getShelfRows();
+    showPreview('shelfParsePreview', rows, 'shelf');
+  }
+}
+
+function showPreview(cid, rows, mode) {
+  const el = document.getElementById(cid);
+  if (!rows.length) { el.innerHTML = '<div class="alert alert-warning"><span>⚠️</span><span>无数据</span></div>'; return; }
+  let html = `<div class="alert alert-success" style="margin-bottom:8px"><span>✅</span><span>解析成功：<b>${rows.length}</b> 个变体</span></div>`;
+  html += '<div class="data-table-wrap"><table><thead><tr>';
+  if (mode==='frame') html += '<th>SKU</th><th>外框</th><th>材质</th><th>颜色</th><th>套数</th><th>卡纸</th>';
+  else html += '<th>SKU</th><th>宽度</th><th>深度</th><th>材质</th><th>颜色</th><th>套数</th>';
+  html += '</tr></thead><tbody>';
+  rows.slice(0,10).forEach(r => {
+    html += '<tr>';
+    if (mode==='frame') html += `<td class="td-mono">${r.sku}</td><td>${r.sizeRaw}</td><td>${r.material}</td><td>${r.color}</td><td>${r.pack}</td><td>${r.matRaw||'—'}</td>`;
+    else html += `<td class="td-mono">${r.sku}</td><td>${r.widthRaw}</td><td>${r.depthRaw}</td><td>${r.material}</td><td>${r.color}</td><td>${r.pack}</td>`;
+    html += '</tr>';
+  });
+  if (rows.length > 10) html += `<tr><td colspan="6" style="text-align:center;color:#717171;font-size:11px">... 还有 ${rows.length-10} 行</td></tr>`;
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════════
+//  BUILD VARS
+// ══════════════════════════════════════════════════════════
+function buildFrameVars(row, lang) {
+  const sp = parseSize(row.sizeRaw), mp = parseSize(row.matRaw);
+  const mat = translateVal(row.material, 'material', lang);
+  const col = translateVal(row.color, 'color', lang);
+  return {
+    SKU: row.sku,
+    SIZE:    sp ? fmtAuto(sp.w, sp.h, lang) : row.sizeRaw,
+    SIZE_IN: sp ? fmtIn(sp.w, sp.h) : row.sizeRaw,
+    SIZE_CM: sp ? fmtCm(sp.w, sp.h) : row.sizeRaw,
+    MAT:    mp ? fmtAuto(mp.w, mp.h, lang) : row.matRaw,
+    MAT_IN: mp ? fmtIn(mp.w, mp.h) : row.matRaw,
+    MAT_CM: mp ? fmtCm(mp.w, mp.h) : row.matRaw,
+    MATERIAL: mat, COLOR: col, PACK: row.pack
+  };
+}
+
+function buildShelfVars(row, lang) {
+  const wp = parseSize(row.widthRaw), dp = parseSize(row.depthRaw);
+  const mat = translateVal(row.material, 'material', lang);
+  const col = translateVal(row.color, 'color', lang);
+  return {
+    SKU: row.sku,
+    WIDTH:    wp ? fmtAuto(wp.w, null, lang) : row.widthRaw,
+    WIDTH_IN: wp ? fmtIn(wp.w, null) : row.widthRaw,
+    WIDTH_CM: wp ? fmtCm(wp.w, null) : row.widthRaw,
+    DEPTH:    dp ? fmtAuto(dp.w, null, lang) : row.depthRaw,
+    DEPTH_IN: dp ? fmtIn(dp.w, null) : row.depthRaw,
+    DEPTH_CM: dp ? fmtCm(dp.w, null) : row.depthRaw,
+    MATERIAL: mat, COLOR: col, PACK: row.pack
+  };
+}
+
+// ══════════════════════════════════════════════════════════
+//  REPLACE ENGINE
+// ══════════════════════════════════════════════════════════
+function replacePh(tpl, vars) {
+  if (!tpl) return '';
+  let r = tpl;
+  Object.entries(vars).forEach(([k,v]) => { r = r.split('{'+k+'}').join(v||''); });
+  return r;
+}
+
+// ══════════════════════════════════════════════════════════
+//  GENERATE
+// ══════════════════════════════════════════════════════════
+function generateAll() {
+  const statusEl = document.getElementById('generateStatus');
+  const tplTitle = document.getElementById('tplTitle').value;
+  const tplBullets = [0,1,2,3,4].map(i => document.getElementById('tplB'+i).value);
+
+  if (!tplTitle && tplBullets.every(b=>!b)) {
+    statusEl.innerHTML = '<div class="alert alert-warning"><span>⚠️</span><span>请先填写模板（标题或五点）</span></div>';
+    return;
+  }
+
+  const rows = currentMode === 'frame' ? getFrameRows() : getShelfRows();
+  if (!rows.length) {
+    statusEl.innerHTML = '<div class="alert alert-warning"><span>⚠️</span><span>请先输入变体数据</span></div>';
+    return;
+  }
+
+  generatedRows = rows.map(row => {
+    const vars = currentMode === 'frame' ? buildFrameVars(row, currentLang) : buildShelfVars(row, currentLang);
+    return {
+      sku: row.sku,
+      title: replacePh(tplTitle, vars),
+      bullets: tplBullets.map(t => replacePh(t, vars))
+    };
+  });
+
+  statusEl.innerHTML = `<div class="alert alert-success"><span>✅</span><span>成功生成 <b>${generatedRows.length}</b> 条文案 · 语言：<b>${currentLang}</b></span></div>`;
+  renderOutput();
+}
+
+// ══════════════════════════════════════════════════════════
+//  RENDER OUTPUT
+// ══════════════════════════════════════════════════════════
+function renderOutput() {
+  const panel = document.getElementById('outputPanel');
+  const scroll = document.getElementById('outputScroll');
+  panel.style.display = '';
+  document.getElementById('outputBadge').textContent = generatedRows.length + ' 条';
+  document.getElementById('outputStats').innerHTML = `
+    <div class="stat-chip">📝 ${generatedRows.length} 个变体</div>
+    <div class="stat-chip">🌐 ${currentLang}</div>
+    <div class="stat-chip">${currentMode==='frame'?'🖼 相框':'📦 层板'}</div>
+  `;
+  let html = '';
+  generatedRows.forEach((r, idx) => {
+    const tl = r.title.length;
+    const tw = tl > 200 ? ' over' : tl > 180 ? ' warn' : '';
+    html += `<div class="output-row">
+      <div class="output-row-header">
+        <span class="output-sku">${esc(r.sku)}</span>
+        <button class="copy-btn" onclick="copyRow(${idx})">📋 复制</button>
+      </div>`;
+    if (r.title) html += `<div class="output-field-label">标题 <span class="char-counter${tw}" style="display:inline">${tl}/200</span></div><div class="output-text">${esc(r.title)}</div>`;
+    r.bullets.forEach((b,bi) => {
+      if (!b) return;
+      const bl = b.length, bw = bl > 500 ? ' over' : bl > 450 ? ' warn' : '';
+      html += `<div class="output-field-label">B${bi+1} <span class="char-counter${bw}" style="display:inline">${bl}/500</span></div><div class="output-text">${esc(b)}</div>`;
+    });
+    html += '</div>';
+  });
+  scroll.innerHTML = html;
+  panel.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ══════════════════════════════════════════════════════════
+//  COPY ROW
+// ══════════════════════════════════════════════════════════
+function copyRow(idx) {
+  const r = generatedRows[idx];
+  let text = r.title ? 'TITLE:\n' + r.title + '\n\n' : '';
+  r.bullets.forEach((b,i) => { if(b) text += 'B'+(i+1)+':\n'+b+'\n\n'; });
+  navigator.clipboard.writeText(text.trim()).then(() => {
+    const btns = document.querySelectorAll('.copy-btn');
+    if (btns[idx]) { btns[idx].textContent = '✅ 已复制'; setTimeout(()=>btns[idx].textContent='📋 复制',1500); }
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+//  EXPORT CSV  ← 修复版
+// ══════════════════════════════════════════════════════════
+function exportCSV() {
+  if (!generatedRows.length) {
+    document.getElementById('generateStatus').innerHTML = '<div class="alert alert-warning"><span>⚠️</span><span>请先点击"批量生成文案"</span></div>';
+    return;
+  }
+
+  // Build CSV content
+  const headers = ['SKU', 'Language', 'Mode', 'Title', 'B1', 'B2', 'B3', 'B4', 'B5'];
+  const lines = [headers.map(h => csvCell(h)).join(',')];
+
+  generatedRows.forEach(r => {
+    const cols = [
+      csvCell(r.sku),
+      csvCell(currentLang),
+      csvCell(currentMode === 'frame' ? 'Frame' : 'Shelf'),
+      csvCell(r.title),
+      csvCell(r.bullets[0] || ''),
+      csvCell(r.bullets[1] || ''),
+      csvCell(r.bullets[2] || ''),
+      csvCell(r.bullets[3] || ''),
+      csvCell(r.bullets[4] || '')
+    ];
+    lines.push(cols.join(','));
+  });
+
+  const csvContent = '\uFEFF' + lines.join('\r\n'); // UTF-8 BOM for Excel
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const filename = 'KovaScape_Listing_' + currentLang + '_' + new Date().toISOString().slice(0,10) + '.csv';
+  link.setAttribute('href', url);
+  link.setAttribute('download', filename);
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+  document.getElementById('generateStatus').innerHTML = `<div class="alert alert-success"><span>✅</span><span>已导出 <b>${generatedRows.length}</b> 条 → <b>${filename}</b></span></div>`;
+}
+
+function csvCell(val) {
+  const s = String(val || '');
+  // Always wrap in quotes, escape internal quotes by doubling
+  return '"' + s.replace(/"/g, '""') + '"';
+}
+
+// ══════════════════════════════════════════════════════════
+//  SAMPLE DATA
+// ══════════════════════════════════════════════════════════
+function loadFrameSample() {
+  document.getElementById('frameData').value =
+`KS-F-4x6-BLK\t4x6\t木\t黑\t1\t3.5x5
+KS-F-5x7-WHT\t5x7\t木\t白\t1\t4x6
+KS-F-6x8-GLD\t6x8\t木\t金\t1\t4x6
+KS-F-8x10-BLK\t8x10\t木\t黑\t1\t5x7
+KS-F-11x14-WHT\t11x14\t木\t白\t1\t8x10
+KS-F-12x16-OAK\t12x16\t橡木\t原木色\t1\t8x10`;
+  parseAndPreview();
+}
+
+function loadShelfSample() {
+  document.getElementById('shelfData').value =
+`KS-S-24x6-BLK\t24\t6\t木\t黑\t1
+KS-S-36x6-WHT\t36\t6\t木\t白\t1
+KS-S-48x8-OAK\t48\t8\t橡木\t原木色\t2
+KS-S-60x8-WAL\t60\t8\t胡桃木\t棕\t3`;
+  parseAndPreview();
+}
+
+function loadSampleTemplate() {
+  if (currentMode === 'frame') {
+    document.getElementById('tplTitle').value = 'KovaScape {MATERIAL} Picture Frame {SIZE} with {MAT} Mat Opening, {COLOR}, Set of {PACK}';
+    document.getElementById('tplB0').value = 'PREMIUM {MATERIAL} CONSTRUCTION — Crafted from high-quality {MATERIAL}, this {SIZE} picture frame features a classic {COLOR} finish that complements any décor style. The solid build ensures lasting durability for your cherished memories.';
+    document.getElementById('tplB1').value = 'GALLERY-WORTHY DISPLAY — The {SIZE} frame with {MAT} mat opening creates a professional gallery wall look. Perfect for living rooms, bedrooms, hallways, and office spaces. Display your photos, artwork, or prints with elegant mat borders.';
+    document.getElementById('tplB2').value = 'PRECISE DIMENSIONS — Frame exterior: {SIZE_IN} ({SIZE_CM}). Mat opening: {MAT_IN} ({MAT_CM}). Finish: {COLOR}. Set of {PACK}. Includes hanging hardware for both portrait and landscape orientation.';
+    document.getElementById('tplB3').value = 'VERSATILE GIFTING — This {COLOR} {MATERIAL} frame in {SIZE} size makes a thoughtful housewarming, wedding, or birthday present. Suitable for photos, certificates, artwork, and more.';
+    document.getElementById('tplB4').value = 'QUALITY GUARANTEED — Each {SIZE} frame is carefully inspected before shipping. Comes with protective packaging to ensure safe delivery. Contact us for any concerns — we stand behind every KovaScape product.';
+  } else {
+    document.getElementById('tplTitle').value = 'KovaScape {MATERIAL} Floating Shelf {WIDTH_IN} ({WIDTH_CM}), {COLOR}, Set of {PACK}';
+    document.getElementById('tplB0').value = 'STURDY {MATERIAL} CONSTRUCTION — Built from premium {MATERIAL}, this {WIDTH_IN} floating shelf holds up to 15 lbs. The {COLOR} finish resists scratches and moisture for long-lasting use in any room.';
+    document.getElementById('tplB1').value = 'VERSATILE WALL STORAGE — Mount this {WIDTH_IN} ({WIDTH_CM}) shelf in your living room, bedroom, bathroom, or kitchen. Ideal for books, plants, frames, and decorative items. Creates a clean, modern look on any wall.';
+    document.getElementById('tplB2').value = 'PRECISE DIMENSIONS — Shelf width: {WIDTH_IN} ({WIDTH_CM}). Depth: {DEPTH_IN} ({DEPTH_CM}). Finish: {COLOR}. Set of {PACK}. All mounting hardware included for easy installation.';
+    document.getElementById('tplB3').value = 'EASY INSTALLATION — Comes with a full hardware kit and step-by-step instructions. The {WIDTH_IN} shelf mounts securely to most wall types. No professional tools required.';
+    document.getElementById('tplB4').value = 'BACKED BY KOVASCAPE — Every {WIDTH_IN} floating shelf is quality-checked before dispatch. Packaged securely to arrive in perfect condition. Reach out to our team for any questions or concerns.';
+  }
+  ['tplTitle','tplB0','tplB1','tplB2','tplB3','tplB4'].forEach((id,i) => {
+    const ta = document.getElementById(id);
+    updateCC(ta, i===0?'ccTitle':'ccB'+(i-1), i===0?200:500);
+  });
+}
+
+function clearTemplates() {
+  ['tplTitle','tplB0','tplB1','tplB2','tplB3','tplB4'].forEach(id => { document.getElementById(id).value = ''; });
+}
+
+// ══════════════════════════════════════════════════════════
+//  LOCAL STORAGE
+// ══════════════════════════════════════════════════════════
+function saveLocal() {
+  const data = {
+    mode: currentMode,
+    title: document.getElementById('tplTitle').value,
+    bullets: [0,1,2,3,4].map(i => document.getElementById('tplB'+i).value),
+    customDict: document.getElementById('customDict').value
+  };
+  localStorage.setItem('ks_vbw_v40', JSON.stringify(data));
+  document.getElementById('generateStatus').innerHTML = '<div class="alert alert-success"><span>✅</span><span>模板已保存到本地浏览器</span></div>';
+}
+
+function loadLocal() {
+  const raw = localStorage.getItem('ks_vbw_v40');
+  if (!raw) { document.getElementById('generateStatus').innerHTML = '<div class="alert alert-warning"><span>⚠️</span><span>未找到已保存的模板</span></div>'; return; }
+  const d = JSON.parse(raw);
+  if (d.mode) switchMode(d.mode);
+  if (d.title) document.getElementById('tplTitle').value = d.title;
+  if (d.bullets) d.bullets.forEach((b,i) => { document.getElementById('tplB'+i).value = b; });
+  if (d.customDict) document.getElementById('customDict').value = d.customDict;
+  document.getElementById('generateStatus').innerHTML = '<div class="alert alert-success"><span>✅</span><span>模板已读取</span></div>';
+}
+
+// ══════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════
+renderDictTables();
+</script>
+</body>
+</html>

@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>625广告分析法 · 完整方法论 | KovaScape</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #F0EDE8; font-family: 'Poppins', sans-serif; color: #1D1B20; }
+  .page { background: #FDFCF9; max-width: 1100px; margin: 32px auto; border-radius: 40px; overflow: hidden; box-shadow: 0 8px 48px rgba(6,67,56,0.10); }
+
+  /* Hero */
+  .hero { background: #064338; padding: 60px 64px 48px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; top: -60px; right: -60px; width: 320px; height: 320px; border-radius: 50%; border: 1px solid rgba(243,197,70,0.15); }
+  .hero::after { content: ''; position: absolute; top: 20px; right: 20px; width: 180px; height: 180px; border-radius: 50%; border: 1px solid rgba(243,197,70,0.10); }
+  .hero-eyebrow { display: flex; align-items: center; gap: 10px; margin-bottom: 24px; }
+  .hero-dot { width: 8px; height: 8px; border-radius: 50%; background: #F3C546; }
+  .hero-eyebrow span { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 1.5px; }
+  .hero-title { font-family: 'Playfair Display', serif; font-size: 48px; font-weight: 500; color: #fff; line-height: 1.15; margin-bottom: 16px; }
+  .hero-title span { color: #F3C546; }
+  .hero-subtitle { font-size: 15px; color: rgba(255,255,255,0.7); line-height: 1.7; max-width: 600px; margin-bottom: 40px; }
+  .hero-metrics { display: flex; gap: 0; border-top: 0.6px solid rgba(243,197,70,0.4); padding-top: 32px; }
+  .hero-metric { flex: 1; padding-right: 32px; border-right: 0.6px solid rgba(255,255,255,0.1); margin-right: 32px; }
+  .hero-metric:last-child { border-right: none; margin-right: 0; }
+  .hero-metric-value { font-family: 'Playfair Display', serif; font-size: 36px; font-weight: 500; color: #F3C546; }
+  .hero-metric-label { font-size: 12px; color: rgba(255,255,255,0.55); margin-top: 4px; }
+
+  /* TOC */
+  .toc { background: #F8F5F0; border-bottom: 1px solid #E8E4DE; padding: 28px 64px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .toc-item { font-size: 12px; font-weight: 500; color: #064338; background: #E8F2F0; border-radius: 20px; padding: 6px 14px; cursor: pointer; text-decoration: none; transition: all 0.2s; }
+  .toc-item:hover { background: #064338; color: #F3C546; }
+
+  /* Content */
+  .content { padding: 56px 64px; }
+  .section { margin-bottom: 64px; }
+  .section-header { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 1px solid #F0EDE8; }
+  .section-num { font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 500; color: #F3C546; background: #064338; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .section-title { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 500; color: #1D1B20; }
+  .section-subtitle { font-size: 13px; color: #717171; margin-top: 4px; }
+
+  h3 { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 500; color: #1D1B20; margin: 28px 0 14px; }
+  h4 { font-size: 14px; font-weight: 600; color: #064338; margin: 20px 0 10px; }
+  p { font-size: 14px; color: #4A4A4A; line-height: 1.8; margin-bottom: 12px; }
+  ul, ol { padding-left: 20px; margin-bottom: 14px; }
+  li { font-size: 14px; color: #4A4A4A; line-height: 1.9; }
+  strong { color: #1D1B20; font-weight: 600; }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; margin: 16px 0 24px; border-radius: 12px; border: 1px solid #E8E4DE; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead tr { background: #064338; }
+  th { color: #F3C546; font-weight: 500; font-size: 12px; padding: 12px 16px; text-align: left; white-space: nowrap; }
+  td { padding: 11px 16px; border-bottom: 1px solid #F0EDE8; color: #4A4A4A; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #F8F5F0; }
+
+  /* Code block */
+  pre { background: #1D1B20; color: #E8E4DE; border-radius: 12px; padding: 20px 24px; font-size: 13px; line-height: 1.8; overflow-x: auto; margin: 16px 0 24px; font-family: 'Courier New', monospace; }
+  code { font-family: 'Courier New', monospace; font-size: 12px; background: #F0EDE8; color: #064338; padding: 2px 6px; border-radius: 4px; }
+
+  /* Cards */
+  .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 16px 0 24px; }
+  .card-grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .card { border: 1px solid #E8E4DE; border-radius: 14px; padding: 20px; background: #FDFCF9; }
+  .card-icon { font-size: 24px; margin-bottom: 10px; }
+  .card-title { font-size: 14px; font-weight: 600; color: #1D1B20; margin-bottom: 6px; }
+  .card-desc { font-size: 12px; color: #717171; line-height: 1.7; }
+  .card-accent { border-left: 4px solid #064338; }
+
+  /* Badges */
+  .badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; }
+  .badge-green { background: #E8F2F0; color: #064338; }
+  .badge-yellow { background: #FFF8DC; color: #B8860B; }
+  .badge-red { background: #FDECEA; color: #C4433A; }
+
+  /* Alert */
+  .alert { border-radius: 12px; padding: 16px 20px; margin: 16px 0; }
+  .alert-success { background: #E8F2F0; border-left: 4px solid #064338; }
+  .alert-warning { background: #FFF8DC; border-left: 4px solid #F3C546; }
+  .alert-danger { background: #FDECEA; border-left: 4px solid #C4433A; }
+  .alert-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .alert-success .alert-title { color: #064338; }
+  .alert-warning .alert-title { color: #B8860B; }
+  .alert-danger .alert-title { color: #C4433A; }
+  .alert p { font-size: 13px; margin: 0; }
+
+  /* Strategy cards */
+  .strategy-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 16px 0; }
+  .strategy-card { border: 1px solid #E8E4DE; border-radius: 12px; padding: 16px; background: #FDFCF9; }
+  .strategy-card.expand { border-left: 4px solid #064338; }
+  .strategy-card.watch { border-left: 4px solid #F3C546; }
+  .strategy-card.control { border-left: 4px solid #C4433A; }
+  .strategy-name { font-size: 14px; font-weight: 600; color: #1D1B20; margin-bottom: 8px; }
+  .strategy-params { font-size: 12px; color: #717171; line-height: 1.8; }
+  .strategy-params span { display: inline-block; background: #F0EDE8; border-radius: 4px; padding: 1px 6px; margin: 2px 2px 2px 0; color: #4A4A4A; }
+
+  /* Formula box */
+  .formula-box { background: #064338; border-radius: 14px; padding: 24px 28px; margin: 16px 0 24px; }
+  .formula-box pre { background: transparent; color: #E8F2F0; padding: 0; margin: 0; font-size: 14px; }
+  .formula-box .formula-title { font-size: 12px; font-weight: 500; color: #F3C546; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+
+  /* SOP steps */
+  .sop-step { display: flex; gap: 16px; margin-bottom: 20px; }
+  .sop-num { width: 32px; height: 32px; border-radius: 50%; background: #064338; color: #F3C546; font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 500; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+  .sop-content { flex: 1; }
+  .sop-title { font-size: 15px; font-weight: 600; color: #1D1B20; margin-bottom: 6px; }
+  .sop-day { font-size: 11px; font-weight: 500; color: #F3C546; background: #064338; padding: 2px 10px; border-radius: 20px; display: inline-block; margin-bottom: 8px; }
+
+  /* Decision tree */
+  .decision-tree { background: #1D1B20; border-radius: 14px; padding: 24px 28px; margin: 16px 0; }
+  .decision-tree pre { background: transparent; color: #E8E4DE; padding: 0; margin: 0; font-size: 13px; line-height: 2; }
+
+  /* Divider */
+  .divider { height: 1px; background: linear-gradient(90deg, #F3C546, transparent); margin: 48px 0; opacity: 0.4; }
+
+  /* Footer */
+  .footer { background: #042E25; padding: 40px 64px; display: flex; justify-content: space-between; align-items: center; }
+  .footer-brand { font-family: 'Playfair Display', serif; font-size: 22px; color: #F3C546; }
+  .footer-meta { font-size: 12px; color: rgba(255,255,255,0.5); text-align: right; line-height: 1.8; }
+
+  /* Highlight row */
+  .highlight-row td { background: #E8F2F0 !important; font-weight: 500; }
+
+  @media (max-width: 768px) {
+    .hero { padding: 40px 28px 36px; }
+    .hero-title { font-size: 32px; }
+    .content { padding: 36px 28px; }
+    .toc { padding: 20px 28px; }
+    .card-grid { grid-template-columns: 1fr; }
+    .strategy-grid { grid-template-columns: 1fr; }
+    .hero-metrics { flex-direction: column; gap: 20px; }
+    .hero-metric { border-right: none; margin-right: 0; padding-right: 0; border-bottom: 0.6px solid rgba(255,255,255,0.1); padding-bottom: 16px; }
+    .footer { flex-direction: column; gap: 16px; text-align: center; padding: 32px 28px; }
+    .footer-meta { text-align: center; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-eyebrow">
+      <div class="hero-dot"></div>
+      <span>KovaScape · 广告方法论</span>
+    </div>
+    <div class="hero-title">625广告分析法<br><span>完整方法论</span></div>
+    <div class="hero-subtitle">亚马逊PPC广告625矩阵分析法，来源于 Ads625 工具（Amazon PPC Intelligence v7.1.0）的系统化提炼，并结合KovaScape品类实战经验进行深度优化。</div>
+    <div class="hero-metrics">
+      <div class="hero-metric">
+        <div class="hero-metric-value">625</div>
+        <div class="hero-metric-label">种状态组合（5⁴）</div>
+      </div>
+      <div class="hero-metric">
+        <div class="hero-metric-value">4</div>
+        <div class="hero-metric-label">核心指标维度</div>
+      </div>
+      <div class="hero-metric">
+        <div class="hero-metric-value">17</div>
+        <div class="hero-metric-label">大操作策略</div>
+      </div>
+      <div class="hero-metric">
+        <div class="hero-metric-value">11</div>
+        <div class="hero-metric-label">章节完整覆盖</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOC -->
+  <div class="toc">
+    <a class="toc-item" href="#s1">一、核心框架</a>
+    <a class="toc-item" href="#s2">二、公式体系</a>
+    <a class="toc-item" href="#s3">三、铁律三条</a>
+    <a class="toc-item" href="#s4">四、17大策略</a>
+    <a class="toc-item" href="#s5">五、量化标准</a>
+    <a class="toc-item" href="#s6">六、每周SOP</a>
+    <a class="toc-item" href="#s7">七、KovaScape专属</a>
+    <a class="toc-item" href="#s8">八、面板设计</a>
+    <a class="toc-item" href="#s9">九、领星映射</a>
+    <a class="toc-item" href="#s10">十、西柚联动</a>
+    <a class="toc-item" href="#s11">十一、快速参考</a>
+  </div>
+
+  <div class="content">
+
+    <!-- 一、核心框架 -->
+    <div class="section" id="s1">
+      <div class="section-header">
+        <div class="section-num">一</div>
+        <div>
+          <div class="section-title">核心框架：625矩阵</div>
+          <div class="section-subtitle">4个核心指标 × 5个等级 = 5⁴ = 625种组合</div>
+        </div>
+      </div>
+
+      <div class="alert alert-success">
+        <div class="alert-title">矩阵原理</div>
+        <p>每个广告活动/关键词，通过4个维度的等级判断，定位到625种状态之一，并匹配对应的操作策略。</p>
+      </div>
+
+      <h3>四大核心指标</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>指标</th><th>英文</th><th>含义</th><th>判断维度</th></tr></thead>
+          <tbody>
+            <tr><td><strong>ACOS</strong></td><td>Advertising Cost of Sales</td><td>广告花费 / 广告销售额</td><td>盈利能力</td></tr>
+            <tr><td><strong>曝光量</strong></td><td>Impressions</td><td>广告展示次数</td><td>流量规模</td></tr>
+            <tr><td><strong>CTR</strong></td><td>Click-Through Rate</td><td>点击率 = 点击 / 曝光</td><td>广告吸引力</td></tr>
+            <tr><td><strong>CVR</strong></td><td>Conversion Rate</td><td>转化率 = 订单 / 点击</td><td>Listing转化力</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>五级评分标准</h3>
+      <div class="card-grid card-grid-2">
+        <div class="card card-accent">
+          <div class="card-title">ACOS等级（越低越好）</div>
+          <ul style="margin-top:10px;">
+            <li><span class="badge badge-green">L1</span> &nbsp;ACOS &lt; BE_ACOS × 60%（极优，大幅盈利）</li>
+            <li><span class="badge badge-green">L2</span> &nbsp;ACOS &lt; BE_ACOS × 80%（优，盈利充裕）</li>
+            <li><span class="badge badge-yellow">L3</span> &nbsp;ACOS ≈ BE_ACOS（平衡，保本）</li>
+            <li><span class="badge badge-yellow">L4</span> &nbsp;ACOS &lt; BE_ACOS × 130%（差，轻微亏损）</li>
+            <li><span class="badge badge-red">L5</span> &nbsp;ACOS &gt; BE_ACOS × 130%（极差，严重亏损）</li>
+          </ul>
+        </div>
+        <div class="card card-accent">
+          <div class="card-title">曝光量等级（越高越好）</div>
+          <ul style="margin-top:10px;">
+            <li><span class="badge badge-green">L1</span> &nbsp;曝光量极高（类目头部水平）</li>
+            <li><span class="badge badge-green">L2</span> &nbsp;曝光量高（稳定流量）</li>
+            <li><span class="badge badge-yellow">L3</span> &nbsp;曝光量中等（有增长空间）</li>
+            <li><span class="badge badge-yellow">L4</span> &nbsp;曝光量低（流量不足）</li>
+            <li><span class="badge badge-red">L5</span> &nbsp;曝光量极低（&lt;100/周）</li>
+          </ul>
+        </div>
+        <div class="card card-accent">
+          <div class="card-title">CTR等级（行业基准 0.3-0.5%）</div>
+          <ul style="margin-top:10px;">
+            <li><span class="badge badge-green">L1</span> &nbsp;CTR &gt; 0.8%（极高）</li>
+            <li><span class="badge badge-green">L2</span> &nbsp;CTR 0.5-0.8%（高）</li>
+            <li><span class="badge badge-yellow">L3</span> &nbsp;CTR 0.3-0.5%（中等，行业平均）</li>
+            <li><span class="badge badge-yellow">L4</span> &nbsp;CTR 0.15-0.3%（低，需优化主图）</li>
+            <li><span class="badge badge-red">L5</span> &nbsp;CTR &lt; 0.15%（极低，严重问题）</li>
+          </ul>
+        </div>
+        <div class="card card-accent">
+          <div class="card-title">CVR等级（行业基准 5-15%）</div>
+          <ul style="margin-top:10px;">
+            <li><span class="badge badge-green">L1</span> &nbsp;CVR &gt; 15%（极高）</li>
+            <li><span class="badge badge-green">L2</span> &nbsp;CVR 10-15%（高，转化良好）</li>
+            <li><span class="badge badge-yellow">L3</span> &nbsp;CVR 5-10%（中等，行业平均）</li>
+            <li><span class="badge badge-yellow">L4</span> &nbsp;CVR 2-5%（低，Listing需优化）</li>
+            <li><span class="badge badge-red">L5</span> &nbsp;CVR &lt; 2%（极低，严重问题）</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 二、公式体系 -->
+    <div class="section" id="s2">
+      <div class="section-header">
+        <div class="section-num">二</div>
+        <div>
+          <div class="section-title">核心公式体系</div>
+          <div class="section-subtitle">ACOS / BE_ACOS / Bid / TACoS 完整公式</div>
+        </div>
+      </div>
+
+      <div class="formula-box">
+        <div class="formula-title">基础公式</div>
+        <pre>ACOS     = 广告花费 / 广告销售额 × 100%
+         = CPC / (售价 × CVR)
+
+BE_ACOS  = 毛利润 / 售价
+         = (售价 - 成本 - FBA费用 - 平台佣金) / 售价
+
+目标出价  = 目标ACOS × 售价 × CVR
+
+TACoS    = 总广告花费 / 总销售额（含自然单）</pre>
+      </div>
+
+      <h3>因果关系链</h3>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">📈</div>
+          <div class="card-title">CPC↑ → ACOS↑</div>
+          <div class="card-desc">出价过高导致广告成本上升</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">📉</div>
+          <div class="card-title">CVR↓ → ACOS↑</div>
+          <div class="card-desc">Listing问题，非广告问题</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">💰</div>
+          <div class="card-title">售价↑ → ACOS↓</div>
+          <div class="card-desc">定价策略可改善ACOS</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">👁️</div>
+          <div class="card-title">曝光↓ → 出价过低</div>
+          <div class="card-desc">或关键词相关性差</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🖼️</div>
+          <div class="card-title">CTR↓ → 主图/价格问题</div>
+          <div class="card-desc">非广告问题，需优化Listing</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🎯</div>
+          <div class="card-title">竞价层级乘数</div>
+          <div class="card-desc">Standard ×1.0 | TOS ×1.3 | PP ×1.15</div>
+        </div>
+      </div>
+
+      <div class="alert alert-warning">
+        <div class="alert-title">新品期建议</div>
+        <p>在计算出价值基础上额外增加 20-30%，以获取初始曝光和数据积累。</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 三、铁律三条 -->
+    <div class="section" id="s3">
+      <div class="section-header">
+        <div class="section-num">三</div>
+        <div>
+          <div class="section-title">铁律三条（Golden Rules）</div>
+          <div class="section-subtitle">违反任何一条都会导致错误决策</div>
+        </div>
+      </div>
+
+      <div class="alert alert-danger" style="margin-bottom:24px;">
+        <div class="alert-title">⚠️ 铁律一：CTR低 ≠ 广告问题</div>
+        <p>CTR低的根本原因：<strong>主图质量差</strong>、<strong>价格竞争力不足</strong>、<strong>评论数量/评分不足</strong>、<strong>关键词相关性差</strong>。<br>
+        正确应对：先优化主图/价格/评论，再调整广告出价。不要因为CTR低就盲目降低出价。</p>
+      </div>
+
+      <div class="alert alert-danger" style="margin-bottom:24px;">
+        <div class="alert-title">⚠️ 铁律二：CVR低 ≠ 广告问题</div>
+        <p>CVR低的根本原因：<strong>Listing质量差</strong>、<strong>价格偏高</strong>、<strong>评论质量差</strong>、<strong>主图/副图不够专业</strong>。<br>
+        正确应对：先优化Listing/价格/评论，再考虑广告策略调整。降低出价不能解决CVR问题。</p>
+      </div>
+
+      <div class="alert alert-warning">
+        <div class="alert-title">💡 铁律三：ACOS不是越低越好</div>
+        <p>
+          <span class="badge badge-green">ACOS &lt; BE_ACOS</span> = 盈利，可继续投放 &nbsp;|&nbsp;
+          <span class="badge badge-yellow">ACOS = BE_ACOS</span> = 保本，需优化 &nbsp;|&nbsp;
+          <span class="badge badge-red">ACOS &gt; BE_ACOS</span> = 亏损，需控制<br><br>
+          ACOS过低（&lt;BE_ACOS×50%）= 可能错失流量机会，应考虑扩量。<br>
+          <strong>正确目标：在盈利前提下最大化销售额，而非单纯追求低ACOS。</strong>
+        </p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 四、17大策略 -->
+    <div class="section" id="s4">
+      <div class="section-header">
+        <div class="section-num">四</div>
+        <div>
+          <div class="section-title">17大操作策略</div>
+          <div class="section-subtitle">扩张类 / 观察类 / 控制类，含精确参数</div>
+        </div>
+      </div>
+
+      <h3>策略总览</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>策略名</th><th>适用场景</th><th>核心动作</th><th>类型</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>🚀 强力拓流</td><td>ACOS极低+高曝光+高CVR</td><td>全面激进扩张</td><td><span class="badge badge-green">扩张</span></td></tr>
+            <tr><td>2</td><td>📈 稳步扩量</td><td>ACOS低+中高曝光+良好CVR</td><td>稳健扩张</td><td><span class="badge badge-green">扩张</span></td></tr>
+            <tr><td>3</td><td>🔋 拉满预算</td><td>ACOS低+预算受限</td><td>解除预算瓶颈</td><td><span class="badge badge-green">扩张</span></td></tr>
+            <tr><td>4</td><td>🎯 抢占首页</td><td>ACOS低+需要首页曝光</td><td>溢价抢TOS</td><td><span class="badge badge-green">扩张</span></td></tr>
+            <tr><td>5</td><td>🔼 谨慎提价</td><td>ACOS低+曝光不足</td><td>小幅提价测试</td><td><span class="badge badge-green">扩张</span></td></tr>
+            <tr><td>6</td><td>🔍 强制曝光</td><td>ACOS低+曝光极低</td><td>固定竞价强制展示</td><td><span class="badge badge-green">扩张</span></td></tr>
+            <tr><td>7</td><td>🧭 试探流量</td><td>新词/新活动，数据不足</td><td>小幅提价探索</td><td><span class="badge badge-yellow">观察</span></td></tr>
+            <tr><td>8</td><td>👁️ 审查相关性</td><td>曝光低+CTR极低</td><td>检查词相关性</td><td><span class="badge badge-yellow">观察</span></td></tr>
+            <tr><td>9</td><td>⚖️ 维持观察</td><td>各指标平衡</td><td>不调整，继续观察</td><td><span class="badge badge-yellow">观察</span></td></tr>
+            <tr><td>10</td><td>📉 缩减预算</td><td>ACOS高+预算浪费</td><td>削减预算</td><td><span class="badge badge-red">控制</span></td></tr>
+            <tr><td>11</td><td>💰 微调压价</td><td>ACOS略高+CVR尚可</td><td>小幅降价</td><td><span class="badge badge-red">控制</span></td></tr>
+            <tr><td>12</td><td>🛡️ 防守降价</td><td>ACOS高+需要保守控制</td><td>中幅降价</td><td><span class="badge badge-red">控制</span></td></tr>
+            <tr><td>13</td><td>🔽 温和降本</td><td>ACOS高+预算+出价双降</td><td>双降控制</td><td><span class="badge badge-red">控制</span></td></tr>
+            <tr><td>14</td><td>🔪 大幅压价</td><td>ACOS极高+CVR极低</td><td>激进降价</td><td><span class="badge badge-red">控制</span></td></tr>
+            <tr><td>15</td><td>🔄 降价打首页</td><td>ACOS高+仍需首页曝光</td><td>降价+溢价组合</td><td><span class="badge badge-red">控制</span></td></tr>
+            <tr><td>16</td><td>🎣 低价捡漏</td><td>ACOS极高+保留测试</td><td>极低出价固定竞价</td><td><span class="badge badge-red">控制</span></td></tr>
+            <tr><td>17</td><td>🛑 及时止损</td><td>ACOS极高+无转化</td><td>暂停/精准否定</td><td><span class="badge badge-red">控制</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>扩张类策略详细参数（ACOS &lt; BE_ACOS）</h3>
+      <div class="strategy-grid">
+        <div class="strategy-card expand">
+          <div class="strategy-name">🚀 强力拓流</div>
+          <div class="strategy-params">
+            <span>预算 +30%</span><span>出价 +20%</span><span>动态（提高和降低）</span><span>TOS溢价 +20%</span><br>
+            适用：ACOS &lt; BE_ACOS×60% + 高CVR + 高曝光
+          </div>
+        </div>
+        <div class="strategy-card expand">
+          <div class="strategy-name">📈 稳步扩量</div>
+          <div class="strategy-params">
+            <span>预算 +20%</span><span>出价 +10%</span><span>动态（仅降低）</span><span>TOS溢价 +10%</span><br>
+            适用：ACOS &lt; BE_ACOS×80% + 良好CVR
+          </div>
+        </div>
+        <div class="strategy-card expand">
+          <div class="strategy-name">🔋 拉满预算</div>
+          <div class="strategy-params">
+            <span>预算 +50%</span><span>出价 0%</span><span>动态（仅降低）</span><br>
+            适用：ACOS低 + 预算经常耗尽
+          </div>
+        </div>
+        <div class="strategy-card expand">
+          <div class="strategy-name">🎯 抢占首页</div>
+          <div class="strategy-params">
+            <span>预算 +10%</span><span>出价 0%</span><span>TOS溢价 +50%</span><br>
+            适用：ACOS低 + 需要首页曝光
+          </div>
+        </div>
+        <div class="strategy-card expand">
+          <div class="strategy-name">🔼 谨慎提价</div>
+          <div class="strategy-params">
+            <span>预算 +10%</span><span>出价 +5%</span><span>TOS溢价 +5%</span><br>
+            适用：ACOS低 + 曝光量不足
+          </div>
+        </div>
+        <div class="strategy-card expand">
+          <div class="strategy-name">🔍 强制曝光</div>
+          <div class="strategy-params">
+            <span>预算 +10%</span><span>出价 +20%</span><span>固定竞价</span><br>
+            适用：ACOS低 + 曝光极低（&lt;100/周）
+          </div>
+        </div>
+      </div>
+
+      <h3>观察类策略（ACOS ≈ BE_ACOS）</h3>
+      <div class="strategy-grid">
+        <div class="strategy-card watch">
+          <div class="strategy-name">🧭 试探流量</div>
+          <div class="strategy-params"><span>预算 +10%</span><span>出价 +10%</span><br>适用：新词/新活动，数据积累不足</div>
+        </div>
+        <div class="strategy-card watch">
+          <div class="strategy-name">👁️ 审查相关性</div>
+          <div class="strategy-params"><span>所有参数维持</span><br>行动：检查搜索词报告，排查低相关词</div>
+        </div>
+        <div class="strategy-card watch">
+          <div class="strategy-name">⚖️ 维持观察</div>
+          <div class="strategy-params"><span>所有参数 0% 调整</span><br>适用：各指标平衡，等待更多数据</div>
+        </div>
+      </div>
+
+      <h3>控制类策略（ACOS &gt; BE_ACOS）</h3>
+      <div class="strategy-grid">
+        <div class="strategy-card control">
+          <div class="strategy-name">📉 缩减预算</div>
+          <div class="strategy-params"><span>预算 -20%</span><span>出价 0%</span><br>适用：ACOS高 + 预算浪费严重</div>
+        </div>
+        <div class="strategy-card control">
+          <div class="strategy-name">💰 微调压价</div>
+          <div class="strategy-params"><span>出价 -10%</span><span>溢价 -10%</span><br>适用：ACOS略高（&lt;BE_ACOS×130%）+ CVR尚可</div>
+        </div>
+        <div class="strategy-card control">
+          <div class="strategy-name">🛡️ 防守降价</div>
+          <div class="strategy-params"><span>出价 -15%</span><br>适用：ACOS高 + 需要保守控制</div>
+        </div>
+        <div class="strategy-card control">
+          <div class="strategy-name">🔽 温和降本</div>
+          <div class="strategy-params"><span>预算 -10%</span><span>出价 -10%</span><br>适用：ACOS高 + 需要双降控制</div>
+        </div>
+        <div class="strategy-card control">
+          <div class="strategy-name">🔪 大幅压价</div>
+          <div class="strategy-params"><span>出价 -25%</span><span>溢价 -30%</span><br>适用：ACOS极高（&gt;BE_ACOS×150%）+ CVR极低</div>
+        </div>
+        <div class="strategy-card control">
+          <div class="strategy-name">🔄 降价打首页</div>
+          <div class="strategy-params"><span>出价 -20%</span><span>TOS溢价 +100%</span><br>适用：ACOS高 + 仍需首页曝光</div>
+        </div>
+        <div class="strategy-card control">
+          <div class="strategy-name">🎣 低价捡漏</div>
+          <div class="strategy-params"><span>出价 -50%</span><span>固定竞价</span><br>适用：ACOS极高 + 保留低成本测试</div>
+        </div>
+        <div class="strategy-card control">
+          <div class="strategy-name">🛑 及时止损 / 🚫 精准否定</div>
+          <div class="strategy-params"><span>暂停广告活动</span><span>加入否定词列表</span><br>适用：ACOS极高 + 长期无转化</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 五、量化标准 -->
+    <div class="section" id="s5">
+      <div class="section-header">
+        <div class="section-num">五</div>
+        <div>
+          <div class="section-title">量化决策标准</div>
+          <div class="section-subtitle">否词 / 黄金词 / 扩量 / 缩减的精确阈值</div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>决策类型</th><th>触发条件（全部满足）</th><th>执行操作</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>🚫 精准否定</strong></td>
+              <td>点击 ≥ 5次 <strong>且</strong> 转化 = 0 <strong>且</strong> 花费 &gt; $5</td>
+              <td>加入精准否定词列表</td>
+            </tr>
+            <tr class="highlight-row">
+              <td><strong>⭐ 黄金词提取</strong></td>
+              <td>CVR &gt; 5% <strong>且</strong> ACOS &lt; BE_ACOS <strong>且</strong> 点击 ≥ 10次</td>
+              <td>移至手动精准广告</td>
+            </tr>
+            <tr>
+              <td><strong>📈 扩量操作</strong></td>
+              <td>ACOS &lt; BE_ACOS × 80% <strong>且</strong> CVR高于品类基准</td>
+              <td>出价 +20-30%</td>
+            </tr>
+            <tr>
+              <td><strong>📉 缩减操作</strong></td>
+              <td>ACOS &gt; BE_ACOS × 130% <strong>且</strong> CVR低于品类基准</td>
+              <td>出价 -20-30%</td>
+            </tr>
+            <tr>
+              <td><strong>🧟 僵尸词清理</strong></td>
+              <td>曝光量 &lt; 100/周</td>
+              <td>提价或暂停</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>月度健康指标目标</h3>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">📊</div>
+          <div class="card-title">TACoS &lt; 10-15%</div>
+          <div class="card-desc">总广告花费 / 总销售额（含自然单）</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🌿</div>
+          <div class="card-title">自然订单占比 &gt; 60%</div>
+          <div class="card-desc">自然流量健康度指标</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">📢</div>
+          <div class="card-title">广告订单占比 &lt; 40%</div>
+          <div class="card-desc">广告依赖度（KovaScape当前70%，需改善）</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 六、每周SOP -->
+    <div class="section" id="s6">
+      <div class="section-header">
+        <div class="section-num">六</div>
+        <div>
+          <div class="section-title">每周执行SOP</div>
+          <div class="section-subtitle">周一至周四，共250分钟系统优化流程</div>
+        </div>
+      </div>
+
+      <div class="sop-step">
+        <div class="sop-num">一</div>
+        <div class="sop-content">
+          <div class="sop-day">周一 · 60分钟</div>
+          <div class="sop-title">数据回顾</div>
+          <p>下载上周广告数据 → 检查ACOS/CTR/CVR/花费/销售额 → 寻找±20%异常波动 → 标记问题项 → 计算TACoS对比月度目标</p>
+          <div class="alert alert-warning" style="margin-top:10px;">
+            <div class="alert-title">关注信号</div>
+            <p>ACOS突升&gt;20% → 检查竞价/竞品 | CTR突降&gt;20% → 检查主图/价格 | CVR突降&gt;20% → 检查Listing | 花费突增&gt;30% → 检查异常点击</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="sop-step">
+        <div class="sop-num">二</div>
+        <div class="sop-content">
+          <div class="sop-day">周二 · 60分钟</div>
+          <div class="sop-title">否词优化</div>
+          <p>下载搜索词报告（过去7-14天）→ 筛选否词候选（点击≥5+0转化+花费&gt;$5）→ 筛选黄金词（CVR&gt;5%+ACOS&lt;BE_ACOS）→ 检查低相关词 → 更新否定词列表</p>
+        </div>
+      </div>
+
+      <div class="sop-step">
+        <div class="sop-num">三</div>
+        <div class="sop-content">
+          <div class="sop-day">周三 · 60分钟</div>
+          <div class="sop-title">出价调整</div>
+          <p>对每个活动/关键词进行4指标评级 → 匹配17大策略之一 → 执行出价调整 → 调整广告位溢价 → 记录调整内容</p>
+        </div>
+      </div>
+
+      <div class="sop-step">
+        <div class="sop-num">四</div>
+        <div class="sop-content">
+          <div class="sop-day">周四 · 30分钟</div>
+          <div class="sop-title">预算管理</div>
+          <p>检查预算耗尽活动（→拉满预算）→ 检查高花费高ACOS活动（→削减预算）→ 检查策略切换需求 → 确认月度预算进度</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 七、KovaScape专属 -->
+    <div class="section" id="s7">
+      <div class="section-header">
+        <div class="section-num">七</div>
+        <div>
+          <div class="section-title">KovaScape品类专属参数</div>
+          <div class="section-subtitle">实木相框品类参考值 · 新品期vs成熟期策略 · TACoS监控</div>
+        </div>
+      </div>
+
+      <h3>实木相框 BE_ACOS 参考值</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>产品类型</th><th>售价区间</th><th>估算BE_ACOS</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td>小尺寸相框（4x6, 5x7）</td><td>$15-25</td><td><strong>25-35%</strong></td><td>FBA费用占比高</td></tr>
+            <tr><td>中尺寸相框（6x8, 8x10）</td><td>$25-40</td><td><strong>28-38%</strong></td><td>标准利润区间</td></tr>
+            <tr><td>大尺寸相框（11x14+）</td><td>$40-80</td><td><strong>30-40%</strong></td><td>运费成本高</td></tr>
+            <tr><td>套装产品（2-3件套）</td><td>$35-70</td><td><strong>32-42%</strong></td><td>套装溢价空间</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="alert alert-warning">
+        <div class="alert-title">⚠️ 注意</div>
+        <p>以上为估算参考值，实际BE_ACOS需根据盈亏计算器精确计算（成本+FBA费用+平台佣金+退货率）。</p>
+      </div>
+
+      <h3>品类基准</h3>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-title">CVR基准（相框品类）</div>
+          <ul style="margin-top:10px;">
+            <li>行业平均：5-10%</li>
+            <li>优秀水平：10-15%</li>
+            <li>新品期预期：3-7%</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">CTR基准（相框品类）</div>
+          <ul style="margin-top:10px;">
+            <li>行业平均：0.3-0.5%</li>
+            <li>优秀水平：0.5-0.8%</li>
+            <li>主图优化后：0.6-1.0%</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">KovaScape当前状态</div>
+          <ul style="margin-top:10px;">
+            <li>广告订单占比：~70%（偏高）</li>
+            <li>目标ACOS：12-13.5%</li>
+            <li>重点：优化Listing/主图提升CVR</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>新品期 vs 成熟期策略差异</h3>
+      <div class="card-grid card-grid-2">
+        <div class="card card-accent">
+          <div class="card-title">🌱 新品期（0-90天，评论&lt;50条）</div>
+          <ul style="margin-top:10px;">
+            <li>目标：积累数据、获取评论、建立排名</li>
+            <li>ACOS容忍度：BE_ACOS × 150-200%</li>
+            <li>出价：计算值基础上 +20-30%</li>
+            <li>竞价策略：动态（提高和降低）</li>
+            <li>广告位：优先TOS，溢价20-50%</li>
+            <li>否词标准：放宽至点击≥10+0转化</li>
+          </ul>
+        </div>
+        <div class="card card-accent">
+          <div class="card-title">🌳 成熟期（90天+，评论&gt;50条）</div>
+          <ul style="margin-top:10px;">
+            <li>目标：盈利最大化，降低广告依赖</li>
+            <li>ACOS目标：&lt; BE_ACOS × 80%</li>
+            <li>TACoS目标：&lt; 10-15%</li>
+            <li>自然订单占比目标：&gt; 60%</li>
+            <li>广告订单占比目标：&lt; 40%</li>
+            <li>否词标准：严格执行（点击≥5+0转化+花费&gt;$5）</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>TACoS监控维度</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>TACoS区间</th><th>状态</th><th>解读</th></tr></thead>
+          <tbody>
+            <tr><td><strong>&lt; 10%</strong></td><td><span class="badge badge-green">极优</span></td><td>广告效率极高，自然流量强</td></tr>
+            <tr class="highlight-row"><td><strong>10-15%</strong></td><td><span class="badge badge-green">健康</span></td><td>健康区间，广告与自然平衡</td></tr>
+            <tr><td><strong>15-25%</strong></td><td><span class="badge badge-yellow">需优化</span></td><td>广告依赖偏高，需要优化</td></tr>
+            <tr><td><strong>&gt; 25%</strong></td><td><span class="badge badge-red">警戒</span></td><td>广告严重亏损或自然流量极弱</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h4>TACoS趋势组合解读</h4>
+      <ul>
+        <li>TACoS↓ + ACOS稳定 → 自然流量在增长（<strong>好信号</strong>）</li>
+        <li>TACoS↑ + ACOS稳定 → 广告花费增加但自然未跟上（需观察）</li>
+        <li>TACoS↑ + ACOS↑ → 广告效率下降（<strong>需优化</strong>）</li>
+        <li>TACoS↓ + ACOS↑ → 广告亏损但自然流量强（可接受）</li>
+      </ul>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 八、面板设计 -->
+    <div class="section" id="s8">
+      <div class="section-header">
+        <div class="section-num">八</div>
+        <div>
+          <div class="section-title">广告分析面板设计指导</div>
+          <div class="section-subtitle">6大功能模块 · 视觉规范 · 数据流设计</div>
+        </div>
+      </div>
+
+      <div class="card-grid card-grid-2">
+        <div class="card card-accent">
+          <div class="card-icon">📥</div>
+          <div class="card-title">模块一：数据输入区</div>
+          <div class="card-desc">支持CSV/Excel上传（领星ERP格式）；手动输入BE_ACOS、售价、目标ACOS；数据预览和字段映射确认</div>
+        </div>
+        <div class="card card-accent">
+          <div class="card-icon">🔢</div>
+          <div class="card-title">模块二：625矩阵评级区</div>
+          <div class="card-desc">自动计算4指标等级；可视化热力图（颜色区分等级）；策略推荐标签（自动匹配17大策略）</div>
+        </div>
+        <div class="card card-accent">
+          <div class="card-icon">📊</div>
+          <div class="card-title">模块三：核心指标仪表盘</div>
+          <div class="card-desc">ACOS vs BE_ACOS对比；TACoS趋势图；CTR/CVR分布图；广告订单占比 vs 自然订单占比</div>
+        </div>
+        <div class="card card-accent">
+          <div class="card-icon">🔑</div>
+          <div class="card-title">模块四：关键词分析区</div>
+          <div class="card-desc">否词候选列表；黄金词候选列表；僵尸词列表（曝光&lt;100/周）；关键词ACOS排行榜</div>
+        </div>
+        <div class="card card-accent">
+          <div class="card-icon">✅</div>
+          <div class="card-title">模块五：操作建议区</div>
+          <div class="card-desc">按优先级排列的本周操作清单；每条建议附带具体参数；操作完成标记功能</div>
+        </div>
+        <div class="card card-accent">
+          <div class="card-icon">📈</div>
+          <div class="card-title">模块六：历史对比区</div>
+          <div class="card-desc">本周 vs 上周核心指标对比；趋势图（4-8周维度）；异常波动标记（±20%自动高亮）</div>
+        </div>
+      </div>
+
+      <h3>面板数据流</h3>
+      <div class="formula-box">
+        <div class="formula-title">数据处理流程</div>
+        <pre>数据输入（领星ERP CSV）
+    ↓
+字段映射（广告花费/销售额/曝光量/点击量/订单量）
+    ↓
+指标计算（ACOS / CTR / CVR / 曝光量）
+    ↓
+625矩阵评级（4指标 × 5等级）
+    ↓
+策略匹配（17大策略）
+    ↓
+操作建议生成（含具体参数）
+    ↓
+可视化展示 + 导出</pre>
+      </div>
+
+      <h3>颜色语义规范</h3>
+      <div class="card-grid">
+        <div class="card" style="background:#E8F2F0;border-color:#064338;">
+          <div class="card-title" style="color:#064338;">🟢 ACOS &lt; BE_ACOS</div>
+          <div class="card-desc" style="color:#064338;">背景 #E8F2F0 · 文字 #064338</div>
+        </div>
+        <div class="card" style="background:#FFF8DC;border-color:#F3C546;">
+          <div class="card-title" style="color:#B8860B;">🟡 ACOS ≈ BE_ACOS（±20%）</div>
+          <div class="card-desc" style="color:#B8860B;">背景 #FFF8DC · 文字 #B8860B</div>
+        </div>
+        <div class="card" style="background:#FDECEA;border-color:#C4433A;">
+          <div class="card-title" style="color:#C4433A;">🔴 ACOS &gt; BE_ACOS × 130%</div>
+          <div class="card-desc" style="color:#C4433A;">背景 #FDECEA · 文字 #C4433A</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 九、领星映射 -->
+    <div class="section" id="s9">
+      <div class="section-header">
+        <div class="section-num">九</div>
+        <div>
+          <div class="section-title">领星ERP字段映射</div>
+          <div class="section-subtitle">广告数据导出字段对应关系</div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>领星字段名</th><th>625分析字段</th><th>计算说明</th></tr></thead>
+          <tbody>
+            <tr><td>广告花费</td><td>花费（Spend）</td><td>直接使用</td></tr>
+            <tr><td>广告销售额</td><td>销售额（Sales）</td><td>直接使用</td></tr>
+            <tr><td>曝光量</td><td>曝光量（Impressions）</td><td>直接使用</td></tr>
+            <tr><td>点击量</td><td>点击量（Clicks）</td><td>直接使用</td></tr>
+            <tr><td>订单量</td><td>订单量（Orders）</td><td>直接使用</td></tr>
+            <tr><td>ACOS</td><td>ACOS</td><td>花费/销售额（或直接使用）</td></tr>
+            <tr><td>CTR</td><td>CTR</td><td>点击量/曝光量</td></tr>
+            <tr><td>CVR</td><td>CVR</td><td>订单量/点击量</td></tr>
+            <tr><td>CPC</td><td>CPC</td><td>花费/点击量</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>需要手动输入的参数</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>参数</th><th>说明</th><th>建议来源</th></tr></thead>
+          <tbody>
+            <tr><td><strong>BE_ACOS</strong></td><td>盈亏平衡ACOS</td><td>盈亏计算器计算</td></tr>
+            <tr><td><strong>售价</strong></td><td>当前售价</td><td>亚马逊后台</td></tr>
+            <tr><td><strong>目标ACOS</strong></td><td>期望ACOS</td><td>根据利润目标设定</td></tr>
+            <tr><td><strong>总销售额</strong></td><td>含自然单</td><td>领星ERP销售报告</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 十、西柚联动 -->
+    <div class="section" id="s10">
+      <div class="section-header">
+        <div class="section-num">十</div>
+        <div>
+          <div class="section-title">与西柚找词数据联动</div>
+          <div class="section-subtitle">流量差距词→拓词 · 共有词→优先级 · 完整联动工作流</div>
+        </div>
+      </div>
+
+      <div class="card-grid">
+        <div class="card card-accent">
+          <div class="card-title">流量差距词 → 广告拓词机会</div>
+          <div class="card-desc">西柚识别出竞品有流量但本品缺失的词，作为广告拓词候选。优先选择：搜索量高 + 竞争难度中等 + Listing相关性强</div>
+        </div>
+        <div class="card card-accent">
+          <div class="card-title">共有词排名对比 → 广告优先级</div>
+          <div class="card-desc">竞品自然排名高于本品 → 重点广告投入；本品自然排名高于竞品 → 可适当降低出价（自然流量已覆盖）</div>
+        </div>
+        <div class="card card-accent">
+          <div class="card-title">广告词建议 → 手动精准候选</div>
+          <div class="card-desc">西柚筛选出的广告建议词直接加入手动精准广告。出价参考：目标ACOS × 售价 × 预期CVR</div>
+        </div>
+      </div>
+
+      <h3>联动工作流</h3>
+      <div class="formula-box">
+        <div class="formula-title">每周联动流程</div>
+        <pre>每周西柚数据更新
+    ↓
+识别新增流量差距词（竞品有，本品无）
+    ↓
+评估相关性（与产品Listing匹配度）
+    ↓
+高相关词 → 加入广告拓词计划
+    ↓
+在625面板中追踪新词表现
+    ↓
+表现好（CVR>5% + ACOS&lt;BE_ACOS）→ 移至手动精准
+    ↓
+表现差（点击≥5 + 0转化）→ 精准否定</pre>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 十一、快速参考 -->
+    <div class="section" id="s11">
+      <div class="section-header">
+        <div class="section-num">十一</div>
+        <div>
+          <div class="section-title">快速参考卡</div>
+          <div class="section-subtitle">决策树 · 每周优先级 · 常见误区</div>
+        </div>
+      </div>
+
+      <h3>决策树（简化版）</h3>
+      <div class="decision-tree">
+        <pre>ACOS &lt; BE_ACOS？
+├── 是 → 曝光量足够？
+│   ├── 是 → CVR高？ → 是 → 🚀 强力拓流
+│   │                  → 否 → 📈 稳步扩量
+│   └── 否 → 出价过低？ → 是 → 🔍 强制曝光 / 🔼 谨慎提价
+│                        → 否 → 👁️ 审查相关性
+└── 否 → ACOS &gt; BE_ACOS×130%？
+    ├── 是 → CVR极低？ → 是 → 🛑 及时止损 / 🔪 大幅压价
+    │                   → 否 → 🔽 温和降本
+    └── 否（轻微超标）→ 💰 微调压价 / 🛡️ 防守降价</pre>
+      </div>
+
+      <h3>每周操作优先级</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>优先级</th><th>操作</th><th>频率</th></tr></thead>
+          <tbody>
+            <tr class="highlight-row"><td><span class="badge badge-red">P0 必做</span></td><td>否词优化（保护预算）</td><td>每周</td></tr>
+            <tr><td><span class="badge badge-yellow">P1 重要</span></td><td>黄金词提取（锁定优质流量）</td><td>每周</td></tr>
+            <tr><td><span class="badge badge-green">P2 常规</span></td><td>出价调整（625矩阵策略）</td><td>每周</td></tr>
+            <tr><td><span class="badge badge-green">P3 定期</span></td><td>预算分配优化</td><td>每周</td></tr>
+            <tr><td><span class="badge badge-green">P4 月度</span></td><td>TACoS趋势分析 + 策略方向调整</td><td>每月</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>常见误区</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>❌ 误区</th><th>✅ 正确做法</th></tr></thead>
+          <tbody>
+            <tr><td>CTR低就降出价</td><td>先优化主图/价格/评论</td></tr>
+            <tr><td>CVR低就暂停广告</td><td>先优化Listing/价格/评论</td></tr>
+            <tr><td>ACOS越低越好</td><td>ACOS&lt;BE_ACOS即可，过低应扩量</td></tr>
+            <tr><td>新品期追求低ACOS</td><td>新品期容忍高ACOS，优先积累数据</td></tr>
+            <tr><td>否词越多越好</td><td>否词过多会限制流量，需平衡</td></tr>
+            <tr><td>广告活动越多越好</td><td>精简活动，集中预算在优质词上</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>核心公式速查</h3>
+      <div class="formula-box">
+        <div class="formula-title">公式速查表</div>
+        <pre>ACOS     = 广告花费 / 广告销售额
+BE_ACOS  = 毛利润 / 售价
+目标出价  = 目标ACOS × 售价 × CVR
+TACoS    = 总广告花费 / 总销售额（含自然单）
+CTR      = 点击量 / 曝光量
+CVR      = 订单量 / 点击量
+CPC      = 广告花费 / 点击量
+CPA      = 广告花费 / 订单量
+ROI      = 广告销售额 / 广告花费</pre>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-brand">KovaScape</div>
+    <div class="footer-meta">
+      625广告分析法 · 完整方法论<br>
+      基于 Ads625 工具 v7.1.0 提炼 · KovaScape专属优化版<br>
+      生成日期：2026年5月2日
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

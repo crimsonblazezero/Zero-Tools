@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>亚马逊欧洲利润核算器 (v7.2)</title>
+    
+    <!-- 核心库 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- 图标库 -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- SheetJS -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f8fafc; color: #334155; }
+        .input-cell { width: 100%; border: 1px solid transparent; background: transparent; padding: 4px 2px; font-size: 0.85rem; text-align: center; border-radius: 4px; transition: all 0.2s; }
+        .input-cell:hover { background-color: #e2e8f0; border-color: #cbd5e1; }
+        .input-cell:focus { outline: none; background-color: #fff; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1); }
+        .input-group-cell { display: flex; gap: 2px; }
+        .input-group-cell input { flex: 1; min-width: 0; padding: 2px; font-size: 0.75rem; border: 1px solid #cbd5e1; border-radius: 2px; text-align: center; }
+        .metric-table th { background-color: #f1f5f9; color: #475569; font-weight: 600; font-size: 0.75rem; padding: 8px 4px; text-align: center; border: 1px solid #e2e8f0; white-space: nowrap; }
+        .metric-table td { border: 1px solid #e2e8f0; padding: 4px; vertical-align: middle; font-size: 0.85rem; }
+        .metric-table tr:hover td { background-color: #f8fafc; }
+        .text-profit-pos { color: #16a34a; font-weight: 700; }
+        .text-profit-neg { color: #dc2626; font-weight: 700; }
+        .modal-enter { animation: modalIn 0.2s ease-out; }
+        .toast-enter { animation: slideDown 0.3s ease-out; }
+        .help-icon { color: #94a3b8; margin-left: 4px; cursor: pointer; transition: color 0.2s; }
+        .help-icon:hover { color: #3b82f6; }
+        
+        /* 费率表样式 */
+        .rate-card-table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+        .rate-card-table th { background: #f1f5f9; padding: 6px; border: 1px solid #e2e8f0; font-weight: bold; text-align: center; position: sticky; top: 0; z-index: 10; }
+        .rate-card-table td { padding: 4px 6px; border: 1px solid #e2e8f0; text-align: center; }
+        .rate-card-table tr:nth-child(even) { background-color: #f8fafc; }
+        .rate-card-table tr:hover { background-color: #f1f5f9; }
+
+        .tier-select { font-size: 0.7rem; padding: 2px; border: 1px solid #cbd5e1; border-radius: 2px; background-color: white; width: 100%; outline: none; }
+        .tab-btn { padding: 6px 12px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .tab-btn.active { color: #2563eb; border-bottom-color: #2563eb; background-color: #eff6ff; }
+        .tab-btn:hover:not(.active) { color: #64748b; background-color: #f1f5f9; }
+
+        /* Vol tag */
+        .vol-tag { font-size: 0.6rem; padding: 1px 3px; border-radius: 2px; margin-left: 4px; vertical-align: middle; }
+        .vol-tag-v { background-color: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; } /* Volume */
+        .vol-tag-w { background-color: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb; } /* Weight */
+
+        .version-list li { margin-bottom: 8px; font-size: 0.85rem; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px; }
+        .version-list strong { color: #334155; }
+        
+        .guide-section h4 { color: #1e293b; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+        .guide-section p { font-size: 0.85rem; line-height: 1.5; color: #475569; margin-bottom: 8px; }
+        .guide-section ul { list-style-type: disc; padding-left: 20px; margin-bottom: 8px; font-size: 0.85rem; color: #475569; }
+        .guide-tag { display: inline-block; padding: 0 4px; border-radius: 3px; font-size: 0.75rem; font-weight: 600; margin: 0 2px; }
+
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px) translateX(-50%); } to { opacity: 1; transform: translateY(0) translateX(-50%); } }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script type="text/babel">
+    const { useState, useEffect, useMemo, useRef } = React;
+
+    const CONSTANTS = {
+        FUEL_SURCHARGE_RATE: 0.015,
+        VAT: { UK: 0.20, DE: 0.19, FR: 0.20, IT: 0.22, ES: 0.21 },
+        DST: { UK: 0.02, DE: 0.00, FR: 0.03, IT: 0.03, ES: 0.03 }, 
+        CURRENCY: { UK: 'GBP', DE: 'EUR', FR: 'EUR', IT: 'EUR', ES: 'EUR' },
+        FLAGS: { UK: '🇬🇧', DE: '🇩🇪', FR: '🇫🇷', IT: '🇮🇹', ES: '🇪🇸' },
+        VERSION_HISTORY: [
+            { ver: 'v7.2', desc: '新增欧洲燃油附加费：按 FBA 配送费的 1.5% 计算，并计入总成本、毛利、反推售价与导出。' },
+            { ver: 'v7.1', desc: 'UI优化：调整列宽分配，增加“材质/物流”和“月度仓储费”列宽以完整显示内容，缩减尺寸列宽。' },
+            { ver: 'v7.0', desc: '功能升级：新增“材质/物流”选择列，支持单品手动匹配海运费；头程费用支持查看完整费率表；导出增加税金占比，优化列名。' },
+            { ver: 'v6.9.4', desc: '新增功能：采购/头程显示双币种（Local/CNY）；导出增加采购占比、头程占比、物流佣金占比。' },
+            { ver: 'v6.9.3', desc: '新增详细的使用说明书（点击顶部书本图标查看）。' },
+            { ver: 'v6.9.2', desc: '参数更新：默认欧元汇率调整为 8.24。' },
+            { ver: 'v6.9.1', desc: '体验优化：增强导入时成本列识别（支持出厂价/成本价等）；进一步优化表格列宽分配。' },
+            { ver: 'v6.9', desc: '界面微调：进一步压缩尺寸列宽，大幅增加产品名称列宽。' },
+            { ver: 'v6.8', desc: '功能优化：切换站点时自动重置毛利筛选器，防止误判。' },
+            { ver: 'v6.5.4', desc: '优化界面：国家标签仅显示国旗；导出Excel增加“尺寸分段”列。' },
+            { ver: 'v6.0', desc: '核心算法重构；增加 Excel 导入导出功能。' }
+        ],
+        // 尺寸分段定义 (13个分段，基于2026最新标准)
+        // useVol: true 表示取 Max(实重, 体积重)
+        SIZE_TIERS: [
+            { name: "轻信封", code: "SE", maxL: 33, maxW: 23, maxH: 2.5, maxWeight: 0.1, useVol: false }, // ≤ 100g
+            { name: "标准信封", code: "STE", maxL: 33, maxW: 23, maxH: 2.5, maxWeight: 0.46, useVol: false }, // ≤ 460g
+            { name: "大信封", code: "LE", maxL: 33, maxW: 23, maxH: 4, maxWeight: 0.96, useVol: false }, // ≤ 960g
+            { name: "特大信封", code: "XLE", maxL: 33, maxW: 23, maxH: 6, maxWeight: 0.96, useVol: false }, // ≤ 960g
+            { name: "小包裹", code: "SP", maxL: 35, maxW: 25, maxH: 12, maxWeight: 3.9, useVol: true }, // ≤ 3.9kg
+            { name: "标准包裹", code: "STP", maxL: 45, maxW: 34, maxH: 26, maxWeight: 11.9, useVol: true }, // ≤ 25.82kg
+            { name: "小号大件", code: "SOS", maxL: 61, maxW: 46, maxH: 46, maxWeight: 1.76, useVol: true }, // ≤ 1.76kg
+            { name: "标准大件轻型", code: "STOSLW", maxL: 101, maxW: 60, maxH: 60, maxWeight: 15, useVol: true }, // ≤ 72.72kg
+            { name: "标准大件重型", code: "STOSOW", maxL: 101, maxW: 60, maxH: 60, maxWeight: 23, useVol: true }, // ≤ 72.72kg
+            { name: "标准大件大型", code: "STOSOS", maxL: 120, maxW: 60, maxH: 60, maxWeight: 23, useVol: true }, // ≤ 86.4kg
+            { name: "大宗大件", code: "LOS", maxL: 999, maxW: 999, maxH: 999, maxWeight: 23, useVol: true }, // ≤ 126kg
+            { name: "重型大件", code: "BOS", maxL: 999, maxW: 999, maxH: 999, maxWeight: 31.5, useVol: true }, // ≤ 126kg
+            { name: "特殊大件", code: "SPL", maxL: 999, maxW: 999, maxH: 999, maxWeight: 60, useVol: true } // 修复: 补充了SPL的定义和闭合
+        ],
+        
+        SHIPPING_CATEGORIES: [
+            { id: 'custom', name: '中欧班列', rateEU: 2300, rateUK: 2300 }, // Added default rateUK for custom
+            { id: 'wood_shelf', name: '木质置物架', rateUK: 1180, rateEU: 1390 },
+            { id: 'wood_frame', name: '木质相框', rateUK: 1180, rateEU: 1390 },
+            { id: 'alum_frame', name: '铝制相框', rateUK: 1430, rateEU: 1640 },
+            { id: 'pvc_frame', name: 'PVC相框', rateUK: 1800, rateEU: 2010 }
+        ],
+        STORAGE_TIERS_OPTIONS: [
+            { id: 'base', name: '基础月度' },
+            { id: '241', name: '241-270天' },
+            { id: '271', name: '271-300天' },
+            { id: '331', name: '331-365天' },
+            { id: '366', name: '366-455天' }
+        ],
+        STORAGE_RATES_BASE: {
+            UK: { std: { low: 0.76, high: 1.51 }, oversize: { low: 0.55, high: 0.87 } },
+            EU: { std: { low: 27.54, high: 52.20 }, oversize: { low: 21.78, high: 34.49 } }
+        },
+        AGED_SURCHARGES: {
+            UK: { '241': 1.15, '271': 1.50, '331': 2.20, '366': 3.80 },
+            EU: { '241': 35.00, '271': 45.00, '331': 65.00, '366': 170.00 }
+        },
+        
+        // 本地/Pan-EU 费率 (完全基于上传的 CSV 数据)
+        // [Weight(kg), UK(£), DE_CEE(€), DE_Std(€), FR(€), IT(€), ES(€)]
+            FEES_LOCAL: {
+            SE: [
+                [0.02, 1.83, 2.07, 2.33, 2.75, 3.23, 2.77], 
+                [0.04, 1.87, 2.11, 2.37, 2.76, 3.26, 2.84], 
+                [0.06, 1.89, 2.13, 2.39, 2.78, 3.28, 2.87], 
+                [0.08, 2.07, 2.26, 2.52, 3.30, 3.39, 3.21],
+                [0.1, 2.08, 2.28, 2.54, 3.32, 3.41, 3.23]
+            ],
+            STE: [                 
+                [0.21, 2.10, 2.31, 2.57, 3.33, 3.45, 3.26],
+                [0.46, 2.16, 2.42, 2.68, 3.77, 3.64, 3.45] 
+            ],
+            LE: [[0.96, 2.72, 2.78, 3.04, 4.39, 3.94, 3.60]],
+            XLE: [[0.96, 2.94, 3.16, 3.42, 4.72, 4.17, 3.85]],
+            SP: [
+                [0.15, 2.91, 3.12, 3.38, 4.56, 4.13, 3.52], 
+                [0.40, 3.00, 3.13, 3.39, 5.07, 4.54, 3.74],
+                [0.90, 3.04, 3.14, 3.40, 5.79, 4.95, 3.95],
+                [1.40, 3.05, 3.15, 3.41, 5.87, 5.11, 4.21],
+                [1.90, 3.25, 3.17, 3.43, 6.10, 5.14, 4.27],
+                [3.90, 3.27, 4.28, 4.54, 7.80, 5.16, 5.50]
+            ],
+            STP: [
+                [0.15, 2.94, 3.13, 3.39, 4.58, 4.29, 3.55], 
+                [0.40, 3.01, 3.16, 3.42, 5.22, 4.70, 3.77],
+                [0.90, 3.06, 3.18, 3.44, 6.01, 5.15, 3.99], 
+                [1.40, 3.26, 3.67, 3.93, 6.41, 5.26, 4.85],
+                [1.90, 3.48, 3.69, 3.95, 6.44, 5.29, 4.94], 
+                [2.90, 3.49, 4.29, 4.55, 7.08, 5.30, 4.98],
+                [3.90, 3.54, 4.83, 5.09, 7.81, 5.35, 5.53], 
+                [5.90, 3.56, 4.96, 5.22, 8.22, 5.38, 5.96],
+                [8.90, 3.57, 5.77, 6.03, 8.84, 5.41, 7.24],
+                [11.9, 3.58, 6.39, 6.65, 9.38, 6.25, 7.85]
+            ],
+            // Formula based tiers for Oversize items
+            SOS: { 
+                type: 'formula', baseWt: 0.76, 
+                params: {
+                    UK: { base: 3.49, incr: 0.22 }, DE_CEE: { base: 4.30, incr: 0.18 },
+                    DE_Std: { base: 4.56, incr: 0.18 }, FR: { base: 7.05, incr: 0.2 },
+                    IT: { base: 7.21, incr: 0.08 }, ES: { base: 5.68, incr: 0.04 }
+                }
+            },
+            STOSLW: { 
+                type: 'formula', baseWt: 0.76, 
+                params: {
+                    UK: { base: 4.35, incr: 0.15 }, 
+                    DE_CEE: { base: 4.33, incr: 0.18 }, DE_Std: { base: 4.59, incr: 0.18 }, 
+                    FR: { base: 7.29, incr: 0.21 }, IT: { base: 7.45, incr: 0.22 }, 
+                    ES: { base: 6.55, incr: 0.34 }
+                }
+            },
+             STOSOW: { 
+                type: 'formula', baseWt: 15.76, 
+                params: {
+                    UK: { base: 6.58, incr: 0.08 }, 
+                    DE_CEE: { base: 6.99, incr: 0.07 }, DE_Std: { base: 7.25, incr: 0.07 }, 
+                    FR: { base: 10.42, incr: 0.11 }, IT: { base: 10.63, incr: 0.08 }, 
+                    ES: { base: 11.72, incr: 0.27 }
+                }
+            },
+             STOSOS: { 
+                type: 'formula', baseWt: 0.76, 
+                params: {
+                    UK: { base: 5.67, incr: 0.07 }, 
+                    DE_CEE: { base: 5.8, incr: 0.08 }, DE_Std: { base: 6.06, incr: 0.08 }, 
+                    FR: { base: 8.47, incr: 0.13 }, IT: { base: 9.13, incr: 0.09 }, 
+                    ES: { base: 6.76, incr: 0.33 }
+                }
+            },
+            LOS: { 
+                type: 'formula', baseWt: 0.76,
+                params: {
+                    UK: { base: 10.20, incr: 0.24}, DE_CEE: { base: 7.98, incr: 0.27 },
+                    DE_Std: { base: 8.24, incr: 0.27 }, FR: { base: 15.38, incr: 0.45 },
+                    IT: { base: 9.59, incr: 0.30 }, ES: { base: 9.95, incr: 0.43 }
+                }
+            },
+            BOS: { 
+                type: 'formula', baseWt: 31.5,
+                params: {
+                    UK: { base: 13.04, incr: 0.09 }, DE_CEE: { base: 12.74, incr: 0.15 },
+                    DE_Std: { base: 13.00, incr: 0.15 }, FR: { base: 15.59, incr: 0.18 },
+                    IT: { base: 16.85, incr: 0.15 }, ES: { base: 14.00, incr: 0.12 }
+                }
+            },
+            SPL: [ // 修复: 移除了错误的混合写法和中文标点
+                [30.00, 16.22, "不适用", 21.30, 24.88, 21.70, 19.93], 
+                [40.00, 17.24, "不适用", 24.19, 28.77, 24.10, 20.80],
+                [50.00, 34.38, "不适用", 47.98, 46.66, 32.19, 34.32], 
+                {
+                    type: 'formula', baseWt: 60,
+                    params: {
+                        UK: { base: 42.04, incr: 0.35 }, 
+                        DE_CEE: { base: 0, incr: 0 }, // 修复: 不适用处理
+                        DE_Std: { base: 51.99, incr: 0.36 }, FR: { base: 50.54, incr: 0.49 },
+                        IT: { base: 32.82, incr: 0.65 }, ES: { base: 36.93, incr: 0.45 }
+                    }
+                }
+            ]
+        },
+        // EFN 费率
+        // [Weight, EU_Cross(€), DE_Inbound(€), UK_Inbound(£), UK_Export(€)]
+        FEES_EFN_DETAIL: {
+            SE: [
+                [0.02, 4.86, 5.34, 3.33, 4.86], 
+                [0.04, 4.89, 5.37, 3.35, 4.89], 
+                [0.06, 4.94, 5.42, 3.39, 4.94], 
+                [0.08, 5.21, 5.73, 3.43, 5.21],
+                [0.1, 5.50, 5.76, 3.47, 5.24]
+            ],
+            STE: [                 
+                [0.21, 5.25, 5.76, 3.47, 5.25],
+                [0.46, 5.28, 5.79, 3.56, 5.28] 
+            ],
+            LE: [[0.96, 5.81, 6.35, 3.73, 5.81]],
+            XLE: [[0.96, 6.41, 6.98, 3.80, 6.41]],
+            SP: [
+                [0.15, 6.20, 6.87, 4.34, 6.20], 
+                [0.40, 6.62, 7.31, 4.44, 6.62],
+                [0.90, 7.93, 8.45, 4.62, 7.93],
+                [1.40, 8.72, 9.28, 4.86, 8.72],
+                [1.90, 9.93, 10.58, 5.33, 9.93],
+                [3.90, 12.60, 13.42, 5.44, 12.60]
+            ],
+            STP: [
+                [0.15, 6.22, 6.89, 4.74, 6.22], 
+                [0.40, 7.26, 7.99, 4.98, 7.26],
+                [0.90, 8.63, 9.45, 5.19, 8.63], 
+                [1.40, 10.43, 10.69, 5.27, 9.79],
+                [1.90, 11.24, 12.23, 5.74, 11.24], 
+                [2.90, 12.60, 13.68, 6.93, 12.60],
+                [3.90, 14.84, 16.06, 8.74, 14.84], 
+                [5.90, 15.65, 16.93, 9.64, 15.65],
+                [8.90, 16.96, 18.32, 9.82, 16.96],
+                [11.9, 19.94, 21.50, 10.33, 19.94]
+            ],
+            // Formula based tiers for Oversize items
+            SOS: { 
+                type: 'formula', baseWt: 0.76, 
+                params: {
+                    EU_Cross: { base: 17.68, incr: 0.36 }, 
+                    DE_Inbound: { base: 14.80, incr: 0.25 }, UK_Inbound: { base: 10.50, incr: 0.30 },
+                    UK_Export: { base: 13.63, incr: 0.21 }
+                }
+            },
+            STOSLW: { 
+                type: 'formula', baseWt: 0.76, 
+                params: {
+                    EU_Cross: { base: 21.55, incr: 0.78 }, 
+                    DE_Inbound: { base: 17.94, incr: 0.36 }, UK_Inbound: { base: 12.30, incr: 0.5 }, 
+                    UK_Export: { base: 16.47, incr: 0.57 }
+                }
+            },
+             STOSOW:  { 
+                type: 'formula', baseWt: 15.76, 
+                params: {
+                    EU_Cross: { base: 32.87, incr: 0.38 }, 
+                    DE_Inbound: { base: 21.81, incr: 0.78 }, UK_Inbound: { base: 12.53, incr: 0.54 }, 
+                    UK_Export: { base: 24.54, incr: 0.62 }
+                }
+            },
+            
+             STOSOS:  { 
+                type: 'formula', baseWt: 0.76, 
+                params: {
+                    EU_Cross: { base: 22.13, incr: 0.78 }, 
+                    DE_Inbound: { base: 33.13, incr: 0.38 }, UK_Inbound: { base: 20.49, incr: 0.57 }, 
+                    UK_Export: { base: 17.06, incr: 0.62 }
+                }
+            },
+            LOS:  { 
+                type: 'formula', baseWt: 0.76, 
+                params: {
+                    EU_Cross: { base: 32.95, incr: 1.15 }, 
+                    DE_Inbound: { base: 22.39, incr: 0.78 }, UK_Inbound: { base: 13.03, incr: 0.56 }, 
+                    UK_Export: { base: 25.40, incr: 0.99 }
+                }
+            },
+            BOS: { 
+                type: 'formula', baseWt: 31.5, 
+                params: {
+                    EU_Cross: { base: 37.67, incr: 1.24 }, 
+                    DE_Inbound: { base: 33.21, incr: 1.15 }, UK_Inbound: { base: 15.53, incr: 0.60 }, 
+                    UK_Export: { base: 29.58, incr: 1.19 }
+                }
+            },
+            SPL: { 
+                type: 'formula', baseWt: 31.50, 
+                params: {
+                    EU_Cross: { base: 37.67, incr: 1.24 }, 
+                    DE_Inbound: { base: 37.93, incr: 1.24 }, UK_Inbound: { base: 22.32, incr: 0.62 }, 
+                    UK_Export: { base: 37.67, incr: 1.24 }
+                }
+            },
+        },
+        TOOLTIPS: {
+            CHARGE_WT: "计费重量规则：\n• 包裹/大件 (Standard/Oversize)：\n取 实重 与 体积重 较大值。\n• 信封/特殊大件 (Envelope/Special)：\n仅取 实重。\n• 体积重 = 长x宽x高(cm) / 5000。\n（注：部分渠道可能使用6000系数，本计算器使用亚马逊标准5000）",
+            FBA: "FBA 配送费。\n• 大件商品采用 [基础费 + 增重费] 公式计算。\n• 燃油附加费 = FBA配送费 × 1.5%，已计入FBA配送成本。\n• 点击表头问号可查看完整费率表。",
+            DST: "数字服务税 (Digital Services Tax)。\n• UK: 2% (2020年4月起)\n• FR/IT/ES: 3% \n• 计算基数 = 平台佣金 + FBA配送费 (不包含VAT部分)\n• 公式: (佣金+FBA) * 税率",
+            HEADHAUL: "头程运费 (Headhaul Cost)\n• 计算方式：体积(m³) * 费率(单价)\n• 费率来源：根据上方选择的【材质/物流渠道】自动匹配\n• 示例：木质相框到英国 = 1180元/m³",
+            REFERRAL: "平台佣金 (Referral Fee)\n• 计算方式：售价 * 佣金比例 (默认15%)\n• 最低佣金：£0.25 / €0.25\n• 注意：不同品类佣金比例可能不同，此处统一按15%估算，可手动调整结果。",
+            PRICE: "销售定价 (Price)\n• 包含VAT的最终前台售价。\n• 输入售价后会自动反推VAT税金。",
+            MARGIN: "销售毛利率 (Net Margin)\n• 公式：(净利润 / 售价) * 100%\n• 含义：每销售1块钱，实际上赚了多少钱。\n• 这是一个反映销售盈利质量的指标。",
+        }
+    };
+
+    const fmt = (val, d=2) => {
+        if (typeof val === 'string') return val; // Handle "不适用" string
+        return (parseFloat(val) || 0).toFixed(d);
+    };
+    const generateId = () => Math.random().toString(36).substr(2, 9);
+
+    const getTier = (l, w, h, wt) => {
+        const dims = [l, w, h].sort((a,b) => b-a);
+        const [L, W, H] = dims;
+        const girth = 2 * (W + H);
+        
+        // 1. 特殊大件判定 (L>175 或 周长+长>360 或 重>31.5)
+        if (wt > 31.5 || L > 175 || (L + girth) > 360) {
+            return CONSTANTS.SIZE_TIERS.find(t => t.code === 'SPL');
+        }
+        for (let t of CONSTANTS.SIZE_TIERS) {
+            if (t.code === 'SPL') continue;
+            if (L <= t.maxL && W <= t.maxW && H <= t.maxH && wt <= t.maxWeight) return t;
+        }
+        return CONSTANTS.SIZE_TIERS.find(t => t.code === 'SPL');
+    };
+
+    const calculateFBA = (tierCode, weight, country, settings) => {
+        let useLocalRate = true;
+        if (settings.mode === 'EFN') {
+            useLocalRate = (country === settings.stockLocation);
+        }
+        
+        if (useLocalRate) {
+            const tierData = CONSTANTS.FEES_LOCAL[tierCode];
+            
+            if (!tierData) return 0; // Safety check
+
+            // Check if it's the SPL array mixed structure
+            if (Array.isArray(tierData)) {
+                 // Check if the last item is a formula object (specifically for SPL)
+                const lastItem = tierData[tierData.length - 1];
+                if (typeof lastItem === 'object' && !Array.isArray(lastItem) && lastItem.type === 'formula') {
+                    // It's the mixed SPL structure
+                    let row = tierData.find(r => Array.isArray(r) && weight <= r[0]);
+                    
+                    if (row) {
+                         // Found in fixed tiers
+                        if (country === 'UK') return row[1];
+                        if (country === 'DE') return row[settings.deCee ? 2 : 3];
+                        if (country === 'FR') return row[4];
+                        if (country === 'IT') return row[5];
+                        if (country === 'ES') return row[6];
+                        return row[3];
+                    } else {
+                        // Use the formula at the end
+                        const formulaData = lastItem;
+                        const baseWt = formulaData.baseWt;
+                        const chargeable = Math.max(weight, baseWt); 
+                        const incrWt = Math.ceil(chargeable - baseWt); 
+                        
+                        let params = null;
+                        if (country === 'UK') params = formulaData.params.UK;
+                        else if (country === 'DE') params = settings.deCee ? formulaData.params.DE_CEE : formulaData.params.DE_Std;
+                        else if (country === 'FR') params = formulaData.params.FR;
+                        else if (country === 'IT') params = formulaData.params.IT;
+                        else if (country === 'ES') params = formulaData.params.ES;
+                        
+                        if (params && params.base > 0) {
+                            if (chargeable <= baseWt) return params.base;
+                            return params.base + (incrWt * params.incr);
+                        }
+                        return 0; 
+                    }
+                } else {
+                    // Standard array structure (SE, SP, etc)
+                    let row = tierData.find(r => weight <= r[0]) || tierData[tierData.length - 1];
+                    if (country === 'UK') return row[1];
+                    if (country === 'DE') return row[settings.deCee ? 2 : 3];
+                    if (country === 'FR') return row[4];
+                    if (country === 'IT') return row[5];
+                    if (country === 'ES') return row[6];
+                    return row[3];
+                }
+            } else if (tierData.type === 'formula') {
+                const baseWt = tierData.baseWt;
+                const chargeable = Math.max(weight, baseWt); 
+                const incrWt = Math.ceil(chargeable - baseWt); 
+                
+                let params = null;
+                if (country === 'UK') params = tierData.params.UK;
+                else if (country === 'DE') params = settings.deCee ? tierData.params.DE_CEE : tierData.params.DE_Std;
+                else if (country === 'FR') params = tierData.params.FR;
+                else if (country === 'IT') params = tierData.params.IT;
+                else if (country === 'ES') params = tierData.params.ES;
+                
+                if (params) {
+                    if (chargeable <= baseWt) return params.base;
+                    return params.base + (incrWt * params.incr);
+                }
+                return 0;
+            }
+            return 0;
+        } else {
+            let feeTable = CONSTANTS.FEES_EFN_DETAIL[tierCode] || CONSTANTS.FEES_EFN_DETAIL['STP'];
+            
+            if (feeTable && feeTable.type === 'formula') {
+                const baseWt = feeTable.baseWt;
+                const chargeable = Math.max(weight, baseWt);
+                const incrWt = Math.ceil(chargeable - baseWt);
+                const destIsUK = (country === 'UK');
+                
+                const params = feeTable.params;
+                let specificParams = null;
+                
+                if (destIsUK) {
+                    specificParams = params.UK_Inbound;
+                } else if (settings.stockLocation === 'UK') {
+                    specificParams = params.UK_Export;
+                } else {
+                    // 修正逻辑：各国互发时，勾选deCee则用EU_Cross，否则用DE_Inbound(现为DE Only)
+                    specificParams = settings.deCee ? params.EU_Cross : params.DE_Inbound;
+                }
+
+                if (specificParams) {
+                    if (chargeable <= baseWt) return specificParams.base;
+                    return specificParams.base + (incrWt * specificParams.incr);
+                }
+                return 0;
+
+            } else if (Array.isArray(feeTable)) {
+                let row = feeTable.find(r => weight <= r[0]) || feeTable[feeTable.length - 1];
+                const destIsUK = (country === 'UK');
+                
+                if (destIsUK) return row[3]; // UK Inbound
+                if (settings.stockLocation === 'UK') return row[4]; // UK Export
+                
+                // 修正逻辑：各国互发时，勾选deCee则用EU_Cross(index 1)，否则用DE_Inbound(index 2)
+                return settings.deCee ? row[1] : row[2];
+            }
+            return 0;
+        }
+    };
+
+    const calculateStorageFee = (l, w, h, country, tierCode, isPeak, storageTier) => {
+        const isOversize = ['SOS', 'STOS', 'LOS', 'SPL'].includes(tierCode) || tierCode.startsWith('STOS');
+        const period = isPeak ? 'high' : 'low';
+        
+        let baseRate = 0;
+        let surcharge = 0;
+
+        if (country === 'UK') {
+            baseRate = CONSTANTS.STORAGE_RATES_BASE.UK[isOversize ? 'oversize' : 'std'][period];
+            if (storageTier !== 'base') {
+                surcharge = CONSTANTS.AGED_SURCHARGES.UK[storageTier] || 0;
+            }
+            const cubicFt = (l * w * h) / 28316.8;
+            return cubicFt * (baseRate + surcharge);
+        } else {
+            baseRate = CONSTANTS.STORAGE_RATES_BASE.EU[isOversize ? 'oversize' : 'std'][period];
+            if (storageTier !== 'base') {
+                surcharge = CONSTANTS.AGED_SURCHARGES.EU[storageTier] || 0;
+            }
+            const cubicM = (l * w * h) / 1000000;
+            return cubicM * (baseRate + surcharge);
+        }
+    };
+
+    function App() {
+        const [country, setCountry] = useState('UK');
+        const [products, setProducts] = useState([]);
+        const [history, setHistory] = useState([]);
+        const [settings, setSettings] = useState({ 
+            rateGBP: 9.43, rateEUR: 8.24, 
+            mode: 'PAN_EU', 
+            deCee: true,
+            stockLocation: 'DE',
+            isPeakSeason: false
+        });
+        
+        const [showImport, setShowImport] = useState(false);
+        const [showConfirmClear, setShowConfirmClear] = useState(false);
+        const [infoPopup, setInfoPopup] = useState(null); 
+        const [fbaTab, setFbaTab] = useState('local'); 
+        const [toast, setToast] = useState({ show: false, msg: '', type: 'info' });
+        const [importText, setImportText] = useState('');
+        const [importCategory, setImportCategory] = useState('custom');
+        const fileInputRef = useRef(null);
+        const [batchConfig, setBatchConfig] = useState({ ad: 10, promo: 0, return: 5, storageTier: 'base' });
+        const [targetMargin, setTargetMargin] = useState(15);
+        const [marginFilter, setMarginFilter] = useState({ op: '>=', val: '' }); // Margin Filter
+
+        const showToast = (msg, type='success') => {
+            setToast({ show: true, msg, type });
+            setTimeout(() => setToast({ show: false, msg: '', type: 'info' }), 3000);
+        };
+
+        const showInfo = (e, key, title) => {
+            e.stopPropagation();
+            if (key === 'FBA') {
+                setInfoPopup({ title, type: 'fba_table' });
+            } else if (key === 'STORAGE') {
+                setInfoPopup({ title, type: 'storage_table' });
+            } else if (key === 'VERSION') {
+                setInfoPopup({ title, type: 'version_history' });
+            } else if (key === 'GUIDE') {
+                setInfoPopup({ title, type: 'guide' });
+            } else if (key === 'HEADHAUL') {
+                setInfoPopup({ title, type: 'shipping_table' });
+            } else {
+                setInfoPopup({ title, type: 'text', content: CONSTANTS.TOOLTIPS[key] });
+            }
+        };
+
+        useEffect(() => {
+            const saved = localStorage.getItem('eu_calc_products_v6_5'); // Key updated
+            if (saved) {
+                try { 
+                    const parsed = JSON.parse(saved);
+                    const upgraded = parsed.map(p => ({
+                        ...p,
+                        adRate: p.adRate ?? batchConfig.ad,
+                        promoRate: p.promoRate ?? batchConfig.promo,
+                        returnRate: p.returnRate ?? batchConfig.return,
+                        storageTier: p.storageTier ?? 'base'
+                    }));
+                    setProducts(upgraded);
+                } catch(e) { addDefaultRow(); }
+            } else {
+                addDefaultRow();
+            }
+        }, []);
+
+        useEffect(() => {
+            localStorage.setItem('eu_calc_products_v6_5', JSON.stringify(products));
+        }, [products]);
+
+        // Reset margin filter when country changes
+        useEffect(() => {
+            setMarginFilter({ op: '>=', val: '' });
+        }, [country]);
+
+        const addDefaultRow = () => {
+            addProduct({ name: '示例: 木质相框', cost: 25, l: 30, w: 20, h: 5, weight: 0.6, catId: 'wood_frame' });
+        };
+
+        const pushHistory = () => setHistory(prev => [...prev.slice(-10), JSON.stringify(products)]);
+        const handleUndo = () => {
+            if (history.length === 0) return;
+            const prev = history[history.length - 1];
+            setProducts(JSON.parse(prev));
+            setHistory(h => h.slice(0, -1));
+            showToast("已撤销上一步操作", "info");
+        };
+
+        const addProduct = (data = {}) => {
+            pushHistory();
+            const catId = data.catId || 'custom';
+            setProducts(prev => [...prev, {
+                id: generateId(),
+                name: data.name || '',
+                cost: data.cost || 0,
+                l: data.l || 0, w: data.w || 0, h: data.h || 0, weight: data.weight || 0,
+                shipCatId: catId,
+                priceUK: data.priceUK || 0, priceDE: data.priceDE || 0, 
+                priceFR: data.priceFR || 0, priceIT: data.priceIT || 0, priceES: data.priceES || 0,
+                adRate: data.adRate ?? batchConfig.ad,
+                promoRate: data.promoRate ?? batchConfig.promo,
+                returnRate: data.returnRate ?? batchConfig.return,
+                storageTier: data.storageTier ?? batchConfig.storageTier
+            }]);
+        };
+
+        const updateRow = (id, field, value) => {
+            setProducts(prev => prev.map(p => p.id === id ? { ...p, [field]: value } : p));
+        };
+        const removeRow = (id) => {
+            pushHistory();
+            setProducts(prev => prev.filter(p => p.id !== id));
+        };
+        const requestClear = () => setShowConfirmClear(true);
+        const executeClear = () => {
+            pushHistory();
+            setProducts([]);
+            setShowConfirmClear(false);
+            showToast("所有数据已清空", "error");
+        };
+
+        const fetchRates = async () => {
+            try {
+                const btn = document.getElementById('rateRefreshBtn');
+                if(btn) btn.classList.add('fa-spin');
+                const res = await fetch('https://api.exchangerate-api.com/v4/latest/EUR');
+                const data = await res.json();
+                if(data && data.rates) {
+                    const eurToCny = data.rates.CNY;
+                    const eurToGbp = data.rates.GBP;
+                    const gbpToCny = eurToCny / eurToGbp;
+                    setSettings(s => ({...s, rateEUR: parseFloat(eurToCny.toFixed(2)), rateGBP: parseFloat(gbpToCny.toFixed(2))}));
+                    showToast("汇率已更新", "success");
+                }
+                setTimeout(() => btn && btn.classList.remove('fa-spin'), 500);
+            } catch(e) {
+                showToast("汇率获取失败，请检查网络", "error");
+                document.getElementById('rateRefreshBtn')?.classList.remove('fa-spin');
+            }
+        };
+
+        const applyBatchSettings = () => {
+            pushHistory();
+            setProducts(prev => prev.map(p => ({
+                ...p,
+                adRate: batchConfig.ad, promoRate: batchConfig.promo, returnRate: batchConfig.return, storageTier: batchConfig.storageTier
+            })));
+            showToast("批量设置已应用", "success");
+        };
+
+        const calculatedRows = useMemo(() => {
+            return products.map(p => {
+                const l = parseFloat(p.l)||0, w = parseFloat(p.w)||0, h = parseFloat(p.h)||0, wt = parseFloat(p.weight)||0;
+                const costCNY = parseFloat(p.cost)||0;
+                const isUK = country === 'UK';
+                const currency = CONSTANTS.CURRENCY[country];
+                const rate = isUK ? settings.rateGBP : settings.rateEUR;
+                const cat = CONSTANTS.SHIPPING_CATEGORIES.find(c => c.id === p.shipCatId) || CONSTANTS.SHIPPING_CATEGORIES[0];
+                const shipRateCBM = isUK ? cat.rateUK : cat.rateEU;
+                const volM3 = (l * w * h) / 1000000;
+                const volWt = (l * w * h) / 5000;
+                
+                const tier = getTier(l,w,h,wt);
+                let chargeWt = wt;
+                if (tier && tier.useVol) {
+                    chargeWt = Math.max(wt, volWt);
+                }
+
+                const headhaulCNY = volM3 * shipRateCBM;
+                const headhaulLocal = headhaulCNY / rate;
+                const price = parseFloat(p[`price${country}`]) || 0;
+                const vatRate = CONSTANTS.VAT[country];
+                const vatAmt = price - (price / (1 + vatRate));
+                
+                const refFee = Math.max(0.25, price * 0.15);
+                const baseFbaFee = calculateFBA(tier ? tier.code : 'SPL', chargeWt, country, settings);
+                const fuelSurcharge = baseFbaFee * CONSTANTS.FUEL_SURCHARGE_RATE;
+                const fbaFee = baseFbaFee + fuelSurcharge;
+                const totalStorageFee = calculateStorageFee(l, w, h, country, tier ? tier.code : 'SPL', settings.isPeakSeason, p.storageTier);
+                const dstRate = CONSTANTS.DST[country] || 0;
+                const dstFee = (refFee + fbaFee) * dstRate;
+
+                const adR = p.adRate ?? 0;
+                const proR = p.promoRate ?? 0;
+                const retR = p.returnRate ?? 0;
+                const adCost = price * (adR / 100);
+                const promoCost = price * (proR / 100);
+                const returnCost = price * (retR / 100);
+                const totalOpCost = adCost + promoCost + returnCost;
+                
+                const landedCostLocal = (costCNY / rate) + headhaulLocal;
+                const netProfit = price - vatAmt - refFee - fbaFee - dstFee - totalStorageFee - landedCostLocal - totalOpCost;
+                const netProfitCNY = netProfit * rate;
+                const margin = price > 0 ? (netProfit / price) * 100 : 0;
+                
+                // Calculations for export
+                const costLocal = costCNY / rate;
+                const procurementShare = price > 0 ? (costLocal / price) * 100 : 0;
+                const headhaulShare = price > 0 ? (headhaulLocal / price) * 100 : 0;
+                const fbaRefDstShare = price > 0 ? ((fbaFee + refFee + dstFee) / price) * 100 : 0;
+                const vatShare = price > 0 ? (vatAmt / price) * 100 : 0;
+                
+                return {
+                    ...p, chargeWt, volM3, price, currency, rate, shipRateCBM, headhaulLocal, landedCostLocal, costLocal,
+                    vatAmt, refFee, baseFbaFee, fuelSurcharge, fbaFee, dstFee, totalStorageFee,
+                    adCost, promoCost, returnCost, totalOpCost, netProfit, netProfitCNY, margin,
+                    procurementShare, headhaulShare, fbaRefDstShare, vatShare,
+                    adRate: adR, promoRate: proR, returnRate: retR,
+                    tierName: tier ? tier.name : 'Unknown',
+                    storageTier: p.storageTier || 'base'
+                };
+            });
+        }, [products, country, settings]);
+
+        const filteredRows = useMemo(() => {
+            if (marginFilter.val === '') return calculatedRows;
+            const val = parseFloat(marginFilter.val);
+            if (isNaN(val)) return calculatedRows;
+            return calculatedRows.filter(r => {
+                if (marginFilter.op === '>=') return r.margin >= val;
+                if (marginFilter.op === '<=') return r.margin <= val;
+                return true;
+            });
+        }, [calculatedRows, marginFilter]);
+
+        const processImportData = (rowsData) => {
+            const newProds = [];
+            let map = { name:-1, cost:-1, l:-1, w:-1, h:-1, wt:-1, price:-1, priceUK:-1, priceDE:-1, priceFR:-1, priceIT:-1, priceES:-1 };
+            let startRow = 0;
+            if (rowsData.length > 0) {
+                const header = rowsData[0].map(c => String(c).toLowerCase().trim());
+                const findIdx = (keywords) => header.findIndex(c => keywords.some(k => c.indexOf(k) > -1));
+                map.name = findIdx(['name','sku','产品','名称']);
+                map.cost = findIdx(['cost','purchase','成本','采购','出厂']);
+                map.l = findIdx(['length','长','l']);
+                map.w = findIdx(['width','宽','w']);
+                map.h = findIdx(['height','高','h']);
+                map.wt = findIdx(['weight','重','wt']);
+                map.priceUK = findIdx(['price uk', 'uk price', 'gb price', '英国售价', 'united kingdom', 'great britain', 'uk', 'gb', 'gbp', '英国']);
+                map.priceDE = findIdx(['price de', 'de price', 'germany', 'deutschland', '德国售价', '德国', 'de']);
+                map.priceFR = findIdx(['price fr', 'fr price', 'france', '法国售价', '法国', 'fr']);
+                map.priceIT = findIdx(['price it', 'it price', 'italy', 'italia', '意大利售价', '意大利', 'it']);
+                map.priceES = findIdx(['price es', 'es price', 'spain', 'españa', '西班牙售价', '西班牙', 'es']);
+                map.price = findIdx(['price','sell','售价']);
+                if (map.name > -1 || map.cost > -1 || map.price > -1) startRow = 1;
+                else map = { name:0, cost:1, l:2, w:3, h:4, wt:5, price:6 };
+            }
+            for(let i=startRow; i<rowsData.length; i++) {
+                const row = rowsData[i];
+                if (!row || row.length < 2) continue;
+                const val = (idx) => {
+                    if (idx === undefined || idx < 0 || idx >= row.length) return 0;
+                    const v = row[idx];
+                    return typeof v === 'number' ? v : (parseFloat(String(v).replace(/[^\d.]/g,'')) || 0);
+                };
+                const str = (idx) => (idx > -1 && row[idx]) ? String(row[idx]).trim() : '';
+                const p = {
+                    id: generateId(),
+                    name: str(map.name) || `Import ${i}`,
+                    cost: val(map.cost), l: val(map.l), w: val(map.w), h: val(map.h), weight: val(map.wt),
+                    shipCatId: importCategory,
+                    priceUK: 0, priceDE: 0, priceFR: 0, priceIT: 0, priceES: 0,
+                    adRate: batchConfig.ad, promoRate: batchConfig.promo, returnRate: batchConfig.return,
+                    storageTier: batchConfig.storageTier
+                };
+                if (map.priceUK > -1) p.priceUK = val(map.priceUK);
+                if (map.priceDE > -1) p.priceDE = val(map.priceDE);
+                if (map.priceFR > -1) p.priceFR = val(map.priceFR);
+                if (map.priceIT > -1) p.priceIT = val(map.priceIT);
+                if (map.priceES > -1) p.priceES = val(map.priceES);
+                
+                const genericPrice = val(map.price);
+                if (genericPrice > 0) {
+                    ['UK', 'DE', 'FR', 'IT', 'ES'].forEach(c => {
+                        if (p[`price${c}`] === 0) p[`price${c}`] = genericPrice;
+                    });
+                }
+                newProds.push(p);
+            }
+            if (newProds.length > 0) {
+                pushHistory();
+                setProducts(prev => [...prev, ...newProds]);
+                setShowImport(false);
+                setImportText('');
+                showToast(`成功导入 ${newProds.length} 条数据`);
+            } else {
+                showToast('未识别到有效数据', 'error');
+            }
+        };
+
+        const handlePasteImport = () => {
+            if (!importText.trim()) return;
+            const rows = importText.trim().split('\n').map(line => line.split(/[\t,]/));
+            processImportData(rows);
+        };
+
+        const handleFileImport = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                const bstr = evt.target.result;
+                const wb = XLSX.read(bstr, {type:'binary'});
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const data = XLSX.utils.sheet_to_json(ws, {header:1});
+                processImportData(data);
+            };
+            reader.readAsBinaryString(file);
+            e.target.value = '';
+        };
+
+        const handleExport = () => {
+            const data = filteredRows.map(r => ({
+                "产品名称": r.name, "国家": country, "采购成本": r.cost,
+                "尺寸分段": r.tierName,
+                "长": r.l, "宽": r.w, "高": r.h, "重量": r.weight, "计费重": r.chargeWt.toFixed(2),
+                "售价": r.price, "VAT税金": r.vatAmt.toFixed(2), "FBA基础费": typeof r.baseFbaFee === 'number' ? r.baseFbaFee.toFixed(2) : r.baseFbaFee, "燃油附加费": typeof r.fuelSurcharge === 'number' ? r.fuelSurcharge.toFixed(2) : r.fuelSurcharge, "FBA费(含燃油)": typeof r.fbaFee === 'number' ? r.fbaFee.toFixed(2) : r.fbaFee, "佣金": r.refFee.toFixed(2), "DST": r.dstFee.toFixed(2), "库存费": r.totalStorageFee.toFixed(2), "库龄": r.storageTier,
+                "头程": r.headhaulLocal.toFixed(2), 
+                "推广费": r.adCost.toFixed(2), "促销费": r.promoCost.toFixed(2), "退货费": r.returnCost.toFixed(2),
+                "毛利(Local)": r.netProfit.toFixed(2), "毛利(CNY)": r.netProfitCNY.toFixed(2), "毛利率(%)": r.margin.toFixed(2),
+                "采购占比(%)": r.procurementShare.toFixed(2), "头程占比(%)": r.headhaulShare.toFixed(2), "FBA物流+佣金占比(%)": r.fbaRefDstShare.toFixed(2), "税金占比(%)": r.vatShare.toFixed(2)
+            }));
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Profit");
+            XLSX.writeFile(wb, `Profit_${country}.xlsx`);
+        };
+
+        const applyTargetMargin = () => {
+            pushHistory();
+            const targetCountries = ['UK', 'DE', 'FR', 'IT', 'ES'];
+            const newProducts = products.map(p => { 
+                let updatedFields = {};
+                targetCountries.forEach(c => {
+                    const l = parseFloat(p.l)||0, w = parseFloat(p.w)||0, h = parseFloat(p.h)||0, wt = parseFloat(p.weight)||0;
+                    const costCNY = parseFloat(p.cost)||0;
+                    const isUK = c === 'UK';
+                    const rate = isUK ? settings.rateGBP : settings.rateEUR;
+                    
+                    const cat = CONSTANTS.SHIPPING_CATEGORIES.find(cat => cat.id === p.shipCatId) || CONSTANTS.SHIPPING_CATEGORIES[0];
+                    const shipRateCBM = isUK ? cat.rateUK : cat.rateEU;
+                    const volM3 = (l * w * h) / 1000000;
+                    const chargeWt = Math.max(wt, (l * w * h) / 5000); // Simplify margin calc to always check vol
+                    
+                    const headhaulLocal = (volM3 * shipRateCBM) / rate;
+                    const tier = getTier(l,w,h,wt);
+                    const baseFbaFee = calculateFBA(tier ? tier.code : 'SPL', chargeWt, c, settings);
+                    const fuelSurcharge = baseFbaFee * CONSTANTS.FUEL_SURCHARGE_RATE;
+                    const fbaFee = baseFbaFee + fuelSurcharge;
+                    
+                    const storageFee = calculateStorageFee(l, w, h, c, tier ? tier.code : 'SPL', settings.isPeakSeason, p.storageTier);
+
+                    const vatRate = CONSTANTS.VAT[c];
+                    const dstRate = CONSTANTS.DST[c] || 0;
+                    
+                    const fixedCost = (costCNY / rate) + headhaulLocal + fbaFee + storageFee + (fbaFee * dstRate);
+                    const refRate = 0.15;
+                    const opRate = ((p.adRate??batchConfig.ad) + (p.promoRate??batchConfig.promo) + (p.returnRate??batchConfig.return)) / 100;
+                    
+                    const factor = (1 / (1 + vatRate)) - (refRate * (1 + dstRate)) - opRate - (targetMargin / 100);
+                    
+                    if (factor > 0) {
+                        updatedFields[`price${c}`] = parseFloat((fixedCost / factor).toFixed(2));
+                    }
+                });
+                return { ...p, ...updatedFields };
+            });
+            setProducts(newProducts);
+            showToast(`已按 ${targetMargin}% 毛利率反推所有站点售价`);
+        };
+
+        const renderFbaTable = () => {
+            const tableData = fbaTab === 'local' ? CONSTANTS.FEES_LOCAL : CONSTANTS.FEES_EFN_DETAIL;
+            const headers = fbaTab === 'local' 
+                ? ['UK (£)', 'DE (中欧) (€)', 'DE (标准) (€)', 'FR (€)', 'IT (€)', 'ES (€)', 'NL (€)', 'SE (SEK)', 'PL (PLN)', 'BE (€)'] 
+                : ['EU Cross (€)', 'DE Only (无中欧) (€)', 'UK Inbound (£)', 'UK Export (€)'];
+
+            return (
+                <div className="flex flex-col h-[60vh]">
+                    <div className="flex gap-2 mb-2 border-b">
+                        <button className={`tab-btn ${fbaTab==='local'?'active':''}`} onClick={()=>setFbaTab('local')}>Local / Pan-EU</button>
+                        <button className={`tab-btn ${fbaTab==='efn'?'active':''}`} onClick={()=>setFbaTab('efn')}>EFN (远程)</button>
+                    </div>
+                    <div className="overflow-y-auto flex-1">
+                        <table className="rate-card-table">
+                            <thead className="sticky top-0 bg-gray-100 z-10 shadow-sm">
+                                <tr>
+                                    <th>尺寸等级</th>
+                                    <th>重量 (kg)</th>
+                                    {headers.map(h => <th key={h}>{h}</th>)}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {Object.keys(tableData).map(tier => {
+                                    const data = tableData[tier];
+                                    if (data.type === 'formula') {
+                                        return (
+                                            <tr key={tier}>
+                                                <td>{CONSTANTS.SIZE_TIERS.find(t=>t.code===tier)?.name}</td>
+                                                <td>&gt; {data.baseWt}</td>
+                                                {fbaTab === 'local' ? (
+                                                    <>
+                                                        <td>{data.params.UK.base} + {data.params.UK.incr}/kg</td>
+                                                        <td>{data.params.DE_CEE.base} + {data.params.DE_CEE.incr}/kg</td>
+                                                        <td>{data.params.DE_Std.base} + {data.params.DE_Std.incr}/kg</td>
+                                                        <td>{data.params.FR.base} + {data.params.FR.incr}/kg</td>
+                                                        <td>{data.params.IT.base} + {data.params.IT.incr}/kg</td>
+                                                        <td>{data.params.ES.base} + {data.params.ES.incr}/kg</td>
+                                                        <td colSpan="4" className="text-gray-400">费率结构类似，请参考亚马逊最新费率表</td>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <td>{data.params.EU_Cross ? `${data.params.EU_Cross.base} + ${data.params.EU_Cross.incr}/kg` : '-'}</td>
+                                                        <td>{data.params.DE_Inbound ? `${data.params.DE_Inbound.base} + ${data.params.DE_Inbound.incr}/kg` : '-'}</td>
+                                                        <td>{data.params.UK_Inbound ? `${data.params.UK_Inbound.base} + ${data.params.UK_Inbound.incr}/kg` : '-'}</td>
+                                                        <td>{data.params.UK_Export ? `${data.params.UK_Export.base} + ${data.params.UK_Export.incr}/kg` : '-'}</td>
+                                                    </>
+                                                )}
+                                            </tr>
+                                        );
+                                    }
+                                    return data.map((row, idx) => {
+                                        // Skip if it's the formula object inside the mixed SPL array
+                                        if (typeof row === 'object' && !Array.isArray(row)) return null;
+
+                                        return (
+                                        <tr key={`${tier}-${idx}`}>
+                                            <td>{CONSTANTS.SIZE_TIERS.find(t=>t.code===tier)?.name || tier}</td>
+                                            <td>≤ {row[0]}</td>
+                                            {/* Slice the array differently based on tab to fit headers */}
+                                            {fbaTab === 'local' 
+                                                ? row.slice(1).map((val, i) => <td key={i}>{val}</td>)
+                                                : [row[1], row[2], row[3], row[4]].map((val, i) => <td key={i}>{val}</td>) // Corrected index for EFN display
+                                            }
+                                            {fbaTab === 'local' && row.length < 11 && <td colSpan={11 - row.length}></td>} {/* Fill empty space for NL,SE,PL,BE */}
+                                        </tr>
+                                    )});
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        };
+        
+        const renderShippingTable = () => {
+            return (
+                <div className="overflow-x-auto">
+                    <table className="rate-card-table">
+                        <thead>
+                            <tr>
+                                <th>材质 / 渠道</th>
+                                <th>UK 费率 (¥/m³)</th>
+                                <th>EU 费率 (¥/m³)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {CONSTANTS.SHIPPING_CATEGORIES.map(cat => (
+                                <tr key={cat.id}>
+                                    <td>{cat.name}</td>
+                                    <td>{cat.rateUK}</td>
+                                    <td>{cat.rateEU}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            );
+        };
+
+        const renderStorageTable = () => {
+            return (
+                <div className="overflow-x-auto">
+                    <table className="rate-card-table">
+                        <thead>
+                            <tr>
+                                <th rowSpan="2">地区</th>
+                                <th rowSpan="2">类型</th>
+                                <th colSpan="2">基础月度费率</th>
+                                <th colSpan="4">超龄库存附加费 (Long-term)</th>
+                            </tr>
+                            <tr>
+                                <th>淡季 (1-9月)</th>
+                                <th>旺季 (10-12月)</th>
+                                <th>241-270天</th>
+                                <th>271-300天</th>
+                                <th>331-365天</th>
+                                <th>366天+</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td rowSpan="2">UK<br/>(£/cu ft)</td>
+                                <td>标准</td>
+                                <td>{CONSTANTS.STORAGE_RATES_BASE.UK.std.low}</td>
+                                <td>{CONSTANTS.STORAGE_RATES_BASE.UK.std.high}</td>
+                                <td>{CONSTANTS.AGED_SURCHARGES.UK['241']}</td>
+                                <td>{CONSTANTS.AGED_SURCHARGES.UK['271']}</td>
+                                <td>{CONSTANTS.AGED_SURCHARGES.UK['331']}</td>
+                                <td>{CONSTANTS.AGED_SURCHARGES.UK['366']}</td>
+                            </tr>
+                            <tr>
+                                <td>大件</td>
+                                <td>{CONSTANTS.STORAGE_RATES_BASE.UK.oversize.low}</td>
+                                <td>{CONSTANTS.STORAGE_RATES_BASE.UK.oversize.high}</td>
+                                <td>{CONSTANTS.AGED_SURCHARGES.UK['241']}</td>
+                                <td>{CONSTANTS.AGED_SURCHARGES.UK['271']}</td>
+                                <td>{CONSTANTS.AGED_SURCHARGES.UK['331']}</td>
+                                <td>{CONSTANTS.AGED_SURCHARGES.UK['366']}</td>
+                            </tr>
+                            <tr>
+                                <td rowSpan="2">EU<br/>(€/cbm)</td>
+                                <td>标准</td>
+                                <td>{CONSTANTS.STORAGE_RATES_BASE.EU.std.low}</td>
+                                <td>{CONSTANTS.STORAGE_RATES_BASE.EU.std.high}</td>
+                                <td>{CONSTANTS.AGED_SURCHARGES.EU['241']}</td>
+                                <td>{CONSTANTS.AGED_SURCHARGES.EU['271']}</td>
+                                <td>{CONSTANTS.AGED_SURCHARGES.EU['331']}</td>
+                                <td>{CONSTANTS.AGED_SURCHARGES.EU['366']}</td>
+                            </tr>
+                            <tr>
+                                <td>大件</td>
+                                <td>{CONSTANTS.STORAGE_RATES_BASE.EU.oversize.low}</td>
+                                <td>{CONSTANTS.STORAGE_RATES_BASE.EU.oversize.high}</td>
+                                <td>{CONSTANTS.AGED_SURCHARGES.EU['241']}</td>
+                                <td>{CONSTANTS.AGED_SURCHARGES.EU['271']}</td>
+                                <td>{CONSTANTS.AGED_SURCHARGES.EU['331']}</td>
+                                <td>{CONSTANTS.AGED_SURCHARGES.EU['366']}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            );
+        };
+
+        const renderVersionHistory = () => (
+            <div className="p-2">
+                <ul className="version-list list-none">
+                    {CONSTANTS.VERSION_HISTORY.map((v, i) => (
+                        <li key={i}>
+                            <strong>{v.ver}</strong> - {v.desc}
+                        </li>
+                    ))}
+                </ul>
+            </div>
+        );
+
+        const renderGuide = () => (
+            <div className="space-y-4 p-2 text-slate-700 text-sm">
+                <div className="border-b pb-2 guide-section">
+                    <h4 className="text-blue-600"><i className="fas fa-rocket"></i> 快速开始</h4>
+                    <p>1. 点击顶部 <span className="bg-blue-100 text-blue-800 px-1 rounded">添加</span> 按钮创建新产品。</p>
+                    <p>2. 输入产品的 <strong>长宽高(cm)</strong>、<strong>重量(kg)</strong> 和 <strong>采购成本</strong>。</p>
+                    <p>3. 系统会自动计算 <strong>FBA配送费</strong> 和 <strong>月度仓储费</strong>。</p>
+                    <p>4. 输入 <strong>售价</strong>，即可实时查看毛利和毛利率。</p>
+                </div>
+
+                <div className="border-b pb-2 guide-section">
+                    <h4 className="text-purple-600"><i className="fas fa-globe-europe"></i> 配送模式 (Pan-EU vs EFN)</h4>
+                    <ul>
+                        <li><span className="guide-tag bg-purple-100 text-purple-800">Pan-EU (泛欧计划)</span>: 默认模式。假设您在各国都有库存，享受本地配送费率（最便宜）。</li>
+                        <li><span className="guide-tag bg-indigo-100 text-indigo-800">EFN (远程配送)</span>: 适用于仅在一国（如德国或英国）有库存，远程发货到其他国家。需在顶部下拉框选择 <strong>发货地</strong>。费用较高，包含跨境配送费。</li>
+                        <li><span className="guide-tag bg-slate-100 text-slate-800">中欧计划</span>: 若开启，德国配送费更低，但需允许亚马逊将库存存放于波兰/捷克。</li>
+                    </ul>
+                </div>
+
+                <div className="border-b pb-2 guide-section">
+                    <h4 className="text-green-600"><i className="fas fa-magic"></i> 高级功能</h4>
+                    <ul>
+                        <li><strong>反推售价</strong>: 在顶部输入目标毛利率（如 20%），点击“执行”，系统会自动计算出所有站点达到该毛利所需的售价。</li>
+                        <li><strong>批量配置</strong>: 可统一设置所有产品的广告费率、退货率等，点击“应用”生效。</li>
+                        <li><strong>毛利筛选</strong>: 输入数值可筛选出高于或低于特定毛利率的产品。</li>
+                    </ul>
+                </div>
+
+                <div className="guide-section">
+                    <h4 className="text-orange-600"><i className="fas fa-file-excel"></i> 导入与导出</h4>
+                    <p>支持从 Excel 复制粘贴数据，或直接上传 .xlsx 文件。系统能智能识别“长”、“宽”、“高”、“成本”、“售价”等列名。</p>
+                </div>
+            </div>
+        );
+
+        return (
+            <div className="min-h-screen pb-20 relative">
+                {/* Info Popup */}
+                {infoPopup && (
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center modal-enter" onClick={() => setInfoPopup(null)}>
+                        <div className={`bg-white p-6 rounded-lg shadow-xl border border-slate-200 ${infoPopup.type.includes('table') || infoPopup.type === 'guide' ? 'max-w-4xl w-full' : 'max-w-md'}`} onClick={e => e.stopPropagation()}>
+                            <h3 className="font-bold text-lg mb-3 text-slate-800 flex items-center gap-2">
+                                <i className={`fas ${infoPopup.type === 'guide' ? 'fa-book text-green-600' : 'fa-info-circle text-blue-500'}`}></i> {infoPopup.title}
+                            </h3>
+                            {infoPopup.type === 'text' && (
+                                <div className="text-sm text-slate-600 whitespace-pre-line leading-relaxed">{infoPopup.content}</div>
+                            )}
+                            {infoPopup.type === 'fba_table' && renderFbaTable()}
+                            {infoPopup.type === 'shipping_table' && renderShippingTable()}
+                            {infoPopup.type === 'storage_table' && renderStorageTable()}
+                            {infoPopup.type === 'version_history' && renderVersionHistory()}
+                            {infoPopup.type === 'guide' && renderGuide()}
+                            <button onClick={() => setInfoPopup(null)} className="mt-5 w-full bg-slate-100 py-2 rounded text-sm text-slate-600 hover:bg-slate-200 transition-colors font-medium">关闭</button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Toast Notification */}
+                {toast.show && (
+                    <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 px-4 py-2 rounded-md shadow-lg text-white text-sm font-medium z-50 toast-enter ${toast.type === 'error' ? 'bg-red-500' : 'bg-green-600'}`}>
+                        {toast.type === 'success' ? <i className="fas fa-check-circle mr-2"></i> : <i className="fas fa-info-circle mr-2"></i>}
+                        {toast.msg}
+                    </div>
+                )}
+
+                <header className="bg-slate-800 text-white shadow-lg sticky top-0 z-40">
+                    <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+                        <div className="flex items-center gap-4">
+                            <h1 className="text-lg font-bold flex items-center gap-2 cursor-pointer hover:text-blue-100 transition-colors" onClick={(e)=>showInfo(e, 'VERSION', '版本更新记录')}>
+                                <i className="fab fa-amazon text-yellow-400"></i> 
+                                欧洲利润核算器 <span className="text-xs bg-blue-600 px-2 rounded">v7.2</span>
+                            </h1>
+                            <button onClick={(e)=>showInfo(e, 'GUIDE', '使用说明书')} className="text-xs bg-green-600 hover:bg-green-700 px-2 py-1 rounded flex items-center gap-1 transition-colors">
+                                <i className="fas fa-book"></i> 使用说明
+                            </button>
+                        </div>
+                        <div className="flex gap-3 items-center text-xs">
+                            <div className="bg-slate-700 p-1.5 rounded flex items-center gap-2">
+                                <span className="text-gray-400">汇率</span>
+                                <div className="flex items-center gap-1"><span>£</span><input type="number" value={settings.rateGBP} onChange={e=>setSettings({...settings, rateGBP:e.target.value})} className="w-10 bg-slate-600 border border-slate-500 rounded text-center"/></div>
+                                <div className="flex items-center gap-1"><span>€</span><input type="number" value={settings.rateEUR} onChange={e=>setSettings({...settings, rateEUR:e.target.value})} className="w-10 bg-slate-600 border border-slate-500 rounded text-center"/></div>
+                                <button onClick={fetchRates} className="text-blue-300 hover:text-white"><i id="rateRefreshBtn" className="fas fa-sync-alt"></i></button>
+                            </div>
+                            
+                            <div className="flex bg-slate-700 p-1 rounded border border-slate-600">
+                                <select value={settings.mode} onChange={e=>setSettings({...settings, mode:e.target.value})} className="bg-slate-600 border-none rounded p-1 text-white text-xs outline-none">
+                                    <option value="PAN_EU">Pan-EU (泛欧)</option>
+                                    <option value="EFN">EFN (远程)</option>
+                                </select>
+                                {settings.mode === 'EFN' && (
+                                    <div className="flex items-center gap-1 border-l border-slate-500 pl-2 ml-2">
+                                        <span className="text-gray-400">发货地:</span>
+                                        <select value={settings.stockLocation} onChange={e=>setSettings({...settings, stockLocation:e.target.value})} className="bg-slate-600 text-white rounded p-1 text-xs">
+                                            <option value="UK">UK</option>
+                                            <option value="DE">DE</option>
+                                            <option value="FR">FR</option>
+                                            <option value="IT">IT</option>
+                                            <option value="ES">ES</option>
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+
+                            <label className="flex items-center gap-1 bg-slate-700 p-1.5 rounded cursor-pointer select-none">
+                                <input type="checkbox" checked={settings.deCee} onChange={e=>setSettings({...settings, deCee:e.target.checked})}/>
+                                <span className="text-gray-300">中欧计划</span>
+                            </label>
+
+                            <label className="flex items-center gap-1 bg-purple-700 p-1.5 rounded cursor-pointer select-none ml-2">
+                                <input type="checkbox" checked={settings.isPeakSeason} onChange={e=>setSettings({...settings, isPeakSeason:e.target.checked})}/>
+                                <span className="text-white font-bold">旺季(10-12月)</span>
+                            </label>
+                        </div>
+                    </div>
+                </header>
+
+                <div className="bg-white shadow border-b sticky top-[56px] z-30">
+                    <div className="container mx-auto px-4 flex gap-1 overflow-x-auto">
+                        {['UK', 'DE', 'FR', 'IT', 'ES'].map(c => (
+                            <button key={c} onClick={() => setCountry(c)} className={`px-5 py-2 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${country === c ? 'border-blue-600 text-blue-600 bg-blue-50' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                                <span className="text-2xl">{CONSTANTS.FLAGS[c]}</span>
+                                <span className="text-[10px] bg-slate-100 px-1.5 rounded font-normal text-slate-500">{(CONSTANTS.VAT[c]*100).toFixed(0)}%</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="container mx-auto px-4 py-4 space-y-3">
+                    <div className="flex flex-wrap gap-2 justify-between">
+                        <div className="flex gap-2">
+                            <button onClick={() => addProduct()} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded shadow text-xs font-medium flex gap-1 items-center"><i className="fas fa-plus"></i> 添加</button>
+                            <button onClick={() => setShowImport(true)} className="bg-white border hover:bg-green-50 text-slate-700 px-3 py-1.5 rounded shadow text-xs font-medium flex gap-1 items-center"><i className="fas fa-file-excel text-green-600"></i> 导入</button>
+                            <button onClick={handleExport} className="bg-white border hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded shadow text-xs font-medium flex gap-1 items-center"><i className="fas fa-download"></i> 导出</button>
+                            <button onClick={requestClear} className="bg-white border hover:bg-red-50 text-red-500 px-3 py-1.5 rounded shadow text-xs font-medium flex gap-1 items-center" title="清空所有"><i className="fas fa-trash-alt"></i> 清空</button>
+                            {history.length > 0 && <button onClick={handleUndo} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded shadow text-xs"><i className="fas fa-undo"></i></button>}
+                        </div>
+                        <div className="flex gap-2 items-center text-xs bg-white border p-1 rounded">
+                            <span className="text-slate-400 font-bold px-1">配置:</span>
+                            <span>Ad</span><input type="number" className="w-8 border rounded text-center" value={batchConfig.ad} onChange={e=>setBatchConfig({...batchConfig, ad:parseFloat(e.target.value)||0})}/>%
+                            <span>Pro</span><input type="number" className="w-8 border rounded text-center" value={batchConfig.promo} onChange={e=>setBatchConfig({...batchConfig, promo:parseFloat(e.target.value)||0})}/>%
+                            <span>Ret</span><input type="number" className="w-8 border rounded text-center" value={batchConfig.return} onChange={e=>setBatchConfig({...batchConfig, return:parseFloat(e.target.value)||0})}/>%
+                            <div className="flex items-center gap-1 border-l pl-2 ml-1">
+                                <span>库龄:</span>
+                                <select className="border rounded text-center h-5 text-[10px]" value={batchConfig.storageTier} onChange={e=>setBatchConfig({...batchConfig, storageTier:e.target.value})}>
+                                    {CONSTANTS.STORAGE_TIERS_OPTIONS.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
+                                </select>
+                            </div>
+                            <button onClick={applyBatchSettings} className="bg-slate-800 text-white px-2 py-0.5 rounded hover:bg-slate-700 ml-1">应用</button>
+                        </div>
+                        <div className="flex gap-1 items-center text-xs bg-white border p-1 rounded">
+                            <span className="text-slate-400 font-bold px-1">毛利:</span>
+                            <select value={marginFilter.op} onChange={e=>setMarginFilter({...marginFilter, op:e.target.value})} className="border rounded h-6 bg-slate-50 text-center">
+                                <option value=">=">≥</option>
+                                <option value="<=">≤</option>
+                            </select>
+                            <input type="number" value={marginFilter.val} onChange={e=>setMarginFilter({...marginFilter, val:e.target.value})} className="w-10 border rounded text-center h-6" placeholder="数值"/>%
+                            {marginFilter.val !== '' && <button onClick={()=>setMarginFilter({...marginFilter, val:''})} className="text-slate-400 hover:text-red-500 px-1"><i className="fas fa-times"></i></button>}
+                        </div>
+                        <div className="flex gap-1 items-center text-xs bg-white border p-1 rounded">
+                            <span className="text-slate-400 font-bold px-1">反推:</span>
+                            <input type="number" value={targetMargin} onChange={e=>setTargetMargin(e.target.value)} className="w-10 border rounded text-center"/>%
+                            <button onClick={applyTargetMargin} className="bg-indigo-600 text-white px-2 py-0.5 rounded hover:bg-indigo-700 ml-1">执行</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="container mx-auto px-4 overflow-x-auto pb-12">
+                    <div className="bg-white rounded border shadow min-w-[1300px]">
+                        <table className="w-full metric-table">
+                            <thead>
+                                <tr>
+                                    <th className="w-8">#</th>
+                                    <th className="w-96 text-left pl-2">产品名称</th>
+                                    <th className="w-20 bg-slate-50">采购(CNY)</th>
+                                    <th className="w-32 bg-orange-50">材质/物流</th>
+                                    <th className="w-14">尺寸(cm)</th>
+                                    <th className="w-14">重(kg)</th>
+                                    <th className="w-16 bg-slate-50">
+                                        计费重 <i className="fas fa-question-circle help-icon" onClick={(e)=>showInfo(e,'CHARGE_WT','计费重 (Chargeable Weight)')}></i>
+                                    </th>
+                                    <th className="w-16 text-orange-600">
+                                        头程 <i className="fas fa-question-circle help-icon" onClick={(e)=>showInfo(e,'HEADHAUL','头程运费 (Headhaul)')}></i>
+                                    </th>
+                                    <th className="w-24 bg-blue-50 border-l-2 border-blue-400 text-blue-800">
+                                        售价 <i className="fas fa-question-circle help-icon" onClick={(e)=>showInfo(e,'PRICE','销售定价 (Price)')}></i>
+                                    </th>
+                                    <th className="w-16">
+                                        FBA配送 <i className="fas fa-question-circle help-icon" onClick={(e)=>showInfo(e,'FBA','FBA配送费率表 (2026)')}></i><div className="text-[9px] font-normal text-slate-400">含燃油1.5%</div>
+                                    </th>
+                                    <th className="w-16">
+                                        平台佣金 <i className="fas fa-question-circle help-icon" onClick={(e)=>showInfo(e,'REFERRAL','平台佣金 (Referral Fee)')}></i>
+                                    </th>
+                                    <th className="w-16 bg-gray-50" title="数字服务费">
+                                        DST <i className="fas fa-question-circle help-icon" onClick={(e)=>showInfo(e,'DST','数字服务费 (DST)')}></i>
+                                    </th>
+                                    <th className="w-32 text-purple-600">
+                                        库存费 <i className="fas fa-question-circle help-icon" onClick={(e)=>showInfo(e,'STORAGE','月度仓储费率表')}></i>
+                                        <div className="text-[9px] font-normal text-slate-400">库龄档位</div>
+                                    </th>
+                                    <th className="w-24 bg-yellow-50">运营推广</th>
+                                    <th className="w-24 bg-emerald-50 border-l-2 border-emerald-400 text-emerald-800">
+                                        毛利<br/><span className="font-normal text-[10px] text-emerald-600">Local / CNY</span>
+                                    </th>
+                                    <th className="w-14 bg-emerald-50 text-emerald-800">
+                                        毛利率 <i className="fas fa-question-circle help-icon text-[10px]" onClick={(e)=>showInfo(e,'MARGIN','销售毛利率 (Margin)')}></i>
+                                    </th>
+                                    <th className="w-8"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredRows.map((row, idx) => (
+                                    <tr key={row.id}>
+                                        <td className="text-center text-slate-400 text-xs">{idx + 1}</td>
+                                        <td className="pl-2">
+                                            <input className="input-cell text-left font-medium" value={row.name} onChange={e => updateRow(row.id, 'name', e.target.value)} />
+                                            <div className="text-[10px] text-slate-400 mt-0.5">{row.tierName}</div>
+                                        </td>
+                                        <td className="bg-slate-50 relative">
+                                            <input className="input-cell font-medium" value={row.cost} onChange={e => updateRow(row.id, 'cost', e.target.value)} />
+                                            <div className="text-[9px] text-slate-500 text-center absolute bottom-0.5 w-full">{row.currency} {fmt(row.costLocal)}</div>
+                                        </td>
+                                        <td>
+                                            <select 
+                                                className="w-full text-xs border-none bg-transparent outline-none text-center h-full cursor-pointer text-slate-600"
+                                                value={row.shipCatId}
+                                                onChange={e => updateRow(row.id, 'shipCatId', e.target.value)}
+                                            >
+                                                {CONSTANTS.SHIPPING_CATEGORIES.map(cat => (
+                                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                                ))}
+                                            </select>
+                                        </td>
+                                        <td><div className="input-group-cell"><input value={row.l} onChange={e=>updateRow(row.id,'l',e.target.value)}/><input value={row.w} onChange={e=>updateRow(row.id,'w',e.target.value)}/><input value={row.h} onChange={e=>updateRow(row.id,'h',e.target.value)}/></div></td>
+                                        <td><input className="input-cell" value={row.weight} onChange={e=>updateRow(row.id,'weight',e.target.value)}/></td>
+                                        <td className="bg-slate-50 text-center text-slate-600 text-xs">{fmt(row.chargeWt, 2)}</td>
+                                        <td className="text-center text-xs text-orange-600 relative">
+                                            <div>{row.currency} {fmt(row.headhaulLocal)}</div>
+                                            <div className="text-[9px] text-orange-400">¥{fmt(row.headhaulLocal * row.rate, 0)}</div>
+                                        </td>
+                                        <td className="bg-blue-50/50 border-l-2 border-blue-400 relative">
+                                            <input className="input-cell font-bold text-blue-700" value={row.price} onChange={e=>updateRow(row.id, `price${country}`, e.target.value)} />
+                                            <div className="text-[9px] text-slate-400 text-center absolute bottom-0.5 w-full">VAT -{fmt(row.vatAmt)}</div>
+                                        </td>
+                                        <td className="text-center text-xs text-red-500 font-medium"><div>-{fmt(row.fbaFee)}</div><div className="text-[9px] text-red-300">燃油 {fmt(row.fuelSurcharge)}</div></td>
+                                        <td className="text-center text-xs text-red-400">-{fmt(row.refFee)}</td>
+                                        <td className="text-center text-xs text-gray-500 bg-gray-50">-{fmt(row.dstFee)}</td>
+                                        <td className="text-center text-xs text-purple-600">
+                                            <div>-{fmt(row.totalStorageFee)}</div>
+                                            <select className="tier-select text-center" 
+                                                value={row.storageTier} 
+                                                onChange={e=>updateRow(row.id, 'storageTier', e.target.value)}
+                                            >
+                                                {CONSTANTS.STORAGE_TIERS_OPTIONS.map(opt => (
+                                                    <option key={opt.id} value={opt.id}>{opt.name}</option>
+                                                ))}
+                                            </select>
+                                        </td>
+                                        <td className="bg-yellow-50/50 text-xs text-slate-500 px-1 leading-tight">
+                                            <div className="flex justify-between"><span>广</span><span>{fmt(row.adCost)}</span></div>
+                                            <div className="flex justify-between"><span>促</span><span>{fmt(row.promoCost)}</span></div>
+                                            <div className="flex justify-between border-t border-yellow-200 mt-0.5 pt-0.5"><span>退</span><span>{fmt(row.returnCost)}</span></div>
+                                        </td>
+                                        <td className={`bg-emerald-50/50 border-l-2 border-emerald-400 text-right pr-2 ${row.netProfit > 0 ? 'text-profit-pos' : 'text-profit-neg'}`}>
+                                            <div className="text-xs text-slate-500">{row.currency} {fmt(row.netProfit)}</div>
+                                            <div className="text-sm">¥{fmt(row.netProfitCNY, 1)}</div>
+                                        </td>
+                                        <td className={`text-center font-bold text-xs bg-emerald-50/30 ${row.margin > 0 ? 'text-profit-pos' : 'text-profit-neg'}`}>{fmt(row.margin, 1)}%</td>
+                                        <td className="text-center"><button onClick={() => removeRow(row.id)} className="text-slate-300 hover:text-red-500 px-1"><i className="fas fa-times"></i></button></td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        {products.length === 0 && <div className="text-center py-12 text-gray-400 text-sm">暂无数据，请添加或导入</div>}
+                    </div>
+                </div>
+
+                {/* 清空确认弹窗 */}
+                {showConfirmClear && (
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center modal-enter">
+                        <div className="bg-white rounded-lg p-6 w-80 text-center shadow-xl">
+                            <i className="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+                            <h3 className="text-lg font-bold text-slate-800 mb-2">确定清空所有数据?</h3>
+                            <p className="text-sm text-slate-500 mb-6">此操作将删除当前列表中的所有产品，且无法撤销。</p>
+                            <div className="flex justify-center gap-3">
+                                <button onClick={() => setShowConfirmClear(false)} className="px-4 py-2 border rounded text-slate-600 hover:bg-slate-50 text-sm">取消</button>
+                                <button onClick={executeClear} className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded text-sm">确认清空</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* 导入弹窗 */}
+                {showImport && (
+                    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center modal-enter">
+                        <div className="bg-white rounded-lg p-6 w-[550px] shadow-xl">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-bold text-slate-800">批量导入数据</h3>
+                                <button onClick={() => setShowImport(false)} className="text-slate-400 hover:text-red-500"><i className="fas fa-times"></i></button>
+                            </div>
+                            <div className="mb-4">
+                                <label className="block text-sm font-bold text-slate-700 mb-2">1. 选择产品材质 (用于匹配海运费)</label>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                    {CONSTANTS.SHIPPING_CATEGORIES.map(cat => (
+                                        <label key={cat.id} className={`cursor-pointer border rounded p-2 flex items-center gap-2 ${importCategory === cat.id ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-200' : 'hover:border-blue-300'}`}>
+                                            <input type="radio" checked={importCategory === cat.id} onChange={() => setImportCategory(cat.id)} className="text-blue-600"/>
+                                            <div><div className="font-bold">{cat.name}</div><div className="text-slate-400 scale-90 origin-left">UK:{cat.rateUK} EU:{cat.rateEU}</div></div>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="mb-4">
+                                <p className="text-xs text-gray-500 mb-2">2. 支持 Excel/CSV 列名识别: <br/><span className="bg-slate-100 px-1 rounded">产品名称</span> <span className="bg-slate-100 px-1 rounded">采购成本</span> <span className="bg-slate-100 px-1 rounded">长</span> <span className="bg-slate-100 px-1 rounded">宽</span> <span className="bg-slate-100 px-1 rounded">高</span> <span className="bg-slate-100 px-1 rounded">重量</span> <span className="bg-blue-100 text-blue-800 px-1 rounded">售价(UK/DE/..)</span></p>
+                                <textarea className="w-full h-24 border p-2 text-xs font-mono rounded focus:border-blue-500 outline-none" placeholder="在此处粘贴 Excel 数据..." value={importText} onChange={e=>setImportText(e.target.value)}></textarea>
+                            </div>
+                            <div className="flex justify-between items-center pt-2 border-t">
+                                <label className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-xs cursor-pointer flex gap-1 items-center transition-colors">
+                                    <i className="fas fa-file-excel"></i> 上传 Excel 文件
+                                    <input type="file" accept=".xlsx, .xls" className="hidden" onChange={handleFileImport} ref={fileInputRef} />
+                                </label>
+                                <div className="flex gap-2">
+                                    <button onClick={() => setShowImport(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded text-xs transition-colors">取消</button>
+                                    <button onClick={handlePasteImport} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs shadow-sm transition-colors">识别粘贴文本</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+</script>
+</body>
+</html>

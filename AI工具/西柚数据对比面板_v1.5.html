@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KovaScape - 西柚找词数据洞察</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --dg:#064338;--dg2:#042E25;--gold:#F3C546;--gl:rgba(243,197,70,.15);
+  --ww:#F0EDE8;--wh:#FFF;--red:#C4433A;--rl:rgba(196,67,58,.1);
+  --tm:#2C3E3A;--ts:#667571;--blue:#2563EB;--bl:rgba(37,99,235,.1);
+  --fh:'Playfair Display',serif;--fb:'Poppins',sans-serif;
+  --sh:0 4px 12px rgba(6,67,56,.08);--r:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--fb);background:var(--ww);color:var(--tm);min-height:100vh;display:flex;flex-direction:column}
+header{background:var(--dg);color:#fff;padding:32px 0;border-bottom:4px solid var(--gold);position:relative}
+header::before{content:'';position:absolute;top:16px;right:40px;width:50px;height:50px;border:2px solid var(--gold);border-radius:50%;opacity:.3}
+header::after{content:'';position:absolute;bottom:16px;right:100px;width:30px;height:30px;border:2px solid var(--gold);border-radius:50%;opacity:.2}
+.ct{max-width:1440px;margin:0 auto;padding:0 32px;width:100%}
+.hd{display:flex;justify-content:space-between;align-items:flex-end}
+.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:2.5px;color:var(--gold);margin-bottom:8px;display:block}
+h1.hero{font-family:var(--fh);font-size:36px;font-weight:700}
+.sub{font-size:14px;color:rgba(255,255,255,.7);font-weight:300;margin-top:4px}
+main{flex:1;padding:32px 0}
+.card{background:var(--wh);border-radius:var(--r);box-shadow:var(--sh);padding:28px;position:relative;overflow:hidden;border:1px solid rgba(0,0,0,.04)}
+.card::before{content:'';position:absolute;top:0;left:0;width:5px;height:100%;background:var(--dg)}
+.card.red::before{background:var(--red)}
+.card.gold::before{background:var(--gold)}
+.card-t{font-family:var(--fh);font-size:20px;color:var(--dg);margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.card-t i{color:var(--gold)}
+
+/* Upload Section */
+.up-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
+.up-box{border:2px dashed #D0D5D3;border-radius:var(--r);padding:20px;text-align:center;cursor:pointer;transition:all .3s}
+.up-box:hover{border-color:var(--gold);background:var(--gl)}
+.up-box.done{border-color:var(--dg);border-style:solid;background:rgba(6,67,56,.04)}
+.up-box input[type=file]{display:none}
+.up-box .icon{font-size:28px;color:var(--ts);margin-bottom:8px}
+.up-box.done .icon{color:var(--dg)}
+.up-box .label{font-size:13px;color:var(--ts)}
+.comp-files{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.comp-tag{background:var(--gl);color:var(--dg);padding:4px 10px;border-radius:100px;font-size:12px;font-weight:500;display:flex;align-items:center;gap:6px}
+.comp-tag .remove{cursor:pointer;color:var(--red);font-weight:700}
+
+.btn-go{background:var(--dg);color:#fff;border:none;padding:14px 28px;font-family:var(--fb);font-size:15px;font-weight:600;border-radius:var(--r);cursor:pointer;transition:all .3s;display:flex;align-items:center;gap:10px;margin:20px auto 0}
+.btn-go:hover{background:#085a4b;transform:translateY(-2px);box-shadow:0 6px 16px rgba(6,67,56,.15)}
+.btn-go:disabled{background:#ccc;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;border-bottom:2px solid #E0E4E2;margin-bottom:28px;overflow-x:auto}
+.tab{padding:12px 20px;font-size:14px;font-weight:500;cursor:pointer;border-bottom:3px solid transparent;color:var(--ts);transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.tab:hover{color:var(--dg)}
+.tab.active{color:var(--dg);border-bottom-color:var(--gold);font-weight:600}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+/* Filter bar */
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.fbtn{padding:6px 16px;border-radius:100px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid #D0D5D3;background:var(--wh);color:var(--ts);transition:all .2s;display:flex;align-items:center;gap:6px}
+.fbtn:hover{border-color:var(--dg);color:var(--dg)}
+.fbtn.on{background:var(--dg);color:#fff;border-color:var(--dg)}
+.fbtn.gold-on{background:var(--gold);color:var(--dg);border-color:var(--gold)}
+.fbtn .count{background:rgba(0,0,0,.1);padding:1px 7px;border-radius:100px;font-size:11px}
+.fbtn.on .count{background:rgba(255,255,255,.25)}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:28px}
+.kpi{text-align:center;padding:20px}
+.kpi .v{font-family:var(--fh);font-size:32px;color:var(--dg);font-weight:700}
+.kpi .v.red{color:var(--red)}
+.kpi .v.gold{color:var(--gold)}
+.kpi .l{font-size:12px;color:var(--ts);text-transform:uppercase;letter-spacing:.8px;margin-top:4px}
+
+/* Table */
+.tw{overflow-x:auto;border-radius:var(--r);border:1px solid #E0E4E2;background:var(--wh)}
+table{width:100%;border-collapse:collapse;text-align:left}
+th{background:var(--dg);color:var(--gold);font-weight:600;font-size:12px;text-transform:uppercase;padding:14px 16px;letter-spacing:.5px;white-space:nowrap;position:sticky;top:0;z-index:5}
+td{padding:12px 16px;border-bottom:1px solid #F0EDE8;font-size:13px;vertical-align:middle}
+tbody tr:hover{background:#FAFAFA}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600;gap:4px}
+.b-red{background:var(--rl);color:var(--red);border:1px solid rgba(196,67,58,.2)}
+.b-green{background:rgba(6,67,56,.08);color:var(--dg);border:1px solid rgba(6,67,56,.15)}
+.b-gold{background:var(--gl);color:#a07c1e;border:1px solid rgba(243,197,70,.3)}
+.b-blue{background:var(--bl);color:var(--blue);border:1px solid rgba(37,99,235,.2)}
+.b-gray{background:#f0f0f0;color:var(--ts);border:1px solid #ddd}
+.rk{font-weight:600;font-size:13px}
+.rk.top{color:var(--dg)}.rk.mid{color:var(--gold)}.rk.no{color:#ccc}
+.kw-cell{display:flex;flex-direction:column;gap:2px}
+.kw-main{font-weight:500}.kw-tr{font-size:12px;color:var(--ts);font-style:italic}
+
+/* Charts */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px}
+.ch{height:280px;position:relative;margin-top:16px}
+
+/* Loader */
+.loader{display:none;text-align:center;padding:40px;color:var(--dg)}
+
+/* Footer */
+footer{background:var(--dg2);color:rgba(255,255,255,.6);padding:24px 0;text-align:center;border-top:1px solid rgba(243,197,70,.3);margin-top:auto}
+footer .bn{font-family:var(--fh);color:var(--gold);font-size:18px;display:block;margin-bottom:4px}
+
+/* Scrollable table container */
+.scroll-tw{max-height:600px;overflow-y:auto}
+
+/* Advanced Filter Panel */
+.filter-panel{background:var(--wh);border:1px solid #E0E4E2;border-radius:var(--r);padding:20px 24px;margin-bottom:20px;display:none}
+.filter-panel.open{display:block}
+.fp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px 16px}
+.fp-group{display:flex;flex-direction:column;gap:4px}
+.fp-label{font-size:11px;color:var(--ts);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.fp-range{display:flex;align-items:center;gap:4px}
+.fp-input{width:100%;padding:6px 8px;border:1px solid #D0D5D3;border-radius:4px;font-size:12px;font-family:var(--fb);color:var(--tm);background:#FAFAFA}
+.fp-input:focus{outline:none;border-color:var(--gold)}
+.fp-select{width:100%;padding:6px 8px;border:1px solid #D0D5D3;border-radius:4px;font-size:12px;font-family:var(--fb);color:var(--tm);background:#FAFAFA;cursor:pointer}
+.fp-actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px;margin-top:8px;padding-top:12px;border-top:1px solid #E0E4E2}
+.fp-btn{padding:6px 16px;border-radius:4px;font-size:13px;font-weight:500;cursor:pointer;border:none;font-family:var(--fb)}
+.fp-btn.apply{background:var(--dg);color:#fff}.fp-btn.apply:hover{background:#085a4b}
+.fp-btn.reset{background:#f0f0f0;color:var(--ts)}.fp-btn.reset:hover{background:#e0e0e0}
+
+/* Toolbar */
+.toolbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+.toolbar-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.toolbar-right{display:flex;align-items:center;gap:8px}
+.sort-select{padding:6px 12px;border:1px solid #D0D5D3;border-radius:4px;font-size:12px;font-family:var(--fb);background:var(--wh);color:var(--tm);cursor:pointer}
+.sort-select:focus{outline:none;border-color:var(--gold)}
+.btn-export{background:var(--dg);color:#fff;border:none;padding:8px 18px;border-radius:var(--r);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:var(--fb);transition:all .2s}
+.btn-export:hover{background:#085a4b;transform:translateY(-1px)}
+.btn-filter-toggle{background:var(--wh);color:var(--dg);border:1px solid #D0D5D3;padding:6px 14px;border-radius:4px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:var(--fb)}
+.btn-filter-toggle:hover{border-color:var(--gold)}
+.btn-filter-toggle.active{background:var(--gl);border-color:var(--gold);color:var(--dg)}
+.result-count{font-size:12px;color:var(--ts)}
+
+@media(max-width:900px){.up-grid,.chart-grid{grid-template-columns:1fr}.kpi-row{grid-template-columns:repeat(2,1fr)}.fp-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header>
+<div class="ct hd">
+  <div>
+    <span class="eyebrow">KovaScape Intelligence</span>
+    <h1 class="hero">Parent Variation Insight</h1>
+    <p class="sub">上传西柚找词父体分析数据，智能对标竞品流量、排名与关键词差距</p>
+  </div>
+  <div><i class="fas fa-cubes" style="font-size:36px;color:var(--gold);opacity:.5"></i></div>
+</div>
+</header>
+
+<main>
+<div class="ct">
+
+<!-- Upload Area -->
+<div id="upload-area">
+<div class="up-grid">
+  <div class="card">
+    <h2 class="card-t"><i class="fas fa-box-open"></i> 本品数据</h2>
+    <p style="font-size:13px;color:var(--ts);margin-bottom:12px">上传从西柚找词导出的父体分析 xlsx 文件</p>
+    <div class="up-box" id="box-yours" onclick="document.getElementById('f-yours').click()">
+      <input type="file" id="f-yours" accept=".xlsx,.xls,.csv">
+      <div class="icon"><i class="fas fa-cloud-upload-alt"></i></div>
+      <div class="label">点击选择本品文件</div>
+    </div>
+    <div id="st-yours" style="font-size:13px;margin-top:8px;color:var(--ts)"></div>
+  </div>
+
+  <div class="card red">
+    <h2 class="card-t"><i class="fas fa-crosshairs"></i> 竞品数据 <span style="font-size:13px;color:var(--ts);font-family:var(--fb)">(支持多个文件)</span></h2>
+    <p style="font-size:13px;color:var(--ts);margin-bottom:12px">上传 1~4 个竞品的父体分析文件进行横向对标</p>
+    <div class="up-box" id="box-comp" onclick="document.getElementById('f-comp').click()">
+      <input type="file" id="f-comp" accept=".xlsx,.xls,.csv" multiple>
+      <div class="icon"><i class="fas fa-layer-group"></i></div>
+      <div class="label">点击选择竞品文件（可多选）</div>
+    </div>
+    <div class="comp-files" id="comp-files"></div>
+    <div id="st-comp" style="font-size:13px;margin-top:8px;color:var(--ts)"></div>
+  </div>
+</div>
+<button class="btn-go" id="btn-go" disabled><i class="fas fa-chart-line"></i> 生成深度诊断报告</button>
+</div>
+
+<div class="loader" id="loader"><i class="fas fa-circle-notch fa-spin fa-2x"></i><p style="margin-top:10px;font-weight:500">正在解析 Excel 数据并构建分析模型...</p></div>
+
+<!-- Dashboard (hidden until data loaded) -->
+<div id="dashboard" style="display:none">
+
+<!-- KPI Row -->
+<div class="kpi-row" id="kpi-row"></div>
+
+<!-- Tabs -->
+<div class="tabs" id="tabs-bar"></div>
+
+<!-- Tab 1: Overview -->
+<div class="tab-panel" id="panel-overview">
+  <div class="chart-grid">
+    <div class="card"><h3 class="card-t" style="font-size:17px"><i class="fas fa-chart-bar"></i> 流量结构对比</h3><div class="ch"><canvas id="c-traffic"></canvas></div></div>
+    <div class="card"><h3 class="card-t" style="font-size:17px"><i class="fas fa-bullseye"></i> 词库覆盖雷达</h3><div class="ch"><canvas id="c-radar"></canvas></div></div>
+  </div>
+</div>
+
+<!-- Tab 2: Top 10 -->
+<div class="tab-panel" id="panel-top10">
+  <div class="toolbar" id="toolbar-top10"></div>
+  <div class="filter-panel" id="fp-top10"></div>
+  <div class="filters" id="filters-top10"></div>
+  <div class="tw scroll-tw"><table><thead id="th-top10"></thead><tbody id="tb-top10"></tbody></table></div>
+</div>
+
+<!-- Tab 3: Organic Filter -->
+<div class="tab-panel" id="panel-organic">
+  <div class="toolbar" id="toolbar-organic"></div>
+  <div class="filter-panel" id="fp-organic"></div>
+  <div class="filters" id="filters-organic"></div>
+  <div class="tw scroll-tw"><table><thead id="th-organic"></thead><tbody id="tb-organic"></tbody></table></div>
+</div>
+
+<!-- Tab 4: Tag Classification -->
+<div class="tab-panel" id="panel-tags">
+  <div class="toolbar" id="toolbar-tags"></div>
+  <div class="filter-panel" id="fp-tags"></div>
+  <div class="filters" id="filters-tags"></div>
+  <div class="tw scroll-tw"><table><thead id="th-tags"></thead><tbody id="tb-tags"></tbody></table></div>
+</div>
+
+<!-- Tab 5: Gap Analysis -->
+<div class="tab-panel" id="panel-gap">
+  <div class="toolbar" id="toolbar-gap"></div>
+  <div class="filter-panel" id="fp-gap"></div>
+  <div class="filters" id="filters-gap"></div>
+  <div class="tw scroll-tw"><table><thead id="th-gap"></thead><tbody id="tb-gap"></tbody></table></div>
+</div>
+
+</div><!-- /dashboard -->
+</div>
+</main>
+
+<footer><div class="ct"><span class="bn">KovaScape Intelligence</span><p style="font-size:13px">© 2026 · Nordic Minimalism × Mid-Century Modern</p></div></footer>
+
+<script>
+/* 西柚找词父体分析面板 - 核心逻辑 v4 */
+let yoursData=null,compDataSets=[],mergedAll=[],chartInstances={};
+const C={KW:'关键词 (数据来源于西柚找词)',TR:'翻译',TAG:'词标签',FLOW:'流量',FLOW_PCT:'流量占比',ORG_DIST:'流量分布(自然)',AD_DIST:'流量分布(广告)',ORG_RANK:'自然排名',ORG_PAGE:'自然排名(页码-页内排名)',SP_RANK:'SP广告排名',SP_PAGE:'SP广告排名(页码-页内排名)',SV:'周搜索量',CPC:'CPC建议竞价($)',CPC_RANGE:'建议竞价范围($)',CVR:'点击转化率(均值)',DIFF:'竞争难度',DIFF_LV:'竞争难度档位',ORG_SCROLL:'自然位滚动率',TOP3_CLICK:'Top3 点击份额',TOP3_CVR:'Top3 转化份额',VARIANT:'相关变体',VAR_SHARE:'变体流量份额',POS:'展示位置',ABA:'关键词排名'};
+const $=id=>document.getElementById(id);
+const fYours=$('f-yours'),fComp=$('f-comp'),btnGo=$('btn-go');
+Chart.defaults.font.family="'Poppins',sans-serif";Chart.defaults.color='#667571';
+
+// ===== File Upload =====
+fYours.addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;$('box-yours').classList.add('done');$('st-yours').innerHTML='<i class="fas fa-spinner fa-spin"></i> 读取中...';readXlsx(f,rows=>{yoursData=rows;$('st-yours').innerHTML=`<i class="fas fa-check-circle" style="color:#064338"></i> 成功: ${rows.length} 条`;checkReady()})});
+fComp.addEventListener('change',e=>{const files=Array.from(e.target.files);if(!files.length)return;$('box-comp').classList.add('done');$('st-comp').innerHTML='<i class="fas fa-spinner fa-spin"></i> 读取中...';compDataSets=[];let done=0;files.forEach((f,i)=>{readXlsx(f,rows=>{let name=f.name.replace(/\.xlsx?$/i,'');const m=name.match(/[Bb]0[A-Z0-9]{8,}/);name=m?m[0]:`竞品${i+1}`;compDataSets.push({name,data:rows,fileName:f.name});done++;renderCompTags();if(done===files.length){$('st-comp').innerHTML=`<i class="fas fa-check-circle" style="color:#064338"></i> 成功 ${files.length} 个竞品`;checkReady()}})})});
+function readXlsx(file,cb){const r=new FileReader();r.onload=e=>{try{const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});cb(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}))}catch(err){console.error(err)}};r.readAsArrayBuffer(file)}
+function renderCompTags(){$('comp-files').innerHTML=compDataSets.map((d,i)=>`<span class="comp-tag"><i class="fas fa-file-excel"></i> ${d.name} (${d.data.length}条)<span class="remove" onclick="removeComp(${i})">×</span></span>`).join('')}
+window.removeComp=function(i){compDataSets.splice(i,1);renderCompTags();if(!compDataSets.length){$('box-comp').classList.remove('done');$('st-comp').innerHTML=''}checkReady()};
+function checkReady(){btnGo.disabled=!(yoursData&&compDataSets.length)}
+
+// ===== Main Analysis =====
+btnGo.addEventListener('click',()=>{$('upload-area').style.display='none';$('loader').style.display='block';setTimeout(()=>{buildMergedData();renderDashboard();$('loader').style.display='none';$('dashboard').style.display='block'},600)});
+function pRank(v){if(v===undefined||v===null||v===''||v==='-')return null;const n=parseFloat(v);return isNaN(n)?null:n}
+
+function buildMergedData(){
+  const dict={};
+  yoursData.forEach(r=>{const kw=r[C.KW];if(!kw)return;dict[kw]={kw,tr:r[C.TR]||'',tag:r[C.TAG]||'',sv:pRank(r[C.SV])||0,aba:pRank(r[C.ABA])||999999,yFlow:pRank(r[C.FLOW])||0,yFlowPct:pRank(r[C.FLOW_PCT])||0,yOrgDist:pRank(r[C.ORG_DIST])||0,yAdDist:pRank(r[C.AD_DIST])||0,yOrg:pRank(r[C.ORG_RANK]),yOrgPage:r[C.ORG_PAGE]||'',ySp:pRank(r[C.SP_RANK]),ySpPage:r[C.SP_PAGE]||'',yPos:r[C.POS]||'',cpc:pRank(r[C.CPC])||0,cpcRange:r[C.CPC_RANGE]||'',cvr:pRank(r[C.CVR])||0,diff:pRank(r[C.DIFF])||0,diffLv:r[C.DIFF_LV]||'',orgScroll:pRank(r[C.ORG_SCROLL])||0,top3Click:pRank(r[C.TOP3_CLICK])||0,top3Cvr:pRank(r[C.TOP3_CVR])||0,comps:{}}});
+  compDataSets.forEach(cs=>{cs.data.forEach(r=>{const kw=r[C.KW];if(!kw)return;const ci={org:pRank(r[C.ORG_RANK]),orgPage:r[C.ORG_PAGE]||'',sp:pRank(r[C.SP_RANK]),spPage:r[C.SP_PAGE]||'',flow:pRank(r[C.FLOW])||0,pos:r[C.POS]||''};if(!dict[kw]){dict[kw]={kw,tr:r[C.TR]||'',tag:r[C.TAG]||'',sv:pRank(r[C.SV])||0,aba:pRank(r[C.ABA])||999999,yFlow:0,yFlowPct:0,yOrgDist:0,yAdDist:0,yOrg:null,yOrgPage:'',ySp:null,ySpPage:'',yPos:'',cpc:pRank(r[C.CPC])||0,cpcRange:r[C.CPC_RANGE]||'',cvr:pRank(r[C.CVR])||0,diff:pRank(r[C.DIFF])||0,diffLv:r[C.DIFF_LV]||'',orgScroll:pRank(r[C.ORG_SCROLL])||0,top3Click:pRank(r[C.TOP3_CLICK])||0,top3Cvr:pRank(r[C.TOP3_CVR])||0,comps:{}}}dict[kw].comps[cs.name]=ci;const sv=pRank(r[C.SV])||0;if(sv>dict[kw].sv)dict[kw].sv=sv;const aba=pRank(r[C.ABA])||999999;if(aba<dict[kw].aba)dict[kw].aba=aba;const cpc=pRank(r[C.CPC])||0;if(cpc>dict[kw].cpc){dict[kw].cpc=cpc;dict[kw].cpcRange=r[C.CPC_RANGE]||dict[kw].cpcRange}const cvr=pRank(r[C.CVR])||0;if(cvr>dict[kw].cvr)dict[kw].cvr=cvr;const diff=pRank(r[C.DIFF])||0;if(diff>dict[kw].diff){dict[kw].diff=diff;dict[kw].diffLv=r[C.DIFF_LV]||dict[kw].diffLv}const os=pRank(r[C.ORG_SCROLL])||0;if(os>dict[kw].orgScroll)dict[kw].orgScroll=os;const t3c=pRank(r[C.TOP3_CLICK])||0;if(t3c>dict[kw].top3Click)dict[kw].top3Click=t3c;const t3v=pRank(r[C.TOP3_CVR])||0;if(t3v>dict[kw].top3Cvr)dict[kw].top3Cvr=t3v})});
+  mergedAll=Object.values(dict).sort((a,b)=>a.aba-b.aba);
+}
+
+// ===== Sort & Filter State =====
+const sortOptions=[{k:'aba_asc',l:'ABA排名 ↑'},{k:'aba_desc',l:'ABA排名 ↓'},{k:'sv_desc',l:'周搜索量 ↓'},{k:'sv_asc',l:'周搜索量 ↑'},{k:'flow_desc',l:'本品流量 ↓'},{k:'flow_asc',l:'本品流量 ↑'},{k:'org_asc',l:'本品自然排名 ↑'},{k:'sp_asc',l:'本品广告排名 ↑'},{k:'cpc_desc',l:'CPC竞价 ↓'},{k:'cvr_desc',l:'转化率 ↓'},{k:'diff_asc',l:'竞争难度 ↑'}];
+let currentSort={};
+let currentFilters={};
+
+function sortRows(rows,tabId){
+  const sk=currentSort[tabId]||'aba_asc';
+  const cpy=[...rows];
+  const s={aba_asc:(a,b)=>a.aba-b.aba,aba_desc:(a,b)=>b.aba-a.aba,sv_desc:(a,b)=>b.sv-a.sv,sv_asc:(a,b)=>a.sv-b.sv,flow_desc:(a,b)=>b.yFlow-a.yFlow,flow_asc:(a,b)=>a.yFlow-b.yFlow,org_asc:(a,b)=>(a.yOrg||999)-(b.yOrg||999),sp_asc:(a,b)=>(a.ySp||999)-(b.ySp||999),cpc_desc:(a,b)=>b.cpc-a.cpc,cvr_desc:(a,b)=>b.cvr-a.cvr,diff_asc:(a,b)=>a.diff-b.diff};
+  return cpy.sort(s[sk]||s.aba_asc);
+}
+
+function applyFilters(rows,tabId){
+  const f=currentFilters[tabId];if(!f)return rows;
+  return rows.filter(r=>{
+    if(f.kwSearch&&!r.kw.toLowerCase().includes(f.kwSearch.toLowerCase()))return false;
+    if(f.posFilter&&f.posFilter!=='all'&&r.yPos!==f.posFilter)return false;
+    if(f.tagFilter&&f.tagFilter!=='all'&&r.tag!==f.tagFilter)return false;
+    if(f.flowMin!=null&&r.yFlow<f.flowMin)return false;
+    if(f.flowMax!=null&&r.yFlow>f.flowMax)return false;
+    if(f.svMin!=null&&r.sv<f.svMin)return false;
+    if(f.svMax!=null&&r.sv>f.svMax)return false;
+    if(f.abaMin!=null&&r.aba<f.abaMin)return false;
+    if(f.abaMax!=null&&r.aba>f.abaMax)return false;
+    if(f.orgMin!=null&&(r.yOrg===null||r.yOrg<f.orgMin))return false;
+    if(f.orgMax!=null&&(r.yOrg===null||r.yOrg>f.orgMax))return false;
+    if(f.spMin!=null&&(r.ySp===null||r.ySp<f.spMin))return false;
+    if(f.spMax!=null&&(r.ySp===null||r.ySp>f.spMax))return false;
+    if(f.cpcMin!=null&&r.cpc<f.cpcMin)return false;
+    if(f.cpcMax!=null&&r.cpc>f.cpcMax)return false;
+    if(f.cvrMin!=null&&r.cvr<f.cvrMin)return false;
+    if(f.cvrMax!=null&&r.cvr>f.cvrMax)return false;
+    if(f.diffMin!=null&&r.diff<f.diffMin)return false;
+    if(f.diffMax!=null&&r.diff>f.diffMax)return false;
+    if(f.orgDistMin!=null&&r.yOrgDist<f.orgDistMin)return false;
+    if(f.adDistMin!=null&&r.yAdDist<f.adDistMin)return false;
+    return true;
+  });
+}
+
+function getFilterVal(id){const v=document.getElementById(id);if(!v)return null;const n=parseFloat(v.value);return isNaN(n)?null:n}
+function getFilterStr(id){const v=document.getElementById(id);return v?v.value:''}
+
+function collectFilters(tabId){
+  const p='fp-'+tabId+'-';
+  currentFilters[tabId]={
+    kwSearch:getFilterStr(p+'kw'),posFilter:getFilterStr(p+'pos'),tagFilter:getFilterStr(p+'tag'),
+    flowMin:getFilterVal(p+'flow-min'),flowMax:getFilterVal(p+'flow-max'),
+    svMin:getFilterVal(p+'sv-min'),svMax:getFilterVal(p+'sv-max'),
+    abaMin:getFilterVal(p+'aba-min'),abaMax:getFilterVal(p+'aba-max'),
+    orgMin:getFilterVal(p+'org-min'),orgMax:getFilterVal(p+'org-max'),
+    spMin:getFilterVal(p+'sp-min'),spMax:getFilterVal(p+'sp-max'),
+    cpcMin:getFilterVal(p+'cpc-min'),cpcMax:getFilterVal(p+'cpc-max'),
+    cvrMin:getFilterVal(p+'cvr-min'),cvrMax:getFilterVal(p+'cvr-max'),
+    diffMin:getFilterVal(p+'diff-min'),diffMax:getFilterVal(p+'diff-max'),
+    orgDistMin:getFilterVal(p+'orgdist-min'),adDistMin:getFilterVal(p+'addist-min')
+  };
+}
+
+// ===== Filter Panel HTML =====
+function renderFilterPanel(tabId){
+  const p='fp-'+tabId+'-';
+  const allPos=[...new Set(mergedAll.map(r=>r.yPos).filter(Boolean))];
+  const allTags=[...new Set(mergedAll.map(r=>r.tag).filter(Boolean))];
+  return `<div class="fp-grid">
+<div class="fp-group"><span class="fp-label">搜索关键词</span><input class="fp-input" id="${p}kw" placeholder="输入关键词搜索..."></div>
+<div class="fp-group"><span class="fp-label">展示位置</span><select class="fp-select" id="${p}pos"><option value="all">全部</option>${allPos.map(v=>`<option value="${v}">${v}</option>`).join('')}</select></div>
+<div class="fp-group"><span class="fp-label">词标签</span><select class="fp-select" id="${p}tag"><option value="all">全部</option>${allTags.map(v=>`<option value="${v}">${v}</option>`).join('')}</select></div>
+<div class="fp-group"><span class="fp-label">流量</span><div class="fp-range"><input class="fp-input" id="${p}flow-min" placeholder="最小"><span>-</span><input class="fp-input" id="${p}flow-max" placeholder="最大"></div></div>
+<div class="fp-group"><span class="fp-label">周搜索量</span><div class="fp-range"><input class="fp-input" id="${p}sv-min" placeholder="最小"><span>-</span><input class="fp-input" id="${p}sv-max" placeholder="最大"></div></div>
+<div class="fp-group"><span class="fp-label">ABA关键词排名</span><div class="fp-range"><input class="fp-input" id="${p}aba-min" placeholder="最小"><span>-</span><input class="fp-input" id="${p}aba-max" placeholder="最大"></div></div>
+<div class="fp-group"><span class="fp-label">自然排名</span><div class="fp-range"><input class="fp-input" id="${p}org-min" placeholder="最小"><span>-</span><input class="fp-input" id="${p}org-max" placeholder="最大"></div></div>
+<div class="fp-group"><span class="fp-label">SP广告排名</span><div class="fp-range"><input class="fp-input" id="${p}sp-min" placeholder="最小"><span>-</span><input class="fp-input" id="${p}sp-max" placeholder="最大"></div></div>
+<div class="fp-group"><span class="fp-label">CPC建议竞价($)</span><div class="fp-range"><input class="fp-input" id="${p}cpc-min" placeholder="最小"><span>-</span><input class="fp-input" id="${p}cpc-max" placeholder="最大"></div></div>
+<div class="fp-group"><span class="fp-label">点击转化率(%)</span><div class="fp-range"><input class="fp-input" id="${p}cvr-min" placeholder="最小"><span>-</span><input class="fp-input" id="${p}cvr-max" placeholder="最大"></div></div>
+<div class="fp-group"><span class="fp-label">竞争难度</span><div class="fp-range"><input class="fp-input" id="${p}diff-min" placeholder="最小"><span>-</span><input class="fp-input" id="${p}diff-max" placeholder="最大"></div></div>
+<div class="fp-group"><span class="fp-label">流量分布·自然(%)≥</span><input class="fp-input" id="${p}orgdist-min" placeholder="最小值"></div>
+<div class="fp-group"><span class="fp-label">流量分布·广告(%)≥</span><input class="fp-input" id="${p}addist-min" placeholder="最小值"></div>
+<div class="fp-actions"><button class="fp-btn reset" onclick="resetFilters('${tabId}')">重置</button><button class="fp-btn apply" onclick="applyFilterBtn('${tabId}')">筛选</button></div>
+</div>`;
+}
+
+function renderToolbar(tabId){
+  const sortHtml=sortOptions.map(o=>`<option value="${o.k}" ${(currentSort[tabId]||'aba_asc')===o.k?'selected':''}>${o.l}</option>`).join('');
+  return `<div class="toolbar-left">
+<button class="btn-filter-toggle" id="toggle-${tabId}" onclick="toggleFilter('${tabId}')"><i class="fas fa-sliders-h"></i> 高级筛选</button>
+<select class="sort-select" onchange="currentSort['${tabId}']=this.value;refreshTab('${tabId}')">${sortHtml}</select>
+<span class="result-count" id="count-${tabId}"></span>
+</div><div class="toolbar-right">
+<button class="btn-export" onclick="exportTab('${tabId}')"><i class="fas fa-download"></i> 导出 Excel</button>
+</div>`;
+}
+
+window.toggleFilter=function(tabId){const fp=$('fp-'+tabId);const btn=$('toggle-'+tabId);fp.classList.toggle('open');btn.classList.toggle('active')};
+window.applyFilterBtn=function(tabId){collectFilters(tabId);refreshTab(tabId)};
+window.resetFilters=function(tabId){currentFilters[tabId]={};const fp=$('fp-'+tabId);fp.querySelectorAll('input').forEach(i=>i.value='');fp.querySelectorAll('select').forEach(s=>s.selectedIndex=0);refreshTab(tabId)};
+
+// ===== N-gram Word Frequency Analysis / 词频分析 =====
+function buildNgrams(rows,n){
+  const freq={};
+  rows.forEach(r=>{
+    const words=r.kw.toLowerCase().replace(/[^a-z0-9\s]/g,'').split(/\s+/).filter(Boolean);
+    for(let i=0;i<=words.length-n;i++){
+      const gram=words.slice(i,i+n).join(' ');
+      freq[gram]=(freq[gram]||0)+1;
+    }
+  });
+  const total=Object.values(freq).reduce((a,b)=>a+b,0);
+  return Object.entries(freq).map(([word,count])=>({word,count,pct:((count/total)*100).toFixed(2)})).sort((a,b)=>b.count-a.count);
+}
+
+// ===== Export =====
+window.exportTab=function(tabId){
+  let rows=getTabRows(tabId);
+  rows=applyFilters(rows,tabId);
+  rows=sortRows(rows,tabId);
+  const cNames=compNames();
+  // Sheet1: Full data / 全量数据
+  const header=['关键词','翻译','词标签','ABA排名','周搜索量','本品流量','流量占比','流量分布(自然)','流量分布(广告)','本品自然位','本品自然位(页码)','本品广告位','本品广告位(页码)','CPC建议竞价($)','建议竞价范围($)','点击转化率(均值)','竞争难度','竞争难度档位','自然位滚动率','Top3 点击份额','Top3 转化份额'];
+  cNames.forEach(n=>{header.push(n+' 自然位',n+' 广告位',n+' 流量')});
+  if(tabId==='gap')header.push('诊断');
+  const wsData=[header];
+  rows.forEach(r=>{
+    const row=[r.kw,r.tr,r.tag,r.aba===999999?'':r.aba,r.sv,r.yFlow,r.yFlowPct?r.yFlowPct:0,r.yOrgDist,r.yAdDist,r.yOrg||'',r.yOrgPage,r.ySp||'',r.ySpPage,r.cpc,r.cpcRange,r.cvr,r.diff,r.diffLv,r.orgScroll,r.top3Click,r.top3Cvr];
+    cNames.forEach(n=>{const c=r.comps[n]||{};row.push(c.org||'',c.sp||'',c.flow||0)});
+    if(tabId==='gap')row.push(getDiagText(r));
+    wsData.push(row);
+  });
+  const ws1=XLSX.utils.aoa_to_sheet(wsData);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws1,'全量数据');
+  // Sheet2: Word frequency / 词频分析
+  const bi2=buildNgrams(rows,2),bi3=buildNgrams(rows,3);
+  const ws2Data=[['===== 二词组合 (Bigrams) ====='],['词组','频次','占比(%)'],...bi2.map(g=>[g.word,g.count,g.pct]),[''],['===== 三词组合 (Trigrams) ====='],['词组','频次','占比(%)'],...bi3.map(g=>[g.word,g.count,g.pct])];
+  const ws2=XLSX.utils.aoa_to_sheet(ws2Data);
+  XLSX.utils.book_append_sheet(wb,ws2,'词频分析');
+  XLSX.writeFile(wb,`西柚分析_${tabId}_${new Date().toISOString().slice(0,10)}.xlsx`);
+};
+
+function getDiagText(r){
+  const youHave=r.yOrg!==null||r.ySp!==null;
+  const compHas=Object.values(r.comps).some(c=>c.org!==null||c.sp!==null);
+  if(!youHave&&compHas)return'严重漏词';if(youHave&&!compHas)return'本品独占';
+  if(youHave&&compHas){const best=Math.min(...Object.values(r.comps).map(c=>c.org||999));if(r.yOrg&&r.yOrg<=best)return'排位领先';if(r.yOrg&&r.yOrg>best)return'自然排位落后';return'交锋中'}
+  return'';
+}
+
+/* 西柚找词面板 - 渲染逻辑 v4 (Part 2) */
+
+// ===== Dashboard Render =====
+function renderDashboard(){renderKPIs();renderTabs();switchTab('overview')}
+
+function renderKPIs(){
+  const yourKW=mergedAll.filter(r=>r.yOrg!==null||r.ySp!==null).length;
+  const compKW=mergedAll.filter(r=>Object.values(r.comps).some(c=>c.org!==null||c.sp!==null)).length;
+  const gapKW=mergedAll.filter(r=>(r.yOrg===null&&r.ySp===null)&&Object.values(r.comps).some(c=>c.org!==null||c.sp!==null)).length;
+  const advKW=mergedAll.filter(r=>(r.yOrg!==null||r.ySp!==null)&&!Object.values(r.comps).some(c=>c.org!==null||c.sp!==null)).length;
+  $('kpi-row').innerHTML=[
+    {v:mergedAll.length,l:'合并关键词总数',c:''},{v:yourKW,l:'本品涉及词数',c:''},{v:compKW,l:'竞品涉及词数',c:'red'},{v:gapKW,l:'严重漏词 (Gaps)',c:'red'},{v:advKW,l:'本品独占优势词',c:'gold'}
+  ].map(k=>`<div class="card" style="padding:20px;text-align:center"><div class="kpi v ${k.c}">${k.v.toLocaleString()}</div><div class="kpi l">${k.l}</div></div>`).join('');
+}
+
+const tabDef=[{id:'overview',icon:'fa-chart-pie',label:'总览'},{id:'top10',icon:'fa-trophy',label:'Top10 流量入口'},{id:'organic',icon:'fa-leaf',label:'自然排名筛选'},{id:'tags',icon:'fa-tags',label:'词标签分类'},{id:'gap',icon:'fa-search-dollar',label:'查漏补缺'}];
+function renderTabs(){$('tabs-bar').innerHTML=tabDef.map(t=>`<div class="tab" data-tab="${t.id}" onclick="switchTab('${t.id}')"><i class="fas ${t.icon}"></i> ${t.label}</div>`).join('')}
+
+window.switchTab=function(id){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===id));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+id));
+  if(id==='overview')renderOverview();
+  else refreshTab(id);
+};
+
+window.refreshTab=function(tabId){
+  // Init toolbar & filter panel if needed
+  const tb=$('toolbar-'+tabId);
+  if(tb&&!tb.innerHTML)tb.innerHTML=renderToolbar(tabId);
+  const fp=$('fp-'+tabId);
+  if(fp&&!fp.innerHTML)fp.innerHTML=renderFilterPanel(tabId);
+  if(tabId==='top10')renderTop10();
+  else if(tabId==='organic')renderOrganic();
+  else if(tabId==='tags')renderTagsTab();
+  else if(tabId==='gap')renderGap();
+};
+
+const compNames=()=>compDataSets.map(c=>c.name);
+
+function getTabRows(tabId){
+  if(tabId==='top10')return mergedAll;
+  if(tabId==='organic')return mergedAll;
+  if(tabId==='tags')return mergedAll.filter(r=>r.tag);
+  if(tabId==='gap')return mergedAll;
+  return mergedAll;
+}
+
+// ===== Table Helpers =====
+function makeHeader(extra){
+  const cn=compNames();
+  let h='<tr><th>关键词</th><th>翻译</th><th>词标签</th><th>ABA排名</th><th>周搜索量</th><th>本品流量</th><th>本品自然位</th><th>本品广告位</th>';
+  cn.forEach(n=>{h+=`<th>${n}<br>自然位</th><th>${n}<br>广告位</th>`});
+  if(extra)h+=extra;
+  return h+'</tr>';
+}
+function rkHtml(v,page){
+  if(v===null)return'<span class="rk no">-</span>';
+  const cls=v<=10?'top':v<=48?'mid':'';
+  const t=v<=10?'<i class="fas fa-trophy" style="font-size:9px;color:var(--gold);margin-right:2px"></i>':'';
+  const pg=page?`<div style="font-size:11px;color:var(--ts)">${page}</div>`:'';
+  return`<span class="rk ${cls}">${t}${v}</span>${pg}`;
+}
+function makeRow(r,extra){
+  const cn=compNames();
+  const tb=r.tag?`<span class="badge ${r.tag==='机会词'?'b-gold':r.tag==='新增排名'?'b-green':r.tag==='流失关键词'?'b-red':'b-gray'}">${r.tag}</span>`:'';
+  let row=`<td><div class="kw-cell"><span class="kw-main">${r.kw}</span></div></td>`;
+  row+=`<td><span class="kw-tr">${r.tr}</span></td><td>${tb}</td>`;
+  row+=`<td style="font-weight:600;color:var(--dg)">${r.aba===999999?'-':r.aba.toLocaleString()}</td>`;
+  row+=`<td style="font-weight:600">${r.sv.toLocaleString()}</td><td>${r.yFlow.toLocaleString()}</td>`;
+  row+=`<td align="center">${rkHtml(r.yOrg,r.yOrgPage)}</td><td align="center">${rkHtml(r.ySp,r.ySpPage)}</td>`;
+  cn.forEach(n=>{const c=r.comps[n]||{};row+=`<td align="center">${rkHtml(c.org||null,c.orgPage||'')}</td><td align="center">${rkHtml(c.sp||null,c.spPage||'')}</td>`});
+  if(extra)row+=extra(r);
+  return`<tr>${row}</tr>`;
+}
+function updateCount(tabId,total,filtered){$('count-'+tabId).textContent=`显示 ${filtered} / ${total} 条`}
+
+// ===== Tab 1: Overview =====
+function renderOverview(){
+  const cn=compNames(),labels=['本品',...cn],orgD=[0],adD=[0];
+  yoursData.forEach(r=>{orgD[0]+=(pRank(r[C.FLOW])||0)*(pRank(r[C.ORG_DIST])||0);adD[0]+=(pRank(r[C.FLOW])||0)*(pRank(r[C.AD_DIST])||0)});
+  compDataSets.forEach(cs=>{let o=0,a=0;cs.data.forEach(r=>{o+=(pRank(r[C.FLOW])||0)*(pRank(r[C.ORG_DIST])||0);a+=(pRank(r[C.FLOW])||0)*(pRank(r[C.AD_DIST])||0)});orgD.push(o);adD.push(a)});
+  if(chartInstances.traffic)chartInstances.traffic.destroy();
+  chartInstances.traffic=new Chart($('c-traffic'),{type:'bar',data:{labels,datasets:[{label:'自然流量',data:orgD,backgroundColor:'#064338',borderRadius:4},{label:'广告流量',data:adD,backgroundColor:'#F3C546',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,display:false}}}});
+  const yB=mergedAll.filter(r=>r.sv>50000&&(r.yOrg||r.ySp)).length,yM=mergedAll.filter(r=>r.sv>=10000&&r.sv<=50000&&(r.yOrg||r.ySp)).length,yL=mergedAll.filter(r=>r.sv<10000&&(r.yOrg||r.ySp)).length,yO=mergedAll.filter(r=>r.yOrg!==null).length,yA=mergedAll.filter(r=>r.ySp!==null).length;
+  let cB=0,cM=0,cL=0,cO=0,cA=0;const cr=cn[0]||null;
+  if(cr)mergedAll.forEach(r=>{const c=r.comps[cr];if(!c)return;if(r.sv>50000&&(c.org||c.sp))cB++;if(r.sv>=10000&&r.sv<=50000&&(c.org||c.sp))cM++;if(r.sv<10000&&(c.org||c.sp))cL++;if(c.org!==null)cO++;if(c.sp!==null)cA++});
+  if(chartInstances.radar)chartInstances.radar.destroy();
+  chartInstances.radar=new Chart($('c-radar'),{type:'radar',data:{labels:['大词(SV>5w)','中词(1w-5w)','长尾(<1w)','自然排名词','广告投放词'],datasets:[{label:'本品',data:[yB,yM,yL,yO,yA],backgroundColor:'rgba(6,67,56,.2)',borderColor:'#064338',pointBackgroundColor:'#064338'},{label:cr||'竞品',data:[cB,cM,cL,cO,cA],backgroundColor:'rgba(243,197,70,.2)',borderColor:'#F3C546',pointBackgroundColor:'#F3C546'}]},options:{responsive:true,maintainAspectRatio:false,scales:{r:{ticks:{display:false},grid:{color:'rgba(0,0,0,.06)'}}}}});
+}
+
+// ===== Tab 2: Top 10 =====
+let top10Filter='yours';
+function renderTop10(){
+  const cn=compNames();
+  $('filters-top10').innerHTML=
+    `<div class="fbtn ${top10Filter==='yours'?'on':''}" onclick="top10Filter='yours';renderTop10()"><i class="fas fa-box"></i> 本品 Top10</div>`+
+    cn.map(n=>`<div class="fbtn ${top10Filter===n?'on':''}" onclick="top10Filter='${n}';renderTop10()"><i class="fas fa-crosshairs"></i> ${n} Top10</div>`).join('');
+  let rows;
+  if(top10Filter==='yours')rows=mergedAll.filter(r=>r.yFlow>0).sort((a,b)=>b.yFlow-a.yFlow).slice(0,10);
+  else rows=mergedAll.filter(r=>r.comps[top10Filter]&&r.comps[top10Filter].flow>0).sort((a,b)=>(b.comps[top10Filter]?.flow||0)-(a.comps[top10Filter]?.flow||0)).slice(0,10);
+  rows=applyFilters(rows,'top10');rows=sortRows(rows,'top10');
+  $('th-top10').innerHTML=makeHeader('<th>流量排名</th>');
+  $('tb-top10').innerHTML=rows.map((r,i)=>makeRow(r,()=>`<td><span class="badge b-gold"><i class="fas fa-fire"></i> #${i+1}</span></td>`)).join('');
+  updateCount('top10',10,rows.length);
+}
+
+// ===== Tab 3: Organic =====
+let orgFilter='yours';
+function renderOrganic(){
+  const cn=compNames();
+  $('filters-organic').innerHTML=
+    `<div class="fbtn ${orgFilter==='yours'?'on':''}" onclick="orgFilter='yours';renderOrganic()"><i class="fas fa-leaf"></i> 本品有自然排名 <span class="count">${mergedAll.filter(r=>r.yOrg!==null).length}</span></div>`+
+    cn.map(n=>{const cnt=mergedAll.filter(r=>r.comps[n]&&r.comps[n].org!==null).length;return`<div class="fbtn ${orgFilter===n?'on':''}" onclick="orgFilter='${n}';renderOrganic()"><i class="fas fa-crosshairs"></i> ${n} 有自然排名 <span class="count">${cnt}</span></div>`}).join('')+
+    `<div class="fbtn ${orgFilter==='yours_only'?'on':''}" onclick="orgFilter='yours_only';renderOrganic()"><i class="fas fa-shield-alt"></i> 仅本品有</div>`+
+    `<div class="fbtn ${orgFilter==='comp_only'?'on':''}" onclick="orgFilter='comp_only';renderOrganic()"><i class="fas fa-exclamation-triangle"></i> 仅竞品有</div>`;
+  let rows;
+  if(orgFilter==='yours')rows=mergedAll.filter(r=>r.yOrg!==null);
+  else if(orgFilter==='yours_only')rows=mergedAll.filter(r=>r.yOrg!==null&&!Object.values(r.comps).some(c=>c.org!==null));
+  else if(orgFilter==='comp_only')rows=mergedAll.filter(r=>r.yOrg===null&&Object.values(r.comps).some(c=>c.org!==null));
+  else rows=mergedAll.filter(r=>r.comps[orgFilter]&&r.comps[orgFilter].org!==null);
+  const total=rows.length;
+  rows=applyFilters(rows,'organic');rows=sortRows(rows,'organic');
+  $('th-organic').innerHTML=makeHeader();
+  $('tb-organic').innerHTML=rows.slice(0,200).map(r=>makeRow(r)).join('');
+  updateCount('organic',total,rows.length);
+}
+
+// ===== Tab 4: Tags =====
+let tagFilter='all';
+function renderTagsTab(){
+  const allTags=[...new Set(mergedAll.map(r=>r.tag).filter(Boolean))];
+  $('filters-tags').innerHTML=
+    `<div class="fbtn ${tagFilter==='all'?'on':''}" onclick="tagFilter='all';renderTagsTab()"><i class="fas fa-list"></i> 全部 <span class="count">${mergedAll.filter(r=>r.tag).length}</span></div>`+
+    allTags.map(t=>{const cnt=mergedAll.filter(r=>r.tag===t).length;return`<div class="fbtn ${tagFilter===t?'on':''}" onclick="tagFilter='${t}';renderTagsTab()"><i class="fas ${t==='机会词'?'fa-lightbulb':t==='新增排名'?'fa-arrow-up':'fa-arrow-down'}"></i> ${t} <span class="count">${cnt}</span></div>`}).join('');
+  let rows=tagFilter==='all'?mergedAll.filter(r=>r.tag):mergedAll.filter(r=>r.tag===tagFilter);
+  const total=rows.length;
+  rows=applyFilters(rows,'tags');rows=sortRows(rows,'tags');
+  $('th-tags').innerHTML=makeHeader();
+  $('tb-tags').innerHTML=rows.slice(0,200).map(r=>makeRow(r)).join('');
+  updateCount('tags',total,rows.length);
+}
+
+// ===== Tab 5: Gap (全量数据 + 词频分析) =====
+let gapFilter='all';
+function renderGap(){
+  const gR=mergedAll.filter(r=>(r.yOrg===null&&r.ySp===null)&&Object.values(r.comps).some(c=>c.org!==null||c.sp!==null));
+  const aR=mergedAll.filter(r=>(r.yOrg!==null||r.ySp!==null)&&!Object.values(r.comps).some(c=>c.org!==null||c.sp!==null));
+  const bR=mergedAll.filter(r=>(r.yOrg!==null||r.ySp!==null)&&Object.values(r.comps).some(c=>c.org!==null||c.sp!==null));
+  $('filters-gap').innerHTML=
+    `<div class="fbtn ${gapFilter==='all'?'on':''}" onclick="gapFilter='all';renderGap()"><i class="fas fa-globe"></i> 全部 <span class="count">${mergedAll.length}</span></div>`+
+    `<div class="fbtn ${gapFilter==='gap'?'on':''}" onclick="gapFilter='gap';renderGap()"><i class="fas fa-exclamation-circle"></i> 严重漏词 <span class="count">${gR.length}</span></div>`+
+    `<div class="fbtn ${gapFilter==='adv'?'on':''}" onclick="gapFilter='adv';renderGap()"><i class="fas fa-shield-alt"></i> 本品独占 <span class="count">${aR.length}</span></div>`+
+    `<div class="fbtn ${gapFilter==='both'?'on':''}" onclick="gapFilter='both';renderGap()"><i class="fas fa-exchange-alt"></i> 双方交锋 <span class="count">${bR.length}</span></div>`;
+  let rows=gapFilter==='gap'?gR:gapFilter==='adv'?aR:gapFilter==='both'?bR:mergedAll;
+  const total=rows.length;
+  rows=applyFilters(rows,'gap');rows=sortRows(rows,'gap');
+
+  // Full-data header / 全量表头
+  const cn=compNames();
+  let hdr='<tr><th>关键词</th><th>翻译</th><th>词标签</th><th>ABA排名</th><th>周搜索量</th><th>本品流量</th><th>本品自然位</th><th>本品广告位</th>';
+  cn.forEach(n=>{hdr+=`<th>${n}<br>自然位</th><th>${n}<br>广告位</th>`});
+  hdr+='<th>CPC($)</th><th>竞价范围</th><th>CVR(%)</th><th>竞争难度</th><th>难度档位</th><th>自然位<br>滚动率</th><th>Top3<br>点击份额</th><th>Top3<br>转化份额</th><th>诊断</th></tr>';
+  $('th-gap').innerHTML=hdr;
+
+  // Full-data rows / 全量行
+  const pct=v=>v?(v*100).toFixed(1)+'%':'–';
+  $('tb-gap').innerHTML=rows.slice(0,300).map(r=>{
+    const tb=r.tag?`<span class="badge ${r.tag==='机会词'?'b-gold':r.tag==='新增排名'?'b-green':r.tag==='流失关键词'?'b-red':'b-gray'}">${r.tag}</span>`:'';
+    let row=`<td><div class="kw-cell"><span class="kw-main">${r.kw}</span></div></td>`;
+    row+=`<td><span class="kw-tr">${r.tr}</span></td><td>${tb}</td>`;
+    row+=`<td style="font-weight:600;color:var(--dg)">${r.aba===999999?'-':r.aba.toLocaleString()}</td>`;
+    row+=`<td style="font-weight:600">${r.sv.toLocaleString()}</td><td>${r.yFlow.toLocaleString()}</td>`;
+    row+=`<td align="center">${rkHtml(r.yOrg,r.yOrgPage)}</td><td align="center">${rkHtml(r.ySp,r.ySpPage)}</td>`;
+    cn.forEach(n=>{const c=r.comps[n]||{};row+=`<td align="center">${rkHtml(c.org||null,c.orgPage||'')}</td><td align="center">${rkHtml(c.sp||null,c.spPage||'')}</td>`});
+    row+=`<td>$${r.cpc.toFixed(2)}</td><td style="font-size:11px">${r.cpcRange||'–'}</td>`;
+    row+=`<td>${pct(r.cvr)}</td><td>${r.diff||'–'}</td><td><span class="badge b-gray">${r.diffLv||'–'}</span></td>`;
+    row+=`<td>${r.orgScroll||'–'}</td><td>${pct(r.top3Click)}</td><td>${pct(r.top3Cvr)}</td>`;
+    // Diagnosis badge / 诊断标签
+    const yH=r.yOrg!==null||r.ySp!==null,cH=Object.values(r.comps).some(c=>c.org!==null||c.sp!==null);
+    let b;
+    if(!yH&&cH)b='<span class="badge b-red"><i class="fas fa-exclamation-triangle"></i> 严重漏词</span>';
+    else if(yH&&!cH)b='<span class="badge b-green"><i class="fas fa-shield-alt"></i> 本品独占</span>';
+    else if(yH&&cH){const best=Math.min(...Object.values(r.comps).map(c=>c.org||999));if(r.yOrg&&r.yOrg<=best)b='<span class="badge b-green">排位领先</span>';else if(r.yOrg&&r.yOrg>best)b='<span class="badge b-gold">排位落后</span>';else b='<span class="badge b-blue">交锋中</span>'}
+    else b='<span class="badge b-gray">无数据</span>';
+    row+=`<td>${b}</td>`;
+    return`<tr>${row}</tr>`;
+  }).join('');
+  updateCount('gap',total,rows.length);
+
+  // Word Frequency Analysis / 词频分析可视化
+  renderNgramSection(rows);
+}
+
+function renderNgramSection(rows){
+  let container=$('ngram-section');
+  if(!container){
+    container=document.createElement('div');
+    container.id='ngram-section';
+    $('panel-gap').appendChild(container);
+  }
+  const bi=buildNgrams(rows,2).slice(0,20);
+  const tri=buildNgrams(rows,3).slice(0,20);
+  const maxBi=bi[0]?bi[0].count:1;
+  const maxTri=tri[0]?tri[0].count:1;
+  const bar=(count,max)=>`<div style="background:var(--dg);height:18px;border-radius:3px;width:${Math.max((count/max)*100,2)}%;min-width:4px"></div>`;
+  container.innerHTML=`
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px">
+  <div class="card"><h3 class="card-t" style="font-size:16px"><i class="fas fa-chart-bar"></i> 二词组合词频 (Top 20)</h3>
+  <table style="width:100%;font-size:12px"><thead><tr><th style="text-align:left">词组</th><th style="width:50px">频次</th><th style="width:60px">占比</th><th style="width:120px">分布</th></tr></thead><tbody>
+  ${bi.map(g=>`<tr><td style="font-weight:500">${g.word}</td><td style="text-align:center;font-weight:600;color:var(--dg)">${g.count}</td><td style="text-align:center;color:var(--ts)">${g.pct}%</td><td>${bar(g.count,maxBi)}</td></tr>`).join('')}
+  </tbody></table></div>
+  <div class="card"><h3 class="card-t" style="font-size:16px"><i class="fas fa-chart-bar"></i> 三词组合词频 (Top 20)</h3>
+  <table style="width:100%;font-size:12px"><thead><tr><th style="text-align:left">词组</th><th style="width:50px">频次</th><th style="width:60px">占比</th><th style="width:120px">分布</th></tr></thead><tbody>
+  ${tri.map(g=>`<tr><td style="font-weight:500">${g.word}</td><td style="text-align:center;font-weight:600;color:var(--dg)">${g.count}</td><td style="text-align:center;color:var(--ts)">${g.pct}%</td><td>${bar(g.count,maxTri)}</td></tr>`).join('')}
+  </tbody></table></div>
+</div>`;
+}
+</script>
+</body>
+</html>

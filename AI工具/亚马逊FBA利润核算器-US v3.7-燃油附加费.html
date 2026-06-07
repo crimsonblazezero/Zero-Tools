@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>亚马逊FBA利润核算US</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 React 和 ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- 引入 Babel 7 -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .modal-overlay { background-color: rgba(0, 0, 0, 0.5); }
+        
+        /* 隐藏滚动条通用类 */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none;  scrollbar-width: none; }
+        
+        /* 自定义滚动条样式 */
+        .custom-scrollbar::-webkit-scrollbar { height: 12px; width: 12px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f3f4f6; border-radius: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 6px; border: 3px solid #f3f4f6; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Toast 动画 */
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .toast-enter { animation: slideIn 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-gray-50 text-slate-800">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // --- ICONS ---
+        const IconBase = ({ children, className, ...props }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} {...props}>
+                {children}
+            </svg>
+        );
+        
+        const Plus = (p) => <IconBase {...p}><path d="M5 12h14M12 5v14"/></IconBase>;
+        const Trash2 = (p) => <IconBase {...p}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></IconBase>;
+        const Calculator = (p) => <IconBase {...p}><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></IconBase>;
+        const Info = (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></IconBase>;
+        const Key = (p) => <IconBase {...p}><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></IconBase>;
+        const Download = (p) => <IconBase {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></IconBase>;
+        const Upload = (p) => <IconBase {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></IconBase>;
+        const Eraser = (p) => <IconBase {...p}><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></IconBase>;
+        const RefreshCw = (p) => <IconBase {...p}><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></IconBase>;
+        const Sparkles = (p) => <IconBase {...p}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M19 16v4"/><path d="M23 18h-4"/></IconBase>;
+        const XCircle = (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></IconBase>;
+        const Loader2 = (p) => <IconBase {...p} className={`animate-spin ${p.className||''}`}><path d="M21 12a9 9 0 1 1-6.219-8.56" /></IconBase>;
+        const PackageCheck = (p) => <IconBase {...p}><path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></IconBase>;
+        const ClipboardList = (p) => <IconBase {...p}><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><rect x="8" y="2" width="8" height="4" rx="1" ry="1" /><path d="M9 14h6" /><path d="M9 18h6" /><path d="M9 10h6" /></IconBase>;
+        const HelpCircle = (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></IconBase>;
+        const AlertTriangle = (p) => <IconBase {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></IconBase>;
+        const Target = (p) => <IconBase {...p}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></IconBase>;
+        const History = (p) => <IconBase {...p}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M12 7v5l4 2" /></IconBase>;
+        const Filter = (p) => <IconBase {...p}><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" /></IconBase>;
+        const Undo = (p) => <IconBase {...p}><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></IconBase>;
+
+        // --- CONSTANTS ---
+        const FBA_FEES_2026_EST = {
+          non_peak: {
+            under_10: {
+              small_std: [ { max_oz: 2, fee: 2.43 }, { max_oz: 4, fee: 2.49 }, { max_oz: 6, fee: 2.56 }, { max_oz: 8, fee: 2.66 }, { max_oz: 10, fee: 2.77 }, { max_oz: 12, fee: 2.82 }, { max_oz: 14, fee: 2.92 }, { max_oz: 16, fee: 2.95 } ],
+              large_std: [ { max_oz: 4, fee: 2.91 }, { max_oz: 8, fee: 3.13 }, { max_oz: 12, fee: 3.58 }, { max_oz: 16, fee: 3.78 }, { max_lb: 1.25, fee: 4.22 }, { max_lb: 1.5, fee: 4.60 }, { max_lb: 1.75, fee: 4.75 }, { max_lb: 2.0, fee: 5.00 }, { max_lb: 2.25, fee: 5.10 }, { max_lb: 2.5, fee: 5.28 }, { max_lb: 2.75, fee: 5.44 }, { max_lb: 3.0, fee: 5.85 }, { max_lb: 20.0, base: 6.15, step: 0.08, step_unit: 0.25 } ],
+              bulky: { small: { base: 6.78, per_lb: 0.38, base_weight: 1 }, large: { base: 8.58, per_lb: 0.38, base_weight: 1 }, extra_0_50: { base: 25.56, per_lb: 0.38, base_weight: 1 }, extra_50_70: { base: 36.55, per_lb: 0.75, base_weight: 51 }, extra_70_150: { base: 50.55, per_lb: 0.75, base_weight: 71 }, extra_150_plus: { base: 194.18, per_lb: 0.19, base_weight: 151 } }
+            },
+            between_10_50: {
+              small_std: [ { max_oz: 2, fee: 3.32 }, { max_oz: 4, fee: 3.42 }, { max_oz: 6, fee: 3.45 }, { max_oz: 8, fee: 3.54 }, { max_oz: 10, fee: 3.68 }, { max_oz: 12, fee: 3.78 }, { max_oz: 14, fee: 3.91 }, { max_oz: 16, fee: 3.96 } ],
+              large_std: [ { max_oz: 4, fee: 3.73 }, { max_oz: 8, fee: 3.95 }, { max_oz: 12, fee: 4.20 }, { max_oz: 16, fee: 4.60 }, { max_lb: 1.25, fee: 5.04 }, { max_lb: 1.5, fee: 5.42 }, { max_lb: 1.75, fee: 5.57 }, { max_lb: 2.0, fee: 5.82 }, { max_lb: 2.25, fee: 5.92 }, { max_lb: 2.5, fee: 6.10 }, { max_lb: 2.75, fee: 6.26 }, { max_lb: 3.0, fee: 6.67 }, { max_lb: 20.0, base: 6.97, step: 0.08, step_unit: 0.25 } ],
+              bulky: { small: { base: 7.55, per_lb: 0.38, base_weight: 1 }, large: { base: 9.35, per_lb: 0.38, base_weight: 1 }, extra_0_50: { base: 26.33, per_lb: 0.38, base_weight: 1 }, extra_50_70: { base: 37.32, per_lb: 0.75, base_weight: 51 }, extra_70_150: { base: 51.32, per_lb: 0.75, base_weight: 71 }, extra_150_plus: { base: 194.95, per_lb: 0.19, base_weight: 151 } }
+            },
+            over_50: {
+              small_std: [ { max_oz: 2, fee: 3.58 }, { max_oz: 4, fee: 3.68 }, { max_oz: 6, fee: 3.71 }, { max_oz: 8, fee: 3.80 }, { max_oz: 10, fee: 3.94 }, { max_oz: 12, fee: 4.04 }, { max_oz: 14, fee: 4.17 }, { max_oz: 16, fee: 4.22 } ],
+              large_std: [ { max_oz: 4, fee: 3.99 }, { max_oz: 8, fee: 4.21 }, { max_oz: 12, fee: 4.46 }, { max_oz: 16, fee: 4.86 }, { max_lb: 1.25, fee: 5.30 }, { max_lb: 1.5, fee: 5.68 }, { max_lb: 1.75, fee: 5.83 }, { max_lb: 2.0, fee: 6.08 }, { max_lb: 2.25, fee: 6.18 }, { max_lb: 2.5, fee: 6.36 }, { max_lb: 2.75, fee: 6.52 }, { max_lb: 3.0, fee: 6.93 }, { max_lb: 20.0, base: 7.23, step: 0.08, step_unit: 0.25 } ],
+              bulky: { small: { base: 7.55, per_lb: 0.38, base_weight: 1 }, large: { base: 9.35, per_lb: 0.38, base_weight: 1 }, extra_0_50: { base: 26.33, per_lb: 0.38, base_weight: 1 }, extra_50_70: { base: 37.32, per_lb: 0.75, base_weight: 51 }, extra_70_150: { base: 51.32, per_lb: 0.75, base_weight: 71 }, extra_150_plus: { base: 194.95, per_lb: 0.19, base_weight: 151 } }
+            }
+          },
+          peak: {
+            // Simplified placeholder logic for peak if user switches
+             under_10: null, between_10_50: null, over_50: null
+          }
+        };
+
+        const EXTRA_LARGE_SURCHARGE = { 'extra_0_50': 17, 'extra_50_70': 21, 'extra_70_150': 25 };
+        const FUEL_SURCHARGE_RATE = 0.035; // 燃油附加费：FBA配送费 × 3.5%
+        const BULKY_PACKAGING_FEES = [
+            { max: 5, fee: 1.51 }, { max: 10, fee: 1.68 }, { max: 15, fee: 1.97 }, { max: 20, fee: 2.60 },
+            { max: 25, fee: 2.92 }, { max: 30, fee: 3.47 }, { max: 35, fee: 3.60 }, { max: 40, fee: 3.78 },
+            { max: 45, fee: 3.80 }, { max: 99999, fee: 4.04 }
+        ];
+
+        const PLACEMENT_FEES_2026 = {
+          small_std: 0.32,
+          large_std: [ { max_lb: 0.75, fee: 0.40 }, { max_lb: 1.5, fee: 0.50 }, { max_lb: 3.0, fee: 0.60 }, { max_lb: 5.0, fee: 0.76 }, { max_lb: 7.0, fee: 0.98 }, { max_lb: 10.0, fee: 1.20 }, { max_lb: 15.0, fee: 1.50 }, { max_lb: 20.0, fee: 1.90 } ],
+          bulky: 0
+        };
+        const STORAGE_RATES = { non_peak: { standard: 0.78, oversize: 0.56 }, peak: { standard: 2.40, oversize: 1.40 } };
+        const STORAGE_SURCHARGE = { standard: [ { weeks: 22, fee: 0.00 }, { weeks: 28, fee: 0.44 }, { weeks: 36, fee: 0.76 }, { weeks: 44, fee: 1.16 }, { weeks: 52, fee: 1.58 }, { weeks: 9999, fee: 1.88 } ], oversize: [ { weeks: 22, fee: 0.00 }, { weeks: 28, fee: 0.23 }, { weeks: 36, fee: 0.46 }, { weeks: 44, fee: 0.63 }, { weeks: 52, fee: 0.76 }, { weeks: 9999, fee: 1.26 } ] };
+        const SHIPPING_RATES_CN = { 'wood_frame': { name: '木质相框', std: 1030, bulky: 1400 }, 'shelf': { name: '层板', std: 1100, bulky: 1400 } };
+        const IMPORT_HEADER_ALIASES = {
+          name: ['产品名称', '名称', 'Product Name', 'Name', 'Title', '品名', '产品'],
+          category: ['分类', '品类', 'Category', 'Type', '产品分类', '类目'],
+          price: ['售价', '价格', 'Price', 'Selling Price', '销售价'],
+          productCostRMB: ['出厂价', '采购成本', '采购价', '成本', 'Cost', 'RMB Cost', 'Factory Price', '进货价'],
+          weight_kg: ['重量', '重量(kg)', 'Weight', 'Weight (kg)', 'KG', '单重', '毛重'],
+          length_cm: ['长', '长(cm)', 'Length', 'L', '长度'],
+          width_cm: ['宽', '宽(cm)', 'Width', 'W', '宽度'],
+          height_cm: ['高', '高(cm)', 'Height', 'H', '高度'],
+          isSIPP: ['SIPP', '自带包装', 'SIPP Certified', '原包装']
+        };
+        
+        const CHANGELOG = [
+            { ver: "3.7", date: "2026-04-28", desc: "新增燃油附加费：按FBA配送费的3.5%计入成本" },
+            { ver: "3.6", date: "2025-12-14", desc: "补充单件头程费率表弹窗逻辑; 修复空弹窗问题" },
+            { ver: "3.5", date: "2025-12-13", desc: "恢复库存周转设置; 增加仓储附加费可视化提示" },
+            { ver: "3.4", date: "2025-12-13", desc: "修复渲染Bug; 优化筛选功能; 界面微调" },
+            { ver: "3.2", date: "2025-12-12", desc: "筛选器增强：支持大于(>)/小于(<)毛利率筛选; 尺寸下方显示分段; UI微调" },
+            { ver: "3.1", date: "2025-12-11", desc: "修正反推标签为'毛利率'; 优化筛选功能" },
+            { ver: "3.0", date: "2025-12-11", desc: "还原滚动条到底部; 筛选器仅保留毛利率; 优化反推标签" },
+            { ver: "2.9", date: "2025-12-11", desc: "移除顶部滚动条; 移除单品尺寸下方分段显示; 筛选器仅保留毛利率; 界面简化" },
+            { ver: "2.0", date: "2025-12-04", desc: "UI全面升级; 增加SIPP包装费详细阶梯; 修复清空问题; 增加目标毛利反推; 集成汇率获取" }
+        ];
+
+        // --- HELPERS ---
+        const detectCategory = (val, defaultCat) => {
+            if (!val) return defaultCat;
+            const s = String(val).toLowerCase();
+            if (s.includes('相框') || s.includes('frame')) return 'wood_frame';
+            if (s.includes('层板') || s.includes('shelf') || s.includes('board')) return 'shelf';
+            return defaultCat;
+        }
+
+        const callGeminiWithBackoff = async (apiKey, prompt, retries = 5, delay = 1000) => {
+          if (!apiKey) throw new Error("请输入 API Key");
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+          const payload = { contents: [{ parts: [{ text: prompt }] }] };
+          for (let i = 0; i < retries; i++) {
+            try {
+              const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              });
+              if (!response.ok) throw new Error(`API Error: ${response.status}`);
+              const data = await response.json();
+              return data.candidates?.[0]?.content?.parts?.[0]?.text || "无结果";
+            } catch (error) {
+              if (i === retries - 1) throw error;
+              await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+            }
+          }
+        };
+
+        function AmazonProfitCalculator() {
+          const [season, setSeason] = useState('non_peak');
+          const [exchangeRate, setExchangeRate] = useState(7.25);
+          const [useSinglePoint, setUseSinglePoint] = useState(true);
+          const [apiKey, setApiKey] = useState('');
+          const [showKeyInput, setShowKeyInput] = useState(false);
+          
+          // Modal States
+          const [showPasteModal, setShowPasteModal] = useState(false);
+          const [showClearModal, setShowClearModal] = useState(false);
+          const [showChangelogModal, setShowChangelogModal] = useState(false);
+          const [activeRateModal, setActiveRateModal] = useState(null); 
+          const [notification, setNotification] = useState(null);
+          const [isFetchingRate, setIsFetchingRate] = useState(false);
+
+          const [pasteData, setPasteData] = useState('');
+          const [pasteCategory, setPasteCategory] = useState('wood_frame');
+          
+          // Filter States
+          const [filterMarginOperator, setFilterMarginOperator] = useState('>');
+          const [filterMarginValue, setFilterMarginValue] = useState('');
+
+          const fileInputRef = useRef(null);
+
+          const [batchSettings, setBatchSettings] = useState({ referralRate: 15, returnRate: 5, adRate: 10, promoRate: 0 });
+          const [targetMargin, setTargetMargin] = useState(30); 
+          const [batchSipp, setBatchSipp] = useState(true); 
+
+          // History State
+          const [history, setHistory] = useState([]);
+          
+          const [rows, setRows] = useState([
+            { id: 1, category: 'wood_frame', name: '相框示例 (<$10)', price: 9.99, productCostRMB: 15.00, weight_kg: 0.3, length_cm: 20, width_cm: 15, height_cm: 1.5, utilization: 10, referralRate: 15, returnRate: 5, adRate: 10, promoRate: 0, isSIPP: true },
+            { id: 2, category: 'shelf', name: '层板示例 (>$50)', price: 60.00, productCostRMB: 100.00, weight_kg: 2.5, length_cm: 60, width_cm: 20, height_cm: 5, utilization: 30, referralRate: 15, returnRate: 3, adRate: 15, promoRate: 5, isSIPP: true }
+          ]);
+          const [aiAnalysis, setAiAnalysis] = useState({});
+          const [aiLoading, setAiLoading] = useState({});
+
+          useEffect(() => {
+            const savedKey = localStorage.getItem('gemini_api_key');
+            if (savedKey) setApiKey(savedKey);
+          }, []);
+
+          const showToast = (msg) => {
+             setNotification(msg);
+             setTimeout(() => setNotification(null), 3000);
+          };
+
+          // -- Undo / History Helpers --
+          const saveHistory = () => {
+              // Limit history stack to 50
+              setHistory(prev => {
+                  const newHistory = [...prev, rows];
+                  if (newHistory.length > 50) return newHistory.slice(newHistory.length - 50);
+                  return newHistory;
+              });
+          };
+
+          const handleUndo = () => {
+             if (history.length === 0) {
+                 showToast("没有可撤销的操作");
+                 return;
+             }
+             const previousRows = history[history.length - 1];
+             setRows(previousRows);
+             setHistory(prev => prev.slice(0, -1));
+             showToast("已撤销上一步操作");
+          };
+
+          // Helper to set rows WITH history saving
+          const updateRowsWithHistory = (newRowsOrFn) => {
+              saveHistory();
+              if (typeof newRowsOrFn === 'function') {
+                  setRows(newRowsOrFn);
+              } else {
+                  setRows(newRowsOrFn);
+              }
+          };
+
+          const handleSaveKey = () => {
+            localStorage.setItem('gemini_api_key', apiKey);
+            setShowKeyInput(false);
+            showToast("API Key 已保存");
+          };
+          
+          const fetchExchangeRate = async () => {
+              setIsFetchingRate(true);
+              try {
+                  const res = await fetch('https://open.er-api.com/v6/latest/USD');
+                  if (!res.ok) throw new Error("Network err");
+                  const data = await res.json();
+                  if (data && data.rates && data.rates.CNY) {
+                      setExchangeRate(parseFloat(data.rates.CNY.toFixed(2)));
+                      showToast(`汇率已更新: ${data.rates.CNY}`);
+                  } else {
+                      throw new Error("No CNY data");
+                  }
+              } catch (e) {
+                  showToast("获取失败，请手动输入");
+              } finally {
+                  setIsFetchingRate(false);
+              }
+          };
+
+          const calculateRow = (row) => {
+            const weight_lb = row.weight_kg * 2.20462;
+            const l_in = row.length_cm / 2.54;
+            const w_in = row.width_cm / 2.54;
+            const h_in = row.height_cm / 2.54;
+            const dims = [l_in, w_in, h_in].sort((a, b) => b - a);
+            const longest = dims[0], median = dims[1], shortest = dims[2];
+            const girth = 2 * (median + shortest);
+            const lengthPlusGirth = longest + girth;
+            const dimWeight = (l_in * w_in * h_in) / 139;
+
+            let calcWeightForTier = Math.max(weight_lb, dimWeight); 
+
+            let sizeTier = 'extra_150_plus';
+            let sizeTierName = "超大150lb+"; 
+            
+            if (weight_lb <= 1 && longest <= 15 && median <= 12 && shortest <= 0.75) { 
+                sizeTier = 'small_std'; sizeTierName = "小号标准";
+            } else if (calcWeightForTier <= 20 && longest <= 18 && median <= 14 && shortest <= 8) { 
+                sizeTier = 'large_std'; sizeTierName = "大号标准";
+            } else if (calcWeightForTier <= 50 && longest <= 37 && median <= 28 && shortest <= 20 && lengthPlusGirth <= 130) { 
+                sizeTier = 'small_bulky'; sizeTierName = "小号大件";
+            } else if (calcWeightForTier <= 50 && longest <= 59 && median <= 33 && shortest <= 33 && lengthPlusGirth <= 130) { 
+                sizeTier = 'large_bulky'; sizeTierName = "大号大件";
+            } else {
+              if (weight_lb > 150) { sizeTier = 'extra_150_plus'; sizeTierName = "超大 150lb+"; }
+              else if (calcWeightForTier <= 50) { sizeTier = 'extra_0_50'; sizeTierName = "超大 0-50lb"; }
+              else if (calcWeightForTier <= 70) { sizeTier = 'extra_50_70'; sizeTierName = "超大 50-70lb"; }
+              else if (calcWeightForTier <= 150) { sizeTier = 'extra_70_150'; sizeTierName = "超大 70-150lb"; }
+              else { sizeTier = 'extra_70_150'; sizeTierName = "超大 70-150lb"; }
+            }
+
+            let feeWeight = 0;
+            let weightTypeUsed = '实重';
+            
+            if (sizeTier === 'small_std' || sizeTier === 'extra_150_plus') {
+                feeWeight = weight_lb; weightTypeUsed = '实重';
+            } else {
+                feeWeight = calcWeightForTier;
+                if (dimWeight > weight_lb) weightTypeUsed = '体积重';
+            }
+
+            let priceTier = 'between_10_50';
+            if (row.price < 10) priceTier = 'under_10';
+            else if (row.price > 50) priceTier = 'over_50';
+
+            let rates = FBA_FEES_2026_EST[season]?.[priceTier] || FBA_FEES_2026_EST['non_peak']['between_10_50'];
+
+            let fbaFee = 0;
+            const weightOz = feeWeight * 16;
+            if (sizeTier === 'small_std') {
+              for (let tier of rates.small_std) { if (weightOz <= tier.max_oz) { fbaFee = tier.fee; break; } }
+            } else if (sizeTier === 'large_std') {
+              let found = false;
+              if (weightOz <= 16) { for (let tier of rates.large_std) { if (tier.max_oz && weightOz <= tier.max_oz) { fbaFee = tier.fee; found = true; break; } } }
+              if (!found && feeWeight <= 3) { for (let tier of rates.large_std) { if (tier.max_lb && feeWeight <= tier.max_lb) { fbaFee = tier.fee; found = true; break; } } }
+              if (!found) {
+                const over3Logic = rates.large_std[rates.large_std.length - 1];
+                const extraWeight = feeWeight - 3;
+                fbaFee = over3Logic.base + (Math.ceil(extraWeight / 0.25) * over3Logic.step);
+              }
+            } else {
+              let tierConfig = null;
+              if (sizeTier === 'small_bulky') tierConfig = rates.bulky.small;
+              else if (sizeTier === 'large_bulky') tierConfig = rates.bulky.large;
+              else if (sizeTier === 'extra_0_50') tierConfig = rates.bulky.extra_0_50;
+              else if (sizeTier === 'extra_50_70') tierConfig = rates.bulky.extra_50_70;
+              else if (sizeTier === 'extra_70_150') tierConfig = rates.bulky.extra_70_150;
+              else if (sizeTier === 'extra_150_plus') tierConfig = rates.bulky.extra_150_plus;
+              if (tierConfig) {
+                const extraW = feeWeight > tierConfig.base_weight ? feeWeight - tierConfig.base_weight : 0;
+                fbaFee = tierConfig.base + (Math.ceil(extraW) * tierConfig.per_lb);
+              }
+            }
+
+            let handlingSurcharge = 0;
+            if (EXTRA_LARGE_SURCHARGE[sizeTier]) handlingSurcharge = EXTRA_LARGE_SURCHARGE[sizeTier];
+            
+            let sippFee = 0;
+            let sippDiscount = 0;
+
+            if (row.isSIPP) {
+                if (sizeTier === 'small_std') {
+                    sippDiscount = 0.08; 
+                } else if (sizeTier === 'large_std') {
+                    if (feeWeight < 1) sippDiscount = 0.09;
+                    else if (feeWeight < 2) sippDiscount = 0.25;
+                    else if (feeWeight < 5) sippDiscount = 0.50;
+                    else sippDiscount = 1.00;
+                }
+            } else {
+                if (sizeTier === 'small_bulky' || sizeTier === 'large_bulky') {
+                    const packFeeObj = BULKY_PACKAGING_FEES.find(t => feeWeight <= t.max);
+                    sippFee = packFeeObj ? packFeeObj.fee : 4.04;
+                }
+            }
+
+            const finalFbaFee = fbaFee + handlingSurcharge + sippFee - sippDiscount;
+            const fuelSurcharge = parseFloat((finalFbaFee * FUEL_SURCHARGE_RATE).toFixed(2));
+            const finalFbaFeeWithFuel = finalFbaFee + fuelSurcharge;
+
+            let placementFee = 0;
+            if (sizeTier.includes('bulky') || sizeTier.includes('extra')) { placementFee = 0; }
+            else if (useSinglePoint) {
+              if (sizeTier === 'small_std') placementFee = PLACEMENT_FEES_2026.small_std;
+              else if (sizeTier === 'large_std') {
+                const placementTier = PLACEMENT_FEES_2026.large_std.find(t => feeWeight <= t.max_lb);
+                placementFee = placementTier ? placementTier.fee : 1.90;
+              }
+            }
+
+            const safeExchangeRate = exchangeRate || 1;
+            const productCostUSD = row.productCostRMB / safeExchangeRate;
+            
+            const catRates = SHIPPING_RATES_CN[row.category] || SHIPPING_RATES_CN['wood_frame'];
+            const shippingRateRMB = !sizeTier.includes('std') ? catRates.bulky : catRates.std;
+            
+            const volumeCBM = (row.length_cm * row.width_cm * row.height_cm) / 1000000;
+            const shippingCostRMB = (volumeCBM * shippingRateRMB); 
+            
+            // 1. Calculate RAW values (float)
+            let shippingCostUSD_Raw = shippingCostRMB / safeExchangeRate;
+            
+            const cubicFeet = (l_in * w_in * h_in) / 1728;
+            const isOversize = !sizeTier.includes('std');
+            const baseStorageRate = isOversize ? STORAGE_RATES[season].oversize : STORAGE_RATES[season].standard;
+            let surchargeRate = 0;
+            const surchargeTable = isOversize ? STORAGE_SURCHARGE.oversize : STORAGE_SURCHARGE.standard;
+            if (row.utilization > 22) { for (let tier of surchargeTable) { if (row.utilization <= tier.weeks) { surchargeRate = tier.fee; break; } } }
+            let monthlyStorageFee_Raw = cubicFeet * (baseStorageRate + surchargeRate);
+
+            // 2. ROUND specific fees to 2 decimals for calculation (WYSIWYG)
+            const shippingCostUSD = parseFloat(shippingCostUSD_Raw.toFixed(2));
+            const monthlyStorageFee = parseFloat(monthlyStorageFee_Raw.toFixed(2));
+
+            const referralFee = row.price * (row.referralRate / 100);
+            const adCost = row.price * (row.adRate / 100);
+            const promoCost = row.price * (row.promoRate / 100);
+            const returnLoss = row.price * (row.returnRate / 100);
+            
+            const totalCost = productCostUSD + shippingCostUSD + referralFee + finalFbaFeeWithFuel + placementFee + monthlyStorageFee + adCost + promoCost + returnLoss;
+            const profit = row.price - totalCost;
+            const margin = row.price > 0 ? (profit / row.price) * 100 : 0;
+
+            let tierLabel = '<$10';
+            if (priceTier === 'between_10_50') tierLabel = '$10-$50';
+            if (priceTier === 'over_50') tierLabel = '>$50';
+            let logicStr = `分段:${sizeTierName} | 费率:${tierLabel} | 计重:${feeWeight.toFixed(2)}lb`;
+            if (handlingSurcharge > 0) logicStr += ` | 超大费:$${handlingSurcharge}`;
+            if (sippFee > 0) logicStr += ` | 包装费(无SIPP):$${sippFee}`;
+            if (sippDiscount > 0) logicStr += ` | SIPP折扣:-$${sippDiscount}`;
+            if (fuelSurcharge > 0) logicStr += ` | 燃油附加费:$${fuelSurcharge.toFixed(2)}(FBA×3.5%)`;
+
+            return {
+              ...row, sizeTier, sizeTierName, weightTypeUsed, feeWeight: feeWeight.toFixed(2), dimWeight: dimWeight.toFixed(2),
+              shippingCostUSD: shippingCostUSD.toFixed(2), // Display string
+              fbaFee: finalFbaFeeWithFuel.toFixed(2), baseFbaFee: fbaFee.toFixed(2),
+              fuelSurcharge: fuelSurcharge.toFixed(2), fbaFeeBeforeFuel: finalFbaFee.toFixed(2),
+              handlingSurcharge, sippFee, sippDiscount, placementFee: placementFee.toFixed(2), 
+              storageFee: monthlyStorageFee.toFixed(2), // Display string
+              surchargeAmount: (cubicFeet * surchargeRate).toFixed(2), surchargeRate,
+              referralFee: referralFee.toFixed(2), adCost: adCost.toFixed(2), promoCost: promoCost.toFixed(2), returnLoss: returnLoss.toFixed(2),
+              profit: profit.toFixed(2), margin: margin.toFixed(1), calcLogic: logicStr, tierLabel,
+              productCostUSD, 
+              shippingCostUSD_Num: shippingCostUSD, 
+              placementFee, 
+              storageFee_Num: monthlyStorageFee,
+              finalFbaFee,
+              finalFbaFeeWithFuel
+            };
+          };
+          
+          // Reverse Calculate Price Logic (Iterative)
+          const reverseCalculatePrice = () => {
+              const targetMarginDecimal = targetMargin / 100;
+              const updatedRows = rows.map(row => {
+                  let currentPrice = row.price || 20;
+                  for(let i=0; i<3; i++) {
+                      const tempRow = { ...row, price: currentPrice };
+                      const res = calculateRow(tempRow);
+                      const fixedCost = parseFloat(res.productCostUSD) + res.shippingCostUSD_Num + parseFloat(res.fbaFee) + parseFloat(res.placementFee) + res.storageFee_Num;
+                      const variableRate = (row.referralRate + row.returnRate + row.adRate + row.promoRate) / 100;
+                      const denominator = 1 - variableRate - targetMarginDecimal;
+                      if (denominator <= 0.01) break;
+                      const newPrice = fixedCost / denominator;
+                      if (Math.abs(newPrice - currentPrice) < 0.05) { currentPrice = newPrice; break; }
+                      currentPrice = newPrice;
+                  }
+                  return { ...row, price: parseFloat(currentPrice.toFixed(2)) };
+              });
+              updateRowsWithHistory(updatedRows); // Use history wrapper
+              showToast(`已按 ${targetMargin}% 毛利反推售价`);
+          };
+
+          const handleAiAnalysis = async (row) => {
+            if (!apiKey) { setShowKeyInput(true); return; }
+            setAiLoading(prev => ({ ...prev, [row.id]: true }));
+            const results = calculateRow(row);
+            const prompt = `我正在做亚马逊FBA产品利润核算。请根据以下数据，提供3条简短、具体的优化建议(中文)，重点关注是否可以通过微调尺寸降低FBA费率分段。产品: ${row.name}, 售价: $${row.price}, 出厂价: ¥${row.productCostRMB}, 尺寸(cm): ${row.length_cm}x${row.width_cm}x${row.height_cm}, 计费重: ${results.feeWeight} lb (${results.weightTypeUsed}), FBA分段: ${results.sizeTierName} (费率档: ${results.tierLabel}), FBA费用: $${results.fbaFee}. 请直接给出建议。`;
+            try {
+              const advice = await callGeminiWithBackoff(apiKey, prompt);
+              setAiAnalysis(prev => ({ ...prev, [row.id]: advice }));
+            } catch (error) {
+              setAiAnalysis(prev => ({ ...prev, [row.id]: `错误: ${error.message}` }));
+            } finally {
+              setAiLoading(prev => ({ ...prev, [row.id]: false }));
+            }
+          };
+
+          const addRow = () => {
+            const newId = rows.length > 0 ? Math.max(...rows.map(r => r.id)) + 1 : 1;
+            updateRowsWithHistory([...rows, { id: newId, category: 'wood_frame', name: '新产品', price: 0, productCostRMB: 0, weight_kg: 0, length_cm: 0, width_cm: 0, height_cm: 0, utilization: 10, referralRate: batchSettings.referralRate, returnRate: batchSettings.returnRate, adRate: batchSettings.adRate, promoRate: batchSettings.promoRate, isSIPP: true }]);
+          };
+          const deleteRow = (id) => updateRowsWithHistory(rows.filter(r => r.id !== id));
+          const updateRow = (id, field, value) => updateRowsWithHistory(rows.map(r => r.id === id ? { ...r, [field]: value } : r));
+          
+          const requestClear = () => { setShowClearModal(true); };
+          const confirmClear = () => { 
+              updateRowsWithHistory([]); // Save history before clear
+              setAiAnalysis({}); 
+              setShowClearModal(false); 
+              showToast("所有数据已清空"); 
+          };
+          
+          const applyBatchSettings = () => {
+            const updatedRows = rows.map(row => ({
+              ...row,
+              referralRate: batchSettings.referralRate,
+              returnRate: batchSettings.returnRate,
+              adRate: batchSettings.adRate,
+              promoRate: batchSettings.promoRate,
+              isSIPP: batchSipp 
+            }));
+            updateRowsWithHistory(updatedRows);
+            showToast("批量设置已应用");
+          };
+          
+          // Filter Logic (Updated for > and <)
+          const filteredRows = rows.filter(row => {
+             if (!filterMarginValue) return true;
+             const res = calculateRow(row);
+             const margin = parseFloat(res.margin);
+             const limit = parseFloat(filterMarginValue);
+             if (isNaN(limit)) return true;
+             if (filterMarginOperator === '>') return margin >= limit;
+             if (filterMarginOperator === '<') return margin <= limit;
+             return true;
+          });
+
+          const findColumnIndex = (headers, aliases) => headers.findIndex(h => aliases.some(a => a.toLowerCase() === h.trim().toLowerCase()));
+          
+          const handlePasteParse = () => {
+            if (!pasteData.trim()) { showToast("请先粘贴数据！"); return; }
+            const lines = pasteData.trim().split(/\r?\n/).filter(l => l.trim() !== '');
+            if (lines.length === 0) return;
+            const firstLine = lines[0];
+            const isTab = firstLine.includes('\t');
+            const delimiter = isTab ? '\t' : ',';
+            const headerCandidates = firstLine.split(delimiter).map(h => h.trim());
+            const isHeader = findColumnIndex(headerCandidates, IMPORT_HEADER_ALIASES.name) !== -1 || findColumnIndex(headerCandidates, IMPORT_HEADER_ALIASES.price) !== -1;
+            let startRowIndex = 0;
+            let map = {};
+            if (isHeader) {
+                startRowIndex = 1;
+                map = {
+                    name: findColumnIndex(headerCandidates, IMPORT_HEADER_ALIASES.name),
+                    category: findColumnIndex(headerCandidates, IMPORT_HEADER_ALIASES.category),
+                    price: findColumnIndex(headerCandidates, IMPORT_HEADER_ALIASES.price),
+                    productCostRMB: findColumnIndex(headerCandidates, IMPORT_HEADER_ALIASES.productCostRMB),
+                    weight_kg: findColumnIndex(headerCandidates, IMPORT_HEADER_ALIASES.weight_kg),
+                    length_cm: findColumnIndex(headerCandidates, IMPORT_HEADER_ALIASES.length_cm),
+                    width_cm: findColumnIndex(headerCandidates, IMPORT_HEADER_ALIASES.width_cm),
+                    height_cm: findColumnIndex(headerCandidates, IMPORT_HEADER_ALIASES.height_cm),
+                };
+            } else {
+                map = { name: 0, price: 1, productCostRMB: 2, weight_kg: 3, length_cm: 4, width_cm: 5, height_cm: 6 };
+            }
+            let currentId = rows.length > 0 ? Math.max(...rows.map(r => r.id)) + 1 : 1;
+            const newRows = [];
+            for (let i = startRowIndex; i < lines.length; i++) {
+                const cols = lines[i].split(delimiter).map(c => c.trim());
+                if (cols.length < 2) continue;
+                const getVal = (k, def) => {
+                    const idx = map[k];
+                    if (idx === undefined || idx >= cols.length || idx === -1) return def;
+                    const raw = cols[idx].replace(/[¥$,]/g, '');
+                    return parseFloat(raw) || def;
+                };
+                const getStr = (k, def) => {
+                    const idx = map[k];
+                    if (idx === undefined || idx >= cols.length || idx === -1) return def;
+                    return cols[idx] || def;
+                };
+                
+                const rowCategoryRaw = getStr('category', '');
+                const finalCategory = detectCategory(rowCategoryRaw, pasteCategory);
+                const rowName = getStr('name', '已导入产品');
+
+                newRows.push({
+                    id: currentId++, 
+                    name: rowName, 
+                    category: finalCategory,
+                    price: getVal('price', 0), productCostRMB: getVal('productCostRMB', 0),
+                    weight_kg: getVal('weight_kg', 0), length_cm: getVal('length_cm', 0), width_cm: getVal('width_cm', 0), height_cm: getVal('height_cm', 0),
+                    utilization: 10, isSIPP: true, ...batchSettings
+                });
+            }
+            if (newRows.length > 0) { 
+                updateRowsWithHistory([...rows, ...newRows]); 
+                setShowPasteModal(false); 
+                setPasteData(''); 
+                showToast(`成功导入 ${newRows.length} 条数据`);
+            } 
+            else { showToast("未能识别有效数据"); }
+          };
+
+          const handleFileUpload = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              const lines = event.target.result.split(/\r?\n/).filter(l => l.trim() !== '');
+              if (lines.length < 2) return;
+              const headerRow = lines[0].split(',').map(h => h.trim());
+              const map = {
+                name: findColumnIndex(headerRow, IMPORT_HEADER_ALIASES.name),
+                category: findColumnIndex(headerRow, IMPORT_HEADER_ALIASES.category),
+                price: findColumnIndex(headerRow, IMPORT_HEADER_ALIASES.price),
+                productCostRMB: findColumnIndex(headerRow, IMPORT_HEADER_ALIASES.productCostRMB),
+                weight_kg: findColumnIndex(headerRow, IMPORT_HEADER_ALIASES.weight_kg),
+                length_cm: findColumnIndex(headerRow, IMPORT_HEADER_ALIASES.length_cm),
+                width_cm: findColumnIndex(headerRow, IMPORT_HEADER_ALIASES.width_cm),
+                height_cm: findColumnIndex(headerRow, IMPORT_HEADER_ALIASES.height_cm),
+                isSIPP: findColumnIndex(headerRow, IMPORT_HEADER_ALIASES.isSIPP)
+              };
+              let currentId = rows.length > 0 ? Math.max(...rows.map(r => r.id)) + 1 : 1;
+              const newRows = [];
+              for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(',');
+                if (cols.length < 2) continue;
+                const getVal = (k, def) => map[k] !== -1 ? (parseFloat(cols[map[k]]) || def) : def;
+                const getStr = (k, def) => map[k] !== -1 ? (cols[map[k]]?.trim() || def) : def;
+                
+                const rowCategoryRaw = getStr('category', '');
+                const finalCategory = detectCategory(rowCategoryRaw, 'wood_frame');
+                const rowName = getStr('name', 'Imported');
+
+                let sippVal = true; 
+                if (map.isSIPP !== -1) {
+                    const rawSipp = cols[map.isSIPP]?.trim().toLowerCase();
+                    if (rawSipp === '0' || rawSipp === 'false' || rawSipp === 'no' || rawSipp === '否') sippVal = false;
+                }
+                newRows.push({
+                  id: currentId++, name: rowName, category: finalCategory,
+                  price: getVal('price', 0), productCostRMB: getVal('productCostRMB', 0),
+                  weight_kg: getVal('weight_kg', 0), length_cm: getVal('length_cm', 0), width_cm: getVal('width_cm', 0), height_cm: getVal('height_cm', 0),
+                  utilization: 10, isSIPP: sippVal, ...batchSettings
+                });
+              }
+              updateRowsWithHistory([...rows, ...newRows]);
+              showToast(`成功导入 ${newRows.length} 条数据`);
+            };
+            reader.readAsText(file);
+            e.target.value = null;
+          };
+
+          const handleExport = () => {
+            const headers = ["产品名称", "分类", "SIPP认证", "尺寸分段", "费率价格档", "计费类型", "计费重量(lb)", "售价($)", "出厂价(¥)", "头程运费($)", "FBA总费($)", "燃油附加费($)", "基础FBA($)", "超大附加费($)", "无SIPP包装费($)", "配置费($)", "仓储费($)", "佣金($)", "退货损耗($)", "推广费($)", "促销费($)", "利润($)", "毛利率(%)", "计算逻辑详解"];
+            const csvContent = [headers.join(","), ...rows.map(row => {
+              const res = calculateRow(row);
+              const sippEffectVal = res.sippFee > 0 ? res.sippFee : (res.sippDiscount > 0 ? -res.sippDiscount : 0);
+              return [`"${row.name}"`, SHIPPING_RATES_CN[row.category].name, row.isSIPP ? "是" : "否", res.sizeTier, res.tierLabel, res.weightTypeUsed, res.feeWeight, row.price, row.productCostRMB, res.shippingCostUSD, res.fbaFee, res.fuelSurcharge, res.baseFbaFee, res.handlingSurcharge, sippEffectVal, res.placementFee, res.storageFee, res.referralFee, res.returnLoss, res.adCost, res.promoCost, res.profit, res.margin, `"${res.calcLogic}"`].join(",");
+            })].join("\n");
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' }));
+            link.download = `Amazon_Profit_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
+          };
+
+          // --- Rate Tables for Modal ---
+          const renderRateTable = () => {
+             if (!activeRateModal) return null;
+             
+             let content = null;
+             let title = "";
+
+             if (activeRateModal === 'placement') {
+                title = "2026 入库配置费 (单点/美西)";
+                content = (
+                  <div className="text-xs">
+                    <table className="w-full border mb-2">
+                      <thead className="bg-gray-100"><tr><th className="border p-1">分段</th><th className="border p-1">重量/详情</th><th className="border p-1">费用</th></tr></thead>
+                      <tbody>
+                        <tr><td className="border p-1">小号标准</td><td className="border p-1">任意重量</td><td className="border p-1">$0.32</td></tr>
+                        <tr><td className="border p-1">大号标准</td><td className="border p-1">≤ 12 oz</td><td className="border p-1">$0.40</td></tr>
+                        <tr><td className="border p-1"></td><td className="border p-1">≤ 1.5 lb</td><td className="border p-1">$0.50</td></tr>
+                        <tr><td className="border p-1"></td><td className="border p-1">≤ 3 lb</td><td className="border p-1">$0.60</td></tr>
+                        <tr><td className="border p-1"></td><td className="border p-1">≤ 5 lb</td><td className="border p-1">$0.76</td></tr>
+                        <tr><td className="border p-1"></td><td className="border p-1">≤ 7 lb</td><td className="border p-1">$0.98</td></tr>
+                        <tr><td className="border p-1"></td><td className="border p-1">≤ 10 lb</td><td className="border p-1">$1.20</td></tr>
+                        <tr><td className="border p-1"></td><td className="border p-1">≤ 15 lb</td><td className="border p-1">$1.50</td></tr>
+                        <tr><td className="border p-1"></td><td className="border p-1">≤ 20 lb</td><td className="border p-1">$1.90</td></tr>
+                        <tr><td className="border p-1 font-bold">大件/超大</td><td className="border p-1 font-bold">所有重量</td><td className="border p-1 font-bold text-green-600">$0.00 (AMP)</td></tr>
+                      </tbody>
+                    </table>
+                    <p className="text-gray-500">注：标准件选择单点入仓(美西)按上述最高档费率计算。大件默认使用 AMP 优享入仓免配置费。</p>
+                  </div>
+                );
+             } else if (activeRateModal === 'headcost') {
+                title = "海运费率表 (RMB/m³)";
+                content = (
+                    <div className="text-xs">
+                        <table className="w-full border mb-2">
+                            <thead className="bg-gray-100"><tr><th className="border p-1">品类</th><th className="border p-1">标件费率</th><th className="border p-1">大件费率</th></tr></thead>
+                            <tbody>
+                                <tr><td className="border p-1">木质相框</td><td className="border p-1">¥1030</td><td className="border p-1">¥1400</td></tr>
+                                <tr><td className="border p-1">层板</td><td className="border p-1">¥1100</td><td className="border p-1">¥1400</td></tr>
+                            </tbody>
+                        </table>
+                        <p className="text-gray-500 mt-2">计算公式：<br/>单件头程 = (单品体积m³ × 费率) ÷ 汇率</p>
+                    </div>
+                );
+             } else if (activeRateModal === 'storage') {
+                title = "仓储费 & 利用率附加费";
+                content = (
+                   <div className="text-xs space-y-4">
+                      <div><h4 className="font-bold mb-1">基础月度仓储费 ($/立方英尺)</h4><table className="w-full border"><thead className="bg-gray-100"><tr><th className="border p-1">月份</th><th className="border p-1">标准件</th><th className="border p-1">大件/超大</th></tr></thead><tbody><tr><td className="border p-1">1-9月 (淡季)</td><td className="border p-1">$0.78</td><td className="border p-1">$0.56</td></tr><tr><td className="border p-1">10-12月 (旺季)</td><td className="border p-1">$2.40</td><td className="border p-1">$1.40</td></tr></tbody></table></div>
+                      <div><h4 className="font-bold mb-1">仓储利用率附加费 ($/立方英尺)</h4><table className="w-full border"><thead className="bg-gray-100"><tr><th className="border p-1">周转周数</th><th className="border p-1">标准件</th><th className="border p-1">大件/超大</th></tr></thead><tbody>{STORAGE_SURCHARGE.standard.map((t, i) => (<tr key={i}><td className="border p-1">{t.weeks === 9999 ? '> 52周' : `≤ ${t.weeks}周`}</td><td className="border p-1">${t.fee}</td><td className="border p-1">${STORAGE_SURCHARGE.oversize[i].fee}</td></tr>))}</tbody></table></div>
+                   </div>
+                );
+             } else if (activeRateModal === 'sipp') {
+                title = "SIPP (自有包装) 政策 2026";
+                content = (
+                   <div className="text-xs">
+                      <p className="mb-2"><b>大件商品 (Small/Large Bulky)</b>: 若未通过SIPP认证，需缴纳包装费。</p>
+                      <table className="w-full border mb-4"><thead className="bg-gray-100"><tr><th className="border p-1">重量段</th><th className="border p-1">包装费 (罚款)</th></tr></thead><tbody>{BULKY_PACKAGING_FEES.map((r, i) => (<tr key={i}><td className="border p-1">{r.max > 100 ? '45 lb+' : `0 - ${r.max} lb`}</td><td className="border p-1 text-red-600">${r.fee}</td></tr>))}</tbody></table>
+                      <p className="mb-2"><b>标准件</b>: 通过SIPP认证可获得折扣 (约 $0.08 - $1.00)。</p>
+                   </div>
+                );
+             } else if (activeRateModal === 'fba') {
+                title = "2026 FBA 配送费完整费率表 (淡季)";
+                const smallStdRows = FBA_FEES_2026_EST.non_peak.under_10.small_std.map((tier, index) => { return { label: "小号标准", weight: tier.max_oz + " oz", u10: tier.fee, b1050: FBA_FEES_2026_EST.non_peak.between_10_50.small_std[index].fee, o50: FBA_FEES_2026_EST.non_peak.over_50.small_std[index].fee }; });
+                const largeStdRows = FBA_FEES_2026_EST.non_peak.under_10.large_std.map((tier, index) => {
+                    let wLabel = tier.max_lb ? tier.max_lb + " lb" : tier.max_oz + " oz";
+                    if (tier.max_lb === 20.0) wLabel = "3-20 lb";
+                    let u10 = tier.fee || `$${tier.base}+$${tier.step}/0.25lb`;
+                    let b1050 = FBA_FEES_2026_EST.non_peak.between_10_50.large_std[index].fee || `$${FBA_FEES_2026_EST.non_peak.between_10_50.large_std[index].base}+$${FBA_FEES_2026_EST.non_peak.between_10_50.large_std[index].step}`;
+                    let o50 = FBA_FEES_2026_EST.non_peak.over_50.large_std[index].fee || `$${FBA_FEES_2026_EST.non_peak.over_50.large_std[index].base}+$${FBA_FEES_2026_EST.non_peak.over_50.large_std[index].step}`;
+                    if (!tier.fee) { u10 = `$${tier.base} + $${tier.step}`; b1050 = `$${FBA_FEES_2026_EST.non_peak.between_10_50.large_std[index].base} + $${FBA_FEES_2026_EST.non_peak.between_10_50.large_std[index].step}`; o50 = `$${FBA_FEES_2026_EST.non_peak.over_50.large_std[index].base} + $${FBA_FEES_2026_EST.non_peak.over_50.large_std[index].step}`; }
+                    return { label: "大号标准", weight: wLabel, u10, b1050, o50 };
+                });
+                const bulkyRows = [
+                    { key: 'small', label: '小号大件', weight: '1 lb+' }, { key: 'large', label: '大号大件', weight: '1 lb+' },
+                    { key: 'extra_0_50', label: '超大 0-50', weight: '1 lb+' }, { key: 'extra_50_70', label: '超大 50-70', weight: '51 lb+' },
+                    { key: 'extra_70_150', label: '超大 70-150', weight: '71 lb+' }, { key: 'extra_150_plus', label: '超大 150+', weight: '151 lb+' },
+                ].map(k => {
+                    const u10Obj = FBA_FEES_2026_EST.non_peak.under_10.bulky[k.key];
+                    const b1050Obj = FBA_FEES_2026_EST.non_peak.between_10_50.bulky[k.key];
+                    const o50Obj = FBA_FEES_2026_EST.non_peak.over_50.bulky[k.key];
+                    const formatFee = (obj) => `$${obj.base} + $${obj.per_lb}/lb`;
+                    return { label: k.label, weight: k.weight, u10: formatFee(u10Obj), b1050: formatFee(b1050Obj), o50: formatFee(o50Obj) };
+                });
+                const allRows = [...smallStdRows, ...largeStdRows, ...bulkyRows];
+                content = (
+                   <div className="text-xs h-[600px] overflow-y-auto border p-2 relative custom-scrollbar">
+                      <p className="mb-2 font-bold">2026 FBA 配送费全表 (淡季 1月-9月)：</p>
+                      <table className="w-full border mb-2 text-center">
+                         <thead className="bg-gray-100 sticky top-0 z-10 shadow-sm"><tr><th className="border p-2">分段</th><th className="border p-2">计费重量</th><th className="border p-2 bg-green-50">&lt;$10</th><th className="border p-2 bg-blue-50">$10-$50</th><th className="border p-2 bg-red-50">&gt;$50</th></tr></thead>
+                         <tbody>
+                            {allRows.map((row, i) => (
+                                <tr key={i} className="hover:bg-gray-50"><td className="border p-1">{row.label}</td><td className="border p-1">{row.weight}</td><td className="border p-1">{typeof row.u10 === 'number' ? '$'+row.u10.toFixed(2) : row.u10}</td><td className="border p-1">{typeof row.b1050 === 'number' ? '$'+row.b1050.toFixed(2) : row.b1050}</td><td className="border p-1">{typeof row.o50 === 'number' ? '$'+row.o50.toFixed(2) : row.o50}</td></tr>
+                            ))}
+                         </tbody>
+                      </table>
+                      <div className="mt-4 p-2 bg-orange-50 rounded border border-orange-100"><p className="font-bold text-orange-700 mb-1">⛽ 燃油附加费:</p><p className="text-gray-700">按FBA配送费合计 × 3.5% 计入FBA总费与利润计算。</p></div><div className="mt-4 p-2 bg-red-50 rounded border border-red-100"><p className="font-bold text-red-600 mb-1">⚠️ 超大件附加费 (额外叠加):</p><ul className="list-disc list-inside text-gray-700"><li>超大 0-50 lb: +$17 /件</li><li>超大 50-70 lb: +$21 /件</li><li>超大 70-150 lb: +$25 /件</li></ul></div>
+                   </div>
+                );
+             }
+             return (
+                <div className="fixed inset-0 modal-overlay flex items-center justify-center z-50" onClick={() => setActiveRateModal(null)}>
+                   <div className="bg-white rounded-lg shadow-xl w-[600px] max-w-full p-4 relative" onClick={e => e.stopPropagation()}>
+                      <button onClick={() => setActiveRateModal(null)} className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"><XCircle className="w-5 h-5" /></button>
+                      <h3 className="font-bold text-lg mb-3 border-b pb-2">{title}</h3>
+                      {content}
+                   </div>
+                </div>
+             );
+          };
+
+          return (
+            <div className="p-4 min-h-screen">
+              {/* Toast Notification */}
+              {notification && (
+                  <div className="fixed top-4 right-4 bg-gray-800 text-white px-4 py-2 rounded shadow-lg z-50 toast-enter text-sm flex items-center gap-2">
+                    <Info className="w-4 h-4 text-green-400"/>
+                    {notification}
+                  </div>
+              )}
+
+              <div className="max-w-full mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
+                {/* Header */}
+                <div className="bg-slate-800 text-white p-4 flex flex-wrap justify-between items-center gap-4">
+                  <div>
+                    <h1 className="text-xl font-bold flex items-center gap-2 cursor-pointer hover:text-blue-300 transition-colors" onClick={() => setShowChangelogModal(true)}>
+                        <Calculator className="w-5 h-5"/> 亚马逊FBA利润核算US
+                    </h1>
+                    <p className="text-slate-400 text-xs mt-1">含2026尺寸分段、自动价格分段费率、超大处理费、SIPP分段包装费</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1">
+                       <button onClick={handleUndo} className="flex items-center gap-1 px-3 py-1.5 bg-gray-600 hover:bg-gray-700 rounded text-xs" title="撤销上一步操作"><Undo className="w-3 h-3"/> 撤销</button>
+                       <button onClick={requestClear} className="flex items-center gap-1 px-3 py-1.5 bg-red-600 hover:bg-red-700 rounded text-xs"><Eraser className="w-3 h-3"/> 清空</button>
+                    </div>
+                    <button onClick={() => setShowPasteModal(true)} className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-xs"><ClipboardList className="w-3 h-3"/> 批量粘贴</button>
+                    <button onClick={() => fileInputRef.current.click()} className="flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 rounded text-xs"><Upload className="w-3 h-3"/> 导入CSV</button>
+                    <input type="file" accept=".csv" ref={fileInputRef} className="hidden" onChange={handleFileUpload} />
+                    <button onClick={handleExport} className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 rounded text-xs"><Download className="w-3 h-3"/> 导出</button>
+                    
+                    <div className="flex flex-col gap-1 items-end ml-4">
+                      <div className="flex gap-2 items-center">
+                        <div className="relative flex items-center">
+                             <input type="number" value={exchangeRate} onChange={(e) => setExchangeRate(parseFloat(e.target.value)||0)} className="w-12 text-xs bg-slate-700 rounded-l px-1 text-center outline-none h-6" title="汇率" />
+                             <button onClick={fetchExchangeRate} className="bg-slate-600 hover:bg-slate-500 h-6 px-1.5 rounded-r border-l border-slate-500" title="获取实时汇率">
+                                {isFetchingRate ? <Loader2 className="w-3 h-3 text-white" /> : <RefreshCw className="w-3 h-3 text-white" />}
+                             </button>
+                        </div>
+                        <button onClick={() => setUseSinglePoint(!useSinglePoint)} className={`px-2 py-0.5 text-[10px] rounded border ${useSinglePoint ? 'bg-blue-600 border-blue-600' : 'border-slate-500'}`}>{useSinglePoint ? '单点' : '优化'}</button>
+                        <button onClick={() => setSeason(season==='non_peak'?'peak':'non_peak')} className={`px-2 py-0.5 text-[10px] rounded border ${season==='peak' ? 'bg-orange-600 border-orange-600' : 'bg-green-600 border-green-600'}`}>{season==='non_peak'?'淡季':'旺季'}</button>
+                        <button onClick={() => setShowKeyInput(!showKeyInput)} className="flex items-center gap-1 px-2 py-0.5 bg-purple-600 hover:bg-purple-700 rounded border border-purple-600 text-[10px]"><Key className="w-3 h-3"/> API</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Changelog Modal */}
+                {showChangelogModal && (
+                    <div className="fixed inset-0 modal-overlay flex items-center justify-center z-50" onClick={() => setShowChangelogModal(false)}>
+                        <div className="bg-white rounded-lg shadow-xl w-[500px] p-6 relative" onClick={e => e.stopPropagation()}>
+                            <button onClick={() => setShowChangelogModal(false)} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"><XCircle className="w-5 h-5" /></button>
+                            <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><History className="w-5 h-5 text-blue-600"/> 版本更新记录</h3>
+                            <div className="h-64 overflow-y-auto custom-scrollbar pr-2">
+                                {CHANGELOG.map((log, i) => (
+                                    <div key={i} className="mb-3 border-l-2 border-blue-200 pl-3 pb-1">
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="font-bold text-sm text-slate-700">v{log.ver}</span>
+                                            <span className="text-xs text-gray-400">{log.date}</span>
+                                        </div>
+                                        <p className="text-xs text-gray-600 leading-relaxed">{log.desc}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* API Key Modal */}
+                {showKeyInput && (
+                  <div className="bg-purple-50 p-2 border-b flex gap-2 items-center justify-end px-4">
+                    <span className="text-xs text-purple-800">Gemini API Key:</span>
+                    <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} className="border rounded px-2 py-1 text-xs w-64" placeholder="粘贴您的 Google Gemini API Key" />
+                    <button onClick={handleSaveKey} className="px-3 py-1 bg-purple-600 text-white rounded text-xs">保存</button>
+                  </div>
+                )}
+
+                {/* Custom Clear Confirm Modal */}
+                {showClearModal && (
+                    <div className="fixed inset-0 modal-overlay flex items-center justify-center z-50" onClick={() => setShowClearModal(false)}>
+                        <div className="bg-white rounded-lg shadow-xl w-[300px] p-5 relative text-center" onClick={e => e.stopPropagation()}>
+                             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                                <AlertTriangle className="h-6 w-6 text-red-600" />
+                             </div>
+                             <h3 className="text-lg font-medium text-gray-900 mb-2">确定清空所有数据？</h3>
+                             <p className="text-sm text-gray-500 mb-5">所有已导入和填写的产品将被移除。<br/>(批量设置和参数将保留)</p>
+                             <div className="flex justify-center gap-3">
+                                <button onClick={() => setShowClearModal(false)} className="px-4 py-2 border rounded text-gray-700 hover:bg-gray-50 text-sm">取消</button>
+                                <button onClick={confirmClear} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-medium">确认清空</button>
+                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Paste Modal */}
+                {showPasteModal && (
+                  <div className="fixed inset-0 modal-overlay flex items-center justify-center z-50" onClick={() => setShowPasteModal(false)}>
+                    <div className="bg-white rounded-lg shadow-xl w-[600px] max-w-full p-6 relative" onClick={e => e.stopPropagation()}>
+                      <button onClick={() => setShowPasteModal(false)} className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"><XCircle className="w-6 h-6" /></button>
+                      <h2 className="text-lg font-bold mb-2 flex items-center gap-2"><ClipboardList className="w-5 h-5 text-blue-600"/> 批量粘贴导入</h2>
+                      <div className="flex items-center gap-4 mb-4 bg-blue-50 p-3 rounded text-sm">
+                        <div className="flex-1">
+                            <label className="block text-gray-700 font-medium mb-1">导入为分类:</label>
+                            <select value={pasteCategory} onChange={(e) => setPasteCategory(e.target.value)} className="w-full border rounded p-1">
+                                {Object.entries(SHIPPING_RATES_CN).map(([key, val]) => <option key={key} value={key}>{val.name}</option>)}
+                            </select>
+                        </div>
+                        <div className="flex-[2] text-xs text-gray-500">
+                            <p>请从 Excel 复制数据块粘贴到下方。</p>
+                            <p><b>推荐包含表头</b> (如: 名称, 价格, 成本, 重量...)</p>
+                        </div>
+                      </div>
+                      <textarea className="w-full h-64 border rounded p-3 font-mono text-xs mb-4 focus:ring-2 focus:ring-blue-500 outline-none" placeholder={"示例:\n产品名\t售价\t出厂价\t重量\t长\t宽\t高\n相框A\t19.9\t30\t0.5\t20\t15\t2"} value={pasteData} onChange={(e) => setPasteData(e.target.value)} />
+                      <div className="flex justify-end gap-3">
+                        <button onClick={() => setShowPasteModal(false)} className="px-4 py-2 border rounded text-gray-600 hover:bg-gray-50">取消</button>
+                        <button onClick={handlePasteParse} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium">识别并导入</button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Rate Modals */}
+                {renderRateTable()}
+
+                {/* Batch Toolbar */}
+                <div className="bg-gray-100 p-2 border-b flex items-center gap-4 text-xs overflow-x-auto custom-scrollbar">
+                  <span className="font-bold text-gray-700 whitespace-nowrap">批量设置:</span>
+                  {[{l:'佣金%',k:'referralRate'},{l:'退货%',k:'returnRate'},{l:'推广%',k:'adRate'},{l:'促销%',k:'promoRate'}].map(s=>(
+                    <div key={s.k} className="flex items-center gap-1">
+                      <span className="text-gray-500">{s.l}:</span>
+                      <input type="number" className="w-10 p-1 border rounded text-center" value={batchSettings[s.k]} onChange={(e) => setBatchSettings({...batchSettings, [s.k]: parseFloat(e.target.value)||0})} />
+                    </div>
+                  ))}
+                  <div className="flex items-center gap-1 border-l pl-3 ml-2">
+                    <span className="text-gray-700 font-bold">SIPP:</span>
+                    <div className="flex bg-white border rounded">
+                        <button onClick={() => setBatchSipp(true)} className={`px-2 py-0.5 ${batchSipp ? 'bg-green-100 text-green-700 font-bold' : 'text-gray-400'}`}>是</button>
+                        <button onClick={() => setBatchSipp(false)} className={`px-2 py-0.5 ${!batchSipp ? 'bg-red-100 text-red-700 font-bold' : 'text-gray-400'}`}>否</button>
+                    </div>
+                  </div>
+                  <button onClick={applyBatchSettings} className="px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 ml-auto flex items-center gap-1 whitespace-nowrap"><RefreshCw className="w-3 h-3" /> 应用设置</button>
+                  
+                  {/* Target Margin Reverse Calc */}
+                  <div className="flex items-center gap-1 border-l pl-3 ml-2">
+                    <div className="flex bg-gray-100 rounded p-1 items-center gap-2">
+                        <span className="text-gray-700 font-bold">毛利率:</span>
+                        <div className="flex items-center gap-1">
+                            <input 
+                                type="number" 
+                                className="w-12 p-1 border rounded text-center" 
+                                placeholder="30"
+                                value={targetMargin} 
+                                onChange={(e) => setTargetMargin(parseFloat(e.target.value)||0)} 
+                            />
+                            <span className="text-gray-500">%</span>
+                        </div>
+                        <button onClick={reverseCalculatePrice} className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 ml-1 flex items-center gap-1 text-xs whitespace-nowrap" title="根据目标毛利率反推建议售价"><Target className="w-3 h-3" /> 反推售价</button>
+                    </div>
+                  </div>
+                  
+                   {/* Profit Filter (Only Margin %) */}
+                   <div className="flex items-center gap-1 border-l pl-3 ml-2">
+                    <div className="flex bg-blue-50 rounded p-1 items-center gap-2">
+                        <span className="text-gray-700 font-bold flex items-center gap-1 whitespace-nowrap"><Filter className="w-3 h-3"/> 筛选:</span>
+                         <div className="flex items-center gap-1">
+                            <span className="text-gray-500 text-[10px] whitespace-nowrap">毛%</span>
+                            <select 
+                                className="border rounded text-xs p-0.5 bg-white"
+                                value={filterMarginOperator}
+                                onChange={(e) => setFilterMarginOperator(e.target.value)}
+                            >
+                                <option value=">">&gt;</option>
+                                <option value="<">&lt;</option>
+                            </select>
+                            <input 
+                                type="number" 
+                                className="w-12 p-1 border rounded text-center text-xs" 
+                                value={filterMarginValue} 
+                                onChange={(e) => setFilterMarginValue(e.target.value)} 
+                            />
+                        </div>
+                    </div>
+                  </div>
+                  
+                </div>
+
+                {/* Table Content */}
+                <div className="overflow-x-auto pb-4 custom-scrollbar">
+                  <table className="w-full text-sm text-left border-collapse min-w-[1800px]">
+                    <thead className="text-xs text-gray-700 uppercase bg-gray-100 border-b-2 border-gray-200">
+                      <tr>
+                        <th className="px-2 py-3 w-[140px] sticky left-0 bg-gray-100 z-10 shadow-r">产品信息</th>
+                        <th className="px-2 py-3 text-center bg-blue-50 w-[70px]">售价($)</th>
+                        <th className="px-2 py-3 text-center bg-blue-50 w-[70px]">出厂(¥)</th>
+                        <th className="px-2 py-3 text-center w-[60px]">单重(kg)</th>
+                        <th className="px-2 py-3 text-center w-[160px]">单品尺寸(cm)<br/><span className="text-[9px]">LxWxH</span></th>
+                        
+                        <th className="px-2 py-3 text-center bg-purple-50 w-[80px]">
+                            <div className="flex items-center justify-center gap-1 cursor-pointer hover:text-purple-700" onClick={() => setActiveRateModal('headcost')}>
+                                单件头程($) <HelpCircle className="w-3 h-3" />
+                            </div>
+                        </th>
+                        
+                        <th className="px-2 py-3 text-center text-orange-700 bg-orange-50 w-[90px]">
+                            <div className="flex items-center justify-center gap-1 cursor-pointer hover:text-orange-900" onClick={() => setActiveRateModal('fba')}>
+                                FBA配送 <HelpCircle className="w-3 h-3" />
+                            </div>
+                        </th>
+                        
+                        <th className="px-2 py-3 text-center text-orange-800 bg-orange-100 w-[70px]">
+                            <div className="flex items-center justify-center gap-1 cursor-pointer hover:text-orange-900" onClick={() => setActiveRateModal('placement')}>
+                                配置费 <HelpCircle className="w-3 h-3" />
+                            </div>
+                        </th>
+                        
+                        <th className="px-2 py-3 text-center text-orange-700 bg-orange-50 w-[70px]">
+                            <div className="flex items-center justify-center gap-1 cursor-pointer hover:text-orange-900" onClick={() => setActiveRateModal('storage')}>
+                                仓储费 <HelpCircle className="w-3 h-3" />
+                            </div>
+                        </th>
+
+                        <th className="px-2 py-3 text-center bg-yellow-50 w-[240px]">营销各项 (佣/退/推/促)</th>
+                        <th className="px-2 py-3 text-center font-bold bg-green-50 w-[80px]">利润($)</th>
+                        <th className="px-2 py-3 text-center font-bold bg-green-50 w-[60px]">毛利(%)</th>
+                        
+                        <th className="px-2 py-3 text-center w-[80px]">
+                            <div className="flex items-center justify-center gap-1 cursor-pointer hover:text-gray-600" onClick={() => setActiveRateModal('sipp')}>
+                                SIPP <HelpCircle className="w-3 h-3" />
+                            </div>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredRows.map((row) => {
+                        const res = calculateRow(row);
+                        return (
+                          <React.Fragment key={row.id}>
+                          <tr className="bg-white border-b hover:bg-gray-50">
+                            <td className="px-2 py-2 sticky left-0 bg-white z-10 shadow-r border-r">
+                              <input type="text" value={row.name} onChange={(e) => updateRow(row.id, 'name', e.target.value)} className="w-full bg-transparent border-b border-dashed border-gray-300 focus:border-blue-500 outline-none text-xs font-bold" />
+                              <div className="mt-1">
+                                <select value={row.category} onChange={(e) => updateRow(row.id, 'category', e.target.value)} className="w-full text-[10px] border rounded bg-gray-50">
+                                  {Object.entries(SHIPPING_RATES_CN).map(([key, val]) => <option key={key} value={key}>{val.name}</option>)}
+                                </select>
+                              </div>
+                              <div className="mt-1 flex items-center gap-1 text-[10px] text-gray-500">
+                                <span>周转:</span>
+                                <input type="number" value={row.utilization} onChange={(e) => updateRow(row.id, 'utilization', parseFloat(e.target.value) || 0)} className="w-8 border-b text-center bg-transparent focus:border-blue-500 outline-none" />
+                                <span>周</span>
+                              </div>
+                              <div className="text-[9px] text-gray-400 mt-1 flex flex-col">
+                                 <span className="text-blue-600 font-medium">费率: {res.tierLabel}</span>
+                              </div>
+                            </td>
+                            <td className="px-2 py-2 bg-blue-50/30"><input type="number" value={row.price} onChange={(e) => updateRow(row.id, 'price', e.target.value)} className="w-full text-center bg-transparent outline-none" /></td>
+                            <td className="px-2 py-2 bg-blue-50/30"><input type="number" value={row.productCostRMB} onChange={(e) => updateRow(row.id, 'productCostRMB', e.target.value)} className="w-full text-center bg-transparent outline-none" /></td>
+                            <td className="px-2 py-2"><input type="number" value={row.weight_kg} onChange={(e) => updateRow(row.id, 'weight_kg', e.target.value)} className="w-full text-center bg-transparent outline-none" /></td>
+                            <td className="px-2 py-2">
+                                <div className="flex gap-1 justify-center items-center">
+                                    <input type="number" className="w-12 text-center border-b text-xs" value={row.length_cm} onChange={(e) => updateRow(row.id, 'length_cm', e.target.value)} />
+                                    <span className="text-gray-300">x</span>
+                                    <input type="number" className="w-12 text-center border-b text-xs" value={row.width_cm} onChange={(e) => updateRow(row.id, 'width_cm', e.target.value)} />
+                                    <span className="text-gray-300">x</span>
+                                    <input type="number" className="w-12 text-center border-b text-xs" value={row.height_cm} onChange={(e) => updateRow(row.id, 'height_cm', e.target.value)} />
+                                </div>
+                                <div className="text-[9px] text-blue-600 text-center mt-1 font-medium">{res.sizeTierName}</div>
+                            </td>
+                            <td className="px-2 py-2 text-center bg-purple-50/30 text-xs">${res.shippingCostUSD}</td>
+                            <td className="px-2 py-2 text-center text-orange-700 bg-orange-50/30 relative">
+                                <div className="text-xs font-bold">${res.fbaFee}</div>
+                                <div className="text-[8px] text-gray-500 scale-90">含燃油${res.fuelSurcharge}</div>
+                                <div className="text-[8px] text-gray-500 scale-90">计:{res.feeWeight}lb</div>
+                                {res.handlingSurcharge > 0 && <div className="text-[8px] text-red-500 scale-90">+超大${res.handlingSurcharge}</div>}
+                                {res.sippFee > 0 && <div className="text-[8px] text-red-500 scale-90">+包${res.sippFee}</div>}
+                                {res.sippDiscount > 0 && <div className="text-[8px] text-green-600 scale-90">-SIPP${res.sippDiscount}</div>}
+                                <div className="absolute top-1 right-1">
+                                    <button 
+                                        onClick={() => updateRow(row.id, 'isSIPP', !row.isSIPP)}
+                                        className={`flex items-center gap-1 text-[8px] border rounded px-1 ${row.isSIPP ? 'bg-green-100 text-green-700 border-green-300' : 'bg-gray-100 text-gray-400 border-gray-200'}`}
+                                        title={row.isSIPP ? "已SIPP认证" : "未SIPP认证"}
+                                    >
+                                        <PackageCheck className="w-3 h-3" />
+                                        {row.isSIPP ? "SIPP" : "No"}
+                                    </button>
+                                </div>
+                            </td>
+                            <td className="px-2 py-2 text-center text-orange-800 bg-orange-100/50 text-xs font-medium">${res.placementFee}</td>
+                            <td className="px-2 py-2 text-center text-gray-700 bg-orange-50/30 relative text-xs">
+                                <div>${res.storageFee}</div>
+                                {res.surchargeRate > 0 && <div className="text-[8px] text-red-500 scale-90">+附加费</div>}
+                            </td>
+                            <td className="px-2 py-2 bg-yellow-50/30 text-[10px]">
+                              <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+                                <div className="flex flex-col">
+                                    <div className="flex items-center gap-0.5"><span className="text-gray-500">佣</span><input type="number" value={row.referralRate} onChange={(e)=>updateRow(row.id,'referralRate',e.target.value)} className="w-10 border-b bg-transparent text-center" /><span className="text-gray-400">%</span></div>
+                                    <div className="text-gray-600 pl-3">${res.referralFee}</div>
+                                </div>
+                                <div className="flex flex-col">
+                                    <div className="flex items-center gap-0.5"><span className="text-gray-500">退</span><input type="number" value={row.returnRate} onChange={(e)=>updateRow(row.id,'returnRate',e.target.value)} className="w-10 border-b bg-transparent text-center" /><span className="text-gray-400">%</span></div>
+                                    <div className="text-gray-600 pl-3">${res.returnLoss}</div>
+                                </div>
+                                <div className="flex flex-col">
+                                    <div className="flex items-center gap-0.5"><span className="text-gray-500">推</span><input type="number" value={row.adRate} onChange={(e)=>updateRow(row.id,'adRate',e.target.value)} className="w-10 border-b bg-transparent text-center" /><span className="text-gray-400">%</span></div>
+                                    <div className="text-gray-600 pl-3">${res.adCost}</div>
+                                </div>
+                                <div className="flex flex-col">
+                                    <div className="flex items-center gap-0.5"><span className="text-gray-500">促</span><input type="number" value={row.promoRate} onChange={(e)=>updateRow(row.id,'promoRate',e.target.value)} className="w-10 border-b bg-transparent text-center" /><span className="text-gray-400">%</span></div>
+                                    <div className="text-gray-600 pl-3">${res.promoCost}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className={`px-2 py-2 text-center font-bold bg-green-50/30 ${res.profit < 0 ? 'text-red-600' : 'text-green-600'}`}>${res.profit}</td>
+                            <td className={`px-2 py-2 text-center font-bold bg-green-50/30 ${res.profit < 0 ? 'text-red-600' : 'text-green-600'}`}>{res.margin}%</td>
+                            <td className="px-2 py-2 text-center">
+                                <div className="flex justify-center gap-2">
+                                    <button onClick={() => handleAiAnalysis(row)} disabled={aiLoading[row.id]} className="text-purple-500 hover:text-purple-700 disabled:opacity-50" title="AI诊断">{aiLoading[row.id] ? <Loader2 className="w-3 h-3"/> : <Sparkles className="w-3 h-3"/>}</button>
+                                    <button onClick={() => deleteRow(row.id)} className="text-gray-400 hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
+                                </div>
+                            </td>
+                          </tr>
+                          {aiAnalysis[row.id] && (
+                            <tr className="bg-purple-50 border-b">
+                                <td colSpan="14" className="px-4 py-3 relative">
+                                    <button onClick={() => {const n={...aiAnalysis};delete n[row.id];setAiAnalysis(n)}} className="absolute top-2 right-2 text-gray-400"><XCircle className="w-4 h-4" /></button>
+                                    <div className="flex gap-2 items-start text-xs text-gray-700">
+                                        <Sparkles className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+                                        <div className="whitespace-pre-wrap font-medium">{aiAnalysis[row.id]}</div>
+                                    </div>
+                                </td>
+                            </tr>
+                          )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="bg-gray-100 p-4 border-t flex justify-between items-center">
+                  <button onClick={addRow} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow text-sm"><Plus className="w-4 h-4" /> 添加产品</button>
+                  <div className="text-xs text-gray-500 text-right"><Info className="w-3 h-3 inline mr-1" />小号标准件按实重; 其他按 实重/体积重(139) 取大值</div>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<AmazonProfitCalculator />);
+    </script>
+</body>
+</html>
