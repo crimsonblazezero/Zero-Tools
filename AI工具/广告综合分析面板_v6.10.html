@@ -334,10 +334,25 @@ tbody tr:hover{background:#FAFAFA}
           <div style="font-size:11px;color:var(--ts);text-transform:uppercase;font-weight:600;letter-spacing:.5px;margin-bottom:3px">导出Excel</div>
           <div style="display:flex;gap:6px">
             <button onclick="exportFiltered()" title="导出当前广告组合筛选下的数据" style="background:var(--dg);color:#fff;border:none;padding:8px 14px;border-radius:4px;font-family:var(--fb);font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px"><i class="fas fa-filter"></i> 导出当前筛选</button>
-            <button onclick="exportAll()" title="导出全量数据（忽略筛选）" style="background:var(--gold);color:#064338;border:none;padding:8px 14px;border-radius:4px;font-family:var(--fb);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px"><i class="fas fa-download"></i> 导出全量</button>
+                <button onclick="exportAll()" title="导出全量数据（忽略筛选）" style="background:var(--gold);color:#064338;border:none;padding:8px 14px;border-radius:4px;font-family:var(--fb);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px"><i class="fas fa-download"></i> 导出全量</button>
+                <button onclick="toggleExportPfPanel()" id="btn-export-pf" title="勾选多个广告组合批量导出" style="background:#fff;color:var(--dg);border:1px solid var(--dg);padding:8px 14px;border-radius:4px;font-family:var(--fb);font-size:12px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px"><i class="fas fa-layer-group"></i> 批量组合导出</button>
+              </div>
+              <div id="export-pf-panel" style="display:none;margin-top:8px;padding:10px 12px;background:#f8f9f8;border:1px solid #D0D5D3;border-radius:6px;min-width:320px;max-width:500px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                  <span style="font-size:12px;font-weight:600;color:var(--dg)">选择要导出的广告组合</span>
+                  <div style="display:flex;gap:6px">
+                    <button onclick="selectAllExportPf(true)" style="font-size:11px;padding:3px 8px;border:1px solid var(--dg);border-radius:3px;background:#fff;color:var(--dg);cursor:pointer">全选</button>
+                    <button onclick="selectAllExportPf(false)" style="font-size:11px;padding:3px 8px;border:1px solid #ccc;border-radius:3px;background:#fff;color:#666;cursor:pointer">清空</button>
+                  </div>
+                </div>
+                <div id="export-pf-checkboxes" style="max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:4px"></div>
+                <div style="margin-top:8px;display:flex;gap:6px">
+                  <button onclick="exportSelectedPf()" style="background:var(--dg);color:#fff;border:none;padding:7px 16px;border-radius:4px;font-family:var(--fb);font-size:12px;font-weight:600;cursor:pointer;flex:1"><i class="fas fa-file-excel"></i> 导出已选组合</button>
+                  <button onclick="toggleExportPfPanel()" style="background:#fff;color:#666;border:1px solid #ccc;padding:7px 12px;border-radius:4px;font-family:var(--fb);font-size:12px;cursor:pointer">关闭</button>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
       <div style="text-align:right">
         <div style="font-size:11px;color:var(--ts);text-transform:uppercase;font-weight:600;letter-spacing:.5px;margin-bottom:3px">数据周期</div>
         <div id="data-period" style="font-family:var(--fh);font-size:15px;font-weight:700;color:var(--gold)">读取中...</div>
@@ -789,7 +804,7 @@ let mapData={
 };
 
 function parseMapping(){
-  mapData={ready:false,childToParent:{},childToPortfolio:{},childToSku:{},parentSet:new Set()};
+  mapData={ready:false,childToParent:{},childToPortfolio:{},childToSku:{},childToVariant:{},parentSet:new Set()};
   if(!data.map||!data.map.length) return;
   data.map.forEach(r=>{
     const childAsin=getStr(r,['子asin','childasin','child asin','asin']).trim().toUpperCase();
@@ -797,9 +812,11 @@ function parseMapping(){
     const parentAsin=(getStr(r,['父asin','parentasin','parent asin'])||childAsin).trim().toUpperCase();
     const portfolio=getStr(r,['广告组合','portfolio','广告组合名称']);
     const sku=getStr(r,['sku','msku']);
+    const variantRaw=getStr(r,['变体属性','variant','variant attributes','变体']);
     mapData.childToParent[childAsin]=parentAsin;
     if(portfolio) mapData.childToPortfolio[childAsin]=portfolio;
     if(sku) mapData.childToSku[childAsin]=sku;
+    if(variantRaw) mapData.childToVariant[childAsin]=variantRaw;
     mapData.parentSet.add(parentAsin);
   });
   mapData.ready=Object.keys(mapData.childToParent).length>0;
@@ -1028,6 +1045,55 @@ function classifyAsin(margin, salesContrib, weeklyOrders, profit, adSpend){
   return {type:'cold', label:'❄️ 冷门款', badge:'b-gray', action:'维持低预算观察，暂不扩量'};
 }
 
+    /* ── 构建全量搜索词（不受顶部筛选，供全量/批量导出使用） ── */
+    function buildAllSearchTerms(){
+      if(!data.srch||!data.srch.length){ window._allSearchTerms=[]; return; }
+      const isPaused_=r=>{
+        const st=getStr(r,['状态','state','status','有效状态']).toLowerCase();
+        return st.includes('paused')||st.includes('已暂停');
+      };
+      const allCampPaused={};
+      if(data.camp&&data.camp.length){
+        data.camp.forEach(r=>{
+          const c=getStr(r,['广告活动','campaign','campaignname']);
+          if(!c) return;
+          if(!allCampPaused[c]) allCampPaused[c]=isPaused_(r);
+        });
+      }
+      const stMap={};
+      data.srch.forEach(r=>{
+        const st=getStr(r,['搜索词','searchterm','买家搜索词']);
+        const c=getStr(r,['广告活动','campaign']);
+        const portfolio=getStr(r,['广告组合','portfolio'])||'默认';
+        if(!st) return;
+        if(!stMap[st]) stMap[st]={term:st,campData:{},portfolios:new Set(),imp:0,click:0,spend:0,sales:0,orders:0};
+        const _campPaused=allCampPaused[c]||false;
+        if(!stMap[st].campData[c]) stMap[st].campData[c]={imp:0,click:0,spend:0,sales:0,orders:0,portfolio,kwDetails:[],paused:_campPaused};
+        const cd=stMap[st].campData[c];
+        const iv=num(getVal(r,['曝光','impression']));
+        const cv=num(getVal(r,['点击','click']));
+        const sv=num(getVal(r,['花费','spend']));
+        const lv=num(getVal(r,['销售额','sale','sales']));
+        const ov=num(getVal(r,['订单','order','units','购买']));
+        cd.imp+=iv;cd.click+=cv;cd.spend+=sv;cd.sales+=lv;cd.orders+=ov;
+        stMap[st].imp+=iv;stMap[st].click+=cv;stMap[st].spend+=sv;stMap[st].sales+=lv;stMap[st].orders+=ov;
+        stMap[st].portfolios.add(portfolio);
+      });
+      const result=[];
+      Object.values(stMap).forEach(o=>{
+        const campList=Object.keys(o.campData);
+        o.camps=campList.join(', ');
+        o.campCount=campList.length;
+        o.campDataArr=campList.map(c=>({camp:c,...o.campData[c]}));
+        o.allPaused=o.campDataArr.length>0&&o.campDataArr.every(cd=>cd.paused===true);
+        o.portfolioList=Array.from(o.portfolios);
+        o.matchType=getMatchType(o.term);
+        result.push(calcMetrics(o));
+      });
+      window._allSearchTerms=result;
+    }
+
+    
 /* ── Process Data ── */
 function processData(){
   const pVal=$('filter-portfolio').value,cVal=$('filter-campaign').value;
@@ -1120,7 +1186,8 @@ function processData(){
       const pt=getStr(r,['广告位','placement','位置','placementtype'])||'未知';
       const c =getStr(r,['广告活动','campaign']);
       const key=pt+'|'+c;
-      if(!placeMap[key]) placeMap[key]={placement:pt,camp:c,imp:0,click:0,spend:0,sales:0,orders:0};
+      const pf_=getStr(r,['广告组合','portfolio'])||'';
+      if(!placeMap[key]) placeMap[key]={placement:pt,camp:c,portfolio:pf_,imp:0,click:0,spend:0,sales:0,orders:0};
       placeMap[key].imp    +=num(getVal(r,['曝光','impression']));
       placeMap[key].click  +=num(getVal(r,['点击','click']));
       placeMap[key].spend  +=num(getVal(r,['花费','spend']));
@@ -1287,6 +1354,8 @@ function processData(){
   Object.entries(pfMap).forEach(([pf,v])=>{
     portfolioCPA[pf]=v.orders>0?v.spend/v.orders:accountCPA;
   });
+  // 构建全量搜索词（不受顶部筛选影响，供全量/批量导出使用）
+  buildAllSearchTerms();
 }
 
 function calcMetrics(obj){
@@ -1381,23 +1450,33 @@ function renderOverview(){
     const natCls=naturalPct>0.4?'green':naturalPct>0.2?'orange':'red';
 
     const parents=Object.values(lxData.byParent).sort((a,b)=>b.totalAdSpend-a.totalAdSpend);
-    const paRows=parents.map(pa=>{
-      const t=pa.tacos;
-      const tColor=t===null?'#999':t>0.2?'#C4433A':t>0.12?'#E8752A':'#064338';
-      const tBadge=t===null?'<span class="badge b-gray">无数据</span>':t>0.2?'<span class="badge b-red">⚠️ 警戒</span>':t>0.12?'<span class="badge b-orange">📊 偏高</span>':'<span class="badge b-green">✅ 健康</span>';
-      const natPct=pa.totalOrders>0?pa.totalNatOrders/pa.totalOrders:0;
-      const bw=t===null?0:Math.min(100,t*300);
-      const mColor=pa.margin>=g_targetMargin?'var(--dg)':pa.margin>0?'var(--orange)':'var(--red)';
-      return `<tr>
-        <td style="font-weight:600;font-size:12px">${pa.parentAsin}</td>
-        <td style="font-size:11px;color:var(--ts);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${pa.name}">${pa.name.substring(0,35)}</td>
-        <td style="color:var(--red)">${fmtM(pa.totalAdSpend)}</td>
-        <td style="color:var(--dg)">${fmtM(pa.totalSales)}</td>
-        <td style="font-weight:700;color:${tColor}">${t===null?'-':fmtP(t)}<div class="tacos-bar"><div class="tacos-bar-fill" style="width:${bw}%;background:${tColor}"></div></div></td>
-        <td style="font-weight:700;color:${mColor}">${fmtP(pa.margin)}</td>
-        <td style="color:${natPct>0.4?'var(--dg)':natPct>0.2?'var(--orange)':'var(--red)'}">${pa.totalOrders>0?fmtP(natPct):'-'}</td>
-        <td>${tBadge}</td>
-      </tr>`;
+    const paRows=parents.map(function(pa,pi){
+      var t=pa.tacos;
+      var tColor=t===null?'#999':t>0.2?'#C4433A':t>0.12?'#E8752A':'#064338';
+      var tBadge=t===null?'<span class="badge b-gray">无数据</span>':t>0.2?'<span class="badge b-red">⚠️ 警戛</span>':t>0.12?'<span class="badge b-orange">📊 偏高</span>':'<span class="badge b-green">✅ 健康</span>';
+      var natPct=pa.totalOrders>0?pa.totalNatOrders/pa.totalOrders:0;
+      var bw=t===null?0:Math.min(100,t*300);
+      var mColor=pa.margin>=g_targetMargin?'var(--dg)':pa.margin>0?'var(--orange)':'var(--red)';
+      var rowId='pa-expand-'+pi;
+      var hasVariant=mapData.ready&&Object.keys(mapData.childToVariant||{}).length>0;
+          var hasChildren=pa.children&&pa.children.length>0;
+          var expandIcon=hasChildren?'<i class="fas fa-chevron-right" id="pa-icon-'+pi+'" style="color:var(--gold);font-size:9px;margin-left:6px;opacity:.8;transition:transform .2s"></i>':'';
+          var onclickStr=hasChildren?(' onclick="event.stopPropagation();window.toggleParentPie(this,\''+pa.parentAsin+'\','+pi+')"'):'';
+              return '<tr class="pa-data-row" data-pa="'+pa.parentAsin+'" data-pi="'+pi+'"'+onclickStr+' style="cursor:'+(hasChildren?'pointer':'default')+';transition:background .15s">'
+        +'<td style="font-weight:600;font-size:12px">'+pa.parentAsin+expandIcon+'</td>'
+        +'<td style="font-size:11px;color:var(--ts);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+pa.name+'">'+pa.name.substring(0,35)+'</td>'
+        +'<td style="color:var(--red)">'+fmtM(pa.totalAdSpend)+'</td>'
+        +'<td style="color:var(--dg)">'+fmtM(pa.totalSales)+'</td>'
+        +'<td style="font-weight:700;color:'+tColor+'">'+(t===null?'-':fmtP(t))+'<div class="tacos-bar"><div class="tacos-bar-fill" style="width:'+bw+'%;background:'+tColor+'"></div></div></td>'
+        +'<td style="font-weight:700;color:'+mColor+'">'+fmtP(pa.margin)+'</td>'
+        +'<td style="color:'+(natPct>0.4?'var(--dg)':natPct>0.2?'var(--orange)':'var(--red)')+'">'
+          +(pa.totalOrders>0?fmtP(natPct):'-')+'</td>'
+        +'<td>'+tBadge+'</td>'
+        +'</tr>'
+        +'<tr id="'+rowId+'" class="pa-expand-row" style="display:none">'
+          +'<td colspan="8" style="padding:0;background:rgba(6,67,56,.02)">'
+            +'<div id="'+rowId+'-content" style="padding:12px 20px"></div>'
+          +'</td></tr>';
     }).join('');
 
     tacosBlock=`<div style="margin-bottom:24px">
@@ -1426,7 +1505,7 @@ function renderOverview(){
         <div class="tacos-table-title"><i class="fas fa-box"></i> 父 ASIN 表现</div>
         <div class="tw" style="border:none;border-radius:0;box-shadow:none">
           <table><thead><tr><th>父ASIN</th><th>标题</th><th>广告花费</th><th>总销售额</th><th>TACoS</th><th>毛利率</th><th>自然订单占比</th><th>状态</th></tr></thead>
-          <tbody>${paRows}</tbody></table>
+          <tbody id="tacos-pa-table">${paRows}</tbody></table>
         </div>
       </div>`:''}\n    </div>`;
   }
@@ -1448,6 +1527,7 @@ function renderOverview(){
     </div>
     <div class="card no-bar" style="padding:0"><table><thead><tr><th>分类</th><th>词数</th><th>词数%</th><th>点击</th><th>点击%</th><th>花费</th><th>花费%</th><th>销售额</th><th>销售额%</th><th>CPC</th><th>ACoS</th></tr></thead><tbody id="analysis-tbody"></tbody></table></div>`;
   $('btn-update-analysis').addEventListener('click',updateSpendAnalysis);
+  // pa-data-row clicks handled by global delegation
       setTimeout(updateSpendAnalysis,100);
       // 渲染广告活动层面分析表
       renderCampTable();
@@ -1680,15 +1760,246 @@ function updateSpendAnalysis(){
 /* ══════════════════════════════════════════
    产品线分析
 ══════════════════════════════════════════ */
-function renderProduct(){
+/* ════════════════════════════════════════════
+           父ASIN子体销量占比（总览Tab展开）
+        ════════════════════════════════════════════ */
+        window.toggleParentPie=function(tr,parentAsin,pi){
+              var rowId='pa-expand-'+pi;
+              var expandRow=document.getElementById(rowId);
+              if(!expandRow){ console.warn('[PA] not found:',rowId); return; }
+              var isOpen=expandRow.style.display==='';
+              document.querySelectorAll('[id^="pa-expand-"]').forEach(function(r){
+                if(r.id!==rowId) r.style.display='none';
+              });
+              document.querySelectorAll('[id^="pa-icon-"]').forEach(function(ic){ ic.style.transform=''; });
+              document.querySelectorAll('#tacos-pa-table tr.pa-data-row').forEach(function(r){ r.style.background=''; });
+              if(isOpen){
+                expandRow.style.display='none';
+                tr.style.background='';
+                return;
+              }
+              tr.style.background='rgba(6,67,56,.04)';
+              expandRow.style.display='';
+              var icon=document.getElementById('pa-icon-'+pi);
+              if(icon) icon.style.transform='rotate(90deg)';
+              var container=document.getElementById(rowId+'-content');
+              if(container){ container.style.display=''; window.renderParentVariantPie(parentAsin,container); }
+            };
+        window.renderParentChildTable=function(parentAsin,container){
+              if(!container) return;
+              container.style.display='';
+              container.style.padding='12px 20px';
+              var pa=lxData.byParent&&lxData.byParent[parentAsin];
+              if(!pa||!pa.children||!pa.children.length){
+                container.innerHTML='<div style="font-size:12px;color:#888;padding:8px 0">该父ASIN下无子ASIN数据（领星数据未加载或无匹配）</div>';
+                return;
+              }
+              var fmtM2=function(v){ return v>=1000?'$'+(v/1000).toFixed(1)+'k':'$'+v.toFixed(2); };
+              var fmtP2=function(v){ return (v*100).toFixed(1)+'%'; };
+              var children=[...pa.children].sort(function(a,b){
+                var la=lxData.byChild[a],lb=lxData.byChild[b];
+                return ((lb&&lb.sales)||0)-((la&&la.sales)||0);
+              });
+              var rows='';
+              children.forEach(function(asin){
+                var c=lxData.byChild[asin];
+                if(!c) return;
+                var variant=(mapData.childToVariant&&mapData.childToVariant[asin])||'';
+                var sku=(mapData.childToSku&&mapData.childToSku[asin])||c.sku||'';
+                var acos=c.adSales>0?c.adSpend/c.adSales:null;
+                var tacos=c.sales>0?c.adSpend/c.sales:null;
+                var acosColor=acos===null?'#999':acos>0.5?'#C4433A':acos>0.3?'#E8752A':'#064338';
+                var tacosColor=tacos===null?'#999':tacos>0.2?'#C4433A':tacos>0.12?'#E8752A':'#064338';
+                rows+='<tr style="border-bottom:1px solid #f0f0f0">'
+                  +'<td style="padding:5px 8px;font-weight:600;font-size:11px;color:#064338">'+asin+'</td>'
+                  +'<td style="padding:5px 8px;font-size:11px;color:#888;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+sku+'</td>'
+                  +'<td style="padding:5px 8px;font-size:11px;color:#888;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+variant+'</td>'
+                  +'<td style="padding:5px 8px;text-align:right;font-size:11px;color:#064338">'+fmtM2(c.sales)+'</td>'
+                  +'<td style="padding:5px 8px;text-align:right;font-size:11px">'+c.orders+'</td>'
+                  +'<td style="padding:5px 8px;text-align:right;font-size:11px;color:#C4433A">'+fmtM2(c.adSpend)+'</td>'
+                  +'<td style="padding:5px 8px;text-align:right;font-size:11px;color:'+acosColor+'">'+(acos===null?'-':fmtP2(acos))+'</td>'
+                  +'<td style="padding:5px 8px;text-align:right;font-size:11px;color:'+tacosColor+'">'+(tacos===null?'-':fmtP2(tacos))+'</td>'
+                  +'</tr>';
+              });
+              container.innerHTML='<div style="background:linear-gradient(135deg,rgba(6,67,56,.03),rgba(243,197,70,.03));border:1px solid rgba(6,67,56,.12);border-radius:8px;padding:12px 16px">'
+                +'<div style="font-weight:700;color:#064338;font-size:12px;margin-bottom:8px"><i class="fas fa-list" style="margin-right:6px;color:#F3C546"></i>子ASIN明细 <span style="font-weight:400;color:#888;font-size:11px">('+children.length+'个)</span></div>'
+                +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">'
+                  +'<thead><tr style="background:rgba(6,67,56,.05)">'
+                    +'<th style="padding:5px 8px;text-align:left;font-size:11px;font-weight:600">ASIN</th>'
+                    +'<th style="padding:5px 8px;text-align:left;font-size:11px;font-weight:600">SKU</th>'
+                    +'<th style="padding:5px 8px;text-align:left;font-size:11px;font-weight:600">变体属性</th>'
+                    +'<th style="padding:5px 8px;text-align:right;font-size:11px;font-weight:600">销售额</th>'
+                    +'<th style="padding:5px 8px;text-align:right;font-size:11px;font-weight:600">订单</th>'
+                    +'<th style="padding:5px 8px;text-align:right;font-size:11px;font-weight:600">广告花费</th>'
+                    +'<th style="padding:5px 8px;text-align:right;font-size:11px;font-weight:600">ACoS</th>'
+                    +'<th style="padding:5px 8px;text-align:right;font-size:11px;font-weight:600">TACoS</th>'
+                  +'</tr></thead>'
+                  +'<tbody>'+rows+'</tbody>'
+                +'</table></div>'
+              +'</div>';
+            };
+
+            window._onPieCbChange=function(cb){
+          var pa=cb.dataset.pa;
+          if(!pa) return;
+          var expandContent=null;
+          var allContents=document.querySelectorAll('[id$="-content"]');
+          for(var i=0;i<allContents.length;i++){
+            if(allContents[i].contains(cb)){ expandContent=allContents[i]; break; }
+          }
+          if(expandContent) window.renderParentVariantPie(pa,expandContent);
+        };
+            window.renderParentVariantPie=function(parentAsin,container){
+          if(!container) return;
+          container.style.display='';
+          // 数据源：byParent 全量子体（不依赖 childToVariant 是否完整）
+          var paData=lxData.byParent&&lxData.byParent[parentAsin];
+          var allChildren=(paData&&paData.children)||[];
+          // fallback：从 mapData.childToParent 收集
+          if(!allChildren.length){
+            allChildren=Object.keys(mapData.childToParent||{}).filter(function(a){
+              return mapData.childToParent[a]===parentAsin;
+            });
+          }
+          if(!allChildren.length){
+            container.innerHTML='<div style="font-size:12px;color:var(--ts);padding:8px 0">该父ASIN下无子体数据</div>';
+            return;
+          }
+          var hasVariantData=mapData.ready&&Object.keys(mapData.childToVariant||{}).length>0;
+          function parseVariantAttrs(raw){
+            var attrs={};
+            if(!raw) return attrs;
+            raw.split(';').forEach(function(p){
+              var m=p.trim().match(/^\[([^:]+):(.+)\]$/);
+              if(m) attrs[m[1].trim().toLowerCase()]=m[2].trim();
+            });
+            return attrs;
+          }
+          // 构建子体列表（全量，变体属性可选）
+          var children=allChildren.map(function(asin){
+            var raw=hasVariantData?(mapData.childToVariant[asin]||''):'';
+            var attrs=parseVariantAttrs(raw);
+            var lx=lxData.byChild&&lxData.byChild[asin];
+            var name=(lx&&lx.name)||asin;
+            return {asin:asin,attrs:attrs,name:name,orders:(lx&&lx.orders)||0,sales:(lx&&lx.sales)||0};
+          });
+          // 收集所有维度
+          var allThemes=[],themeSet=new Set();
+          children.forEach(function(c){
+            Object.keys(c.attrs).forEach(function(k){
+              if(!themeSet.has(k)){ themeSet.add(k); allThemes.push(k); }
+            });
+          });
+          var cbPrefix='vp-cb-'+parentAsin.replace(/[^A-Z0-9]/g,'_')+'-';
+          var selectedThemes=[];
+          allThemes.forEach(function(t){
+            var cb=document.getElementById(cbPrefix+t);
+            if(!cb||cb.checked) selectedThemes.push(t);
+          });
+          if(!selectedThemes.length) selectedThemes=allThemes.slice();
+          // 按维度聚合：没有变体属性的子体用名称显示
+          var themeMap={};
+          children.forEach(function(c){
+            var label;
+            if(selectedThemes.length>0){
+              var parts2=selectedThemes.map(function(t){ return c.attrs[t]||null; });
+              if(parts2.every(function(v){ return !v; })){
+                label=c.name.length>32?c.name.substring(0,32)+'…':c.name;
+              } else {
+                label=parts2.map(function(v){ return v||'—'; }).join(' / ');
+              }
+            } else {
+              label=c.name.length>32?c.name.substring(0,32)+'…':c.name;
+            }
+            if(!themeMap[label]) themeMap[label]={label:label,orders:0,sales:0};
+            themeMap[label].orders+=c.orders;
+            themeMap[label].sales+=c.sales;
+          });
+          var slices=Object.values(themeMap).sort(function(a,b){ return b.orders-a.orders; });
+          // 使用 byParent 权威总量，保证与父ASIN行一致
+          var totalOrders=(paData&&paData.totalOrders)||slices.reduce(function(s,x){ return s+x.orders; },0);
+          var totalSales=(paData&&paData.totalSales)||slices.reduce(function(s,x){ return s+x.sales; },0);
+          if(!totalOrders){
+            container.innerHTML='<div style="font-size:12px;color:var(--ts);padding:8px 0">领星数据中该父ASIN无销量数据</div>';
+            return;
+          }
+          var COLORS=['#064338','#F3C546','#2563eb','#dc2626','#7c3aed','#0891b2','#d97706','#16a34a','#db2777','#9333ea','#0284c7','#ca8a04'];
+          function buildPie(data,total,size){
+            if(data.length===1){
+              var r2=size/2-4;
+              return '<svg width="'+size+'" height="'+size+'"><circle cx="'+(size/2)+'" cy="'+(size/2)+'" r="'+r2+'" fill="'+COLORS[0]+'" opacity="0.92"/></svg>';
+            }
+            var ang=0,cx=size/2,cy=size/2,r=size/2-4,paths='';
+            data.forEach(function(s,i){
+              var a=s.orders/total*2*Math.PI,ea=ang+a;
+              var x1=cx+r*Math.sin(ang),y1=cy-r*Math.cos(ang);
+              var x2=cx+r*Math.sin(ea),y2=cy-r*Math.cos(ea);
+              paths+='<path d="M'+cx+','+cy+' L'+x1.toFixed(1)+','+y1.toFixed(1)+' A'+r+','+r+' 0 '+(a>Math.PI?1:0)+',1 '+x2.toFixed(1)+','+y2.toFixed(1)+' Z" fill="'+COLORS[i%COLORS.length]+'" stroke="#fff" stroke-width="1.5" opacity="0.92"/>';
+              ang=ea;
+            });
+            return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'">'+paths+'</svg>';
+          }
+          // checkbox（只在有维度时显示）
+          var cbHtml='';
+          if(allThemes.length>0){
+            cbHtml='<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px">'
+              +'<span style="font-size:11px;color:var(--ts);font-weight:600">变体维度：</span>';
+            allThemes.forEach(function(t){
+              var checked=selectedThemes.indexOf(t)>=0;
+              cbHtml+='<label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:var(--dg);background:rgba(6,67,56,.06);padding:3px 10px;border-radius:12px;border:1px solid rgba(6,67,56,.15)">'
+                +'<input type="checkbox" id="'+cbPrefix+t+'" '+(checked?'checked':'')+' data-pa="'+parentAsin+'" onchange="window._onPieCbChange(this)" style="accent-color:var(--dg);cursor:pointer">'
+                +'<span style="text-transform:capitalize;margin-left:2px">'+t+'</span>'
+                +'</label>';
+            });
+            cbHtml+='</div>';
+          }
+          var legendRows=slices.map(function(s,i){
+            var pct=(s.orders/totalOrders*100).toFixed(1);
+            var salesPct=totalSales>0?(s.sales/totalSales*100).toFixed(1):'—';
+            return '<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid rgba(6,67,56,.06)">'
+              +'<div style="width:10px;height:10px;border-radius:2px;background:'+COLORS[i%COLORS.length]+';flex-shrink:0"></div>'
+              +'<span style="font-size:12px;color:var(--dg);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px" title="'+s.label+'">'+s.label+'</span>'
+              +'<span style="font-size:11px;color:var(--ts);margin-left:auto;white-space:nowrap">'+s.orders.toLocaleString()+' 单'
+              +' <strong style="color:var(--dg)">'+pct+'%</strong>'
+              +' | 销售额 '+salesPct+'%'
+              +'</span>'
+              +'</div>';
+          }).join('');
+          var pieSvg=buildPie(slices,totalOrders,150);
+          container.innerHTML=''
+            +'<div style="background:linear-gradient(135deg,rgba(6,67,56,.03),rgba(243,197,70,.03));border:1px solid rgba(6,67,56,.12);border-radius:8px;padding:14px 18px">'
+              +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
+                +'<i class="fas fa-chart-pie" style="color:var(--dg);font-size:13px"></i>'
+                +'<span style="font-weight:700;color:var(--dg);font-size:13px">子体销量占比</span>'
+                +'<span style="font-size:11px;color:var(--ts)">数据来源：领星产品表现 · 全量数据</span>'
+              +'</div>'
+              +cbHtml
+              +'<div style="display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap">'
+                +'<div style="flex-shrink:0">'+pieSvg+'</div>'
+                +'<div style="flex:1;min-width:180px">'
+                  +'<div style="font-size:11px;color:var(--ts);margin-bottom:8px">总销量：<strong style="color:var(--dg)">'+totalOrders.toLocaleString()+' 单</strong>'
+                  +' · 总销售额：<strong style="color:var(--dg)">$'+totalSales.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</strong></div>'
+                  +'<div style="max-height:220px;overflow-y:auto">'+legendRows+'</div>'
+                +'</div>'
+              +'</div>'
+            +'</div>';
+        };
+    function renderProduct(){
   if(!lxData.ready){
     $('panel-product').innerHTML=`<div class="alert alert-gold"><i class="fas fa-info-circle"></i><div><strong>需要上传领星产品表现报告</strong><br>上传后解锁产品线分析：父ASIN全景、子ASIN款型分类、广告效率与利润交叉分析。</div></div>`;
     return;
   }
 
-  // 从推广商品报告按子ASIN跨活动合并广告数据
+  // 从推广商品报告按子ASIN跨活动合并广告数据（尊重当前筛选）
+  const _pValProd=$('filter-portfolio').value;
+  const _cValProd=$('filter-campaign').value;
+  const _filteredProd=data.prod.filter(r=>{
+    if(_pValProd!=='all'&&getStr(r,['广告组合','portfolio'])!==_pValProd) return false;
+    if(_cValProd!=='all'&&getStr(r,['广告活动','campaign'])!==_cValProd) return false;
+    return true;
+  });
   const adByChild={};
-  data.prod.forEach(r=>{
+  _filteredProd.forEach(r=>{
     const asin=getStr(r,['asin']).toUpperCase();
     if(!asin) return;
     if(!adByChild[asin]) adByChild[asin]={imp:0,click:0,spend:0,sales:0,orders:0,camps:new Set(),portfolios:new Set()};
@@ -1705,7 +2016,12 @@ function renderProduct(){
     if(mapData.ready&&mapData.childToPortfolio[asin]) adByChild[asin].portfolios.add(mapData.childToPortfolio[asin]);
   });
 
-  const parents=Object.values(lxData.byParent).sort((a,b)=>b.totalSales-a.totalSales);
+  const _adChildSet=new Set(Object.keys(adByChild));
+  const _isFiltered=_pValProd!=='all'||_cValProd!=='all';
+  const parents=Object.values(lxData.byParent).filter(pa=>{
+    if(!_isFiltered) return true;
+    return pa.children.some(c=>_adChildSet.has(c));
+  }).sort((a,b)=>b.totalSales-a.totalSales);
   const counts={star:0,traffic:0,profit:0,zombie:0,cold:0};
 
   // 当前排序状态
@@ -2479,7 +2795,7 @@ window.toggleHidePaused=function(btn){
                 </button>
                 <span class="result-count" id="st-count">共 ${rows.length} 条</span>
               </div>
-              <div class="toolbar-right"><button class="btn-export" onclick="exportCsv('search')"><i class="fas fa-download"></i> 导出CSV</button></div>
+              <div class="toolbar-right" style="display:flex;gap:6px"><button class="btn-export" onclick="exportCsv('search')" title="导出当前筛选结果（含诊断列）"><i class="fas fa-download"></i> 导出筛选</button><button class="btn-export" onclick="exportCsv('search_all')" style="background:rgba(6,67,56,.7)" title="导出全量搜索词（忽略搜索框/匹配类型筛选）"><i class="fas fa-download"></i> 导出全量</button></div>
             </div>
             ${crossCount>0?`<div id="cross-insight-bar" style="display:none;background:linear-gradient(135deg,rgba(139,92,246,.06),rgba(139,92,246,.02));border:1px solid rgba(139,92,246,.2);border-radius:6px;padding:10px 14px;margin-bottom:10px;font-size:12px">
               <div style="font-weight:700;color:#7c3aed;margin-bottom:5px"><i class="fas fa-random" style="margin-right:6px"></i>跨活动统合洞察</div>
@@ -2529,6 +2845,7 @@ window.toggleHidePaused=function(btn){
           if(window._crossFilterActive) rows=rows.filter(r=>r.campCount>1);
           rows.sort((a,b)=>b[sortKey]-a[sortKey]);
           $('st-count').textContent=`共 ${rows.length} 条${window._crossFilterActive?' (跨活动词)':''}`;
+          window._stExportRows=rows;
           $('st-tbody').innerHTML=rows.slice(0,300).map(r=>{
             const termId='st-det-'+encodeURIComponent(r.term).replace(/%/g,'_');
             const rCpa=r.orders>0?r.spend/r.orders:0;
@@ -2718,9 +3035,42 @@ function renderCross(){
 function renderNegatives(){
   const negThreshold=Math.max(accountCPA*1.5,3);
   // 过滤：全部活动已暂停的词无需否定（活动已停，否定无意义）
-      const negs=searchTerms.filter(r=>r.spend>negThreshold&&r.orders===0&&!r.allPaused).sort((a,b)=>b.spend-a.spend);
+      // 按「词×广告组合」维度展开否词（尊重当前筛选的广告组合/广告活动）
+      const _pValN=$('filter-portfolio').value;
+      const _cValN=$('filter-campaign').value;
+      const negs=[];
+      searchTerms.forEach(t=>{
+        if(t.allPaused) return;
+        const pfGrp={};
+        // 先按当前筛选过滤 campDataArr
+        const filteredCamps=t.campDataArr.filter(cd=>{
+          if(_pValN!=='all'&&(cd.portfolio||'默认')!==_pValN) return false;
+          if(_cValN!=='all'&&cd.camp!==_cValN) return false;
+          return true;
+        });
+        filteredCamps.forEach(cd=>{
+          const pf=cd.portfolio||'默认';
+          if(!pfGrp[pf]) pfGrp[pf]={pf,camps:[],imp:0,click:0,spend:0,sales:0,orders:0,allPaused:true};
+          pfGrp[pf].camps.push(cd.camp);
+          pfGrp[pf].imp+=cd.imp; pfGrp[pf].click+=cd.click;
+          pfGrp[pf].spend+=cd.spend; pfGrp[pf].sales+=cd.sales; pfGrp[pf].orders+=cd.orders;
+          if(!cd.paused) pfGrp[pf].allPaused=false;
+        });
+        Object.values(pfGrp).forEach(pg=>{
+          if(pg.allPaused) return;
+          if(pg.spend>negThreshold && pg.orders===0){
+            negs.push({
+              term:t.term, pf:pg.pf,
+              camps:pg.camps.join(', '), campCount:pg.camps.length,
+              imp:pg.imp, click:pg.click, spend:pg.spend,
+              ctr:pg.imp>0?pg.click/pg.imp:0
+            });
+          }
+        });
+      });
+      negs.sort((a,b)=>b.spend-a.spend);
       const pausedNegsCount=searchTerms.filter(r=>r.spend>negThreshold&&r.orders===0&&r.allPaused).length;
-  const totalWaste=negs.reduce((s,x)=>s+x.spend,0);
+      const totalWaste=negs.reduce((s,x)=>s+x.spend,0);
   $('panel-negatives').innerHTML=`
         <div class="alert alert-red"><i class="fas fa-exclamation-triangle"></i>
           <div><strong>发现 ${negs.length} 个超CPA花费 0 转化词</strong>${pausedNegsCount>0?`<span style="margin-left:10px;font-size:11px;color:#888;font-weight:400">（已排除 ${pausedNegsCount} 个来自已暂停活动的词，无需处理）</span>`:''}\n          <br>
@@ -2732,42 +3082,71 @@ function renderNegatives(){
       <div class="toolbar-right"><button class="btn-export" onclick="exportCsv('negatives')"><i class="fas fa-download"></i> 导出CSV</button></div>
     </div>
     <div class="tw scroll-tw"><table>
-      <thead><tr><th>建议否定词</th><th>所在活动</th><th>活动数</th><th>曝光</th><th>点击</th><th>有效点击判断</th><th>浪费花费</th><th>vs CPA基准</th><th>操作建议</th></tr></thead>
+      <thead><tr><th>建议否定词</th><th>广告组合</th><th>所在活动</th><th>活动数</th><th>曝光</th><th>点击</th><th>有效点击判断</th><th>浪费花费</th><th>vs CPA基准</th><th>操作建议</th></tr></thead>
           <tbody>${negs.map(r=>{
             const clickJudge=r.click>=10?'<span class="badge b-red">✓ 有效点击</span>':r.click>=5?'<span class="badge b-orange">⚠️ 点击偏少</span>':'<span class="badge b-gray">点击不足</span>';
             return `<tr>
-              <td style="font-weight:600">${r.term}</td>
-              <td style="font-size:11px;color:var(--ts);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.camps}">${r.camps}</td>
-              <td style="text-align:center">${r.campCount>1?`<span class="badge b-purple">${r.campCount}个</span>`:r.campCount}</td>
-              <td>${fmtN(r.imp)}</td>
-              <td style="font-weight:600">${fmtN(r.click)}</td>
-              <td>${clickJudge}</td>
-              <td style="color:var(--red);font-weight:600">${fmtM(r.spend)}</td>
-              <td style="font-size:12px;color:var(--red)">${((r.spend/negThreshold)*100).toFixed(0)}%</td>
-              <td><span class="badge b-red">精确否定${r.campCount>1?' (全部活动)':''}</span></td>
-            </tr>`;
-          }).join('')}</tbody>
+                  <td style="font-weight:600">${r.term}</td>
+                  <td style="font-size:11px;color:var(--ts);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.pf}">${r.pf}</td>
+                  <td style="font-size:11px;color:var(--ts);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.camps}">${r.camps}</td>
+                  <td style="text-align:center">${r.campCount>1?`<span class="badge b-purple">${r.campCount}个</span>`:r.campCount}</td>
+                  <td>${fmtN(r.imp)}</td>
+                  <td style="font-weight:600">${fmtN(r.click)}</td>
+                  <td>${clickJudge}</td>
+                  <td style="color:var(--red);font-weight:600">${fmtM(r.spend)}</td>
+                  <td style="font-size:12px;color:var(--red)">${((r.spend/negThreshold)*100).toFixed(0)}%</td>
+                  <td><span class="badge b-red">精确否定${r.campCount>1?' (全部活动)':''}</span></td>
+                </tr>`;
+              }).join('')}</tbody>
 
     </table></div>
         ${(function(){
           var ctrThreshold=g_ctr*0.3;
           var impThreshold=500;
-          var earlyNegs=searchTerms.filter(function(r){
-                return r.orders===0&&r.imp>=impThreshold&&r.ctr<ctrThreshold&&r.spend<=negThreshold&&!r.allPaused;
-              }).sort(function(a,b){return b.imp-a.imp;});
+          var earlyNegsRaw=[];
+              var _pValE=$('filter-portfolio').value;
+          var _cValE=$('filter-campaign').value;
+          var sourceTermsE=searchTerms;
+              sourceTermsE.forEach(function(t){
+                if(t.allPaused) return;
+                var pfGrpE={};
+                // 先按当前筛选过滤 campDataArr
+                var filteredCampsE=t.campDataArr.filter(function(cd){
+                  if(_pValE!=='all'&&(cd.portfolio||'默认')!==_pValE) return false;
+                  if(_cValE!=='all'&&cd.camp!==_cValE) return false;
+                  return true;
+                });
+                filteredCampsE.forEach(function(cd){
+                  var pf=cd.portfolio||'默认';
+                  if(!pfGrpE[pf]) pfGrpE[pf]={pf:pf,camps:[],imp:0,click:0,spend:0,orders:0,allPaused:true};
+                  pfGrpE[pf].camps.push(cd.camp);
+                  pfGrpE[pf].imp+=cd.imp; pfGrpE[pf].click+=cd.click;
+                  pfGrpE[pf].spend+=cd.spend; pfGrpE[pf].orders+=cd.orders;
+                  if(!cd.paused) pfGrpE[pf].allPaused=false;
+                });
+                Object.values(pfGrpE).forEach(function(pg){
+                  if(pg.allPaused) return;
+                  var pgCtr=pg.imp>0?pg.click/pg.imp:0;
+                  if(pg.orders===0&&pg.imp>=impThreshold&&pgCtr<ctrThreshold&&pg.spend<=negThreshold){
+                    earlyNegsRaw.push({term:t.term,pf:pg.pf,camps:pg.camps.join(', '),imp:pg.imp,click:pg.click,spend:pg.spend,ctr:pgCtr});
+                  }
+                });
+              });
+              var earlyNegs=earlyNegsRaw.sort(function(a,b){return b.imp-a.imp;});
           if(!earlyNegs.length) return '';
           var rows=earlyNegs.slice(0,50).map(function(r){
-            var ctrRatio=g_ctr>0?r.ctr/g_ctr:0;
-            return '<tr>'
-              +'<td style="font-weight:600">'+r.term+'</td>'
-              +'<td style="font-size:11px;color:var(--ts);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+r.camps+'">'+r.camps+'</td>'
-              +'<td style="font-weight:600;color:var(--orange)">'+fmtN(r.imp)+'</td>'
-              +'<td>'+fmtN(r.click)+'</td>'
-              +'<td style="color:var(--red);font-weight:700">'+fmtP(r.ctr)+'</td>'
-              +'<td style="font-size:11px;color:var(--red)">'+(ctrRatio*100).toFixed(0)+'% of基准</td>'
-              +'<td style="color:var(--ts)">'+fmtM(r.spend)+'</td>'
-              +'<td><span class="badge b-orange">⚡ 先知否定</span></td>'
-              +'</tr>';
+                var ctrRatio=g_ctr>0?r.ctr/g_ctr:0;
+                return '<tr>'
+                  +'<td style="font-weight:600">'+r.term+'</td>'
+                  +'<td style="font-size:11px;color:var(--ts);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+r.pf+'">'+r.pf+'</td>'
+                  +'<td style="font-size:11px;color:var(--ts);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+r.camps+'">'+r.camps+'</td>'
+                  +'<td style="font-weight:600;color:var(--orange)">'+fmtN(r.imp)+'</td>'
+                  +'<td>'+fmtN(r.click)+'</td>'
+                  +'<td style="color:var(--red);font-weight:700">'+fmtP(r.ctr)+'</td>'
+                  +'<td style="font-size:11px;color:var(--red)">'+(ctrRatio*100).toFixed(0)+'% of基准</td>'
+                  +'<td style="color:var(--ts)">'+fmtM(r.spend)+'</td>'
+                  +'<td><span class="badge b-orange">⚡ 先知否定</span></td>'
+                  +'</tr>';
           }).join('');
           return '<div style="margin-top:18px;background:rgba(232,117,42,.04);border:1px solid rgba(232,117,42,.2);border-radius:8px;overflow:hidden">'
             +'<div style="padding:12px 16px;background:rgba(232,117,42,.08);border-bottom:1px solid rgba(232,117,42,.15);display:flex;align-items:center;gap:8px">'
@@ -2782,6 +3161,7 @@ function renderNegatives(){
             +'<div class="tw" style="border:none;border-radius:0;box-shadow:none">'
             +'<table><thead><tr>'
             +'<th style="background:rgba(232,117,42,.12);color:#c2410c">候选否定词</th>'
+            +'<th style="background:rgba(232,117,42,.12);color:#c2410c">广告组合</th>'
             +'<th style="background:rgba(232,117,42,.12);color:#c2410c">所在活动</th>'
             +'<th style="background:rgba(232,117,42,.12);color:#c2410c">曝光</th>'
             +'<th style="background:rgba(232,117,42,.12);color:#c2410c">点击</th>'
@@ -2792,8 +3172,35 @@ function renderNegatives(){
             +'</tr></thead><tbody>'+rows+'</tbody></table>'
             +'</div></div>';
         })()}
-        `;
-}
+
+            <div id="phrase-neg-section" style="margin-top:24px">
+              <div style="background:linear-gradient(135deg,rgba(6,67,56,.07),rgba(6,67,56,.03));border:1px solid rgba(6,67,56,.18);border-radius:10px;overflow:hidden">
+                <div style="padding:14px 18px;background:rgba(6,67,56,.1);border-bottom:1px solid rgba(6,67,56,.15);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <i class="fas fa-project-diagram" style="color:var(--dg);font-size:15px"></i>
+                    <span style="font-weight:700;color:var(--dg);font-size:14px">词组否分析</span>
+                    <span style="background:rgba(6,67,56,.15);color:var(--dg);padding:2px 8px;border-radius:100px;font-size:11px;font-weight:600" id="pn-total-badge">-</span>
+                    <span style="font-size:11px;color:var(--ts)">来源：降价/词组否 + 预算黑洞 · 按词×广告活动×词根聚合</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span style="font-size:11px;color:var(--ts)">词根长度：</span>
+                    
+                    <button onclick="window.renderPhraseNeg(3)" id="pn-btn-3" style="padding:4px 10px;border:1px solid var(--dg);border-radius:4px;font-size:12px;font-family:var(--fb);background:var(--dg);color:#fff;cursor:pointer;font-weight:600">3词</button>
+                    <button onclick="window.renderPhraseNeg(4)" id="pn-btn-4" style="padding:4px 10px;border:1px solid rgba(6,67,56,.3);border-radius:4px;font-size:12px;font-family:var(--fb);background:#fff;color:var(--dg);cursor:pointer">4词</button>
+                    <span style="font-size:11px;color:var(--ts);margin-left:4px">最小覆盖词数：</span>
+                    <input id="pn-min-count" type="number" value="2" min="1" style="width:48px;padding:4px 6px;border:1px solid #ddd;border-radius:4px;font-size:12px;font-family:var(--fb)" oninput="window.renderPhraseNeg(window._pnN||3)">
+                    <button onclick="window.exportCsv('phrase_neg')" style="padding:4px 12px;border:none;border-radius:4px;font-size:12px;font-family:var(--fb);background:var(--dg);color:#fff;cursor:pointer"><i class="fas fa-download"></i> 导出</button>
+                  </div>
+                </div>
+                <div style="padding:10px 16px;font-size:11px;color:var(--ts);background:rgba(243,197,70,.06);border-bottom:1px solid rgba(243,197,70,.2)">
+                  💡 <strong>使用方法：</strong>找到花费高、覆盖词多的词根 → 点击展开查看原始词 → 确认词根确实无关 → 在广告后台添加词组否定。数据不足时谨慎操作。
+                </div>
+                <div id="pn-table-wrap" style="padding:0"></div>
+              </div>
+            </div>
+            `;
+  setTimeout(()=>window.renderPhraseNeg&&window.renderPhraseNeg(3),80);
+    }
 
 /* ══════════════════════════════════════════
    广告位分析
@@ -3208,17 +3615,226 @@ function getStrategy(acos,imp,ctr,cvr,spend,beAcos){
 /* ══════════════════════════════════════════
    导出 CSV
 ══════════════════════════════════════════ */
-window.exportCsv=function(type){
+
+    /* ══════════════════════════════════════════
+       词组否分析 — N-gram 词根聚合
+       来源：降价/词组否 + 预算黑洞
+       提取所有相邻N词组合，统计覆盖词数/花费/订单
+    ══════════════════════════════════════════ */
+    window.renderPhraseNeg=function(n){
+          n=n||3;
+          window._pnN=n;
+          [3,4].forEach(i=>{
+            const btn=document.getElementById('pn-btn-'+i);
+            if(!btn) return;
+            if(i===n){btn.style.background='var(--dg)';btn.style.color='#fff';btn.style.borderColor='var(--dg)';btn.style.fontWeight='600';}
+            else{btn.style.background='#fff';btn.style.color='var(--dg)';btn.style.borderColor='rgba(6,67,56,.3)';btn.style.fontWeight='400';}
+          });
+          const minCount=parseInt((document.getElementById('pn-min-count')||{value:'2'}).value)||2;
+          // 词组否尊重当前筛选（广告组合/广告活动）
+          const _pValPN=$('filter-portfolio').value;
+          const _cValPN=$('filter-campaign').value;
+          // 按「词×广告活动」展开，每条对应一个活动下的词
+          const campTerms=[];
+          searchTerms.forEach(t=>{
+            if(t.allPaused) return;
+            t.campDataArr.forEach(cd=>{
+              if(cd.paused) return;
+              if(_pValPN!=='all'&&(cd.portfolio||'默认')!==_pValPN) return;
+              if(_cValPN!=='all'&&cd.camp!==_cValPN) return;
+              const spend=cd.spend||0, orders=cd.orders||0, imp=cd.imp||0, click=cd.click||0, sales=cd.sales||0;
+              const acos=sales>0?spend/sales:Infinity;
+              if((spend>5&&orders===0)||(acos>g_beAcos*1.5&&spend>1)){
+                campTerms.push({term:t.term, camp:cd.camp, pf:cd.portfolio||'默认', imp, click, spend, orders, sales, acos});
+              }
+            });
+          });
+          const wrap=document.getElementById('pn-table-wrap');
+          const badge=document.getElementById('pn-total-badge');
+          if(!campTerms.length){
+            if(wrap) wrap.innerHTML='<div style="padding:20px;text-align:center;color:#aaa;font-size:13px">暂无「降价/词组否」或「预算黑洞」词，无需分析</div>';
+            if(badge) badge.textContent='0个词根';
+            return;
+          }
+          // 按「词根+广告活动」聚合，key = gram + "|||" + camp
+          const ngramMap={};
+          campTerms.forEach(r=>{
+            const words=r.term.toLowerCase().trim().split(/\s+/).filter(w=>w.length>0);
+            if(words.length<n) return;
+            for(let i=0;i<=words.length-n;i++){
+              const gram=words.slice(i,i+n).join(' ');
+              const key=gram+'|||'+r.camp;
+              if(!ngramMap[key]) ngramMap[key]={ngram:gram, camp:r.camp, pf:r.pf, n:n, termSet:new Set()};
+              ngramMap[key].termSet.add(r.term);
+            }
+          });
+          // 汇总每个词根×活动的数据
+          Object.values(ngramMap).forEach(g=>{
+            g.spend=0;g.orders=0;g.clicks=0;g.imp=0;g.sales=0;
+            g.termSet.forEach(term=>{
+              const r=campTerms.find(x=>x.term===term&&x.camp===g.camp);
+              if(r){g.spend+=r.spend;g.orders+=r.orders;g.clicks+=r.click;g.imp+=r.imp;g.sales+=r.sales;}
+            });
+            g.count=g.termSet.size;
+            g.terms=[...g.termSet].sort((a,b)=>{
+              const ra=campTerms.find(x=>x.term===a&&x.camp===g.camp);
+              const rb=campTerms.find(x=>x.term===b&&x.camp===g.camp);
+              return (rb?rb.spend:0)-(ra?ra.spend:0);
+            });
+            g.acos=g.sales>0?g.spend/g.sales:Infinity;
+            if(g.clicks<10){g.rec='数据不足，谨慎否定';}
+            else if(g.orders===0||g.acos>g_beAcos*2){g.rec='⛔ 词组否';}
+            else if(g.acos>g_beAcos*1.5){g.rec='⚠️ 观察/降价';}
+            else{g.rec='暂观察';}
+          });
+          let groups=Object.values(ngramMap).filter(g=>g.count>=minCount).sort((a,b)=>b.spend-a.spend);
+          window._phraseNegData=groups;
+          if(badge) badge.textContent=groups.length+'个词根';
+          if(!wrap) return;
+          if(!groups.length){
+            wrap.innerHTML='<div style="padding:20px;text-align:center;color:#aaa;font-size:13px">当前设置下无符合条件的词根（覆盖词数≥'+minCount+'）</div>';
+            return;
+          }
+          const rows=groups.map((g,idx)=>{
+            let suffClass,suffLabel;
+            if(g.clicks>=30){suffClass='color:var(--dg);font-weight:600';suffLabel='✓ 充足';}
+            else if(g.clicks>=10){suffClass='color:var(--orange)';suffLabel='⚠ 偏少';}
+            else{suffClass='color:#aaa';suffLabel='🔵 不足';}
+            let rec=g.rec,recClass;
+            if(rec==='⛔ 词组否') recClass='color:var(--red);font-weight:700';
+            else if(rec==='⚠️ 观察/降价') recClass='color:var(--orange);font-weight:600';
+            else if(rec==='数据不足，谨慎否定') recClass='color:#aaa';
+            else recClass='color:var(--ts)';
+            const acosStr=g.acos===Infinity?'<span style="color:var(--red);font-weight:700">∞</span>':
+              '<span style="color:'+(g.acos>g_beAcos*2?'var(--red)':g.acos>g_beAcos*1.5?'var(--orange)':'var(--ts)')+'">'+
+              (g.acos*100).toFixed(0)+'%</span>';
+            const detailId='pn-det-'+idx;
+            const termRows=g.terms.map(term=>{
+              const r=campTerms.find(x=>x.term===term&&x.camp===g.camp);
+              if(!r) return '';
+              const diagLabel=r.spend>5&&r.orders===0?
+                '<span style="display:inline-block;padding:1px 6px;border-radius:100px;font-size:10px;background:rgba(220,38,38,.1);color:#dc2626;border:1px solid rgba(220,38,38,.2)">预算黑洞</span>':
+                '<span style="display:inline-block;padding:1px 6px;border-radius:100px;font-size:10px;background:rgba(217,119,6,.1);color:#d97706;border:1px solid rgba(217,119,6,.2)">降价/词组否</span>';
+              return '<tr style="background:rgba(6,67,56,.02)">'+
+                '<td style="padding:5px 10px 5px 28px;font-size:11px;color:var(--ts)">↳ '+term+'</td>'+
+                '<td style="text-align:center;padding:5px 8px">'+diagLabel+'</td>'+
+                '<td style="text-align:right;padding:5px 8px;font-size:11px">'+fmtN(r.imp)+'</td>'+
+                '<td style="text-align:right;padding:5px 8px;font-size:11px;font-weight:600">'+fmtN(r.click)+'</td>'+
+                '<td style="text-align:right;padding:5px 8px;font-size:11px;color:var(--red);font-weight:600">'+fmtM(r.spend)+'</td>'+
+                '<td style="text-align:right;padding:5px 8px;font-size:11px">'+r.orders+'</td>'+
+                '<td style="text-align:right;padding:5px 8px;font-size:11px">'+(r.acos===Infinity?'∞':(r.acos*100).toFixed(0)+'%')+'</td>'+
+                '</tr>';
+            }).join('');
+            return '<tr style="cursor:pointer;transition:background .15s" onclick="(function(el,det){const d=document.getElementById(det);if(!d)return;const open=d.style.display!==\'none\';d.style.display=open?\'none\':\'\';el.querySelector(\'.pn-arrow\').textContent=open?\'▶\':\'▼\';})(this,\''+detailId+'\')" onmouseover="this.style.background=\'rgba(6,67,56,.04)\'" onmouseout="this.style.background=\'\'">'+
+              '<td style="padding:9px 10px;font-weight:700;color:var(--dg);font-size:13px"><span class="pn-arrow" style="font-size:10px;margin-right:6px;color:#aaa">▶</span>'+g.ngram+'</td>'+
+              '<td style="padding:9px 8px;font-size:11px;color:var(--ts);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+g.camp+'">'+g.camp+'</td>'+
+              '<td style="padding:9px 8px;font-size:11px;color:var(--ts);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+g.pf+'">'+g.pf+'</td>'+
+              '<td style="text-align:center;padding:9px 8px"><span style="background:rgba(6,67,56,.12);color:var(--dg);padding:2px 8px;border-radius:100px;font-size:12px;font-weight:700">'+g.count+'</span></td>'+
+              '<td style="text-align:right;padding:9px 8px;font-size:12px">'+fmtN(g.imp)+'</td>'+
+              '<td style="text-align:right;padding:9px 8px;font-size:12px;font-weight:600">'+fmtN(g.clicks)+'</td>'+
+              '<td style="text-align:right;padding:9px 8px;color:var(--red);font-weight:700;font-size:13px">'+fmtM(g.spend)+'</td>'+
+              '<td style="text-align:right;padding:9px 8px;font-size:12px">'+g.orders+'</td>'+
+              '<td style="text-align:right;padding:9px 8px;font-size:12px">'+acosStr+'</td>'+
+              '<td style="padding:9px 8px"><span style="'+suffClass+';font-size:11px">'+suffLabel+'</span></td>'+
+              '<td style="padding:9px 8px"><span style="'+recClass+';font-size:12px">'+rec+'</span></td>'+
+              '</tr>'+
+              '<tr id="'+detailId+'" style="display:none"><td colspan="11" style="padding:0;background:rgba(6,67,56,.02)">'+
+                '<table style="width:100%;border-collapse:collapse;font-size:11px">'+
+                  '<thead><tr style="background:rgba(6,67,56,.06)">'+
+                    '<th style="padding:5px 10px 5px 28px;text-align:left;font-weight:600;color:var(--dg)">原始搜索词</th>'+
+                    '<th style="padding:5px 8px;text-align:center;font-weight:600;color:var(--dg)">诊断</th>'+
+                    '<th style="padding:5px 8px;text-align:right;font-weight:600;color:var(--dg)">曝光</th>'+
+                    '<th style="padding:5px 8px;text-align:right;font-weight:600;color:var(--dg)">点击</th>'+
+                    '<th style="padding:5px 8px;text-align:right;font-weight:600;color:var(--dg)">花费</th>'+
+                    '<th style="padding:5px 8px;text-align:right;font-weight:600;color:var(--dg)">订单</th>'+
+                    '<th style="padding:5px 8px;text-align:right;font-weight:600;color:var(--dg)">ACoS</th>'+
+                  '</tr></thead>'+
+                  '<tbody>'+termRows+'</tbody>'+
+                '</table></td></tr>';
+          }).join('');
+          wrap.innerHTML='<div class="tw" style="border:none;border-radius:0;box-shadow:none">'+
+            '<table style="width:100%;border-collapse:collapse;font-size:12px">'+
+            '<thead><tr style="background:rgba(6,67,56,.08)">'+
+              '<th style="padding:9px 10px;text-align:left;color:var(--dg);font-weight:700">词根 <span style="font-weight:400;font-size:10px;color:#aaa">（点击展开原始词）</span></th>'+
+              '<th style="padding:9px 8px;text-align:left;color:var(--dg)">广告活动</th>'+
+              '<th style="padding:9px 8px;text-align:left;color:var(--dg)">广告组合</th>'+
+              '<th style="padding:9px 8px;text-align:center;color:var(--dg)">覆盖词数</th>'+
+              '<th style="padding:9px 8px;text-align:right;color:var(--dg)">曝光</th>'+
+              '<th style="padding:9px 8px;text-align:right;color:var(--dg)">点击</th>'+
+              '<th style="padding:9px 8px;text-align:right;color:var(--dg)">总花费</th>'+
+              '<th style="padding:9px 8px;text-align:right;color:var(--dg)">总订单</th>'+
+              '<th style="padding:9px 8px;text-align:right;color:var(--dg)">平均ACoS</th>'+
+              '<th style="padding:9px 8px;color:var(--dg)">数据充足度</th>'+
+              '<th style="padding:9px 8px;color:var(--dg)">建议</th>'+
+            '</tr></thead>'+
+            '<tbody>'+rows+'</tbody>'+
+            '</table></div>';
+        };
+
+            window.exportCsv=function(type){
   let rows=[],headers=[],filename='';
-  if(type==='search'){
-    headers=['搜索词','活动数','曝光','点击','CTR%','CPC','花费','销售额','订单','CVR%','ACoS%'];
-    rows=searchTerms.map(r=>[r.term,r.campCount,r.imp,r.click,(r.ctr*100).toFixed(2),r.cpc.toFixed(2),r.spend.toFixed(2),r.sales.toFixed(2),r.orders,(r.cvr*100).toFixed(2),r.acos===Infinity?'无销售':(r.acos*100).toFixed(2)]);
-    filename='search_term_report';
-  } else if(type==='negatives'){
-    headers=['否定词','所在活动','活动数','曝光','点击','浪费花费'];
-    const negThreshold=Math.max(accountCPA*1.5,3);
-    rows=searchTerms.filter(r=>r.spend>negThreshold&&r.orders===0).map(r=>[r.term,r.camps,r.campCount,r.imp,r.click,r.spend.toFixed(2)]);
-    filename='negative_keywords';
+  if(type==='search'||type==='search_all'){
+        const srcRows=type==='search_all'?searchTerms:(window._stExportRows||searchTerms);
+        headers=['搜索词','活动数','曝光','点击','CTR%','CPC','花费','销售额','订单','CVR%','ACoS%','诊断'];
+        rows=srcRows.map(r=>{
+          const diag=r.spend>5&&r.orders===0?'预算黑洞':r.acos>g_beAcos*1.5?'降价/词组否':
+            r.click>=20&&r.orders>=1&&r.acos<g_beAcos?'迁移精准':
+            r.acos<g_beAcos*0.6&&r.orders>=2?'核心词':
+            r.cvr>g_cvr&&r.acos<g_beAcos?'优质词':'-';
+          return [r.term,r.campCount,r.imp,r.click,(r.ctr*100).toFixed(2),r.cpc.toFixed(2),r.spend.toFixed(2),r.sales.toFixed(2),r.orders,(r.cvr*100).toFixed(2),r.acos===Infinity?'无销售':(r.acos*100).toFixed(2),diag];
+        });
+        filename=type==='search_all'?'search_term_full':'search_term_filtered';
+  } else if(type==='phrase_neg'){
+            if(!window._phraseNegData||!window._phraseNegData.length){
+              window.renderPhraseNeg&&window.renderPhraseNeg(window._pnN||3);
+            }
+            headers=['词根','广告活动','广告组合','词根长度','覆盖词数','总花费','总订单','总点击','总曝光','平均ACoS%','数据充足度','建议','原始搜索词列表'];
+            const _pnData=window._phraseNegData||[];
+        rows=_pnData.map(g=>[
+          g.ngram,
+          g.camp,
+          g.pf,
+          g.n,
+          g.count,
+          g.spend.toFixed(2),
+          g.orders,
+          g.clicks,
+          g.imp,
+          g.acos===Infinity?'无销售':(g.acos*100).toFixed(1),
+          g.clicks>=30?'充足':g.clicks>=10?'偏少':'不足',
+          g.rec,
+          g.terms.join(' | ')
+        ]);
+        filename='phrase_neg_analysis';
+      } else if(type==='negatives'){
+        headers=['否定词','广告组合','所在活动','活动数','曝光','点击','浪费花费'];
+        const negThreshold=Math.max(accountCPA*1.5,3);
+        const _pValNE=$('filter-portfolio').value;
+        const _cValNE=$('filter-campaign').value;
+        const negsExp=[];
+        searchTerms.forEach(t=>{
+          if(t.allPaused) return;
+          const pfGrp4={};
+          t.campDataArr.forEach(cd=>{
+            if(_pValNE!=='all'&&(cd.portfolio||'默认')!==_pValNE) return;
+            if(_cValNE!=='all'&&cd.camp!==_cValNE) return;
+            const pf=cd.portfolio||'默认';
+            if(!pfGrp4[pf]) pfGrp4[pf]={pf,camps:[],imp:0,click:0,spend:0,orders:0,allPaused:true};
+            pfGrp4[pf].camps.push(cd.camp);
+            pfGrp4[pf].imp+=cd.imp; pfGrp4[pf].click+=cd.click;
+            pfGrp4[pf].spend+=cd.spend; pfGrp4[pf].orders+=cd.orders;
+            if(!cd.paused) pfGrp4[pf].allPaused=false;
+          });
+          Object.values(pfGrp4).forEach(pg=>{
+            if(pg.allPaused) return;
+            if(pg.spend>negThreshold&&pg.orders===0){
+              negsExp.push({term:t.term,pf:pg.pf,camps:pg.camps.join(', '),campCount:pg.camps.length,imp:pg.imp,click:pg.click,spend:pg.spend});
+            }
+          });
+        });
+        negsExp.sort((a,b)=>b.spend-a.spend);
+        rows=negsExp.map(r=>[r.term,r.pf,r.camps,r.campCount,r.imp,r.click,r.spend.toFixed(2)]);
+        filename='negative_keywords';
   }
   const csv=[headers,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
@@ -4305,7 +4921,7 @@ function buildSheet4(filtered){
   const pVal = document.getElementById('filter-portfolio').value;
   const cVal = document.getElementById('filter-campaign').value;
 
-  const headers = ['买家搜索词','类型','活动数','曝光','点击','CTR','CPC','CPA','花费','销售额','订单','CVR','ACoS','诊断','跨活动风险','所在广告活动'];
+  const headers = ['买家搜索词','类型','活动数','曝光','点击','CTR','CPC','CPA','花费','销售额','订单','CVR','ACoS','诊断','跨活动风险','所在广告活动','广告组合'];
   headers.forEach((h,i)=>{
     ws[XLSX.utils.encode_cell({r:0,c:i})] = { v:h, t:'s', s:headerStyle() };
   });
@@ -4346,8 +4962,8 @@ function buildSheet4(filtered){
       xlMoney(t.cpc), cpa!==null?xlMoney(cpa):null,
       xlMoney(t.spend), xlMoney(t.sales), xlNum(t.orders),
       xlPct(t.cvr)/100, t.acos===Infinity?null:xlPct(t.acos)/100,
-      diag, crossRisk, t.camps];
-    const fmts = ['','','','#,##0','#,##0','0.00%','"$"#,##0.00','"$"#,##0.00','"$"#,##0.00','"$"#,##0.00','#,##0','0.00%','0.00%','','',''];
+      diag, crossRisk, t.camps, (t.portfolioList||[]).join(', ')];
+    const fmts = ['','','','#,##0','#,##0','0.00%','"$"#,##0.00','"$"#,##0.00','"$"#,##0.00','"$"#,##0.00','#,##0','0.00%','0.00%','','','',''];
     mainRow.forEach((v,ci)=>{
       const addr = XLSX.utils.encode_cell({r:rowIdx,c:ci});
       ws[addr] = { v:v===null?'':v, t:typeof v==='number'?'n':'s', z:fmts[ci]||undefined, s:dataStyle(anomaly) };
@@ -4382,7 +4998,7 @@ function buildSheet4(filtered){
   });
 
   ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0},e:{r:rowIdx-1,c:headers.length-1}});
-  setColWidths(ws,[30,8,7,10,8,7,8,8,10,10,7,7,8,14,14,35]);
+  setColWidths(ws,[30,8,7,10,8,7,8,8,10,10,7,7,8,14,14,35,20]);
   addAutoFilter(ws, XLSX.utils.encode_range({s:{r:0,c:0},e:{r:0,c:headers.length-1}}));
   // 行分组（Excel outline）
   if(groupRows.length>0){
@@ -4469,7 +5085,7 @@ function buildSheet6(filtered){
   const XLSX = window.XLSX;
   const ws = {};
 
-  const headers = ['广告位类型','广告活动','曝光','点击','CTR','CPC','花费','销售额','订单','ACoS','建议'];
+  const headers = ['广告位类型','广告活动','广告组合','曝光','点击','CTR','CPC','花费','销售额','订单','ACoS','建议'];
   headers.forEach((h,i)=>{
     ws[XLSX.utils.encode_cell({r:0,c:i})] = { v:h, t:'s', s:headerStyle() };
   });
@@ -4489,10 +5105,10 @@ function buildSheet6(filtered){
     else if(r.acos>g_beAcos*1.3) rec='降低溢价';
     else if(r.acos<g_beAcos*0.7) rec='溢价+20~50%';
     const anomaly = r.acos>g_beAcos*1.3?'orange':r.acos<g_beAcos*0.7&&r.orders>0?'green':'';
-    const rowData = [pt, r.camp, xlNum(r.imp), xlNum(r.click), xlPct(r.ctr)/100,
+    const rowData = [pt, r.camp, r.portfolio||'', xlNum(r.imp), xlNum(r.click), xlPct(r.ctr)/100,
       xlMoney(cpc), xlMoney(r.spend), xlMoney(r.sales), xlNum(r.orders),
       r.acos===Infinity?null:xlPct(r.acos)/100, rec];
-    const fmts = ['','','#,##0','#,##0','0.00%','"$"#,##0.00','"$"#,##0.00','"$"#,##0.00','#,##0','0.00%',''];
+    const fmts = ['','','','#,##0','#,##0','0.00%','"$"#,##0.00','"$"#,##0.00','"$"#,##0.00','#,##0','0.00%',''];
     rowData.forEach((v,ci)=>{
       const addr = XLSX.utils.encode_cell({r:ri+1,c:ci});
       ws[addr] = { v:v===null?'':v, t:typeof v==='number'?'n':'s', z:fmts[ci]||undefined, s:dataStyle(anomaly) };
@@ -4500,7 +5116,7 @@ function buildSheet6(filtered){
   });
 
   ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0},e:{r:sortedPlacements.length,c:headers.length-1}});
-  setColWidths(ws,[22,35,10,8,7,8,10,10,7,8,12]);
+  setColWidths(ws,[22,35,20,10,8,7,8,10,10,7,8,12]);
   addAutoFilter(ws, XLSX.utils.encode_range({s:{r:0,c:0},e:{r:0,c:headers.length-1}}));
   return ws;
 }
@@ -4512,7 +5128,7 @@ function buildSheet7(filtered){
   const pVal = document.getElementById('filter-portfolio').value;
   const cVal = document.getElementById('filter-campaign').value;
 
-  const headers = ['优先级','买家搜索词','所在广告活动','数据表现','建议操作','库存预警','关联ASIN','备注'];
+  const headers = ['优先级','买家搜索词','所在广告活动','广告组合','数据表现','建议操作','库存预警','关联ASIN','备注'];
   headers.forEach((h,i)=>{
     ws[XLSX.utils.encode_cell({r:0,c:i})] = { v:h, t:'s', s:headerStyle() };
   });
@@ -4558,39 +5174,71 @@ function buildSheet7(filtered){
     if(cVal!=='all') terms = terms.filter(t=>t.campDataArr.some(cd=>cd.camp===cVal));
   }
 
-  terms.forEach(t=>{
-    if(t.allPaused) return;
-    const acos = t.sales>0?t.spend/t.sales:(t.spend>0?999:0);
-    const cvr = t.click>0?t.orders/t.click:0;
-    const flags = getFlags(t);
+  // 按「广告组合×搜索词」维度展开：同一词在不同组合里独立判断
+      terms.forEach(t=>{
+        if(t.allPaused) return;
 
-    if(t.orders===0&&t.spend>negThreshold){
-      actions.push({pri:'P0 必做',term:t.term,camp:t.camps,
-        data:`花费${t.spend.toFixed(2)} · 点击${t.click} · 0转化`,
-        action:`精准否定${t.campCount>1?' (全部活动)':''}`,
-        invWarn:flags.isLowInv?'⚠️ 库存预警':'',invAsin:flags.invAsin||'',
-        note:'超CPA基准且0转化',color:'red'});
-    } else if(cvr>0.05&&acos<be&&t.click>=20&&t.orders>=4){
-      actions.push({pri:'P1 重要',term:t.term,camp:t.camps,
-        data:`CVR${(cvr*100).toFixed(1)}% · ACoS${(acos*100).toFixed(1)}% · 订单${t.orders} · 点击${t.click}`,
-        action:'新建精准活动 + 原广泛/自动活动精准否定',
-        invWarn:flags.isLowInv?'⚠️ 库存预警':'',invAsin:flags.invAsin||'',
-        note:'黄金词：CVR>5%+ACoS<BE+点击≥20+订单≥4',color:'green'});
-    } else if((t.imp/dataPeriodWeeks)<250&&t.spend>0&&t.orders===0){
-      actions.push({pri:'P3 定期',term:t.term,camp:t.camps,
-        data:`周均曝光${(t.imp/dataPeriodWeeks).toFixed(0)} · 花费${t.spend.toFixed(2)} · 0转化`,
-        action:flags.isZombie?'暂停广告，评估清库存':'提价或暂停',
-        invWarn:flags.isLowInv?'⚠️ 库存预警':'',invAsin:flags.invAsin||'',
-        note:flags.isZombie?'僵尸款':'僵尸词：周均曝光<250+有花费+0转化',color:'gray'});
-    }
-  });
+        // 按广告组合分组 campDataArr
+        const pfGrp={};
+        t.campDataArr.forEach(cd=>{
+          const pf=cd.portfolio||'默认';
+          if(!pfGrp[pf]) pfGrp[pf]={pf,camps:[],imp:0,click:0,spend:0,sales:0,orders:0,allPaused:true};
+          pfGrp[pf].camps.push(cd.camp);
+          pfGrp[pf].imp+=cd.imp; pfGrp[pf].click+=cd.click;
+          pfGrp[pf].spend+=cd.spend; pfGrp[pf].sales+=cd.sales; pfGrp[pf].orders+=cd.orders;
+          if(!cd.paused) pfGrp[pf].allPaused=false;
+        });
+
+        Object.values(pfGrp).forEach(pg=>{
+          if(pg.allPaused) return;
+          const pfAcos = pg.sales>0?pg.spend/pg.sales:(pg.spend>0?999:0);
+          const pfCvr  = pg.click>0?pg.orders/pg.click:0;
+          const pfCamps= pg.camps.join(', ');
+          const pfImpPerWeek = pg.imp/dataPeriodWeeks;
+
+          // 针对该组合的活动计算库存/僵尸标记
+          const pfFlags={isZombie:false,isLowInv:false,invDays:null,invAsin:null};
+          pg.camps.forEach(camp=>{
+            const asins=campAsinMap[camp];
+            if(!asins) return;
+            asins.forEach(asin=>{
+              if(zombieAsins.has(asin)) pfFlags.isZombie=true;
+              if(lowInvAsins.has(asin)){
+                pfFlags.isLowInv=true;
+                const lx=lxData.byChild[asin];
+                if(lx&&(!pfFlags.invDays||lx.fbaDays<pfFlags.invDays)){ pfFlags.invDays=lx.fbaDays; pfFlags.invAsin=asin; }
+              }
+            });
+          });
+
+          if(pg.orders===0&&pg.spend>negThreshold){
+            actions.push({pri:'P0 必做',term:t.term,camp:pfCamps,pf:pg.pf,
+              data:`花费${pg.spend.toFixed(2)} · 点击${pg.click} · 0转化`,
+              action:`精准否定${pg.camps.length>1?' (全部活动)':''}`,
+              invWarn:pfFlags.isLowInv?'⚠️ 库存预警':'',invAsin:pfFlags.invAsin||'',
+              note:'超CPA基准且0转化',color:'red'});
+          } else if(pfCvr>0.05&&pfAcos<be&&pg.click>=20&&pg.orders>=4){
+            actions.push({pri:'P1 重要',term:t.term,camp:pfCamps,pf:pg.pf,
+              data:`CVR${(pfCvr*100).toFixed(1)}% · ACoS${(pfAcos*100).toFixed(1)}% · 订单${pg.orders} · 点击${pg.click}`,
+              action:'新建精准活动 + 原广泛/自动活动精准否定',
+              invWarn:pfFlags.isLowInv?'⚠️ 库存预警':'',invAsin:pfFlags.invAsin||'',
+              note:'黄金词：CVR>5%+ACoS<BE+点击≥20+订单≥4',color:'green'});
+          } else if(pfImpPerWeek<250&&pg.spend>0&&pg.orders===0){
+            actions.push({pri:'P3 定期',term:t.term,camp:pfCamps,pf:pg.pf,
+              data:`周均曝光${pfImpPerWeek.toFixed(0)} · 花费${pg.spend.toFixed(2)} · 0转化`,
+              action:pfFlags.isZombie?'暂停广告，评估清库存':'提价或暂停',
+              invWarn:pfFlags.isLowInv?'⚠️ 库存预警':'',invAsin:pfFlags.invAsin||'',
+              note:pfFlags.isZombie?'僵尸款':'僵尸词：周均曝光<250+有花费+0转化',color:'gray'});
+          }
+        });
+      });
 
   // 排序：P0 > P1 > P3
   actions.sort((a,b)=>a.pri.localeCompare(b.pri));
 
   actions.forEach((a,ri)=>{
     const anomaly = a.color;
-    const rowData = [a.pri, a.term, a.camp, a.data, a.action, a.invWarn, a.invAsin, a.note];
+    const rowData = [a.pri, a.term, a.camp, a.pf||'', a.data, a.action, a.invWarn, a.invAsin, a.note];
     rowData.forEach((v,ci)=>{
       const addr = XLSX.utils.encode_cell({r:ri+1,c:ci});
       ws[addr] = { v:v||'', t:'s', s:dataStyle(anomaly) };
@@ -4598,11 +5246,138 @@ function buildSheet7(filtered){
   });
 
   ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0},e:{r:Math.max(actions.length,1),c:headers.length-1}});
-  setColWidths(ws,[10,28,35,30,30,12,12,25]);
+  setColWidths(ws,[10,28,35,20,30,30,12,12,25]);
   addAutoFilter(ws, XLSX.utils.encode_range({s:{r:0,c:0},e:{r:0,c:headers.length-1}}));
   return ws;
 }
 
+    /* ── Sheet8: 否定词建议 ── */
+    function buildSheetNeg(filtered){
+      const XLSX = window.XLSX;
+      const ws = {};
+      const pVal = document.getElementById('filter-portfolio').value;
+      const cVal = document.getElementById('filter-campaign').value;
+
+      const headers = ['否定词','所在广告活动','广告组合','活动数','曝光','点击','浪费花费','vs CPA基准','操作建议'];
+      headers.forEach((h,i)=>{
+        ws[XLSX.utils.encode_cell({r:0,c:i})] = { v:h, t:'s', s:headerStyle() };
+      });
+
+      const negThreshold = Math.max(accountCPA*1.5, 3);
+      let terms = [...searchTerms];
+      if(filtered){
+        if(pVal!=='all') terms = terms.filter(t=>t.portfolioList.includes(pVal));
+        if(cVal!=='all') terms = terms.filter(t=>t.campDataArr.some(cd=>cd.camp===cVal));
+      }
+
+      // 按「广告组合×搜索词」维度展开否定词
+          const negRows=[];
+          terms.filter(t=>!t.allPaused).forEach(t=>{
+            const pfGrp2={};
+            t.campDataArr.forEach(cd=>{
+              const pf=cd.portfolio||'默认';
+              if(!pfGrp2[pf]) pfGrp2[pf]={pf,camps:[],imp:0,click:0,spend:0,sales:0,orders:0,allPaused:true};
+              pfGrp2[pf].camps.push(cd.camp);
+              pfGrp2[pf].imp+=cd.imp; pfGrp2[pf].click+=cd.click;
+              pfGrp2[pf].spend+=cd.spend; pfGrp2[pf].sales+=cd.sales; pfGrp2[pf].orders+=cd.orders;
+              if(!cd.paused) pfGrp2[pf].allPaused=false;
+            });
+            Object.values(pfGrp2).forEach(pg=>{
+              if(pg.allPaused) return;
+              if(pg.spend>negThreshold && pg.orders===0){
+                negRows.push({term:t.term,camps:pg.camps.join(', '),pf:pg.pf,
+                  campCount:pg.camps.length,imp:pg.imp,click:pg.click,spend:pg.spend});
+              }
+            });
+          });
+          negRows.sort((a,b)=>b.spend-a.spend);
+
+          negRows.forEach((r,ri)=>{
+            const vsBase = accountCPA>0 ? r.spend/accountCPA : null;
+            const anomaly = r.spend>negThreshold*2?'red':'orange';
+            const rowData = [
+              r.term,
+              r.camps,
+              r.pf,
+              r.campCount,
+              xlNum(r.imp),
+              xlNum(r.click),
+              xlMoney(r.spend),
+              vsBase!==null?parseFloat(vsBase.toFixed(1)):null,
+              r.campCount>1?'精准否定（全部活动）':'精准否定'
+            ];
+            const fmts = ['','','','#,##0','#,##0','#,##0','"$"#,##0.00','0.0x',''];
+            rowData.forEach((v,ci)=>{
+              const addr = XLSX.utils.encode_cell({r:ri+1,c:ci});
+              ws[addr] = { v:v===null?'':v, t:typeof v==='number'?'n':'s', z:fmts[ci]||undefined, s:dataStyle(anomaly) };
+            });
+          });
+
+          if(!negRows.length){
+            ws[XLSX.utils.encode_cell({r:1,c:0})] = { v:'✅ 暂无需否定的词（花费超阈值且0转化）', t:'s' };
+          }
+          const _negRowCount=negRows.length;
+
+      ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0},e:{r:Math.max(_negRowCount||0,1),c:headers.length-1}});
+      setColWidths(ws,[30,40,20,8,10,8,12,10,20]);
+      addAutoFilter(ws, XLSX.utils.encode_range({s:{r:0,c:0},e:{r:0,c:headers.length-1}}));
+      return ws;
+    }
+
+    /* ── Sheet9: 词根否分析 ── */
+    function buildSheetPhraseNeg(filtered){
+      const XLSX = window.XLSX;
+      const ws = {};
+
+      const headers = ['词根','广告活动','广告组合','词根长度','覆盖词数','总花费','总订单','总点击','总曝光','平均ACoS%','数据充足度','建议','原始搜索词列表'];
+      headers.forEach((h,i)=>{
+        ws[XLSX.utils.encode_cell({r:0,c:i})] = { v:h, t:'s', s:headerStyle() };
+      });
+
+      if(!window._phraseNegData || !window._phraseNegData.length){
+        if(window.renderPhraseNeg) window.renderPhraseNeg(window._pnN||3);
+      }
+      const pnData = window._phraseNegData || [];
+
+      if(!pnData.length){
+        ws[XLSX.utils.encode_cell({r:1,c:0})] = { v:'暂无词根否数据（需先在否词分析Tab生成）', t:'s' };
+        ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0},e:{r:1,c:headers.length-1}});
+        return ws;
+      }
+
+      pnData.forEach((g,ri)=>{
+        const acosVal = g.acos===Infinity ? null : xlPct(g.acos)/100;
+        const sufficiency = g.clicks>=30?'充足':g.clicks>=10?'偏少':'不足';
+        const anomaly = g.rec==='⛔ 词组否'?'red':g.rec==='⚠️ 观察/降价'?'orange':'';
+        const rowData = [
+          g.ngram,
+          g.camp||'',
+          g.pf||'',
+          g.n,
+          g.count,
+          xlMoney(g.spend),
+          g.orders,
+          g.clicks,
+          xlNum(g.imp),
+          acosVal,
+          sufficiency,
+          g.rec,
+          g.terms.join(' | ')
+        ];
+        const fmts = ['','','','#,##0','#,##0','"$"#,##0.00','#,##0','#,##0','#,##0','0.00%','','',''];
+        rowData.forEach((v,ci)=>{
+          const addr = XLSX.utils.encode_cell({r:ri+1,c:ci});
+          ws[addr] = { v:v===null?'':v, t:typeof v==='number'?'n':'s', z:fmts[ci]||undefined, s:dataStyle(anomaly) };
+        });
+      });
+
+      ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0},e:{r:pnData.length,c:headers.length-1}});
+      setColWidths(ws,[25,35,18,8,8,12,8,8,10,10,8,14,60]);
+      addAutoFilter(ws, XLSX.utils.encode_range({s:{r:0,c:0},e:{r:0,c:headers.length-1}}));
+      return ws;
+    }
+
+    
 /* ── 主导出函数 ── */
 function doExport(filtered){
   loadSheetJS(()=>{
@@ -4613,14 +5388,25 @@ function doExport(filtered){
       const suffix = filtered&&pVal!=='all'?`_${pVal.substring(0,12)}`:'_全量';
       const date = new Date().toISOString().split('T')[0];
 
-      // 构建各Sheet
-      const s1 = buildSheet1(filtered); XLSX.utils.book_append_sheet(wb,s1,'📊账户总览');
-      const s2 = buildSheet2(filtered); XLSX.utils.book_append_sheet(wb,s2,'🗂️广告组合');
-      const s3 = buildSheet3(filtered); XLSX.utils.book_append_sheet(wb,s3,'📋广告活动');
-      const s4 = buildSheet4(filtered); XLSX.utils.book_append_sheet(wb,s4,'🔍搜索词分析');
-      const s5 = buildSheet5(filtered); XLSX.utils.book_append_sheet(wb,s5,'📦产品线');
-      const s6 = buildSheet6(filtered); XLSX.utils.book_append_sheet(wb,s6,'📍广告位');
-      const s7 = buildSheet7(filtered); XLSX.utils.book_append_sheet(wb,s7,'⚡行动建议');
+      // 全量导出时，临时用全量搜索词替换当前筛选后的searchTerms
+          const _savedSearchTerms = searchTerms;
+          if(!filtered && window._allSearchTerms && window._allSearchTerms.length){
+            searchTerms = window._allSearchTerms;
+          }
+
+          // 构建各Sheet
+          const s1 = buildSheet1(filtered); XLSX.utils.book_append_sheet(wb,s1,'📊账户总览');
+          const s2 = buildSheet2(filtered); XLSX.utils.book_append_sheet(wb,s2,'🗂️广告组合');
+          const s3 = buildSheet3(filtered); XLSX.utils.book_append_sheet(wb,s3,'📋广告活动');
+          const s4 = buildSheet4(filtered); XLSX.utils.book_append_sheet(wb,s4,'🔍搜索词分析');
+          const s5 = buildSheet5(filtered); XLSX.utils.book_append_sheet(wb,s5,'📦产品线');
+          const s6 = buildSheet6(filtered); XLSX.utils.book_append_sheet(wb,s6,'📍广告位');
+          const s7 = buildSheet7(filtered); XLSX.utils.book_append_sheet(wb,s7,'⚡行动建议');
+          const s8 = buildSheetNeg(filtered); XLSX.utils.book_append_sheet(wb,s8,'🚫否定词建议');
+          const s9 = buildSheetPhraseNeg(filtered); XLSX.utils.book_append_sheet(wb,s9,'🔤词根否分析');
+
+          // 恢复原始searchTerms
+          searchTerms = _savedSearchTerms;
 
       const filename = `KovaScape广告诊断${suffix}_${date}.xlsx`;
       XLSX.writeFile(wb, filename, { bookType:'xlsx', type:'binary', cellStyles:true });
@@ -4638,7 +5424,80 @@ function doExport(filtered){
   });
 }
 
+    // ── 批量广告组合导出功能 ──
+    function toggleExportPfPanel(){
+      const panel = document.getElementById('export-pf-panel');
+      if(!panel) return;
+      const isVisible = panel.style.display !== 'none';
+      panel.style.display = isVisible ? 'none' : 'block';
+      if(!isVisible) populateExportPfCheckboxes();
+    }
+
+    function populateExportPfCheckboxes(){
+      const container = document.getElementById('export-pf-checkboxes');
+      if(!container) return;
+      const pfs = new Set();
+      (window._allSearchTerms||searchTerms).forEach(t=>{
+        (t.portfolioList||[]).forEach(p=>{ if(p&&p!=='默认') pfs.add(p); });
+      });
+      if(pfs.size===0){
+        container.innerHTML = '<div style="font-size:12px;color:#aaa;padding:8px">暂无广告组合数据，请先上传并分析数据</div>';
+        return;
+      }
+      container.innerHTML = Array.from(pfs).sort().map(pf=>`
+        <label style="display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:4px;cursor:pointer;font-size:12px;font-family:var(--fb);color:var(--tm);background:#fff;border:1px solid #eee">
+          <input type="checkbox" class="export-pf-cb" value="${pf.replace(/"/g,'&quot;')}" checked style="accent-color:var(--dg);width:14px;height:14px">
+          <span>${pf}</span>
+        </label>
+      `).join('');
+    }
+
+    function selectAllExportPf(checked){
+      document.querySelectorAll('.export-pf-cb').forEach(cb=>{ cb.checked = checked; });
+    }
+
+    function exportSelectedPf(){
+      const selected = Array.from(document.querySelectorAll('.export-pf-cb:checked')).map(cb=>cb.value);
+      if(!selected.length){ alert('请至少勾选一个广告组合'); return; }
+      const allTerms = window._allSearchTerms || searchTerms;
+      const filteredTerms = allTerms.filter(t=>(t.portfolioList||[]).some(p=>selected.includes(p)));
+      const _saved = searchTerms;
+      searchTerms = filteredTerms;
+      loadSheetJS(()=>{
+        try{
+          const XLSX = window.XLSX;
+          const wb = XLSX.utils.book_new();
+          const pfLabel = selected.length===1?selected[0].substring(0,12):`${selected.length}个组合`;
+          const date = new Date().toISOString().split('T')[0];
+          const s1 = buildSheet1(true); XLSX.utils.book_append_sheet(wb,s1,'📊账户总览');
+          const s2 = buildSheet2(true); XLSX.utils.book_append_sheet(wb,s2,'🗂️广告组合');
+          const s3 = buildSheet3(true); XLSX.utils.book_append_sheet(wb,s3,'📋广告活动');
+          const s4 = buildSheet4(true); XLSX.utils.book_append_sheet(wb,s4,'🔍搜索词分析');
+          const s5 = buildSheet5(true); XLSX.utils.book_append_sheet(wb,s5,'📦产品线');
+          const s6 = buildSheet6(true); XLSX.utils.book_append_sheet(wb,s6,'📍广告位');
+          const s7 = buildSheet7(true); XLSX.utils.book_append_sheet(wb,s7,'⚡行动建议');
+          const s8 = buildSheetNeg(true); XLSX.utils.book_append_sheet(wb,s8,'🚫否定词建议');
+          const s9 = buildSheetPhraseNeg(true); XLSX.utils.book_append_sheet(wb,s9,'🔤词根否分析');
+          searchTerms = _saved;
+          const filename = `KovaScape广告诊断_${pfLabel}_${date}.xlsx`;
+          XLSX.writeFile(wb, filename, { bookType:'xlsx', type:'binary', cellStyles:true });
+          const toast = document.createElement('div');
+          toast.style.cssText='position:fixed;bottom:24px;right:24px;background:#064338;color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;font-weight:500;z-index:99999;box-shadow:0 4px 16px rgba(0,0,0,.2);display:flex;align-items:center;gap:8px;font-family:Poppins,sans-serif';
+          toast.innerHTML='<i class="fas fa-check-circle" style="color:#F3C546"></i> 导出成功：'+filename;
+          document.body.appendChild(toast);
+          setTimeout(()=>toast.remove(),4000);
+        }catch(e){
+          searchTerms = _saved;
+          console.error('[ExportPf]',e);
+          alert('导出失败：'+e.message);
+        }
+      });
+    }
+
+    
 window.exportFiltered = function(){ doExport(true); };
+
+// // pa-data-row clicks handled by direct onclick (stopPropagation prevents double-fire)
 window.exportAll = function(){ doExport(false); };
 
 

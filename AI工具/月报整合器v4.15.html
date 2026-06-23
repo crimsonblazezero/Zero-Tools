@@ -357,6 +357,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                             <li><span class="font-semibold text-kova-heading">客单价(净额)</span> = 净销售额 ÷ 销量</li>
                             <li><span class="font-semibold text-kova-heading">退货率</span> = 退货量 ÷ 销量</li>
                             <li><span class="font-semibold text-kova-heading">退款率</span> = 退款量 ÷ 销量</li>
+                            <li><span class="font-semibold text-kova-heading">期末总成本(可售)</span> = (期末库存(含移仓)-总成本 + 期末在途-总成本) ÷ 美元汇率 <span class="text-xs text-kova-main/70">(注: 用于将库存的人民币成本转成美元，可在控制面板手动设定汇率，折算后直接计入月报展示与导出)</span></li>
                             <li><span class="font-semibold text-kova-heading">月库销比</span> = FBA可售库存(期末) ÷ 销量 <span class="text-xs text-kova-main/70">(注: 独立抓取自[库存明细表]，已筛出可售库存)</span></li>
                         </ul>
                     </div>
@@ -584,9 +585,15 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
             </div>
             
             <div class="mt-6 pt-5 border-t border-kova-border flex items-center justify-between">
-                <div class="flex items-center space-x-4 bg-kova-bg p-3 border border-kova-border w-1/2">
-                    <label class="text-sm font-semibold text-kova-main whitespace-nowrap ml-2">🎯 专属过滤：</label>
-                    <input type="text" v-model="targetOwnersStr" placeholder="例如：化一博, 王祎" class="border-b-2 border-kova-border bg-transparent px-3 py-1 text-sm w-full focus:border-kova-gold outline-none text-kova-heading font-medium transition-colors">
+                <div class="flex items-center space-x-4 w-[65%] shrink-0">
+                    <div class="flex items-center space-x-4 bg-kova-bg p-3 border border-kova-border flex-1">
+                        <label class="text-sm font-semibold text-kova-main whitespace-nowrap ml-2">🎯 专属过滤：</label>
+                        <input type="text" v-model="targetOwnersStr" placeholder="例如：化一博, 王祎" class="border-b-2 border-kova-border bg-transparent px-3 py-1 text-sm w-full focus:border-kova-gold outline-none text-kova-heading font-medium transition-colors">
+                    </div>
+                    <div class="flex items-center space-x-4 bg-kova-bg p-3 border border-kova-border w-52 shrink-0">
+                        <label class="text-sm font-semibold text-kova-main whitespace-nowrap ml-2">💵 美元汇率：</label>
+                        <input type="number" step="0.0001" v-model="usdExchangeRate" placeholder="如 7.25" class="border-b-2 border-kova-border bg-transparent px-3 py-1 text-sm w-full focus:border-kova-gold outline-none text-kova-heading font-medium transition-colors">
+                    </div>
                 </div>
                 <button @click="triggerProcess" :disabled="!allFilesReady" :class="allFilesReady ? 'bg-kova-main hover:bg-kova-dark text-white shadow-lg' : 'bg-kova-border text-kova-gray cursor-not-allowed'" class="px-10 py-3 font-playfair font-bold text-lg transition-colors duration-300 border border-transparent">
                     全息清洗聚合
@@ -831,6 +838,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                 const fileInputKey = ref(0);
                 const isProcessing = ref(false); 
                 const targetOwnersStr = ref('化一博, 王祎');
+                const usdExchangeRate = ref(7.0);
                 
                 const showExportModal = ref(false);
                 const exportSelectedFields = ref([]);
@@ -929,13 +937,31 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                     return 'text-kova-heading';
                 };
 
-                const formatValue = (val, field) => {
+                const formatValue = (val, field, isExport = false) => {
                     if (val === '-' || val === undefined || val === null || val === '') return '-';
-                    if (field.type === 'currency') return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    if (field.type === 'currency') {
+                        if (isExport) {
+                            const n = Number(val);
+                            return isNaN(n) ? '-' : Number(n.toFixed(2));
+                        }
+                        return Number(val).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    }
                     if (field.type === 'percent') return (Number(val) * 100).toFixed(2) + "%";
                     if (field.type === 'percent_string') return val; 
-                    if (field.type === 'num') return Number(val).toLocaleString('zh-CN', { maximumFractionDigits: 2 });
-                    if (field.type === 'num_ratio') return Number(val).toFixed(2);
+                    if (field.type === 'num') {
+                        if (isExport) {
+                            const n = Number(val);
+                            return isNaN(n) ? '-' : n;
+                        }
+                        return Number(val).toLocaleString('zh-CN', { maximumFractionDigits: 2 });
+                    }
+                    if (field.type === 'num_ratio') {
+                        if (isExport) {
+                            const n = Number(val);
+                            return isNaN(n) ? '-' : Number(n.toFixed(2));
+                        }
+                        return Number(val).toFixed(2);
+                    }
                     return val;
                 };
                 
@@ -1190,7 +1216,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                     const exportData = sortedViewData.value.map(row => {
                         const obj = {};
                         exportFields.forEach(f => {
-                            obj[f.label] = formatValue(row[f.key], f); 
+                            obj[f.label] = formatValue(row[f.key], f, true); 
                         });
                         return obj;
                     });
@@ -1229,7 +1255,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                             return dataRowList.map(row => {
                                 const obj = {};
                                 fields.forEach(f => {
-                                    obj[f.label] = formatValue(row[f.key], f);
+                                    obj[f.label] = formatValue(row[f.key], f, true);
                                 });
                                 return obj;
                             });
@@ -1370,6 +1396,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
                         const combinedMap = {};
                         const allowedOwners = targetOwnersStr.value.split(/[,，]/).map(s => s.trim()).filter(Boolean);
+                        const rate = parseFloat(usdExchangeRate.value) || 1.0;
                         
                         const initBaseData = (asin, owner) => {
                             if (!combinedMap[asin]) {
@@ -1511,12 +1538,12 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                             if (!asin || asin === '0' || asin === '-') return;
                             
                             const stockAttr = getVal(row, ['库存属性']);
-                            if (stockAttr !== '可售') return;
+                            if (stockAttr !== '全部') return;
 
                             if (owner && allowedOwners.length > 0 && !allowedOwners.includes(owner)) return;
 
                             if (!combinedMap[asin]) {
-                                initBaseData(asin, owner || '未知');
+                                initBaseData(asin, owner || '未分配');
                             }
                             const d = combinedMap[asin];
                             
@@ -1525,7 +1552,9 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                             if (cat && d.category === '未分类') d.category = cat;
 
                             d.fbaStock += parseNum(getVal(row, ['期末库存(含移仓)-数量', '期末库存-数量（含移仓）', '期末库存-数量(含移仓)', '期末库存数量']));
-                            d.fbaStockCost += parseNum(getVal(row, ['期末库存(含移仓)-总成本', '期末库存总成本（含移仓）', '期末库存-总成本(含移仓)', '期末库存总成本', '期末库存-总成本']));
+                            const rawStockCost = parseNum(getVal(row, ['期末库存(含移仓)-总成本', '期末库存总成本（含移仓）', '期末库存-总成本(含移仓)', '期末库存总成本', '期末库存-总成本']));
+                            const rawInTransitCost = parseNum(getVal(row, ['期末在途-总成本', '期末在途总成本', '在途总成本']));
+                            d.fbaStockCost += (rawStockCost + rawInTransitCost) / rate;
                         });
 
                         perfRows.forEach(row => {
@@ -1578,7 +1607,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                 };
 
                 return {
-                    tabs, activeTab, activeTabName, showUpload, showHelpModal, showGuideModal, isProcessing, targetOwnersStr,
+                    tabs, activeTab, activeTabName, showUpload, showHelpModal, showGuideModal, isProcessing, targetOwnersStr, usdExchangeRate,
                     batchMatchResult, handleBatchUpload, handleBatchDrop,
                     showExportModal, exportSelectedFields, exportDragIndex, openExportModal, toggleAllExport, executeExport, exportFullExcel,
                     toggleExportField, exportDragStart, exportDragOver, exportDragEnd,

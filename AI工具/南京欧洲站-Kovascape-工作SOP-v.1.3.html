@@ -14,15 +14,150 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        /* Custom Scrollbar */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-    </style>
+    /* Custom Scrollbar (保留你原有的滚动条逻辑) */
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    /* ═════════════════════════════════════════════════════════════════════════
+       🏛️ 1. ADALINE EXTENDED TOKENS DEFINITION (你刚刚复制的变量字典)
+       ═════════════════════════════════════════════════════════════════════════ */
+    :root {
+      /* Colors */
+      --color-cream-paper: #fbfdf6;
+      --color-botanical-ink: #0a1d08;
+      --color-bark-brown: #31200b;
+      --color-warm-loam: #4a3212;
+      --color-forest-floor: #203b14;
+      --color-sage-mist: #eff2e8;
+      --color-lichen: #e0e5d5;
+      --color-moss-veil: #d7e8b5;
+      --color-eucalyptus: #c5ccb6;
+      --color-onyx: #000000;
+
+      /* Typography — Font Families */
+      --font-akkurat: 'Akkurat', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-fragment-mono: 'Fragment Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+      /* Typography — Scale */
+      --text-caption: 12px;
+      --leading-caption: 1;
+      --tracking-caption: -0.48px;
+      --text-body-sm: 14px;
+      --leading-body-sm: 1.43;
+      --tracking-body-sm: -0.56px;
+      --text-body: 18px;
+      --leading-body: 1.67;
+      --tracking-body: -0.72px;
+      --text-heading-sm: 47px;
+      --leading-heading-sm: 0.98;
+      --tracking-heading-sm: -1.88px;
+      --text-display: 53px;
+      --leading-display: 1;
+      --tracking-display: -2.12px;
+
+      /* Typography — Weights */
+      --font-weight-regular: 400;
+      --font-weight-bold: 700;
+
+      /* Spacing */
+      --spacing-unit: 8px;
+      --spacing-8: 8px;
+      --spacing-16: 16px;
+      --spacing-24: 24px;
+      --spacing-32: 32px;
+      --spacing-40: 40px;
+      --spacing-48: 48px;
+      --spacing-64: 64px;
+      --spacing-128: 128px;
+      --spacing-160: 160px;
+
+      /* Layout */
+      --page-max-width: 1200px;
+      --radius-lg: 8px;
+      --radius-2xl: 20px;
+      --radius-nav: 20px;
+      --radius-tags: 9999px;
+      --radius-images: 8px;
+      --radius-buttons: 20px;
+
+      /* Shadows & Surfaces */
+      --shadow-subtle: rgba(99, 143, 61, 0.1) 0px 0px 0px 1px;
+      --surface-canvas: #fbfdf6;
+      --surface-first-elevation: #eff2e8;
+      --surface-second-elevation: #e0e5d5;
+      --surface-third-elevation: #d7e8b5;
+      --surface-fourth-elevation: #c5ccb6;
+    }
+
+    /* ═════════════════════════════════════════════════════════════════════════
+       🛠️ 2. GLOBAL BINDING (把上面的字典变量，强行翻译、捆绑到 HTML 页面上)
+       ═════════════════════════════════════════════════════════════════════════ */
+    
+    /* 强行接管页面画布：换成 Adaline 最灵魂的暖纸白（Cream Paper） */
+    body {
+        background-color: var(--surface-canvas) !important;
+        color: var(--color-botanical-ink) !important;
+        font-family: var(--font-akkurat) !important;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    /* 强行接管标题：换成植物油墨绿，字号重置，去除 AI 廉价感 */
+    h1, .page-title, .hero-title {
+        color: var(--color-forest-floor) !important;
+        letter-spacing: var(--tracking-body-sm) !important;
+        font-weight: var(--font-weight-bold) !important;
+        border-bottom: 1px solid var(--color-lichen) !important;
+        padding-bottom: var(--spacing-8) !important;
+        margin-bottom: var(--spacing-16) !important;
+    }
+
+    /* 物理屏蔽大标题下面的 AI 废话副标题和说明长文 */
+    h1 + p, .hero-subtitle, .desc-text, div[class*="subtitle"] {
+        display: none !important;
+    }
+
+    /* 强行接管所有的卡片容器、独立区块：换成纸质极细边框加第一层植物高度 */
+    .card, .box, .panel-block, div[class*="block"], div[class*="card"] {
+        border: var(--shadow-subtle) !important;
+        background-color: var(--surface-canvas) !important;
+        border-radius: var(--radius-lg) !important;
+        padding: var(--spacing-24) !important;
+    }
+
+    /* 强行接管表格体系：彻底抹除蓝紫色，注入高级线框纸质感 */
+    table, .table {
+        background-color: var(--surface-canvas) !important;
+        border: var(--shadow-subtle) !important;
+    }
+    thead tr, tr[class*="header"] {
+        background-color: var(--color-forest-floor) !important;
+    }
+    th {
+        color: var(--color-cream-paper) !important; /* 墨绿底配白字 */
+        font-size: var(--text-caption) !important;
+        letter-spacing: 0.5px !important;
+        padding: var(--spacing-8) var(--spacing-16) !important;
+        border: none !important;
+    }
+    td {
+        padding: var(--spacing-8) var(--spacing-16) !important;
+        border-bottom: 1px solid var(--surface-first-elevation) !important;
+        color: var(--color-botanical-ink) !important;
+    }
+    tr:hover td {
+        background-color: var(--surface-first-elevation) !important; /* 悬浮时淡绿阴影 */
+    }
+
+    /* 极致的 Webkit 纸质极窄滚动条 */
+    ::-webkit-scrollbar { width: 5px !important; height: 5px !important; }
+    ::-webkit-scrollbar-track { background: transparent !important; }
+    ::-webkit-scrollbar-thumb { background: var(--color-forest-floor) !important; border-radius: var(--radius-lg) !important; }
+</style>
 </head>
 <body class="bg-slate-50 text-slate-900 font-sans">
     <div id="root"></div>

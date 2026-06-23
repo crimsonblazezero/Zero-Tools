@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KovaScape Ops Hub</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23F3C546'/><text x='16' y='22' text-anchor='middle' font-family='serif' font-weight='bold' font-size='20' fill='%23042E25'>K</text></svg>">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -149,6 +150,22 @@ body{font-family:'Poppins',sans-serif;background:#F0EDE8;display:flex;height:100
 .rpt-card:hover .rpt-card-actions{opacity:1}
 .rpt-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:56px 24px;text-align:center;background:#fff;border-radius:13px;border:2px dashed var(--border)}
 
+/* ── REPORT LIST VIEW ── */
+.rpt-list-row{display:flex;align-items:center;gap:12px;padding:10px 16px;background:#fff;border:1px solid var(--border);border-radius:10px;margin-bottom:6px;cursor:pointer;transition:all .15s}
+.rpt-list-row:hover{border-color:var(--green);box-shadow:0 2px 8px rgba(6,67,56,.06)}
+.rpt-lr-icon{font-size:16px;width:32px;text-align:center;flex-shrink:0}
+.rpt-lr-title{flex:1;font-size:13px;font-weight:600;color:var(--title-dark);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rpt-lr-cat{font-size:10.5px;padding:2px 8px;border-radius:9px;white-space:nowrap;flex-shrink:0}
+.rpt-lr-date{font-size:10.5px;color:var(--body-gray);white-space:nowrap;flex-shrink:0;width:85px;text-align:right}
+.rpt-lr-tags{display:flex;gap:3px;flex-shrink:0;max-width:200px;overflow:hidden}
+.rpt-lr-tag{font-size:9px;background:#F5F4F2;color:#6B7280;padding:1px 5px;border-radius:6px;white-space:nowrap}
+.rpt-view-toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-left:auto;flex-shrink:0}
+.rpt-vt-btn{padding:5px 8px;border:none;background:#fff;cursor:pointer;font-size:13px;line-height:1;transition:all .13s}
+.rpt-vt-btn:hover{background:var(--green-light)}
+.rpt-vt-btn.active{background:var(--green);color:#fff}
+.rpt-cat-add-btn{font-size:11px;padding:4px 10px;border-radius:7px;border:1px dashed var(--border);background:none;cursor:pointer;color:var(--body-gray);transition:all .13s;white-space:nowrap}
+.rpt-cat-add-btn:hover{border-color:var(--green);color:var(--green)}
+
 /* ── IFRAME + UNIFIED TOPBAR ── */
 .iframe-tb{background:var(--green-deep);border-bottom:1px solid rgba(243,197,70,.2);padding:0 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;height:44px}
 .ifr-brand{display:flex;align-items:center;gap:7px}
@@ -288,7 +305,7 @@ body{font-family:'Poppins',sans-serif;background:#F0EDE8;display:flex;height:100
     </button>
     <div id="sb-nav"></div>
   </div>
-  <div class="sb-footer">KovaScape · Ops Hub v1.5 · 2026</div>
+  <div class="sb-footer">KovaScape · Ops Hub v2.2 · 2026</div>
 </aside>
 
 <!-- MAIN -->
@@ -346,15 +363,13 @@ body{font-family:'Poppins',sans-serif;background:#F0EDE8;display:flex;height:100
         </div>
       </div>
       <div class="rpt-filter-bar" id="rpt-filter-bar">
-        <button class="rpt-filter-btn active" data-cat="all" onclick="setRptFilter('all',this)">全部</button>
-        <button class="rpt-filter-btn" data-cat="design" onclick="setRptFilter('design',this)">🎨 图文设计</button>
-        <button class="rpt-filter-btn" data-cat="listing" onclick="setRptFilter('listing',this)">📝 Listing</button>
-        <button class="rpt-filter-btn" data-cat="geo" onclick="setRptFilter('geo',this)">🔍 GEO审计</button>
-        <button class="rpt-filter-btn" data-cat="market" onclick="setRptFilter('market',this)">📊 市场调研</button>
-        <button class="rpt-filter-btn" data-cat="ads" onclick="setRptFilter('ads',this)">📣 广告分析</button>
-        <button class="rpt-filter-btn" data-cat="product" onclick="setRptFilter('product',this)">📦 产品分析</button>
-        <button class="rpt-filter-btn" data-cat="other" onclick="setRptFilter('other',this)">其他</button>
+        <span id="rpt-filter-btns"></span>
         <input class="rpt-search" id="rpt-search" placeholder="🔍 搜索报告…" oninput="renderReports()">
+        <button class="rpt-cat-add-btn" onclick="openRptCatModal()" title="管理报告分类">＋ 分类</button>
+        <div class="rpt-view-toggle">
+          <button class="rpt-vt-btn active" id="rpt-vt-card" onclick="setRptView('card')" title="卡片视图">▦</button>
+          <button class="rpt-vt-btn" id="rpt-vt-list" onclick="setRptView('list')" title="列表视图">☰</button>
+        </div>
       <span id="batch-del-bar" style="display:none;padding:3px 0;font-size:11.5px;color:var(--body-gray)">已选 <span id="batch-del-count">0</span> 项
         <button class="btn-danger" style="padding:4px 12px;font-size:11px;margin-left:6px" onclick="batchDeleteReports()">🗑 批量删除</button>
       </span>
@@ -363,7 +378,7 @@ body{font-family:'Poppins',sans-serif;background:#F0EDE8;display:flex;height:100
       <div class="rpt-empty" id="rpt-empty" style="display:none;">
         <div style="font-size:40px;margin-bottom:12px">📂</div>
         <div style="font-size:14px;font-weight:600;color:var(--title-dark);margin-bottom:6px">报告库为空</div>
-        <div style="font-size:12px;color:var(--body-gray);line-height:1.7;max-width:320px">点击右上角「添加报告」，将 HTML 报告文件登记到库中。<br>报告文件请放在 <strong>reports/</strong> 子文件夹内。</div>
+        <div style="font-size:12px;color:var(--body-gray);line-height:1.7;max-width:320px">点击右上角「添加报告」，将 HTML / PDF / Excel / Markdown 报告文件登记到库中。<br>报告文件请放在 <strong>reports/</strong> 子文件夹内。</div>
       </div>
     </div>
 
@@ -443,7 +458,7 @@ body{font-family:'Poppins',sans-serif;background:#F0EDE8;display:flex;height:100
 <div class="overlay" id="rpt-modal" onclick="closeModalOnOverlay(event,'rpt-modal')">
   <div class="modal">
     <div class="modal-title" id="rpt-modal-title">添加报告</div>
-    <div class="modal-sub">将 HTML 报告文件登记到报告库</div>
+    <div class="modal-sub">将 HTML / PDF / Excel / Markdown 报告文件登记到报告库</div>
     <div class="fg"><label class="fl">报告标题 *</label><input class="fi" id="rpt-inp-title" placeholder="例：1520双弧面相框 A+页面设计方案"></div>
     <div class="fg"><label class="fl">简介描述</label><input class="fi" id="rpt-inp-desc" placeholder="例：包含6个模块设计方案及配色建议"></div>
     <div class="fg">
@@ -453,10 +468,10 @@ body{font-family:'Poppins',sans-serif;background:#F0EDE8;display:flex;height:100
     </div>
     <div class="fg"><label class="fl">分类</label>
       <select class="fs" id="rpt-inp-cat">
-        <option value="design">🎨 图文设计</option><option value="listing">📝 Listing文案</option>
-        <option value="geo">🔍 GEO审计</option><option value="market">📊 市场调研</option>
-        <option value="ads">📣 广告分析</option><option value="product">📦 产品分析</option>
-        <option value="other">其他</option>
+        
+        
+        
+        
       </select>
     </div>
     <div class="fg"><label class="fl">日期</label><input class="fi" id="rpt-inp-date" type="date"></div>
@@ -472,28 +487,25 @@ body{font-family:'Poppins',sans-serif;background:#F0EDE8;display:flex;height:100
     <div class="overlay" id="batch-modal" onclick="closeModalOnOverlay(event,'batch-modal')">
       <div class="batch-modal">
         <div class="modal-title">⬆ 批量导入报告</div>
-        <div class="modal-sub">选择多个 HTML 文件，自动生成名称，逐条配置后一键导入</div>
+        <div class="modal-sub">选择多个 HTML / PDF / Excel / Markdown 文件，自动生成名称，逐条配置后一键导入</div>
         <!-- 拖放区 -->
         <div class="drop-zone" id="batch-drop-zone"
           ondragover="batchDragOver(event)" ondragleave="batchDragLeave(event)" ondrop="batchDrop(event)"
           onclick="document.getElementById('batch-file-input').click()">
           <div class="drop-zone-icon">📂</div>
-          <div class="drop-zone-txt">点击选择文件，或将 HTML 文件拖拽到此处</div>
-          <div class="drop-zone-sub">支持多选 · 仅限 .html 文件</div>
+          <div class="drop-zone-txt">点击选择文件，或将 HTML / PDF / Excel / Markdown 文件拖拽到此处</div>
+          <div class="drop-zone-sub">支持多选 · HTML / PDF / Excel / Markdown 文件</div>
         </div>
-        <input type="file" id="batch-file-input" accept=".html" multiple style="display:none" onchange="batchFilesSelected(event)">
+        <input type="file" id="batch-file-input" accept=".html,.pdf,.xlsx,.xls,.md" multiple style="display:none" onchange="batchFilesSelected(event)">
         <!-- 全局批量设置（文件数>1时显示）-->
         <div class="batch-global-bar" id="batch-global-bar" style="display:none">
           <label>批量设置：</label>
           <select id="batch-global-cat">
             <option value="">— 分类 —</option>
-            <option value="design">🎨 图文设计</option>
-            <option value="listing">📝 Listing</option>
-            <option value="geo">🔍 GEO审计</option>
-            <option value="market">📊 市场调研</option>
-            <option value="ads">📣 广告分析</option>
-            <option value="product">📦 产品分析</option>
-            <option value="other">其他</option>
+            
+            
+            
+            
           </select>
           <input class="batch-global-bar" id="batch-global-tags" placeholder="统一标签（逗号分隔）" style="flex:1;min-width:120px">
           <input class="batch-global-bar" id="batch-global-prefix" placeholder="路径前缀（可选，如 reports/）" style="flex:1;min-width:120px">
@@ -512,7 +524,27 @@ body{font-family:'Poppins',sans-serif;background:#F0EDE8;display:flex;height:100
       </div>
     </div>
 
-    <!-- CONFIRM -->
+<!-- REPORT CATEGORY MANAGER MODAL -->
+    <div class="overlay" id="rptcat-modal" onclick="closeModalOnOverlay(event,'rptcat-modal')">
+      <div class="modal" style="width:520px">
+        <div class="modal-title">管理报告分类</div>
+        <div class="modal-sub">添加、编辑或删除报告分类</div>
+        <div id="rptcat-list"></div>
+        <button class="btn-save" style="width:100%;margin-top:4px" onclick="openAddRptCatForm()">＋ 新建分类</button>
+        <div id="rptcat-form" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+          <div class="fg"><label class="fl">分类名称 *</label><input class="fi" id="rptcat-inp-name" placeholder="例：竞品分析"></div>
+          <div class="fg"><label class="fl">背景色</label><input class="fi" id="rptcat-inp-bg" type="color" value="#F5F4F2"></div>
+          <div class="fg"><label class="fl">文字色</label><input class="fi" id="rptcat-inp-fg" type="color" value="#6B7280"></div>
+          <div class="modal-acts" style="margin-top:12px">
+            <button class="btn-cancel" onclick="closeRptCatForm()">取消</button>
+            <button class="btn-save" id="rptcat-form-save-btn" onclick="saveRptCat()">保存</button>
+          </div>
+        </div>
+        <div class="modal-acts"><button class="btn-cancel" onclick="closeModal('rptcat-modal')">关闭</button></div>
+      </div>
+    </div>
+
+        <!-- CONFIRM -->
 <div class="overlay" id="confirm-modal" onclick="closeModalOnOverlay(event,'confirm-modal')">
   <div class="confirm-box">
     <div class="confirm-title">确认删除</div>
@@ -541,7 +573,7 @@ body{font-family:'Poppins',sans-serif;background:#F0EDE8;display:flex;height:100
 ├── 排产面板-v3.html
 ├── ... （其他工具文件）
 └── report/             ← 报告子文件夹
-    └── *.html</div>
+    └── *.html / *.pdf / *.xlsx / *.xls / *.md</div>
           <div class="alert-box alert-warn"><p>⚠️ 工具文件必须与 kovascape-hub.html 同目录；报告放在 report/ 子文件夹。</p></div>
         </div>
       </li>
@@ -578,6 +610,7 @@ body{font-family:'Poppins',sans-serif;background:#F0EDE8;display:flex;height:100
   </div>
 </div>
 
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONSTANTS
@@ -586,12 +619,18 @@ const EMOJIS = ['📊','📈','📉','💰','🛒','📦','🖼️','🔍','📝
 const CAT_COLORS = ['#E8F2F0','#EEF2FF','#FFF7ED','#F0FDF4','#FFF8DC','#F5F4F2','#F3E8FF','#FFF0F0','#E0F2FE','#FEF9C3','#FCE7F3','#ECFDF5'];
 const CAT_TEXT_COLORS = ['#064338','#4338CA','#C2410C','#166534','#92400E','#6B7280','#7C3AED','#B91C1C','#0369A1','#854D0E','#9D174D','#065F46'];
 
-const RPT_CAT = {
-  design:{label:'图文设计',cls:'rpt-cat-design'},listing:{label:'Listing',cls:'rpt-cat-listing'},
-  geo:{label:'GEO审计',cls:'rpt-cat-geo'},market:{label:'市场调研',cls:'rpt-cat-market'},
-  ads:{label:'广告分析',cls:'rpt-cat-ads'},product:{label:'产品分析',cls:'rpt-cat-product'},
-  other:{label:'其他',cls:'rpt-cat-other'},
-};
+const DEFAULT_RPT_CATS = [
+  {id:'design', label:'图文设计', bg:'#F3E8FF', fg:'#7C3AED'},
+  {id:'listing', label:'Listing', bg:'#EEF2FF', fg:'#4338CA'},
+  {id:'geo', label:'GEO审计', bg:'#E8F2F0', fg:'#064338'},
+  {id:'market', label:'市场调研', bg:'#FFF7ED', fg:'#C2410C'},
+  {id:'ads', label:'广告分析', bg:'#FFF0F0', fg:'#B91C1C'},
+  {id:'product', label:'产品分析', bg:'#F0FDF4', fg:'#166534'},
+  {id:'other', label:'其他', bg:'#F5F4F2', fg:'#6B7280'},
+];
+function loadRptCats(){const s=localStorage.getItem('kova_rpt_cats_v1');return s?JSON.parse(s):DEFAULT_RPT_CATS.map(c=>({...c}));}
+function saveRptCats(){localStorage.setItem('kova_rpt_cats_v1',JSON.stringify(rptCats));}
+function getRptCat(id){return rptCats.find(c=>c.id===id)||rptCats.find(c=>c.id==='other')||{label:'其他',bg:'#F5F4F2',fg:'#6B7280'};}
 
 const DEFAULT_CATS = [
   {id:'ops',    name:'运营分析', icon:'📊', bg:'#E8F2F0', fg:'#064338'},
@@ -605,13 +644,11 @@ const DEFAULT_CATS = [
 const DEFAULT_TOOLS = [
   {id:'decision',  name:'决策面板',          desc:'库存决策分析，DMS修改、甘特图断货预警、批量出运管理、排产联动',   path:'决策面板-v5.html',                            cat:'ops',     icon:'📦'},
   {id:'production',name:'排产面板',           desc:'排产批次管理，交期校验、箱规检查、多工厂异常检测、SKU映射',       path:'排产面板-v3.html',                            cat:'ops',     icon:'🔄'},
-  {id:'prod-refinery', name:'排产提纯与甘特图', desc:'公司预测排产数据导入提纯，专属SKU筛选与甘特图推演',             path:'production_refinery.html',                    cat:'ops',     icon:'📅'},
   {id:'xiyou',     name:'西柚数据对比面板',   desc:'竞品数据对比分析，市场趋势与竞争格局可视化',                     path:'西柚数据对比面板_v1.5.html',                  cat:'ops',     icon:'📊'},
   {id:'sales',     name:'销量分析助手',       desc:'销量趋势分析，SKU表现追踪与异常识别',                           path:'销量分析助手v2.5.html',                       cat:'ops',     icon:'📈'},
   {id:'monthly',   name:'月报整合器',         desc:'月度运营数据整合，多维度报表生成与汇总',                         path:'月报整合器v4.15.html',                        cat:'ops',     icon:'📋'},
   {id:'sop',       name:'欧洲站工作SOP',      desc:'KovaScape欧洲站运营标准操作流程指南',                           path:'南京欧洲站-Kovascape-工作SOP-v1.3.html',      cat:'ops',     icon:'🗂️'},
   {id:'ads-panel', name:'广告综合分析面板',   desc:'广告数据可视化，ACOS趋势、关键词表现、预算分配分析',             path:'广告综合分析面板_v6.10.html',                 cat:'ads',     icon:'📣'},
-  {id:'ads-refinery', name:'625广告提纯与Bulk', desc:'基于625广告法的广告策略二次提纯与Amazon SP Bulk表生成',         path:'ads_refinery.html',                           cat:'ads',     icon:'🔍'},
   {id:'variation', name:'Variation批量书写器',desc:'变体Listing批量生成，支持多SKU标题、五点描述批量输出',           path:'Variation_Batch_Writer__v40.html',            cat:'listing', icon:'📝'},
   {id:'title-gen', name:'变体标题批量生成器', desc:'批量生成亚马逊变体标题，支持多尺寸多颜色组合',                   path:'变体标题批量生成器v3.6.html',                 cat:'listing', icon:'🏷️'},
   {id:'brand',     name:'品牌方案备选',       desc:'品牌命名与方案备选库，品牌调性参考',                             path:'品牌方案备选_v2.html',                        cat:'listing', icon:'🎯'},
@@ -636,7 +673,10 @@ let selEmoji = '📊';
 let editingToolId = null;
 let editingCatId  = null;
 let editingRptId  = null;
-let rptFilterCat  = 'all';
+let rptFilterCat = 'all';
+let rptCats    = loadRptCats();
+let rptViewMode = localStorage.getItem('kova_rpt_view')||'card';
+let rptCatEditId = null;
 let selCatColor   = 0;
 let selCatEmoji   = '📊';
 // tool drag state
@@ -644,12 +684,12 @@ let dragSrcId = null;
 let dragSrcCat = null;
 // cat drag state
 let catDragSrcId = null;
- 
+
 function loadCats()    { const s=localStorage.getItem('kova_cats_v1');   return s?JSON.parse(s):DEFAULT_CATS.map(c=>({...c})); }
-function loadTools()   { const s=localStorage.getItem('kova_tools_v4');  return s?JSON.parse(s):DEFAULT_TOOLS.map(t=>({...t,addedAt:Date.now()})); }
+function loadTools()   { const s=localStorage.getItem('kova_tools_v3');  return s?JSON.parse(s):DEFAULT_TOOLS.map(t=>({...t,addedAt:Date.now()})); }
 function loadReports() { const s=localStorage.getItem('kova_reports_v1');return s?JSON.parse(s):[]; }
 function saveCats()    { localStorage.setItem('kova_cats_v1',   JSON.stringify(cats));    }
-function saveTools()   { localStorage.setItem('kova_tools_v4',  JSON.stringify(tools));   }
+function saveTools()   { localStorage.setItem('kova_tools_v3',  JSON.stringify(tools));   }
 function saveReports() { localStorage.setItem('kova_reports_v1',JSON.stringify(reports)); }
 function saveRecent()  { localStorage.setItem('kova_recent',    JSON.stringify(recentIds)); }
 
@@ -852,14 +892,17 @@ function renderReports(){
   const grid=document.getElementById('reports-grid');
   const empty=document.getElementById('rpt-empty');
   if(!filtered.length){grid.innerHTML='';empty.style.display='flex';}
-  else{empty.style.display='none';grid.innerHTML=filtered.map(rptCard).join('');}
+  renderRptFilterBar();
+  if(!filtered.length){grid.innerHTML='';empty.style.display='flex';}
+  else if(rptViewMode==='list'){empty.style.display='none';grid.innerHTML=filtered.map(rptRow).join('');grid.style.display='block';}
+  else{empty.style.display='none';grid.innerHTML=filtered.map(rptCard).join('');grid.style.display='';}
   document.getElementById('rpt-stat-total').textContent=reports.length;
   document.getElementById('rpt-stat-cats').textContent=new Set(reports.map(r=>r.cat)).size||0;
   const latest=[...reports].sort((a,b)=>(b.date||'').localeCompare(a.date||''))[0];
   document.getElementById('rpt-stat-latest').textContent=latest?(latest.date||'—').slice(5):'—';
 }
 function rptCard(r){
-  const c=RPT_CAT[r.cat]||RPT_CAT.other;
+  const c=getRptCat(r.cat);const ext=r.path.split('.').pop().toLowerCase();const ftIcon=ext==='pdf'?'📄':ext==='md'?'📝':ext==='xlsx'||ext==='xls'?'📊':'🌐';
   const tags=(r.tags||'').split(',').map(t=>t.trim()).filter(Boolean);
   const tagHtml=tags.slice(0,3).map(t=>`<span style="font-size:9.5px;background:#F5F4F2;color:#6B7280;padding:1px 6px;border-radius:8px;margin-right:3px">${t}</span>`).join('');
   return `<div class="rpt-card" id="rptcard-${r.id}">
@@ -872,20 +915,122 @@ function rptCard(r){
         <input type="checkbox" class="rpt-checkbox" data-id="${r.id}" onclick="event.stopPropagation();updateBatchDelBtn()"
           style="width:15px;height:15px;accent-color:var(--green);cursor:pointer;margin-top:2px;flex-shrink:0">
         <div style="flex:1;min-width:0">
-          <div class="rpt-card-cat-bar"><span class="rpt-cat-pill ${c.cls}">${c.label}</span><span class="rpt-date">${r.date||''}</span></div>
-          <div class="rpt-title">${r.title}</div>
+          <div class="rpt-card-cat-bar"><span class="rpt-cat-pill" style="background:${c.bg};color:${c.fg}">${c.label}</span><span class="rpt-date">${r.date||''}</span></div>
+          <div class="rpt-title">${ftIcon} ${r.title}</div>
           <div class="rpt-desc">${r.desc||''}</div>
           ${tagHtml?`<div style="margin-top:5px">${tagHtml}</div>`:''}
         </div>
       </div>
     </div>
-    <div class="rpt-card-bottom" onclick="openReport('${r.id}')"><span class="rpt-path">${r.path}</span><span class="rpt-open">查看 →</span></div>
+    <div class="rpt-card-bottom" onclick="openReport('${r.id}')"><span class="rpt-open">查看 →</span></div>
   </div>`;
 }
 function setRptFilter(cat,btn){
   rptFilterCat=cat;
   document.querySelectorAll('.rpt-filter-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active'); renderReports();
+  if(btn) btn.classList.add('active'); renderReports();
+}
+function rptRow(r){
+  const c=getRptCat(r.cat);const ext=r.path.split('.').pop().toLowerCase();
+  const ftIcon=ext==='pdf'?'📄':ext==='md'?'📝':ext==='xlsx'||ext==='xls'?'📊':'🌐';
+  const tags=(r.tags||'').split(',').map(t=>t.trim()).filter(Boolean);
+  let tHtml=tags.slice(0,2).map(t=>`<span class="rpt-lr-tag">${t}</span>`).join('');
+  return `<div class="rpt-list-row" onclick="openReport('${r.id}')">
+    <input type="checkbox" class="rpt-checkbox" data-id="${r.id}" onclick="event.stopPropagation();updateBatchDelBtn()" style="width:14px;height:14px;accent-color:var(--green);flex-shrink:0">
+    <span class="rpt-lr-icon">${ftIcon}</span>
+    <span class="rpt-lr-title">${r.title}</span>
+    ${tHtml?`<span class="rpt-lr-tags">${tHtml}</span>`:''}
+    <span class="rpt-lr-cat" style="background:${c.bg};color:${c.fg}">${c.label}</span>
+    <span class="rpt-lr-date">${r.date||''}</span>
+    <button class="tc-act-btn" onclick="event.stopPropagation();openEditRptModal('${r.id}')" style="flex-shrink:0">✏️</button>
+  </div>`;
+}
+function renderRptFilterBar(){
+  let h='<button class="rpt-filter-btn'+(rptFilterCat==='all'?' active':'')+'" onclick="setRptFilter(\'all\',this)">全部</button>';
+  rptCats.forEach(c=>{
+    h+=`<button class="rpt-filter-btn${rptFilterCat===c.id?' active':''}" onclick="setRptFilter('${c.id}',this)">${c.label}</button>`;
+  });
+  document.getElementById('rpt-filter-btns').innerHTML=h;
+}
+function setRptView(mode){
+  rptViewMode=mode;localStorage.setItem('kova_rpt_view',mode);
+  document.getElementById('rpt-vt-card').classList.toggle('active',mode==='card');
+  document.getElementById('rpt-vt-list').classList.toggle('active',mode==='list');
+  renderReports();
+}
+function openRptCatModal(){
+  renderRptCatList(); document.getElementById('rptcat-form').style.display='none';
+  openModal('rptcat-modal');
+}
+function renderRptCatList(){
+  const el=document.getElementById('rptcat-list');
+  if(!el)return;
+  el.innerHTML=rptCats.map(c=>{
+    const cnt=reports.filter(r=>r.cat===c.id).length;
+    return `<div class="cat-list-item">
+      <div class="cat-list-swatch" style="background:${c.bg};color:${c.fg};font-weight:600">${c.label[0]}</div>
+      <span class="cat-list-name">${c.label}</span>
+      <span class="cat-list-cnt">${cnt} 份报告</span>
+      <div class="cat-list-acts">
+        <button class="tc-act-btn" onclick="openEditRptCatModal('${c.id}')" title="编辑">✏️</button>
+        <button class="tc-act-btn del" onclick="confirmDeleteRptCat('${c.id}','${c.label}')" ${c.id==='other'?'disabled title="不可删除默认分类"':''}>🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function openAddRptCatForm(){
+  rptCatEditId=null;
+  document.getElementById('rptcat-inp-name').value='';
+  document.getElementById('rptcat-inp-bg').value='#F5F4F2';
+  document.getElementById('rptcat-inp-fg').value='#6B7280';
+  document.getElementById('rptcat-form-save-btn').textContent='新建';
+  document.getElementById('rptcat-form').style.display='block';
+  setTimeout(()=>document.getElementById('rptcat-inp-name').focus(),100);
+}
+function openEditRptCatModal(id){
+  const c=rptCats.find(x=>x.id===id); if(!c) return;
+  rptCatEditId=id;
+  document.getElementById('rptcat-inp-name').value=c.label;
+  document.getElementById('rptcat-inp-bg').value=c.bg;
+  document.getElementById('rptcat-inp-fg').value=c.fg;
+  document.getElementById('rptcat-form-save-btn').textContent='保存';
+  document.getElementById('rptcat-form').style.display='block';
+  openModal('rptcat-modal'); renderRptCatList();
+  setTimeout(()=>document.getElementById('rptcat-inp-name').focus(),100);
+}
+function closeRptCatForm(){ document.getElementById('rptcat-form').style.display='none'; rptCatEditId=null; }
+function saveRptCat(){
+  const name=document.getElementById('rptcat-inp-name').value.trim();
+  if(!name){alert('请填写分类名称');return;}
+  const bg=document.getElementById('rptcat-inp-bg').value.trim()||'#F5F4F2';
+  const fg=document.getElementById('rptcat-inp-fg').value.trim()||'#6B7280';
+  if(rptCatEditId){
+    const c=rptCats.find(x=>x.id===rptCatEditId);
+    if(c){c.label=name;c.bg=bg;c.fg=fg;}
+  } else {
+    rptCats.push({id:'cat_'+Date.now(),label:name,bg,fg});
+  }
+  saveRptCats(); renderRptCatList(); renderRptFilterBar(); renderReports();
+  closeRptCatForm();
+}
+function confirmDeleteRptCat(id,name){
+  if(id==='other'){alert('「其他」为默认分类，不可删除。');return;}
+  const cnt=reports.filter(r=>r.cat===id).length;
+  document.getElementById('confirm-msg').textContent='确定要删除分类「'+name+'」吗？'+(cnt>0?'该分类下 '+cnt+' 份报告将移至「其他」。':'');
+  document.getElementById('confirm-ok-btn').onclick=()=>{
+    reports.forEach(r=>{if(r.cat===id) r.cat='other';});
+    rptCats=rptCats.filter(c=>c.id!==id);
+    saveRptCats(); saveReports(); renderRptCatList(); renderRptFilterBar(); renderReports(); updateStats();
+    closeModal('confirm-modal');
+  };
+  openModal('confirm-modal');
+}
+function buildRptCatSelect(selectId,selected){
+  const sel=document.getElementById(selectId);
+  if(!sel) return;
+  sel.innerHTML=rptCats.map(c=>
+    `<option value="${c.id}" ${c.id===selected?'selected':''}>${c.label}</option>`
+  ).join('');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -929,7 +1074,82 @@ function openTool(id){
 }
 function openReport(id){
   const r=reports.find(x=>x.id===id); if(!r) return;
-  openIframe('📄',r.title,r.path,'reports');
+  const ext=r.path.split('.').pop().toLowerCase();if(ext==='pdf'){window.open(r.path,'_blank');return;}if(ext==='xlsx'||ext==='xls'){renderExcelInIframe(r.path,r.title);return;}if(ext==='md'){renderMarkdownInIframe(r.path,r.title);return;}openIframe('📄',r.title,r.path,'reports');
+}
+// ═══ Markdown → HTML converter
+function md2html(m){
+  let h=m.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  h=h.replace(/```(\w*)\n([\s\S]*?)```/g,(_,l,c)=>'<pre><code>'+c.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')+'</code></pre>');
+  h=h.replace(/`([^`]+)`/g,(_,c)=>'<code>'+c.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')+'</code>');
+  h=h.replace(/^###### (.+)$/gm,'<h6>$1</h6>').replace(/^##### (.+)$/gm,'<h5>$1</h5>').replace(/^#### (.+)$/gm,'<h4>$1</h4>');
+  h=h.replace(/^### (.+)$/gm,'<h3>$1</h3>').replace(/^## (.+)$/gm,'<h2>$1</h2>').replace(/^# (.+)$/gm,'<h1>$1</h1>');
+  h=h.replace(/\*\*\*(.+?)\*\*\*/g,'<strong><em>$1</em></strong>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>');
+  h=h.replace(/!\[([^\]]*)\]\(([^)]+)\)/g,'<img src="$2" alt="$1" style="max-width:100%">');
+  h=h.replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2">$1</a>');
+  h=h.replace(/^---$/gm,'<hr>');h=h.replace(/^[\-\*] (.+)$/gm,'<li>$1</li>');
+  h=h.replace(/^\d+\. (.+)$/gm,'<li>$1</li>');h=h.replace(/((?:<li>.*<\/li>\n?)+)/g,'<ul>$1</ul>');
+  const ls=h.split('\n');let r=[];
+  for(const l of ls){if(/^\s*$/.test(l)){r.push('');continue;}if(/^\s*</.test(l)){r.push(l);continue;}r.push('<p>'+l+'</p>');}
+  return r.join('\n');
+}
+// ═══ Open iframe with srcdoc
+function openIframeHtml(icon,title,path,htmlContent,backPanel){
+  iframeBackPanel=backPanel||'home';
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('iframe-panel').classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('ifr-icon').textContent=icon;
+  document.getElementById('ifr-title').textContent=title;
+  document.getElementById('ifr-url').textContent=path;
+  document.getElementById('topbar-cur').textContent=title;
+  document.getElementById('ifr-back-btn').onclick=()=>showPanel(iframeBackPanel);
+  document.querySelector('.topbar').style.display='none';
+  renderTopbarActions('iframe');
+  const c=document.getElementById('iframe-container'),k=getIframeKey(path);
+  c.querySelectorAll('.ifr-item').forEach(e=>e.style.display='none');
+  let n=document.getElementById(k);
+  if(n){const f=n.querySelector('iframe');if(f)f.srcdoc=htmlContent;n.style.display='';return;}
+  document.getElementById('ifr-loading').style.display='flex';
+  n=document.createElement('div');n.id=k;n.className='ifr-item';
+  const f=document.createElement('iframe');
+  f.srcdoc=htmlContent;f.style.cssText='width:100%;height:100%;border:none;display:block';
+  f.setAttribute('sandbox','allow-same-origin allow-scripts allow-forms allow-modals allow-popups');
+  f.onload=function(){document.getElementById('ifr-loading').style.display='none';};
+  n.appendChild(f);c.appendChild(n);
+}
+// ═══ Render Excel in iframe (SheetJS)
+async function renderExcelInIframe(path,title){
+  try{
+    const resp=await fetch(path);if(!resp.ok)throw new Error('fetch failed');
+    const data=await resp.arrayBuffer();
+    if(typeof XLSX==='undefined')throw new Error('XLSX not loaded');
+    const wb=XLSX.read(data,{type:'array'});
+    let h='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>';
+    h+='body{font-family:Poppins,Avenir,"Segoe UI",sans-serif;margin:20px;background:#fff;color:#333}';
+    h+='table{border-collapse:collapse;width:100%;margin-bottom:24px;font-size:13px}';
+    h+='th{background:#064338;color:#fff;padding:8px 10px;text-align:left;font-weight:600;font-size:12px}';
+    h+='td{padding:6px 10px;border-bottom:1px solid #e0e0e0}';
+    h+='tr:hover td{background:#f5f3ef}';
+    h+='.sn{font-family:"Playfair Display",serif;font-size:18px;color:#064338;margin:20px 0 10px;padding-bottom:6px;border-bottom:2px solid #F3C546}';
+    h+='</style></head><body>';
+    wb.SheetNames.forEach(name=>{const ws=wb.Sheets[name];h+='<div class="sn">'+name+'</div>'+XLSX.utils.sheet_to_html(ws,{editable:false});});
+    h+='</body></html>';openIframeHtml('📊',title,path,h,'reports');
+  }catch(e){window.open(path,'_blank');}
+}
+// ═══ Render Markdown in iframe
+async function renderMarkdownInIframe(path,title){
+  try{
+    const resp=await fetch(path);if(!resp.ok)throw new Error('fetch failed');
+    const md=await resp.text();const body=md2html(md);
+    let h='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>';
+    h+='body{font-family:Poppins,Avenir,"Segoe UI",sans-serif;margin:24px;background:#fff;color:#333;line-height:1.8;max-width:800px}';
+    h+='h1,h2,h3,h4,h5,h6{font-family:"Playfair Display",serif;color:#064338;margin-top:1.5em}h1{font-size:28px;border-bottom:2px solid #F3C546;padding-bottom:8px}h2{font-size:22px}h3{font-size:18px}';
+    h+='code{background:#f0ede8;padding:2px 6px;border-radius:3px;font-size:13px}pre{background:#f5f3ef;padding:16px;border-radius:8px;overflow-x:auto}pre code{background:none;padding:0}';
+    h+='table{border-collapse:collapse;width:100%;margin:16px 0}th{background:#064338;color:#fff;padding:8px 10px;text-align:left}td{padding:6px 10px;border-bottom:1px solid #e0e0e0}';
+    h+='a{color:#064338}blockquote{border-left:3px solid #F3C546;margin:16px 0;padding:8px 16px;background:#faf8f5}hr{border:none;border-top:1px solid #e0e0e0;margin:24px 0}';
+    h+='</style></head><body>'+body+'</body></html>';
+    openIframeHtml('📝',title,path,h,'reports');
+  }catch(e){window.open(path,'_blank');}
 }
 function reloadIframe(){const s=document.querySelector('#iframe-container>.ifr-item:not([style*="display:none"])');if(s){const i=s.querySelector('iframe');if(i){document.getElementById('ifr-loading').style.display='flex';i.src=i.src;}}}
 function openInNewTab(){const s=document.querySelector('#iframe-container>.ifr-item:not([style*="display:none"])');if(s){const i=s.querySelector('iframe');if(i&&i.src&&i.src!=='about:blank')window.open(i.src,'_blank');}}
@@ -1119,7 +1339,7 @@ function openAddRptModal(){
   document.getElementById('rpt-modal-title').textContent='添加报告';
   document.getElementById('rpt-save-btn').textContent='添加';
   ['rpt-inp-title','rpt-inp-desc','rpt-inp-path','rpt-inp-tags'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('rpt-inp-cat').value='design';
+  buildRptCatSelect('rpt-inp-cat','design');
   document.getElementById('rpt-inp-date').value=new Date().toISOString().slice(0,10);
   openModal('rpt-modal'); setTimeout(()=>document.getElementById('rpt-inp-title').focus(),100);
 }
@@ -1131,7 +1351,7 @@ function openEditRptModal(id){
   document.getElementById('rpt-inp-title').value=r.title;
   document.getElementById('rpt-inp-desc').value=r.desc||'';
   document.getElementById('rpt-inp-path').value=r.path;
-  document.getElementById('rpt-inp-cat').value=r.cat;
+  buildRptCatSelect('rpt-inp-cat',r.cat);
   document.getElementById('rpt-inp-date').value=r.date||'';
   document.getElementById('rpt-inp-tags').value=r.tags||'';
   openModal('rpt-modal'); setTimeout(()=>document.getElementById('rpt-inp-title').focus(),100);
@@ -1217,11 +1437,11 @@ function resetToDefaults(){
     function batchDrop(e){
       e.preventDefault();
       document.getElementById('batch-drop-zone').classList.remove('drag-active');
-      const files = Array.from(e.dataTransfer.files).filter(f=>f.name.endsWith('.html'));
+      const files = Array.from(e.dataTransfer.files).filter(f=>f.name.endsWith('.html')||f.name.endsWith('.pdf')||f.name.endsWith('.xlsx')||f.name.endsWith('.xls')||f.name.endsWith('.md'));
       batchAddFiles(files);
     }
     function batchFilesSelected(e){
-      const files = Array.from(e.target.files).filter(f=>f.name.endsWith('.html'));
+      const files = Array.from(e.target.files).filter(f=>f.name.endsWith('.html')||f.name.endsWith('.pdf')||f.name.endsWith('.xlsx')||f.name.endsWith('.xls')||f.name.endsWith('.md'));
       batchAddFiles(files);
       e.target.value = '';
     }
@@ -1230,7 +1450,7 @@ function resetToDefaults(){
       const today = new Date().toISOString().slice(0,10);
       files.forEach(f=>{
         if(batchFiles.find(x=>x.file.name===f.name)) return; // 去重
-        const rawName = f.name.replace(/\.html$/i,'');
+        const rawName = f.name.replace(/\.(html|pdf|xlsx|xls|md)$/i,'');
         const displayName = rawName.replace(/[-_]/g,' ').replace(/\s+/g,' ').trim();
         batchFiles.push({file:f, name:displayName, path:f.name, cat:'other', tags:'', date:today});
       });
@@ -1255,6 +1475,12 @@ function resetToDefaults(){
       countEl.textContent = `已选择 ${batchFiles.length} 个文件`;
       importBtn.disabled = false;
 
+      const bgc=document.getElementById('batch-global-cat');
+      if(bgc && !bgc.dataset.populated){
+        bgc.innerHTML='<option value="">— 分类 —</option>'+rptCats.map(c=>`<option value="${c.id}">${c.label}</option>`).join('');
+        bgc.dataset.populated='1';
+      }
+
       list.innerHTML = batchFiles.map((item,i)=>{
         const fname = item.file.name;
         return `<div class="batch-rpt-row" id="brow-${i}">
@@ -1268,13 +1494,7 @@ function resetToDefaults(){
             <div>
               <div style="font-size:10px;color:var(--body-gray);margin-bottom:3px">分类</div>
               <select class="batch-fs" onchange="batchFiles[${i}].cat=this.value">
-                <option value="design" ${item.cat==='design'?'selected':''}>🎨 图文设计</option>
-                <option value="listing" ${item.cat==='listing'?'selected':''}>📝 Listing</option>
-                <option value="geo" ${item.cat==='geo'?'selected':''}>🔍 GEO审计</option>
-                <option value="market" ${item.cat==='market'?'selected':''}>📊 市场调研</option>
-                <option value="ads" ${item.cat==='ads'?'selected':''}>📣 广告分析</option>
-                <option value="product" ${item.cat==='product'?'selected':''}>📦 产品分析</option>
-                <option value="other" ${item.cat==='other'?'selected':''}>其他</option>
+                ${rptCats.map(c=>`<option value="${c.id}" ${item.cat===c.id?'selected':''}>${c.label}</option>`).join('')}
               </select>
             </div>
             <div>
@@ -1359,7 +1579,7 @@ function closeModal(id){document.getElementById(id).classList.remove('open');}
 function closeModalOnOverlay(e,id){if(e.target===document.getElementById(id))closeModal(id);}
 
 document.addEventListener('keydown',e=>{
-  const modals=['tool-modal','cat-modal','rpt-modal','confirm-modal','migrate-modal','batch-modal'];
+  const modals=['tool-modal','cat-modal','rpt-modal','rptcat-modal','confirm-modal','migrate-modal','batch-modal'];
   if(e.key==='Escape'){
     const open=modals.find(id=>document.getElementById(id).classList.contains('open'));
     if(open)closeModal(open);
