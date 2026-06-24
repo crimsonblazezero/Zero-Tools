@@ -1418,7 +1418,7 @@ function applyBulkEdit() {
 
   updateEditSummary();
   updateHeroModified();
-  renderFilterTable();
+  clearSelection();
   alert(`✅ 已批量修改 ${count} 条记录`);
 }
 
@@ -1592,7 +1592,7 @@ function applyBulkEdit() {
       });
       updateEditSummary();
       updateHeroModified();
-      renderFilterTable();
+      clearSelection();
       closeSimModal();
       alert('✅ 已将 ' + rows.length + ' 条记录的运营DMS更新为试算结果（' + label + '）');
     }
@@ -1809,6 +1809,8 @@ function applyFilters() {
     if(filterFwdActive&&(r.fwd_stock||0)<=0)return false;
     return true;
   });
+  selectedMskus.clear();
+  updateBulkBar();
   currentPage=1;
   renderFilterTable();
   updateExportPreview();
@@ -1821,6 +1823,8 @@ function resetFilters() {
   filterFwdActive = false;
   updateQuickFilterBtnStyle();
   filteredData=[...ALL_DATA];
+  selectedMskus.clear();
+  updateBulkBar();
   currentPage=1;
   renderFilterTable();
 }
@@ -2713,7 +2717,12 @@ function handleFileUploadDec(e){const f=e.target.files[0];if(f)processDecFile(f)
     try{
       let rawRecords=[];
       if(file.name.toLowerCase().endsWith('.csv')){
-        const text=new TextDecoder('utf-8').decode(e.target.result);
+        let text;
+        try {
+          text = new TextDecoder('utf-8', { fatal: true }).decode(e.target.result);
+        } catch (err) {
+          text = new TextDecoder('gbk').decode(e.target.result);
+        }
         rawRecords=parseCSV(text);
       }else{
         const wb=XLSX.read(e.target.result,{type:'array'});
@@ -2726,7 +2735,20 @@ function handleFileUploadDec(e){const f=e.target.files[0];if(f)processDecFile(f)
           const obj={};headers.forEach((h,i)=>{if(h)obj[h]=row[i]!==undefined?String(row[i]):'';});return obj;
         });
       }
-      const filtered=rawRecords.filter(r=>{const o=String(r['负责人']||'').trim();return ALLOWED_OWNERS.includes(o);});
+      if (rawRecords.length > 0 && !('负责人' in rawRecords[0])) {
+        throw new Error("未找到 '负责人' 列，请检查文件表头是否包含该字段。");
+      }
+      let filtered=rawRecords.filter(r=>{const o=String(r['负责人']||'').trim();return ALLOWED_OWNERS.includes(o);});
+      if(!filtered.length){
+        const fileOwners = [...new Set(rawRecords.map(r => String(r['负责人']||'').trim()).filter(Boolean))];
+        if (fileOwners.length > 0) {
+          fileOwners.forEach(fo => {
+            if (!ALLOWED_OWNERS.includes(fo)) ALLOWED_OWNERS.push(fo);
+          });
+          populateOwnerFilter();
+          filtered = rawRecords.filter(r=>{const o=String(r['负责人']||'').trim();return ALLOWED_OWNERS.includes(o);});
+        }
+      }
       if(!filtered.length){status.className='upload-status error';status.textContent='未找到 '+ALLOWED_OWNERS.join(' / ')+' 负责的数据';return;}
       pendingData=filtered.map(r=>({
         owner:String(r['负责人']||'').trim(),
@@ -2886,7 +2908,12 @@ function processDecFilePrev(file) {
     try{
       let rawRecords=[];
       if(file.name.toLowerCase().endsWith('.csv')){
-        const text=new TextDecoder('utf-8').decode(e.target.result);
+        let text;
+        try {
+          text = new TextDecoder('utf-8', { fatal: true }).decode(e.target.result);
+        } catch (err) {
+          text = new TextDecoder('gbk').decode(e.target.result);
+        }
         rawRecords=parseCSV(text);
       }else{
         const wb=XLSX.read(e.target.result,{type:'array'});
@@ -2899,7 +2926,20 @@ function processDecFilePrev(file) {
           const obj={};headers.forEach((h,i)=>{if(h)obj[h]=row[i]!==undefined?String(row[i]):'';});return obj;
         });
       }
-      const filtered=rawRecords.filter(r=>{const o=String(r['负责人']||'').trim();return ALLOWED_OWNERS.includes(o);});
+      if (rawRecords.length > 0 && !('负责人' in rawRecords[0])) {
+        throw new Error("未找到 '负责人' 列，请检查文件表头是否包含该字段。");
+      }
+      let filtered=rawRecords.filter(r=>{const o=String(r['负责人']||'').trim();return ALLOWED_OWNERS.includes(o);});
+      if(!filtered.length){
+        const fileOwners = [...new Set(rawRecords.map(r => String(r['负责人']||'').trim()).filter(Boolean))];
+        if (fileOwners.length > 0) {
+          fileOwners.forEach(fo => {
+            if (!ALLOWED_OWNERS.includes(fo)) ALLOWED_OWNERS.push(fo);
+          });
+          populateOwnerFilter();
+          filtered = rawRecords.filter(r=>{const o=String(r['负责人']||'').trim();return ALLOWED_OWNERS.includes(o);});
+        }
+      }
       if(!filtered.length){status.className='upload-status error';status.textContent='未找到 '+ALLOWED_OWNERS.join(' / ')+' 负责的数据';return;}
       PREV_DEC_DATA=filtered.map(r=>({
         owner:String(r['负责人']||'').trim(),
@@ -3179,18 +3219,22 @@ document.querySelectorAll('input[name="export-scope"]').forEach(radio=>{
   });
 });
 
-init();
-    function init(){
-      // 动态填充负责人下拉（从 ALLOWED_OWNERS 生成，加新人自动出现）
+    function populateOwnerFilter() {
       ['f-owner','g-owner'].forEach(id=>{
         const sel=document.getElementById(id);
         if(!sel)return;
+        while(sel.options.length>1)sel.remove(1);
         ALLOWED_OWNERS.forEach(name=>{
           const o=document.createElement('option');
           o.value=name; o.textContent=name;
           sel.appendChild(o);
         });
       });
+    }
+
+    init();
+    function init(){
+      populateOwnerFilter();
     }
 </script>
 </body>
