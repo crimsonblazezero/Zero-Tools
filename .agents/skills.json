@@ -1,0 +1,7 @@
+{
+  "entries": [
+    { "path": "../DingTalk/skills/dws" },
+    { "path": "../DingTalk/skills/dingtalk-unified" },
+    { "path": "../DingTalk/skills/connector-dingtalk" }
+  ]
+}

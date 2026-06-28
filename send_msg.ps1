@@ -1,0 +1,2 @@
+$cmd = 'C:\Users\Administrator\.workbuddy\binaries\node\cli-connector-packages\dws.cmd'
+& $cmd chat message send --group cidnfDzVFUHwP081h7ClA2d5TeeCo4WhclfZq8EDsrHlUI= --msg-type file --dentry-id 226656320478 --space-id 6408419582 --file-name "four_agents.jpg" --file-type "jpg" --file-path "/four_agents.jpg" --file-size 1097835 --title "four_agents.jpg" -y --format json > "d:\Zero Tools\out.txt" 2> "d:\Zero Tools\err.txt"

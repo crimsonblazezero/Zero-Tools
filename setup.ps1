@@ -36,13 +36,26 @@ $AgentsContent = @"
 Set-Content -Path $AgentsMdPath -Value $AgentsContent -Encoding utf8
 Write-Host "[√] 本地 Agent 规则配置完成: .agents/AGENTS.md" -ForegroundColor Green
 
-# 4. 引导配置 Gemini API 密钥
+# 4. 引导配置 Gemini API 密钥 与 钉钉 CLI 凭证
 Write-Host "-----------------------------------------" -ForegroundColor Gray
 $ApiKey = Read-Host "请输入您的 Google AI Studio API Key (回车可跳过，后续手动在环境变量或代码中配置)"
 if ($ApiKey) {
     [System.Environment]::SetEnvironmentVariable("GEMINI_API_KEY", $ApiKey, "User")
     Write-Host "[√] Gemini API Key 已成功写入当前用户环境变量！" -ForegroundColor Green
 }
+
+$DwsClientId = Read-Host "请输入钉钉 AppKey (DWS_CLIENT_ID, 方案二，回车可跳过)"
+if ($DwsClientId) {
+    [System.Environment]::SetEnvironmentVariable("DWS_CLIENT_ID", $DwsClientId, "User")
+    Write-Host "[√] DWS_CLIENT_ID (AppKey) 已成功写入当前用户环境变量！" -ForegroundColor Green
+}
+
+$DwsClientSecret = Read-Host "请输入钉钉 AppSecret (DWS_CLIENT_SECRET, 方案二，回车可跳过)"
+if ($DwsClientSecret) {
+    [System.Environment]::SetEnvironmentVariable("DWS_CLIENT_SECRET", $DwsClientSecret, "User")
+    Write-Host "[√] DWS_CLIENT_SECRET (AppSecret) 已成功写入当前用户环境变量！" -ForegroundColor Green
+}
+
 
 # 5. RTK 工具自动下载与部署引导
 Write-Host "-----------------------------------------" -ForegroundColor Gray

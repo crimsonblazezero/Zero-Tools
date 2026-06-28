@@ -130,6 +130,19 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
   }
   ```
 
+### 9. 钉钉 CLI (dws) 独立应用凭证配置 (方案二)
+为保证在新电脑或 VPS 上长期稳定运行（如 Hermes 定时监控发信），推荐使用方案二进行凭证配置：
+1. 登录 [钉钉开放平台](https://open.dingtalk.com)，在应用开发中创建一个「企业内部应用」。
+2. 获取该应用的 `AppKey` 与 `AppSecret`。
+3. 在新电脑的系统环境变量中添加：
+   - 变量名：`DWS_CLIENT_ID`，值设为您的 `AppKey`
+   - 变量名：`DWS_CLIENT_SECRET`，值设为您的 `AppSecret`
+   *(亦可在运行 `setup.ps1` 脚本时根据提示自动输入配置)*
+4. 在 PowerShell 中运行一次登录认证命令以激活授权：
+   ```powershell
+   & "C:\Users\Administrator\.workbuddy\binaries\node\cli-connector-packages\dws.cmd" auth login
+   ```
+
 ---
 
 ## 📜 自动化脚本源码 (`setup.ps1`)
@@ -167,7 +180,7 @@ $AgentsContent = @"
 > Windows 环境下无 bash hook，通过此文件注入 RTK 使用规则。
 
 ## 核心规则：所有 Shell 命令必须加 ``rtk`` 前缀
-在此项目中运行 any shell 命令时，**始终**在命令前加 ``rtk`` 前缀以节省 60-90% token：
+在此项目中运行 any shell命令时，**始终**在命令前加 ``rtk`` 前缀以节省 60-90% token：
 - rtk git status
 - rtk git diff
 - rtk pip install
@@ -175,13 +188,26 @@ $AgentsContent = @"
 Set-Content -Path $AgentsMdPath -Value $AgentsContent -Encoding utf8
 Write-Host "[√] 本地 Agent 规则配置完成: .agents/AGENTS.md" -ForegroundColor Green
 
-# 4. 引导配置 Gemini API 密钥
+# 4. 引导配置 Gemini API 密钥 与 钉钉 CLI 凭证
 Write-Host "-----------------------------------------" -ForegroundColor Gray
 $ApiKey = Read-Host "请输入您的 Google AI Studio API Key (回车可跳过，后续手动在环境变量或代码中配置)"
 if ($ApiKey) {
     [System.Environment]::SetEnvironmentVariable("GEMINI_API_KEY", $ApiKey, "User")
     Write-Host "[√] Gemini API Key 已成功写入当前用户环境变量！" -ForegroundColor Green
 }
+
+$DwsClientId = Read-Host "请输入钉钉 AppKey (DWS_CLIENT_ID, 方案二，回车可跳过)"
+if ($DwsClientId) {
+    [System.Environment]::SetEnvironmentVariable("DWS_CLIENT_ID", $DwsClientId, "User")
+    Write-Host "[√] DWS_CLIENT_ID (AppKey) 已成功写入当前用户环境变量！" -ForegroundColor Green
+}
+
+$DwsClientSecret = Read-Host "请输入钉钉 AppSecret (DWS_CLIENT_SECRET, 方案二，回车可跳过)"
+if ($DwsClientSecret) {
+    [System.Environment]::SetEnvironmentVariable("DWS_CLIENT_SECRET", $DwsClientSecret, "User")
+    Write-Host "[√] DWS_CLIENT_SECRET (AppSecret) 已成功写入当前用户环境变量！" -ForegroundColor Green
+}
+
 
 # 5. RTK 工具自动下载与部署引导
 Write-Host "-----------------------------------------" -ForegroundColor Gray
