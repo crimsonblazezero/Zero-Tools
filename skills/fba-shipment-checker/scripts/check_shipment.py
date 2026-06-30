@@ -513,9 +513,12 @@ def perform_check(zip_path):
         # 4. 送达仓库核对
         warehouse_match = False
         if excel_warehouse and csv_warehouse:
-            # Excel warehouse (e.g. KTW5) should be a substring of CSV warehouse (e.g. KTW5 - KTW5 via...)
-            # Excel 中的仓库代码应该包含在 CSV 中
-            warehouse_match = (excel_warehouse.strip().lower() in csv_warehouse.strip().lower()) or (csv_warehouse.strip().lower() in excel_warehouse.strip().lower())
+            # Normalize whitespace and clean special characters like non-breaking space (\xa0)
+            norm_excel = re.sub(r'\s+', ' ', excel_warehouse.replace('\xa0', ' ').strip().lower())
+            norm_csv = re.sub(r'\s+', ' ', csv_warehouse.replace('\xa0', ' ').strip().lower())
+            # Excel warehouse (e.g. KTW5) should be a substring of CSV warehouse
+            # Excel 中的仓库代码应该包含在 CSV 中，或者反之
+            warehouse_match = (norm_excel in norm_csv) or (norm_csv in norm_excel)
         elif excel_warehouse and not csv_warehouse:
             warehouse_match = "Unknown in CSV"
         elif not excel_warehouse and csv_warehouse:
