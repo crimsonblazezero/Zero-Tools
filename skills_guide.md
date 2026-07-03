@@ -44,6 +44,10 @@ graph TD
 | **`xlsx`** | `skills/xlsx` | 处理 Excel 表格，重新计算公式。常用于亚马逊广告及运营数据处理。 | `/xlsx`, `Excel`, `表格`, `xlsx` |
 | **`pdf`** | `skills/pdf` | 解析、编辑或从 PDF 中提取表单字段，转换页面为图片进行视觉检查。 | `/pdf`, `PDF`, `表单填充` |
 | **`KovaScape Report Design`** | `skills/KovaScape Report Design` | 报告排版风格定制，生成符合 Kova 规范的设计。 | `报告排版`, `Report Design` |
+| **`storage-analyzer`** | `skills/storage-analyzer` | 只读扫描 Mac/Windows 整机磁盘，提供绿/黄/红三色分级建议，并在本地服务网页端提供一键清理。 | `存储分析`, `C盘满了`, `磁盘清理` |
+| **`aihot`** | `skills/aihot` | 免 API Key 获取 aihot.virxact.com 每日 AI HOT 资讯与行业日报。 | `AI资讯`, `AI圈`, `AI热点` |
+| **`hv-analysis`** | `skills/hv-analysis` | 横纵分析法。深度调研公司/产品/概念，生成万字 PDF 研究报告。 | `横纵分析`, `研究报告`, `竞品分析` |
+
 
 ---
 
@@ -102,6 +106,8 @@ graph TD
 | **`mcp-builder`** | `skills/mcp-builder` | 构建新的自定义 MCP 服务，包含 Node/Python 模板与标准协议集成。 | `开发MCP`, `MCP Builder` |
 | **`skill-creator`** | `skills/skill-creator` | 用于让 AI 给自身开发并打包发布新 Skill 的工具。 | `创建新技能`, `Skill Creator` |
 | **`caveman`** | `.agents/skills/caveman` | **野人模式**。极致压缩输出文本以节省 API 费用与 Token 消耗，支持多语言野人/文言文风格。 | `/caveman`, `野人模式`, `wenyan`, `less tokens` |
+| **`neat-freak`** | `skills/neat-freak` | 洁癖模式。自动精简并同步会话产出的临时记忆与项目 CLAUDE.md、docs 变更，防止文档腐烂。 | `/neat`, `/sync`, `整理文档`, `更新记忆` |
+
 
 
 ---
@@ -115,6 +121,8 @@ graph TD
 | **`brainstorming`** | `skills/brainstorming` | 针对特定运营或开发痛点进行发散性头脑风暴。 | `头脑风暴`, `Brainstorm` |
 | **`doc-coauthoring`** | `skills/doc-coauthoring` | 与用户协同撰写高质量的文档。 | `协同编写`, `Coauthor` |
 | **`internal-comms`** | `skills/internal-comms` | 编写优雅的周报、企业简报、FAQ 说明信等。 | `周报`, `企业沟通` |
+| **`khazix-writer`** | `skills/khazix-writer` | 卡兹克写作风格。使用特定口吻和结构节奏撰写高质量公众号长文。 | `写文章`, `写稿子`, `公众号文章` |
+
 
 ---
 
