@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KovaScape AMC 受众策略总览 — 全品类</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Noto+Serif:wght@400;500&family=Playfair+Display:ital,wght@0,500;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --outer-bg: #E4E1DC;
+  --page-bg: #FDFCF9;
+  --surface: #FFFFFF;
+  --border: #E8E6E2;
+  --divider: #C5C0BA;
+  --text-primary: #151515;
+  --text-body: #3D3D3D;
+  --text-secondary: #717171;
+  --hero-bg: #EAE6DC;
+  --success-bg: #E8FBCF; --success-fg: #3D4826;
+  --warning-bg: #FFF0DC; --warning-fg: #E47700;
+  --info-bg: #DEE5F7; --info-fg: #3E54CE;
+  --error-bg: #FDECEA; --error-fg: #C4433A;
+  --neutral-bg: #FDF9F2; --neutral-fg: #7C746F;
+  --brand-green: #064338;
+  --brand-gold: #F3C546;
+  /* 品类色 */
+  --shelf-ind-bg: #E8F0EE; --shelf-ind-fg: #064338; --shelf-ind-border: #9BBFB8;
+  --shelf-hol-bg: #EEF5E8; --shelf-hol-fg: #2D5A1B; --shelf-hol-border: #9DC88A;
+  --wood-bg: #F5EFE6; --wood-fg: #6B4226; --wood-border: #C8A882;
+  --alum-bg: #EEF0F5; --alum-fg: #2C3E6B; --alum-border: #8FA8D0;
+  --enamel-bg: #FFF0F5; --enamel-fg: #8B2252; --enamel-border: #E0A0C0;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter Tight', sans-serif;
+  background: var(--outer-bg);
+  color: var(--text-body);
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 32px 16px;
+}
+.page {
+  max-width: 1240px;
+  margin: 0 auto;
+  background: var(--page-bg);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 4px 40px rgba(0,0,0,0.08);
+}
+
+/* ── HERO ── */
+.hero {
+  background: var(--hero-bg);
+  padding: 60px 52px 52px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-blobs {
+  position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;
+}
+.hero-inner { position: relative; z-index: 1; }
+.hero-eyebrow {
+  font-size: 11px; font-weight: 600; color: var(--brand-green);
+  letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.hero-eyebrow-line {
+  display: inline-block; width: 32px; height: 2px;
+  background: var(--brand-gold); border-radius: 2px;
+}
+.hero h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 42px; font-weight: 600; color: var(--brand-green);
+  line-height: 1.15; margin-bottom: 8px;
+}
+.hero h1 em { font-style: italic; color: #3A7A6A; }
+.hero-subtitle {
+  font-size: 15px; color: var(--text-body); max-width: 700px; margin-bottom: 36px; line-height: 1.7;
+}
+.hero-divider { width: 100%; height: 0.5px; background: rgba(255,255,255,0.7); margin-bottom: 32px; }
+.hero-stats { display: flex; gap: 48px; flex-wrap: wrap; }
+.hero-stat { }
+.hero-stat-value {
+  font-family: 'Noto Serif', serif; font-size: 36px; font-weight: 500;
+  color: var(--brand-green); letter-spacing: -0.02em; line-height: 1;
+}
+.hero-stat-label { font-size: 12px; color: var(--text-secondary); margin-top: 5px; }
+
+/* ── CONTENT ── */
+.content { padding: 52px; }
+
+/* ── SECTION ── */
+.section { margin-bottom: 56px; }
+.section-header { margin-bottom: 24px; padding-bottom: 14px; border-bottom: 0.5px solid var(--border); display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.section-title { font-size: 18px; font-weight: 700; color: var(--text-primary); }
+.section-sub { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+.section-badge { font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 20px; background: var(--neutral-bg); color: var(--text-secondary); white-space: nowrap; flex-shrink: 0; }
+
+/* ── PILLS ── */
+.pill { display: inline-flex; align-items: center; font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px; }
+.pill-success { background: var(--success-bg); color: var(--success-fg); }
+.pill-warning { background: var(--warning-bg); color: var(--warning-fg); }
+.pill-info { background: var(--info-bg); color: var(--info-fg); }
+.pill-error { background: var(--error-bg); color: var(--error-fg); }
+.pill-neutral { background: var(--neutral-bg); color: var(--neutral-fg); }
+.pill-brand { background: #E8F0EE; color: var(--brand-green); }
+.pill-gold { background: #FEF8E3; color: #8A6A00; }
+.pill-shelf-ind { background: var(--shelf-ind-bg); color: var(--shelf-ind-fg); }
+.pill-shelf-hol { background: var(--shelf-hol-bg); color: var(--shelf-hol-fg); }
+.pill-wood { background: var(--wood-bg); color: var(--wood-fg); }
+.pill-alum { background: var(--alum-bg); color: var(--alum-fg); }
+.pill-enamel { background: var(--enamel-bg); color: var(--enamel-fg); }
+
+/* ── CATEGORY OVERVIEW CARDS ── */
+.cat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 28px; }
+.cat-card {
+  border-radius: 14px; padding: 18px 16px; border: 1px solid transparent;
+  position: relative; overflow: hidden; cursor: default;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.cat-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+.cat-card.shelf-ind { background: var(--shelf-ind-bg); border-color: var(--shelf-ind-border); }
+.cat-card.shelf-hol { background: var(--shelf-hol-bg); border-color: var(--shelf-hol-border); }
+.cat-card.wood { background: var(--wood-bg); border-color: var(--wood-border); }
+.cat-card.alum { background: var(--alum-bg); border-color: var(--alum-border); }
+.cat-card.enamel { background: var(--enamel-bg); border-color: var(--enamel-border); }
+.cat-icon { font-size: 26px; margin-bottom: 10px; }
+.cat-name { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 3px; }
+.cat-sub { font-size: 11px; color: var(--text-secondary); margin-bottom: 10px; line-height: 1.5; }
+.cat-stat-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.cat-stat { }
+.cat-stat-val { font-family: 'Noto Serif', serif; font-size: 20px; font-weight: 500; color: var(--brand-green); line-height: 1; }
+.cat-stat-lbl { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
+
+/* ── MASTER TABLE ── */
+.master-table-wrap { overflow-x: auto; border-radius: 12px; border: 0.5px solid var(--border); }
+.master-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 900px; }
+.master-table thead th {
+  font-size: 11px; font-weight: 600; color: var(--text-secondary);
+  text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--divider);
+  background: var(--neutral-bg); white-space: nowrap; position: sticky; top: 0;
+}
+.master-table tbody td { padding: 11px 14px; border-bottom: 0.5px solid var(--border); vertical-align: middle; }
+.master-table tbody tr:last-child td { border-bottom: none; }
+.master-table tbody tr:hover { background: #FAFAF8; }
+.master-table .cat-stripe-shelf-ind { border-left: 3px solid var(--shelf-ind-fg); }
+.master-table .cat-stripe-shelf-hol { border-left: 3px solid var(--shelf-hol-fg); }
+.master-table .cat-stripe-wood { border-left: 3px solid var(--wood-fg); }
+.master-table .cat-stripe-alum { border-left: 3px solid var(--alum-fg); }
+.master-table .cat-stripe-enamel { border-left: 3px solid var(--enamel-fg); }
+.priority-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+.priority-p1 { background: #C4433A; }
+.priority-p2 { background: #E47700; }
+.priority-p3 { background: #3D4826; }
+.audience-id { font-family: monospace; font-size: 11px; font-weight: 600; color: var(--text-secondary); }
+
+/* ── FUNNEL MATRIX ── */
+.funnel-matrix { display: grid; grid-template-columns: 80px repeat(5, 1fr); gap: 1px; background: var(--border); border-radius: 12px; overflow: hidden; }
+.fm-cell { background: var(--surface); padding: 14px 12px; }
+.fm-header { background: var(--neutral-bg); font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; display: flex; align-items: center; justify-content: center; text-align: center; }
+.fm-row-label { background: var(--neutral-bg); font-size: 12px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; justify-content: center; text-align: center; writing-mode: horizontal-tb; }
+.fm-row-label.tof { background: #E8F0EE; color: var(--brand-green); }
+.fm-row-label.mof { background: #EEF3E8; color: #2D5A1B; }
+.fm-row-label.bof { background: #F5F8E8; color: #3D4826; }
+.fm-audience-item { margin-bottom: 8px; padding: 8px 10px; border-radius: 8px; border: 0.5px solid var(--border); background: var(--surface); }
+.fm-audience-item:last-child { margin-bottom: 0; }
+.fm-audience-id { font-family: monospace; font-size: 10px; font-weight: 700; margin-bottom: 3px; }
+.fm-audience-name { font-size: 11px; color: var(--text-body); line-height: 1.4; }
+.fm-audience-window { font-size: 10px; color: var(--text-secondary); margin-top: 3px; }
+.fm-cell.shelf-ind .fm-audience-item { background: var(--shelf-ind-bg); border-color: var(--shelf-ind-border); }
+.fm-cell.shelf-ind .fm-audience-id { color: var(--shelf-ind-fg); }
+.fm-cell.shelf-hol .fm-audience-item { background: var(--shelf-hol-bg); border-color: var(--shelf-hol-border); }
+.fm-cell.shelf-hol .fm-audience-id { color: var(--shelf-hol-fg); }
+.fm-cell.wood .fm-audience-item { background: var(--wood-bg); border-color: var(--wood-border); }
+.fm-cell.wood .fm-audience-id { color: var(--wood-fg); }
+.fm-cell.alum .fm-audience-item { background: var(--alum-bg); border-color: var(--alum-border); }
+.fm-cell.alum .fm-audience-id { color: var(--alum-fg); }
+.fm-cell.enamel .fm-audience-item { background: var(--enamel-bg); border-color: var(--enamel-border); }
+.fm-cell.enamel .fm-audience-id { color: var(--enamel-fg); }
+
+/* ── CROSS-SELL MAP ── */
+.cross-sell-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.cross-sell-card {
+  background: var(--surface); border: 0.5px solid var(--border);
+  border-radius: 12px; padding: 18px; position: relative;
+}
+.cross-sell-from { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.cross-sell-product { font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; }
+.cross-sell-arrow { text-align: center; font-size: 20px; color: var(--brand-gold); margin: 8px 0; }
+.cross-sell-to { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.cross-sell-target { font-size: 13px; font-weight: 600; color: var(--brand-green); margin-bottom: 8px; }
+.cross-sell-logic { font-size: 12px; color: var(--text-body); line-height: 1.6; }
+.cross-sell-window { font-size: 11px; color: var(--text-secondary); margin-top: 8px; }
+
+/* ── PHASE TIMELINE ── */
+.phase-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; position: relative; }
+.phase-grid::before {
+  content: ''; position: absolute; top: 28px; left: 10%; right: 10%;
+  height: 2px; background: linear-gradient(90deg, var(--brand-green), var(--brand-gold));
+  z-index: 0;
+}
+.phase-card { padding: 0 12px; position: relative; z-index: 1; }
+.phase-dot-wrap { display: flex; justify-content: center; margin-bottom: 16px; }
+.phase-dot {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--brand-green); border: 3px solid var(--page-bg);
+  box-shadow: 0 0 0 2px var(--brand-green);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: white;
+}
+.phase-label { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; text-align: center; margin-bottom: 6px; }
+.phase-title { font-size: 13px; font-weight: 700; color: var(--text-primary); text-align: center; margin-bottom: 8px; }
+.phase-items { display: flex; flex-direction: column; gap: 5px; }
+.phase-item {
+  font-size: 11px; padding: 5px 8px; border-radius: 6px;
+  border: 0.5px solid var(--border); background: var(--surface); text-align: center;
+}
+
+/* ── WINDOW COMPARISON ── */
+.window-chart-wrap { background: var(--surface); border: 0.5px solid var(--border); border-radius: 12px; padding: 20px 24px; }
+.window-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.window-row:last-child { margin-bottom: 0; }
+.window-label { font-size: 12px; font-weight: 500; color: var(--text-body); width: 160px; flex-shrink: 0; }
+.window-track { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.window-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+.window-value { font-size: 12px; font-weight: 600; color: var(--text-primary); width: 50px; text-align: right; flex-shrink: 0; }
+
+/* ── ALERT ── */
+.alert { border-radius: 10px; padding: 14px 18px; margin-bottom: 16px; }
+.alert-title { font-size: 13px; font-weight: 700; margin-bottom: 5px; }
+.alert-body { font-size: 13px; line-height: 1.7; }
+.alert-info { background: var(--info-bg); color: var(--info-fg); }
+.alert-warning { background: var(--warning-bg); color: var(--warning-fg); }
+.alert-success { background: var(--success-bg); color: var(--success-fg); }
+
+/* ── HIGHLIGHT BOX ── */
+.highlight-box {
+  border-left: 3px solid var(--brand-gold); background: #FEFBF0;
+  padding: 14px 16px; border-radius: 0 8px 8px 0; margin: 12px 0;
+}
+.highlight-box-title { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 5px; }
+.highlight-box-body { font-size: 13px; color: var(--text-body); line-height: 1.7; }
+
+/* ── BUDGET ALLOCATION ── */
+.budget-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.budget-card {
+  border-radius: 12px; padding: 16px; text-align: center;
+  border: 0.5px solid var(--border);
+}
+.budget-pct { font-family: 'Noto Serif', serif; font-size: 28px; font-weight: 500; line-height: 1; margin-bottom: 6px; }
+.budget-name { font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+.budget-reason { font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
+
+/* ── KPI TABLE ── */
+.kpi-table-wrap { overflow-x: auto; border-radius: 12px; border: 0.5px solid var(--border); }
+.kpi-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.kpi-table thead th { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--divider); background: var(--neutral-bg); white-space: nowrap; }
+.kpi-table tbody td { padding: 11px 14px; border-bottom: 0.5px solid var(--border); vertical-align: middle; }
+.kpi-table tbody tr:last-child td { border-bottom: none; }
+.kpi-table tbody tr:hover { background: #FAFAF8; }
+
+/* ── NAMING GUIDE ── */
+.naming-box { background: #F5F5F0; border-radius: 8px; padding: 12px 16px; font-family: monospace; font-size: 13px; color: var(--text-primary); margin-bottom: 14px; }
+
+/* ── FOOTER ── */
+.footer {
+  background: var(--hero-bg); padding: 36px 52px; position: relative; overflow: hidden;
+}
+.footer-blobs { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.footer-inner { position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; flex-wrap: wrap; }
+.footer-brand { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 600; color: var(--brand-green); }
+.footer-sub { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+.footer-divider { width: 100%; height: 0.5px; background: rgba(255,255,255,0.7); margin: 20px 0; }
+.footer-bottom { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-secondary); flex-wrap: wrap; gap: 8px; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  body { padding: 0; }
+  .page { border-radius: 0; }
+  .hero { padding: 36px 20px 32px; }
+  .hero h1 { font-size: 28px; }
+  .content { padding: 24px 20px; }
+  .cat-grid { grid-template-columns: repeat(2, 1fr); }
+  .cross-sell-grid { grid-template-columns: 1fr; }
+  .phase-grid { grid-template-columns: repeat(2, 1fr); }
+  .phase-grid::before { display: none; }
+  .budget-grid { grid-template-columns: repeat(2, 1fr); }
+  .funnel-matrix { grid-template-columns: 60px repeat(2, 1fr); }
+  .footer { padding: 24px 20px; }
+}
+
+/* ── CHART ── */
+.chart-container { position: relative; height: 240px; }
+
+/* ── TABS ── */
+.tab-nav { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+.tab-btn { padding: 8px 18px; font-size: 13px; font-weight: 500; color: var(--text-secondary); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.2s; margin-bottom: -1px; }
+.tab-btn.active { color: var(--brand-green); border-bottom-color: var(--brand-green); font-weight: 600; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── SPARKLINE ── */
+.sparkline-wrap { display: flex; align-items: center; gap: 8px; }
+.sparkline-canvas { height: 32px; width: 80px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ══════════ HERO ══════════ -->
+<div class="hero">
+  <svg class="hero-blobs" viewBox="0 0 1240 380" preserveAspectRatio="xMidYMid slice">
+    <path d="M-80,60 C20,-30 180,20 240,140 C300,260 220,360 100,360 C-20,360 -140,280 -80,60Z" fill="#C8BB9F" opacity="0.16"/>
+    <path d="M1000,0 C1100,-40 1260,30 1240,150 C1220,270 1120,360 1000,350 C880,340 820,260 1000,0Z" fill="#A99778" opacity="0.13"/>
+    <path d="M500,300 C580,260 680,280 720,360 C760,440 700,480 600,460 C500,440 420,340 500,300Z" fill="#C8BB9F" opacity="0.2"/>
+    <path d="M300,-20 C380,-50 460,10 440,90 C420,170 320,190 260,140 C200,90 220,10 300,-20Z" fill="#A99778" opacity="0.11"/>
+    <path d="M750,20 C800,-10 860,20 850,80 C840,140 780,160 740,130 C700,100 700,50 750,20Z" fill="#C8BB9F" opacity="0.14"/>
+  </svg>
+  <div class="hero-inner">
+    <div class="hero-eyebrow">
+      <span class="hero-eyebrow-line"></span>
+      KovaScape · Amazon Marketing Cloud · 全品类受众策略总览
+    </div>
+    <h1>AMC 受众策略<br><em>全品类总览</em></h1>
+    <p class="hero-subtitle">整合层板（显性层板 + 空心层板）与相框（实木 + 铝框大留白 + 滴胶珐琅）五条产品线的完整 AMC 受众体系，涵盖 27 个核心受众方案、全漏斗覆盖、跨品类联动策略与分阶段执行计划。</p>
+    <div class="hero-divider"></div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-value">5</div>
+        <div class="hero-stat-label">产品线</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value">27</div>
+        <div class="hero-stat-label">核心受众方案</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value">3</div>
+        <div class="hero-stat-label">漏斗层级</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value">4</div>
+        <div class="hero-stat-label">执行阶段</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-value">6</div>
+        <div class="hero-stat-label">跨品类联动</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ CONTENT ══════════ -->
+<div class="content">
+
+  <!-- ── 1. 五条产品线概览 ── -->
+  <div class="section">
+    <div class="section-header">
+      <div>
+        <div class="section-title">五条产品线 · 品类概览</div>
+        <div class="section-sub">每条产品线的核心定位、买家类型与 AMC 策略重点</div>
+      </div>
+      <div class="section-badge">5 条产品线</div>
+    </div>
+
+    <div class="cat-grid">
+      <div class="cat-card shelf-ind">
+        <div class="cat-icon">🔩</div>
+        <div class="cat-name">显性层板</div>
+        <div class="cat-sub">带三角金属支架<br>工业风 · 重物收纳</div>
+        <div class="cat-stat-row">
+          <div class="cat-stat"><div class="cat-stat-val">5</div><div class="cat-stat-lbl">受众方案</div></div>
+          <div class="cat-stat"><div class="cat-stat-val">14天</div><div class="cat-stat-lbl">再营销窗口</div></div>
+        </div>
+      </div>
+      <div class="cat-card shelf-hol">
+        <div class="cat-icon">🪵</div>
+        <div class="cat-name">空心层板</div>
+        <div class="cat-sub">MDF厚板 · 仿木纹<br>北欧/农舍风 · 装饰</div>
+        <div class="cat-stat-row">
+          <div class="cat-stat"><div class="cat-stat-val">5</div><div class="cat-stat-lbl">受众方案</div></div>
+          <div class="cat-stat"><div class="cat-stat-val">30天</div><div class="cat-stat-lbl">再营销窗口</div></div>
+        </div>
+      </div>
+      <div class="cat-card wood">
+        <div class="cat-icon">🌳</div>
+        <div class="cat-name">实木相框</div>
+        <div class="cat-sub">橡木 · 胡桃木<br>榫卯工艺 · 高端定位</div>
+        <div class="cat-stat-row">
+          <div class="cat-stat"><div class="cat-stat-val">7</div><div class="cat-stat-lbl">受众方案</div></div>
+          <div class="cat-stat"><div class="cat-stat-val">21天</div><div class="cat-stat-lbl">再营销窗口</div></div>
+        </div>
+      </div>
+      <div class="cat-card alum">
+        <div class="cat-icon">🖼️</div>
+        <div class="cat-name">铝框大留白</div>
+        <div class="cat-sub">黑/金/银 · 大留白卡纸<br>Gallery Wall · 艺术感</div>
+        <div class="cat-stat-row">
+          <div class="cat-stat"><div class="cat-stat-val">5</div><div class="cat-stat-lbl">受众方案</div></div>
+          <div class="cat-stat"><div class="cat-stat-val">21天</div><div class="cat-stat-lbl">再营销窗口</div></div>
+        </div>
+      </div>
+      <div class="cat-card enamel">
+        <div class="cat-icon">✨</div>
+        <div class="cat-name">滴胶珐琅相框</div>
+        <div class="cat-sub">6色 · 高光质感<br>礼品 · 冲动购买</div>
+        <div class="cat-stat-row">
+          <div class="cat-stat"><div class="cat-stat-val">5</div><div class="cat-stat-lbl">受众方案</div></div>
+          <div class="cat-stat"><div class="cat-stat-val">3天</div><div class="cat-stat-lbl">再营销窗口</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 再营销窗口对比 -->
+    <div class="window-chart-wrap">
+      <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:16px;">再营销时间窗口对比（天数越短 = 决策越快 = 冲动购买属性越强）</div>
+      <div class="window-row">
+        <div class="window-label"><span class="pill pill-enamel">✨ 滴胶珐琅</span></div>
+        <div class="window-track"><div class="window-fill" style="width:10%;background:#D4548A;"></div></div>
+        <div class="window-value">3 天</div>
+      </div>
+      <div class="window-row">
+        <div class="window-label"><span class="pill pill-shelf-ind">🔩 显性层板</span></div>
+        <div class="window-track"><div class="window-fill" style="width:47%;background:#064338;"></div></div>
+        <div class="window-value">14 天</div>
+      </div>
+      <div class="window-row">
+        <div class="window-label"><span class="pill pill-alum">🖼️ 铝框大留白</span></div>
+        <div class="window-track"><div class="window-fill" style="width:70%;background:#5B7AB8;"></div></div>
+        <div class="window-value">21 天</div>
+      </div>
+      <div class="window-row">
+        <div class="window-label"><span class="pill pill-wood">🌳 实木相框</span></div>
+        <div class="window-track"><div class="window-fill" style="width:70%;background:#A0714F;"></div></div>
+        <div class="window-value">21 天</div>
+      </div>
+      <div class="window-row">
+        <div class="window-label"><span class="pill pill-shelf-hol">🪵 空心层板</span></div>
+        <div class="window-track"><div class="window-fill" style="width:100%;background:#2D5A1B;"></div></div>
+        <div class="window-value">30 天</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 2. 全品类受众总表 ── -->
+  <div class="section">
+    <div class="section-header">
+      <div>
+        <div class="section-title">全品类受众方案总表</div>
+        <div class="section-sub">27 个受众方案一览，按产品线 + 漏斗层级排列，含优先级与关键参数</div>
+      </div>
+      <div class="section-badge">27 个受众</div>
+    </div>
+
+    <div class="master-table-wrap">
+      <table class="master-table">
+        <thead>
+          <tr>
+            <th>编号</th>
+            <th>产品线</th>
+            <th>受众名称</th>
+            <th>漏斗</th>
+            <th>基础受众</th>
+            <th>时间窗口</th>
+            <th>阈值</th>
+            <th>自动更新</th>
+            <th>优先级</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- 显性层板 -->
+          <tr><td class="cat-stripe-shelf-ind"><span class="audience-id">SH-I-01</span></td><td><span class="pill pill-shelf-ind">🔩 显性层板</span></td><td>相似受众扩展（购买种子）</td><td><span class="pill pill-info">TOF</span></td><td>转化事件→购买</td><td>过去90天</td><td>邻近度1级</td><td>每7天</td><td><span class="priority-dot priority-p1"></span><span class="pill pill-success">高</span></td></tr>
+          <tr><td class="cat-stripe-shelf-ind"><span class="audience-id">SH-I-02</span></td><td><span class="pill pill-shelf-ind">🔩 显性层板</span></td><td>曝光未点击再触达</td><td><span class="pill pill-info">TOF</span></td><td>被曝光（≥3次）</td><td>过去14天</td><td>曝光≥3次</td><td>每3天</td><td><span class="priority-dot priority-p2"></span><span class="pill pill-warning">中</span></td></tr>
+          <tr><td class="cat-stripe-shelf-ind"><span class="audience-id">SH-I-03</span></td><td><span class="pill pill-shelf-ind">🔩 显性层板</span></td><td>点击未购买高意向（14天）</td><td><span class="pill pill-warning">MOF</span></td><td>已点击</td><td>过去14天</td><td>≥1次点击</td><td>每3天</td><td><span class="priority-dot priority-p1"></span><span class="pill pill-success">最高</span></td></tr>
+          <tr><td class="cat-stripe-shelf-ind"><span class="audience-id">SH-I-04</span></td><td><span class="pill pill-shelf-ind">🔩 显性层板</span></td><td>加购未结账追回（7天）</td><td><span class="pill pill-warning">MOF</span></td><td>转化事件→加购</td><td>过去7天</td><td>≥1次加购</td><td>每1天</td><td><span class="priority-dot priority-p1"></span><span class="pill pill-success">最高</span></td></tr>
+          <tr><td class="cat-stripe-shelf-ind"><span class="audience-id">SH-I-05</span></td><td><span class="pill pill-shelf-ind">🔩 显性层板</span></td><td>已购买→交叉销售空心层板</td><td><span class="pill pill-success">BOF</span></td><td>转化事件→购买</td><td>过去180天</td><td>购买金额≥$30</td><td>每7天</td><td><span class="priority-dot priority-p1"></span><span class="pill pill-success">高</span></td></tr>
+          <!-- 空心层板 -->
+          <tr><td class="cat-stripe-shelf-hol"><span class="audience-id">SH-H-01</span></td><td><span class="pill pill-shelf-hol">🪵 空心层板</span></td><td>相似受众扩展（购买种子）</td><td><span class="pill pill-info">TOF</span></td><td>转化事件→购买</td><td>过去90天</td><td>邻近度1–2级</td><td>每7天</td><td><span class="priority-dot priority-p1"></span><span class="pill pill-success">高</span></td></tr>
+          <tr><td class="cat-stripe-shelf-hol"><span class="audience-id">SH-H-02</span></td><td><span class="pill pill-shelf-hol">🪵 空心层板</span></td><td>点击未购买（30天）</td><td><span class="pill pill-warning">MOF</span></td><td>已点击</td><td>过去30天</td><td>≥1次点击</td><td>每7天</td><td><span class="priority-dot priority-p1"></span><span class="pill pill-success">最高</span></td></tr>
+          <tr><td class="cat-stripe-shelf-hol"><span class="audience-id">SH-H-03</span></td><td><span class="pill pill-shelf-hol">🪵 空心层板</span></td><td>加购未结账追回（7天）</td><td><span class="pill pill-warning">MOF</span></td><td>转化事件→加购</td><td>过去7天</td><td>≥1次加购</td><td>每1天</td><td><span class="priority-dot priority-p1"></span><span class="pill pill-success">最高</span></td></tr>
+          <tr><td class="cat-stripe-shelf-hol"><span class="audience-id">SH-H-04</span></td><td><span class="pill pill-shelf-hol">🪵 空心层板</span></td><td>多次浏览高意向（≥3次/30天）</td><td><span class="pill pill-warning">MOF</span></td><td>已点击</td><td>过去30天</td><td>≥3次点击</td><td>每7天</td><td><span class="priority-dot priority-p2"></span><span class="pill pill-warning">中高</span></td></tr>
+          <tr><td class="cat-stripe-shelf-hol"><span class="audience-id">SH-H-05</span></td><td><span class="pill pill-shelf-hol">🪵 空心层板</span></td><td>已购买复购（90天后）</td><td><span class="pill pill-success">BOF</span></td><td>转化事件→购买</td><td>90–365天前</td><td>—</td><td>每14天</td><td><span class="priority-dot priority-p2"></span><span class="pill pill-warning">中</span></td></tr>
+          <!-- 实木相框 -->
+          <tr><td class="cat-stripe-wood"><span class="audience-id">FR-W-01</span></td><td><span class="pill pill-wood">🌳 实木相框</span></td><td>小框礼品意向（节日前7天）</td><td><span class="pill pill-info">TOF/MOF</span></td><td>已点击</td><td>过去7天</td><td>节日前30天激活</td><td>每3天</td><td><span class="priority-dot priority-p1"></span><span class="pill pill-success">高</span></td></tr>
+          <tr><td class="cat-stripe-wood"><span class="audience-id">FR-W-02</span></td><td><span class="pill pill-wood">🌳 实木相框</span></td><td>小框加购未结账（7天）</td><td><span class="pill pill-warning">MOF</span></td><td>转化事件→加购</td><td>过去7天</td><td>≥1次加购</td><td>每1天</td><td><span class="priority-dot priority-p1"></span><span class="pill pill-success">最高</span></td></tr>
+          <tr><td class="cat-stripe-wood"><span class="audience-id">FR-W-03</span></td><td><span class="pill pill-wood">🌳 实木相框</span></td><td>中框材质选择焦虑（≥3次/14天）</td><td><span class="pill pill-warning">MOF</span></td><td>已点击</td><td>过去14天</td><td>≥3次点击</td><td>每3天</td><td><span class="priority-dot priority-p1"></span><span class="pill pill-success">最高</span></td></tr>
+          <tr><td class="cat-stripe-wood"><span class="audience-id">FR-W-04</span></td><td><span class="pill pill-wood">🌳 实木相框</span></td><td>中框Gallery Wall相似扩展</td><td><span class="pill pill-info">TOF</span></td><td>转化事件→购买</td><td>过去180天</td><td>邻近度1级</td><td>每7天</td><td><span class="priority-dot priority-p1"></span><span class="pill pill-success">高</span></td></tr>
+          <tr><td class="cat-stripe-wood"><span class="audience-id">FR-W-05</span></td><td><span class="pill pill-wood">🌳 实木相框</span></td><td>中框已购买复购（90天后）</td><td><span class="pill pill-success">BOF</span></td><td>转化事件→购买</td><td>90–365天前</td><td>—</td><td>每14天</td><td><span class="priority-dot priority-p2"></span><span class="pill pill-warning">中高</span></td></tr>
+          <tr><td class="cat-stripe-wood"><span class="audience-id">FR-W-06</span></td><td><span class="pill pill-wood">🌳 实木相框</span></td><td>大框高意向点击（21天）</td><td><span class="pill pill-warning">MOF</span></td><td>已点击</td><td>过去21天</td><td>≥1次点击</td><td>每3天</td><td><span class="priority-dot priority-p1"></span><span class="pill pill-success">高</span></td></tr>
+          <tr><td class="cat-stripe-wood"><span class="audience-id">FR-W-07</span></td><td><span class="pill pill-wood">🌳 实木相框</span></td><td>大框高价值客户（≥$45）</td><td><span class="pill pill-success">BOF</span></td><td>转化事件→购买</td><td>过去365天</td><td>金额≥$45</td><td>每14天</td><td><span class="priority-dot priority-p1"></span><span class="pill pill-success">高</span></td></tr>
+          <!-- 铝框 -->
+          <tr><td class="cat-stripe-alum"><span class="audience-id">FR-A-01</span></td><td><span class="pill pill-alum">🖼️ 铝框大留白</span></td><td>颜色选择焦虑（≥2次/14天）</td><td><span class="pill pill-warning">MOF</span></td><td>已点击</td><td>过去14天</td><td>≥2次点击</td><td>每3天</td><td><span class="priority-dot priority-p1"></span><span class="pill pill-success">最高</span></td></tr>
+          <tr><td class="cat-stripe-alum"><span class="audience-id">FR-A-02</span></td><td><span class="pill pill-alum">🖼️ 铝框大留白</span></td><td>Gallery Wall入门相似扩展</td><td><span class="pill pill-info">TOF</span></td><td>转化事件→购买</td><td>过去180天</td><td>邻近度1–2级</td><td>每7天</td><td><span class="priority-dot priority-p1"></span><span class="pill pill-success">高</span></td></tr>
+          <tr><td class="cat-stripe-alum"><span class="audience-id">FR-A-03</span></td><td><span class="pill pill-alum">🖼️ 铝框大留白</span></td><td>已购买Gallery Wall复购</td><td><span class="pill pill-success">BOF</span></td><td>转化事件→购买</td><td>30–180天前</td><td>—</td><td>每7天</td><td><span class="priority-dot priority-p1"></span><span class="pill pill-success">最高</span></td></tr>
+          <tr><td class="cat-stripe-alum"><span class="audience-id">FR-A-04</span></td><td><span class="pill pill-alum">🖼️ 铝框大留白</span></td><td>竞品浏览截流（14天）</td><td><span class="pill pill-info">TOF/MOF</span></td><td>商品详情页浏览</td><td>过去14天</td><td>竞品ASIN</td><td>每3天</td><td><span class="priority-dot priority-p2"></span><span class="pill pill-warning">中高</span></td></tr>
+          <tr><td class="cat-stripe-alum"><span class="audience-id">FR-A-05</span></td><td><span class="pill pill-alum">🖼️ 铝框大留白</span></td><td>大尺寸高意向点击（21天）</td><td><span class="pill pill-warning">MOF</span></td><td>已点击</td><td>过去21天</td><td>≥1次点击</td><td>每3天</td><td><span class="priority-dot priority-p1"></span><span class="pill pill-success">高</span></td></tr>
+          <!-- 滴胶 -->
+          <tr><td class="cat-stripe-enamel"><span class="audience-id">FR-E-01</span></td><td><span class="pill pill-enamel">✨ 滴胶珐琅</span></td><td>冲动购买追回（3天）</td><td><span class="pill pill-warning">MOF</span></td><td>已点击</td><td>过去3天</td><td>≥1次点击</td><td>每1天</td><td><span class="priority-dot priority-p1"></span><span class="pill pill-success">最高</span></td></tr>
+          <tr><td class="cat-stripe-enamel"><span class="audience-id">FR-E-02</span></td><td><span class="pill pill-enamel">✨ 滴胶珐琅</span></td><td>多色复购（60天后）</td><td><span class="pill pill-success">BOF</span></td><td>转化事件→购买</td><td>60–365天前</td><td>—</td><td>每7天</td><td><span class="priority-dot priority-p1"></span><span class="pill pill-success">高</span></td></tr>
+          <tr><td class="cat-stripe-enamel"><span class="audience-id">FR-E-03</span></td><td><span class="pill pill-enamel">✨ 滴胶珐琅</span></td><td>中框点击未购（7天）</td><td><span class="pill pill-warning">MOF</span></td><td>已点击</td><td>过去7天</td><td>≥1次点击</td><td>每3天</td><td><span class="priority-dot priority-p2"></span><span class="pill pill-warning">中高</span></td></tr>
+          <tr><td class="cat-stripe-enamel"><span class="audience-id">FR-E-04</span></td><td><span class="pill pill-enamel">✨ 滴胶珐琅</span></td><td>节日礼品意向（季节性）</td><td><span class="pill pill-info">TOF/MOF</span></td><td>已点击</td><td>过去7天</td><td>节日前激活</td><td>每1天</td><td><span class="priority-dot priority-p1"></span><span class="pill pill-success">最高（节日）</span></td></tr>
+          <tr><td class="cat-stripe-enamel"><span class="audience-id">FR-E-05</span></td><td><span class="pill pill-enamel">✨ 滴胶珐琅</span></td><td>礼品购买者相似扩展</td><td><span class="pill pill-info">TOF</span></td><td>转化事件→购买</td><td>过去90天</td><td>邻近度1–2级</td><td>每7天</td><td><span class="priority-dot priority-p1"></span><span class="pill pill-success">高</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── 3. 漏斗矩阵 ── -->
+  <div class="section">
+    <div class="section-header">
+      <div>
+        <div class="section-title">全漏斗 × 全品类受众矩阵</div>
+        <div class="section-sub">TOF / MOF / BOF 三层漏斗 × 五条产品线的受众分布全景图</div>
+      </div>
+    </div>
+
+    <div class="funnel-matrix">
+      <!-- 表头 -->
+      <div class="fm-cell fm-header" style="background:#F5F5F0;"></div>
+      <div class="fm-cell fm-header" style="background:var(--shelf-ind-bg);color:var(--shelf-ind-fg);">🔩<br>显性层板</div>
+      <div class="fm-cell fm-header" style="background:var(--shelf-hol-bg);color:var(--shelf-hol-fg);">🪵<br>空心层板</div>
+      <div class="fm-cell fm-header" style="background:var(--wood-bg);color:var(--wood-fg);">🌳<br>实木相框</div>
+      <div class="fm-cell fm-header" style="background:var(--alum-bg);color:var(--alum-fg);">🖼️<br>铝框大留白</div>
+      <div class="fm-cell fm-header" style="background:var(--enamel-bg);color:var(--enamel-fg);">✨<br>滴胶珐琅</div>
+
+      <!-- TOF -->
+      <div class="fm-cell fm-row-label tof">TOF<br>认知层</div>
+      <div class="fm-cell shelf-ind">
+        <div class="fm-audience-item"><div class="fm-audience-id">SH-I-01</div><div class="fm-audience-name">相似受众扩展</div><div class="fm-audience-window">购买90天 · 1级</div></div>
+        <div class="fm-audience-item"><div class="fm-audience-id">SH-I-02</div><div class="fm-audience-name">曝光未点击再触达</div><div class="fm-audience-window">14天 · ≥3次曝光</div></div>
+      </div>
+      <div class="fm-cell shelf-hol">
+        <div class="fm-audience-item"><div class="fm-audience-id">SH-H-01</div><div class="fm-audience-name">相似受众扩展</div><div class="fm-audience-window">购买90天 · 1–2级</div></div>
+      </div>
+      <div class="fm-cell wood">
+        <div class="fm-audience-item"><div class="fm-audience-id">FR-W-01</div><div class="fm-audience-name">小框礼品意向</div><div class="fm-audience-window">7天 · 节日激活</div></div>
+        <div class="fm-audience-item"><div class="fm-audience-id">FR-W-04</div><div class="fm-audience-name">Gallery Wall相似扩展</div><div class="fm-audience-window">购买180天 · 1级</div></div>
+      </div>
+      <div class="fm-cell alum">
+        <div class="fm-audience-item"><div class="fm-audience-id">FR-A-02</div><div class="fm-audience-name">Gallery Wall相似扩展</div><div class="fm-audience-window">购买180天 · 1–2级</div></div>
+        <div class="fm-audience-item"><div class="fm-audience-id">FR-A-04</div><div class="fm-audience-name">竞品浏览截流</div><div class="fm-audience-window">14天 · 竞品ASIN</div></div>
+      </div>
+      <div class="fm-cell enamel">
+        <div class="fm-audience-item"><div class="fm-audience-id">FR-E-04</div><div class="fm-audience-name">节日礼品意向</div><div class="fm-audience-window">7天 · 节日激活</div></div>
+        <div class="fm-audience-item"><div class="fm-audience-id">FR-E-05</div><div class="fm-audience-name">礼品购买者相似扩展</div><div class="fm-audience-window">购买90天 · 1–2级</div></div>
+      </div>
+
+      <!-- MOF -->
+      <div class="fm-cell fm-row-label mof">MOF<br>考虑层</div>
+      <div class="fm-cell shelf-ind">
+        <div class="fm-audience-item"><div class="fm-audience-id">SH-I-03</div><div class="fm-audience-name">点击未购买</div><div class="fm-audience-window">14天 · ≥1次点击</div></div>
+        <div class="fm-audience-item"><div class="fm-audience-id">SH-I-04</div><div class="fm-audience-name">加购未结账</div><div class="fm-audience-window">7天 · 每日更新</div></div>
+      </div>
+      <div class="fm-cell shelf-hol">
+        <div class="fm-audience-item"><div class="fm-audience-id">SH-H-02</div><div class="fm-audience-name">点击未购买</div><div class="fm-audience-window">30天 · ≥1次点击</div></div>
+        <div class="fm-audience-item"><div class="fm-audience-id">SH-H-03</div><div class="fm-audience-name">加购未结账</div><div class="fm-audience-window">7天 · 每日更新</div></div>
+        <div class="fm-audience-item"><div class="fm-audience-id">SH-H-04</div><div class="fm-audience-name">多次浏览高意向</div><div class="fm-audience-window">30天 · ≥3次点击</div></div>
+      </div>
+      <div class="fm-cell wood">
+        <div class="fm-audience-item"><div class="fm-audience-id">FR-W-02</div><div class="fm-audience-name">小框加购未结账</div><div class="fm-audience-window">7天 · 每日更新</div></div>
+        <div class="fm-audience-item"><div class="fm-audience-id">FR-W-03</div><div class="fm-audience-name">中框材质选择焦虑</div><div class="fm-audience-window">14天 · ≥3次点击</div></div>
+        <div class="fm-audience-item"><div class="fm-audience-id">FR-W-06</div><div class="fm-audience-name">大框高意向点击</div><div class="fm-audience-window">21天 · ≥1次点击</div></div>
+      </div>
+      <div class="fm-cell alum">
+        <div class="fm-audience-item"><div class="fm-audience-id">FR-A-01</div><div class="fm-audience-name">颜色选择焦虑</div><div class="fm-audience-window">14天 · ≥2次点击</div></div>
+        <div class="fm-audience-item"><div class="fm-audience-id">FR-A-05</div><div class="fm-audience-name">大尺寸高意向点击</div><div class="fm-audience-window">21天 · ≥1次点击</div></div>
+      </div>
+      <div class="fm-cell enamel">
+        <div class="fm-audience-item"><div class="fm-audience-id">FR-E-01</div><div class="fm-audience-name">冲动购买追回</div><div class="fm-audience-window">3天 · 每日更新</div></div>
+        <div class="fm-audience-item"><div class="fm-audience-id">FR-E-03</div><div class="fm-audience-name">中框点击未购</div><div class="fm-audience-window">7天 · ≥1次点击</div></div>
+      </div>
+
+      <!-- BOF -->
+      <div class="fm-cell fm-row-label bof">BOF<br>转化层</div>
+      <div class="fm-cell shelf-ind">
+        <div class="fm-audience-item"><div class="fm-audience-id">SH-I-05</div><div class="fm-audience-name">已购买→交叉空心层板</div><div class="fm-audience-window">180天 · 金额≥$30</div></div>
+      </div>
+      <div class="fm-cell shelf-hol">
+        <div class="fm-audience-item"><div class="fm-audience-id">SH-H-05</div><div class="fm-audience-name">已购买复购</div><div class="fm-audience-window">90–365天前</div></div>
+      </div>
+      <div class="fm-cell wood">
+        <div class="fm-audience-item"><div class="fm-audience-id">FR-W-05</div><div class="fm-audience-name">中框已购买复购</div><div class="fm-audience-window">90–365天前</div></div>
+        <div class="fm-audience-item"><div class="fm-audience-id">FR-W-07</div><div class="fm-audience-name">大框高价值客户</div><div class="fm-audience-window">365天 · 金额≥$45</div></div>
+      </div>
+      <div class="fm-cell alum">
+        <div class="fm-audience-item"><div class="fm-audience-id">FR-A-03</div><div class="fm-audience-name">Gallery Wall复购</div><div class="fm-audience-window">30–180天前</div></div>
+      </div>
+      <div class="fm-cell enamel">
+        <div class="fm-audience-item"><div class="fm-audience-id">FR-E-02</div><div class="fm-audience-name">多色复购</div><div class="fm-audience-window">60–365天前</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 4. 跨品类联动策略 ── -->
+  <div class="section">
+    <div class="section-header">
+      <div>
+        <div class="section-title">跨品类联动策略</div>
+        <div class="section-sub">已购买某品类的用户，向相关品类进行交叉销售，提升 LTV 与客单价</div>
+      </div>
+      <div class="section-badge">6 条联动路径</div>
+    </div>
+
+    <div class="alert alert-info" style="margin-bottom:20px;">
+      <div class="alert-title">💡 跨品类联动的核心逻辑</div>
+      <div class="alert-body">KovaScape 的层板与相框在家居场景中天然互补——层板用于收纳展示，相框用于墙面装饰，两者共同构成"Gallery Wall 完整方案"。已购买任一品类的用户，都是另一品类的高质量潜在买家，转化率通常是冷流量的 3–5 倍。</div>
+    </div>
+
+    <div class="cross-sell-grid">
+      <div class="cross-sell-card" style="border-top:3px solid var(--shelf-ind-fg);">
+        <div class="cross-sell-from">已购买</div>
+        <div class="cross-sell-product">🔩 显性层板</div>
+        <div class="cross-sell-arrow">↓</div>
+        <div class="cross-sell-to">推广</div>
+        <div class="cross-sell-target">🪵 空心层板</div>
+        <div class="cross-sell-logic">功能性层板买家已有收纳需求，向其推广装饰性空心层板（卫浴/卧室场景），形成功能+装饰的完整组合。</div>
+        <div class="cross-sell-window">⏱ 推广时机：购买后 30 天 · 受众：SH-I-05</div>
+      </div>
+      <div class="cross-sell-card" style="border-top:3px solid var(--shelf-hol-fg);">
+        <div class="cross-sell-from">已购买</div>
+        <div class="cross-sell-product">🪵 空心层板</div>
+        <div class="cross-sell-arrow">↓</div>
+        <div class="cross-sell-to">推广</div>
+        <div class="cross-sell-target">🖼️ 铝框大留白相框</div>
+        <div class="cross-sell-logic">空心层板买家有 Gallery Wall 装饰意向，向其推广铝框大留白相框，完成"层板+相框"的 Gallery Wall 完整方案。</div>
+        <div class="cross-sell-window">⏱ 推广时机：购买后 14 天 · 新建受众</div>
+      </div>
+      <div class="cross-sell-card" style="border-top:3px solid var(--wood-fg);">
+        <div class="cross-sell-from">已购买</div>
+        <div class="cross-sell-product">🌳 实木相框（橡木）</div>
+        <div class="cross-sell-arrow">↓</div>
+        <div class="cross-sell-to">推广</div>
+        <div class="cross-sell-target">🌳 实木相框（胡桃木）</div>
+        <div class="cross-sell-logic">橡木买家已建立对实木相框的信任，向其推广胡桃木款（不同风格/场景），扩大同品类客单价。</div>
+        <div class="cross-sell-window">⏱ 推广时机：购买后 60 天 · 受众：FR-W-05</div>
+      </div>
+      <div class="cross-sell-card" style="border-top:3px solid var(--alum-fg);">
+        <div class="cross-sell-from">已购买</div>
+        <div class="cross-sell-product">🖼️ 铝框大留白相框</div>
+        <div class="cross-sell-arrow">↓</div>
+        <div class="cross-sell-to">推广</div>
+        <div class="cross-sell-target">🌳 实木相框</div>
+        <div class="cross-sell-logic">铝框买家有 Gallery Wall 规划，向其推广实木相框作为质感升级选项，或用于不同区域（书房/卧室）的差异化展示。</div>
+        <div class="cross-sell-window">⏱ 推广时机：购买后 45 天 · 新建受众</div>
+      </div>
+      <div class="cross-sell-card" style="border-top:3px solid var(--enamel-fg);">
+        <div class="cross-sell-from">已购买</div>
+        <div class="cross-sell-product">✨ 滴胶珐琅相框</div>
+        <div class="cross-sell-arrow">↓</div>
+        <div class="cross-sell-to">推广</div>
+        <div class="cross-sell-target">🌳 实木相框（礼品升级）</div>
+        <div class="cross-sell-logic">滴胶相框买家有礼品购买习惯，向其推广实木相框作为更高端的礼品选项（婚礼/周年纪念/高端礼品场景）。</div>
+        <div class="cross-sell-window">⏱ 推广时机：购买后 30 天 · 新建受众</div>
+      </div>
+      <div class="cross-sell-card" style="border-top:3px solid var(--brand-gold);">
+        <div class="cross-sell-from">高价值客户</div>
+        <div class="cross-sell-product">🌳 实木 + 🖼️ 铝框 双购</div>
+        <div class="cross-sell-arrow">↓</div>
+        <div class="cross-sell-to">推广</div>
+        <div class="cross-sell-target">✨ 滴胶珐琅（礼品补充）</div>
+        <div class="cross-sell-logic">同时购买实木和铝框的高价值用户是 KovaScape 核心品牌用户，向其推广滴胶相框作为礼品选项，同时作为相似受众种子扩展新客。</div>
+        <div class="cross-sell-window">⏱ 推广时机：购买后 60 天 · 新建高价值受众</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 5. 预算分配建议 ── -->
+  <div class="section">
+    <div class="section-header">
+      <div>
+        <div class="section-title">AMC 受众预算分配建议</div>
+        <div class="section-sub">基于各品类 ROI 潜力与当前新品阶段的资源分配参考</div>
+      </div>
+    </div>
+
+    <div class="alert alert-warning" style="margin-bottom:20px;">
+      <div class="alert-title">⚠️ 新品阶段特别说明</div>
+      <div class="alert-body">KovaScape 目前处于新品阶段，广告订单占比高（约70%），ACOS 偏高。AMC 受众策略的核心目标是<strong>降低 ACOS、提升 CVR</strong>，而非大规模拉新。建议将 60–70% 的 AMC 预算集中在 MOF 再营销受众（加购未结账 + 点击未购买），这是当前阶段 ROI 最高的投放方式。</div>
+    </div>
+
+    <div class="budget-grid">
+      <div class="budget-card" style="background:var(--shelf-ind-bg);border-color:var(--shelf-ind-border);">
+        <div class="budget-pct" style="color:var(--shelf-ind-fg);">20%</div>
+        <div class="budget-name">🔩 显性层板</div>
+        <div class="budget-reason">功能性产品，MOF再营销ROI高；交叉销售空心层板是重点</div>
+      </div>
+      <div class="budget-card" style="background:var(--shelf-hol-bg);border-color:var(--shelf-hol-border);">
+        <div class="budget-pct" style="color:var(--shelf-hol-fg);">15%</div>
+        <div class="budget-name">🪵 空心层板</div>
+        <div class="budget-reason">装饰性产品，30天窗口需要持续触达；Gallery Wall场景视频素材是关键</div>
+      </div>
+      <div class="budget-card" style="background:var(--wood-bg);border-color:var(--wood-border);">
+        <div class="budget-pct" style="color:var(--wood-fg);">30%</div>
+        <div class="budget-name">🌳 实木相框</div>
+        <div class="budget-reason">高客单价，信任建立需要多次触达；材质选择焦虑受众是最高ROI投放点</div>
+      </div>
+      <div class="budget-card" style="background:var(--alum-bg);border-color:var(--alum-border);">
+        <div class="budget-pct" style="color:var(--alum-fg);">25%</div>
+        <div class="budget-name">🖼️ 铝框大留白</div>
+        <div class="budget-reason">Gallery Wall复购率极高（35%+）；已购买复购受众是全品类ROI最高的受众之一</div>
+      </div>
+      <div class="budget-card" style="background:var(--enamel-bg);border-color:var(--enamel-border);">
+        <div class="budget-pct" style="color:var(--enamel-fg);">10%</div>
+        <div class="budget-name">✨ 滴胶珐琅</div>
+        <div class="budget-reason">冲动购买，3天窗口短；节日前集中投放，平时维持低预算即可</div>
+      </div>
+    </div>
+
+    <div class="highlight-box" style="margin-top:20px;">
+      <div class="highlight-box-title">📊 预算分配的动态调整原则</div>
+      <div class="highlight-box-body">
+        <strong>节日前30天</strong>：滴胶珐琅预算提升至 25%，实木相框小框礼品受众预算提升 50%<br>
+        <strong>装修旺季（春/秋）</strong>：铝框大留白和空心层板预算各提升 10%<br>
+        <strong>数据积累后（3个月+）</strong>：相似受众创建后，TOF 预算从 10% 提升至 25%，MOF 相应降低<br>
+        <strong>Gallery Wall 复购启动后</strong>：铝框 BOF 复购受众（FR-A-03）预算可提升至该品类的 40%
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 6. 分阶段执行计划 ── -->
+  <div class="section">
+    <div class="section-header">
+      <div>
+        <div class="section-title">分阶段执行计划</div>
+        <div class="section-sub">新品阶段数据有限，按优先级分4个阶段逐步创建受众</div>
+      </div>
+    </div>
+
+    <div class="phase-grid">
+      <div class="phase-card">
+        <div class="phase-dot-wrap"><div class="phase-dot">1</div></div>
+        <div class="phase-label">立即执行</div>
+        <div class="phase-title">加购未结账<br>+ 点击未购买</div>
+        <div class="phase-items">
+          <div class="phase-item" style="background:var(--shelf-ind-bg);color:var(--shelf-ind-fg);">SH-I-03 SH-I-04</div>
+          <div class="phase-item" style="background:var(--shelf-hol-bg);color:var(--shelf-hol-fg);">SH-H-02 SH-H-03</div>
+          <div class="phase-item" style="background:var(--wood-bg);color:var(--wood-fg);">FR-W-02 FR-W-03</div>
+          <div class="phase-item" style="background:var(--alum-bg);color:var(--alum-fg);">FR-A-01</div>
+          <div class="phase-item" style="background:var(--enamel-bg);color:var(--enamel-fg);">FR-E-01 FR-E-04</div>
+        </div>
+      </div>
+      <div class="phase-card">
+        <div class="phase-dot-wrap"><div class="phase-dot">2</div></div>
+        <div class="phase-label">1个月后</div>
+        <div class="phase-title">多次浏览<br>+ 曝光再触达</div>
+        <div class="phase-items">
+          <div class="phase-item" style="background:var(--shelf-ind-bg);color:var(--shelf-ind-fg);">SH-I-02</div>
+          <div class="phase-item" style="background:var(--shelf-hol-bg);color:var(--shelf-hol-fg);">SH-H-04</div>
+          <div class="phase-item" style="background:var(--wood-bg);color:var(--wood-fg);">FR-W-01 FR-W-06</div>
+          <div class="phase-item" style="background:var(--alum-bg);color:var(--alum-fg);">FR-A-04 FR-A-05</div>
+          <div class="phase-item" style="background:var(--enamel-bg);color:var(--enamel-fg);">FR-E-03</div>
+        </div>
+      </div>
+      <div class="phase-card">
+        <div class="phase-dot-wrap"><div class="phase-dot">3</div></div>
+        <div class="phase-label">2–3个月后</div>
+        <div class="phase-title">相似受众扩展<br>（需≥2000种子）</div>
+        <div class="phase-items">
+          <div class="phase-item" style="background:var(--shelf-ind-bg);color:var(--shelf-ind-fg);">SH-I-01</div>
+          <div class="phase-item" style="background:var(--shelf-hol-bg);color:var(--shelf-hol-fg);">SH-H-01</div>
+          <div class="phase-item" style="background:var(--wood-bg);color:var(--wood-fg);">FR-W-04</div>
+          <div class="phase-item" style="background:var(--alum-bg);color:var(--alum-fg);">FR-A-02</div>
+          <div class="phase-item" style="background:var(--enamel-bg);color:var(--enamel-fg);">FR-E-05</div>
+        </div>
+      </div>
+      <div class="phase-card">
+        <div class="phase-dot-wrap"><div class="phase-dot">4</div></div>
+        <div class="phase-label">3–6个月后</div>
+        <div class="phase-title">复购 + 交叉销售<br>+ 高价值客户</div>
+        <div class="phase-items">
+          <div class="phase-item" style="background:var(--shelf-ind-bg);color:var(--shelf-ind-fg);">SH-I-05</div>
+          <div class="phase-item" style="background:var(--shelf-hol-bg);color:var(--shelf-hol-fg);">SH-H-05</div>
+          <div class="phase-item" style="background:var(--wood-bg);color:var(--wood-fg);">FR-W-05 FR-W-07</div>
+          <div class="phase-item" style="background:var(--alum-bg);color:var(--alum-fg);">FR-A-03</div>
+          <div class="phase-item" style="background:var(--enamel-bg);color:var(--enamel-fg);">FR-E-02</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 7. KPI 追踪体系 ── -->
+  <div class="section">
+    <div class="section-header">
+      <div>
+        <div class="section-title">全品类 KPI 追踪体系</div>
+        <div class="section-sub">各漏斗层级的核心指标与参考目标，配合 SparkX AMC 模型库使用</div>
+      </div>
+    </div>
+
+    <div class="kpi-table-wrap">
+      <table class="kpi-table">
+        <thead>
+          <tr>
+            <th>漏斗层级</th>
+            <th>产品线</th>
+            <th>核心 KPI</th>
+            <th>参考目标</th>
+            <th>AMC 分析模型</th>
+            <th>优化方向</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="pill pill-info">TOF</span></td>
+            <td>全品类</td>
+            <td>NTB%（新客比例）、CTR</td>
+            <td>NTB &gt; 60%，CTR &gt; 0.3%</td>
+            <td>新客购买分析</td>
+            <td>优化相似受众种子质量，测试邻近度级别</td>
+          </tr>
+          <tr>
+            <td><span class="pill pill-warning">MOF</span></td>
+            <td>显性层板</td>
+            <td>CVR、ACOS</td>
+            <td>CVR &gt; 5%，ACOS &lt; 22%</td>
+            <td>转化路径分析</td>
+            <td>承重数字+安装简便素材，加优惠券</td>
+          </tr>
+          <tr>
+            <td><span class="pill pill-warning">MOF</span></td>
+            <td>空心层板</td>
+            <td>CVR、频次控制</td>
+            <td>CVR &gt; 4%，每用户≤5次/周</td>
+            <td>转化路径分析</td>
+            <td>Gallery Wall场景视频，颜色选择指南</td>
+          </tr>
+          <tr>
+            <td><span class="pill pill-warning">MOF</span></td>
+            <td>实木相框</td>
+            <td>多次浏览后CVR</td>
+            <td>CVR &gt; 4%，ACOS &lt; 28%</td>
+            <td>转化时间分析</td>
+            <td>材质选择指南素材（橡木vs胡桃木）</td>
+          </tr>
+          <tr>
+            <td><span class="pill pill-warning">MOF</span></td>
+            <td>铝框大留白</td>
+            <td>CVR、颜色选择转化率</td>
+            <td>CVR &gt; 5%，ACOS &lt; 25%</td>
+            <td>转化路径分析</td>
+            <td>三色对比图，Gallery Wall效果图</td>
+          </tr>
+          <tr>
+            <td><span class="pill pill-warning">MOF</span></td>
+            <td>滴胶珐琅</td>
+            <td>3天内CVR、加购率</td>
+            <td>3天CVR &gt; 8%</td>
+            <td>转化时间分析</td>
+            <td>高光质感素材，小额优惠券</td>
+          </tr>
+          <tr>
+            <td><span class="pill pill-success">BOF</span></td>
+            <td>铝框大留白</td>
+            <td>复购率、Gallery Wall完成度</td>
+            <td>复购率 &gt; 35%</td>
+            <td>购买频次分析</td>
+            <td>推广尺寸组合，Gallery Wall Layout Guide</td>
+          </tr>
+          <tr>
+            <td><span class="pill pill-success">BOF</span></td>
+            <td>实木相框</td>
+            <td>复购率、客单价</td>
+            <td>复购率 &gt; 20%，客单价+15%</td>
+            <td>购买频次分析</td>
+            <td>推广其他木种/尺寸组合</td>
+          </tr>
+          <tr>
+            <td><span class="pill pill-success">BOF</span></td>
+            <td>跨品类</td>
+            <td>交叉销售转化率、LTV</td>
+            <td>交叉CVR &gt; 10%，LTV+30%</td>
+            <td>广告重合度分析</td>
+            <td>优化交叉销售时机和素材</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="highlight-box" style="margin-top:16px;">
+      <div class="highlight-box-title">📊 SparkX AMC 模型库推荐使用顺序</div>
+      <div class="highlight-box-body">
+        <strong>① 转化路径分析</strong>（优先）：了解各品类从首次曝光到购买的平均触点数，验证再营销窗口设置是否准确<br>
+        <strong>② 转化时间分析</strong>：验证滴胶3天/实木21天/铝框21天的窗口假设，用数据校准<br>
+        <strong>③ 新客购买分析（NTB）</strong>：追踪各受众带来的新客比例，评估相似受众质量<br>
+        <strong>④ 广告重合度分析</strong>：检查五条产品线受众之间的重叠，避免预算内耗<br>
+        <strong>⑤ 购买频次分析</strong>：追踪铝框 Gallery Wall 复购行为，优化复购受众时间窗口
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 8. 受众命名规范 ── -->
+  <div class="section">
+    <div class="section-header">
+      <div>
+        <div class="section-title">受众命名规范</div>
+        <div class="section-sub">统一命名格式，便于在 SparkX 后台管理 27 个受众</div>
+      </div>
+    </div>
+
+    <div class="naming-box">KS_[品类代码]_[受众类型]_[时间窗口]_[日期YYYYMMDD]</div>
+
+    <div class="kpi-table-wrap">
+      <table class="kpi-table">
+        <thead>
+          <tr><th>品类代码</th><th>含义</th><th>示例命名</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>SH-IND</code></td><td>显性层板（Industrial Shelf）</td><td><code>KS_SH-IND_点击未购_14D_20260520</code></td></tr>
+          <tr><td><code>SH-HOL</code></td><td>空心层板（Hollow Shelf）</td><td><code>KS_SH-HOL_加购未结账_7D_20260520</code></td></tr>
+          <tr><td><code>FR-WD</code></td><td>实木相框（Wood Frame）</td><td><code>KS_FR-WD_材质焦虑_14D_20260520</code></td></tr>
+          <tr><td><code>FR-AL</code></td><td>铝框大留白（Aluminum Frame）</td><td><code>KS_FR-AL_Gallery复购_30-180D_20260520</code></td></tr>
+          <tr><td><code>FR-EN</code></td><td>滴胶珐琅（Enamel Frame）</td><td><code>KS_FR-EN_冲动购买_3D_20260520</code></td></tr>
+          <tr><td><code>CROSS</code></td><td>跨品类联动</td><td><code>KS_CROSS_层板→铝框_购买30D_20260520</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════ FOOTER ══════════ -->
+<div class="footer">
+  <svg class="footer-blobs" viewBox="0 0 1240 180" preserveAspectRatio="xMidYMid slice">
+    <path d="M-60,40 C20,-10 100,20 120,90 C140,160 60,180 -10,160 C-80,140 -120,90 -60,40Z" fill="#C8BB9F" opacity="0.18"/>
+    <path d="M1140,0 C1200,-20 1270,20 1250,90 C1230,160 1140,180 1090,140 C1040,100 1060,20 1140,0Z" fill="#A99778" opacity="0.14"/>
+    <path d="M580,120 C630,90 700,100 720,150 C740,200 700,220 640,210 C580,200 530,150 580,120Z" fill="#C8BB9F" opacity="0.2"/>
+  </svg>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">KovaScape</div>
+      <div class="footer-sub">AMC 受众策略总览 — 全品类 · 5条产品线 · 27个受众方案</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:12px;color:var(--text-secondary);">生成日期：2026年5月20日</div>
+      <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">AMC Instance：amcump7aucq · SparkX KovaScape北美</div>
+    </div>
+  </div>
+  <div class="footer-divider"></div>
+  <div class="footer-bottom">
+    <div>显性层板 · 空心层板 · 实木相框 · 铝框大留白 · 滴胶珐琅 · 6条跨品类联动路径</div>
+    <div>Generated by AllyHub AI · KovaScape Internal Use Only</div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

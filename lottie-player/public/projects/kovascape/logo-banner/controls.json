@@ -1,0 +1,23 @@
+{
+  "controls": [
+    {
+      "sid": "bgColor",
+      "label": "Background Color"
+    },
+    {
+      "sid": "bgOpacity",
+      "label": "Background Opacity",
+      "min": 0,
+      "max": 100,
+      "step": 1
+    },
+    {
+      "sid": "mainColor",
+      "label": "Main Icon/Text Color"
+    },
+    {
+      "sid": "accentColor",
+      "label": "Accent Square Color"
+    }
+  ]
+}

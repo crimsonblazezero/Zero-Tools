@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>165mm空心层板 · 主副图设计建议</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #F0EDE8; font-family: 'Poppins', sans-serif; color: #3D3D3D; font-size: 14px; line-height: 1.65; }
+.page { background: #FDFCF9; border-radius: 40px; max-width: 1260px; margin: 40px auto; overflow: hidden; }
+
+.hero { background: #064338; padding: 56px 60px 48px; position: relative; overflow: hidden; }
+.hero-blob { position: absolute; border-radius: 60% 40% 65% 35% / 35% 55% 45% 65%; opacity: 0.10; pointer-events: none; }
+.hero-blob-1 { width: 340px; height: 340px; background: #F3C546; top: -100px; right: -80px; }
+.hero-blob-2 { width: 180px; height: 200px; background: #F3C546; bottom: -40px; left: 15%; opacity: 0.07; }
+.hero-content { position: relative; z-index: 1; }
+.hero-eyebrow { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+.hero-eyebrow-dot { width: 8px; height: 8px; border-radius: 50%; background: #F3C546; }
+.hero-eyebrow-text { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.7); text-transform: uppercase; letter-spacing: 1.5px; }
+.hero-title { font-family: 'Playfair Display', serif; font-size: 42px; font-weight: 500; color: #FFFFFF; letter-spacing: -0.01em; line-height: 1.15; margin-bottom: 8px; }
+.hero-subtitle { color: rgba(255,255,255,0.72); font-size: 14px; font-weight: 400; max-width: 740px; line-height: 1.6; }
+.hero-metrics { margin-top: 32px; border-top: 0.6px solid rgba(243,197,70,0.45); padding-top: 28px; display: flex; gap: 56px; flex-wrap: wrap; }
+.hero-metric-label { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.55); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+.hero-metric-value { font-family: 'Playfair Display', serif; font-size: 34px; font-weight: 500; color: #F3C546; letter-spacing: -0.02em; }
+.hero-metric-sub { font-size: 12px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+
+.content { padding: 48px 60px; }
+.section { margin-bottom: 44px; }
+.section-header { margin-bottom: 24px; }
+.section-title { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 500; color: #1D1B20; margin-bottom: 4px; }
+.section-subtitle { font-size: 14px; color: #717171; }
+.section-divider { width: 100%; height: 0.5px; background: #E8E6E2; margin-bottom: 28px; }
+
+/* Image slot cards */
+.img-slot { border: 1px solid #E8E4DE; border-radius: 16px; overflow: hidden; background: #FDFCF9; margin-bottom: 16px; }
+.img-slot-header { padding: 20px 28px; display: flex; align-items: flex-start; gap: 16px; border-bottom: 1px solid #F0EDE8; }
+.slot-num { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 600; color: #064338; min-width: 48px; line-height: 1; }
+.slot-title { font-size: 17px; font-weight: 600; color: #1D1B20; }
+.slot-type { font-size: 12px; color: #717171; margin-top: 2px; }
+.img-slot-body { padding: 24px 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 768px) { .img-slot-body { grid-template-columns: 1fr; } }
+.col-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.ref-col .col-label { color: #B8860B; }
+.new-col .col-label { color: #064338; }
+.col h4 { font-size: 14px; font-weight: 600; color: #1D1B20; margin-bottom: 6px; }
+.col ul { font-size: 13px; color: #3D3D3D; line-height: 1.8; padding-left: 16px; }
+.col ul li { margin-bottom: 4px; }
+.col ul li::marker { color: #064338; }
+.col p { font-size: 13px; color: #3D3D3D; line-height: 1.7; }
+
+/* Change tags */
+.tag-change { display: inline-block; background: #FFF8DC; color: #B8860B; padding: 1px 8px; border-radius: 4px; font-weight: 500; font-size: 12px; }
+.tag-new { display: inline-block; background: #E8F2F0; color: #064338; padding: 1px 8px; border-radius: 4px; font-weight: 500; font-size: 12px; }
+.tag-same { display: inline-block; background: #F0EDE8; color: #717171; padding: 1px 8px; border-radius: 4px; font-weight: 500; font-size: 12px; }
+
+/* Specs table */
+.spec-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+.spec-table td { padding: 8px 12px; border-bottom: 1px solid #F0EDE8; font-size: 13px; vertical-align: top; }
+.spec-table td:first-child { color: #717171; font-weight: 500; min-width: 100px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; }
+
+/* Alert */
+.alert { border-radius: 10px; padding: 16px 20px; margin-bottom: 16px; }
+.alert-warn { background: #FFF8DC; border-left: 4px solid #F3C546; }
+.alert-warn .alert-title { color: #B8860B; }
+.alert-info { background: #E8F2F0; border-left: 4px solid #064338; }
+.alert-info .alert-title { color: #064338; }
+.alert-title { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.alert p { font-size: 13px; color: #3D3D3D; line-height: 1.6; }
+
+/* Summary table */
+.summary-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+.summary-table thead th { background: #064338; color: #F3C546; font-size: 11px; font-weight: 500; padding: 10px 14px; text-align: left; text-transform: uppercase; letter-spacing: 0.5px; }
+.summary-table tbody td { padding: 10px 14px; border-bottom: 1px solid #F0EDE8; font-size: 13px; vertical-align: top; }
+.summary-table tbody tr:hover td { background: #F8F5F0; }
+.summary-table .change-level { font-weight: 600; }
+.change-min { color: #064338; }
+.change-med { color: #B8860B; }
+.change-maj { color: #C4433A; }
+
+.footer { background: #042E25; padding: 40px 60px; }
+.footer-inner { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 24px; }
+.footer-brand { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 500; color: #F3C546; }
+.footer-meta { font-size: 12px; color: rgba(255,255,255,0.55); margin-top: 6px; line-height: 1.6; }
+.footer-divider { width: 100%; height: 0.5px; background: rgba(243,197,70,0.3); margin: 24px 0 20px; }
+.footer-bottom { font-size: 12px; color: rgba(255,255,255,0.4); }
+.footer-bottom a { color: rgba(255,255,255,0.5); text-decoration: none; }
+
+.mt-1 { margin-top: 8px; } .mt-2 { margin-top: 16px; } .mt-3 { margin-top: 24px; }
+.mb-2 { margin-bottom: 8px; }
+
+@media (max-width: 768px) {
+  .page { border-radius: 0; margin: 0; }
+  .hero { padding: 36px 24px 32px; }
+  .hero-title { font-size: 26px; }
+  .hero-metrics { gap: 24px; }
+  .content { padding: 32px 20px; }
+  .footer { padding: 32px 20px; }
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="hero">
+    <div class="hero-blob hero-blob-1"></div>
+    <div class="hero-blob hero-blob-2"></div>
+    <div class="hero-content">
+      <div class="hero-eyebrow">
+        <div class="hero-eyebrow-dot"></div>
+        <span class="hero-eyebrow-text">KovaScape · 主副图设计建议</span>
+      </div>
+      <h1 class="hero-title">165mm 空心层板<br>主图 + 7张附图设计</h1>
+      <p class="hero-subtitle">
+        基于参考 ASIN B0GGZ2XBZ5（235mm/9.3″）现有7图结构逐张复刻。不变的部分（材质、支架、安装）直接复用；需要修改的部分（深度数字、定位文案）逐张标注。关键改动：图5的「Extra Deep」叙事无法用于6.3″窄板，需重新构思。
+      </p>
+      <div class="hero-metrics">
+        <div>
+          <div class="hero-metric-label">总图数</div>
+          <div class="hero-metric-value">8</div>
+          <div class="hero-metric-sub">1 主图 + 7 副图</div>
+        </div>
+        <div>
+          <div class="hero-metric-label">无需修改</div>
+          <div class="hero-metric-value">3</div>
+          <div class="hero-metric-sub">材质 · 安装 · 颜色展示</div>
+        </div>
+        <div>
+          <div class="hero-metric-label">需修改/重做</div>
+          <div class="hero-metric-value">5</div>
+          <div class="hero-metric-sub">含 1 张大幅重做</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Overview table -->
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title">参考版 vs 165mm版 总览</h2>
+        <p class="section-subtitle">B0GGZ2XBZ5 现有7图结构 → 165mm版逐张变更对照</p>
+      </div>
+      <div class="section-divider"></div>
+
+      <table class="summary-table">
+        <thead>
+          <tr>
+            <th>图位</th>
+            <th>参考版主题</th>
+            <th>165mm版主题</th>
+            <th>变更程度</th>
+            <th>核心改动</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>主图</strong></td>
+            <td>产品展示 + 5色色板</td>
+            <td>产品展示 + 5色色板</td>
+            <td class="change-level change-min">🟢 微调</td>
+            <td>更换165mm产品；可标注「6.3″ Deep」</td>
+          </tr>
+          <tr>
+            <td><strong>图2</strong></td>
+            <td>同主图（另一颜色视角）</td>
+            <td>正面展示（橡木色）</td>
+            <td class="change-level change-min">🟢 微调</td>
+            <td>更换165mm产品；保持主图同构图</td>
+          </tr>
+          <tr>
+            <td><strong>图3</strong></td>
+            <td>厨房场景 · Organize Your Space</td>
+            <td>窄空间场景 · Fit Where Others Can't</td>
+            <td class="change-level change-med">🟡 中等</td>
+            <td>场景从宽敞厨房→窄墙/走廊；更新文案</td>
+          </tr>
+          <tr>
+            <td><strong>图4</strong></td>
+            <td>隐形支架 · 尺寸标注 · 对比图</td>
+            <td>隐形支架 · 尺寸标注 · 对比图</td>
+            <td class="change-level change-min">🟢 微调</td>
+            <td>9.3″→6.3″；其余不变</td>
+          </tr>
+          <tr>
+            <td><strong>图5</strong></td>
+            <td>Extra Deep & Thicker · 50 LBS</td>
+            <td><strong>Flat-Edge Freedom</strong> · 平板无唇优势</td>
+            <td class="change-level change-maj">🔴 重做</td>
+            <td>叙事完全重写；从「更深」→「平板更自由」</td>
+          </tr>
+          <tr>
+            <td><strong>图6</strong></td>
+            <td>Sturdy Material · 木纹+防水+防刮</td>
+            <td>Sturdy Material · 木纹+防水+防刮</td>
+            <td class="change-level change-min">🟢 不变</td>
+            <td>完全复用；材质特性与深度无关</td>
+          </tr>
+          <tr>
+            <td><strong>图7</strong></td>
+            <td>Easy to Install · 5分钟安装</td>
+            <td>Easy to Install · 5分钟安装</td>
+            <td class="change-level change-min">🟢 微调</td>
+            <td>产品替换为165mm；安装步骤完全一致</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Main Image -->
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title">主图设计</h2>
+        <p class="section-subtitle">亚马逊要求纯白背景 #FFFFFF，产品占画面70-80%</p>
+      </div>
+      <div class="section-divider"></div>
+
+      <div class="img-slot">
+        <div class="img-slot-header">
+          <div class="slot-num">01</div>
+          <div>
+            <div class="slot-title">主图 · Main Product Showcase</div>
+            <div class="slot-type">纯白背景 · 2000×2000px · JPEG · 产品占比75%</div>
+          </div>
+        </div>
+        <div class="img-slot-body">
+          <div class="col ref-col">
+            <div class="col-label">参考版</div>
+            <h4>现有构图</h4>
+            <ul>
+              <li>两块胡桃木色层板上下错落挂于白墙</li>
+              <li>上层：盆栽 + 线描画框 + 叠碗 + 花瓶 + 蜡烛灯笼</li>
+              <li>下层：精装书三本(KINFOLK/MINIMAL HOME/SCANDI DESIGN) + 复古收音机 + 木钟 + 盆栽</li>
+              <li>左下角5色色板：金/胡桃木/白/黑/橡木</li>
+              <li>纯白墙面背景，自然柔光</li>
+              <li>画面传达：温馨、有品位、北欧简约</li>
+            </ul>
+          </div>
+          <div class="col new-col">
+            <div class="col-label">165mm版 <span class="tag-new">微调</span></div>
+            <h4>设计建议</h4>
+            <ul>
+              <li>保持双板上下构图，更换为165mm深度产品</li>
+              <li>装饰物品需适配6.3″深度：<strong>物品尺寸缩小10-15%</strong>，避免视觉上撑满层板</li>
+              <li>上层建议：小盆栽 + 小型画框(5×7″斜靠) + 1-2个陶瓷摆件</li>
+              <li>下层建议：2-3本精装书 + 小型香薰蜡烛 + 迷你盆栽</li>
+              <li>5色色板保留（品牌识别元素）</li>
+              <li><span class="tag-new">可叠加小字：</span>画面右下或左下加「6.3″ Deep」标注（Poppins 500, 14px, #717171）</li>
+              <li>注意：165mm层板在画面中的深度比例比参考版窄约32%，需确保买家能从主图感知这是窄版产品</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Image 2 -->
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title">图2 · 橡木色正面展示</h2>
+      </div>
+      <div class="section-divider"></div>
+
+      <div class="img-slot">
+        <div class="img-slot-header">
+          <div class="slot-num">02</div>
+          <div>
+            <div class="slot-title">图2 · Oak Color Variant</div>
+            <div class="slot-type">纯白背景 · 2000×2000px · 橡木色产品</div>
+          </div>
+        </div>
+        <div class="img-slot-body">
+          <div class="col ref-col">
+            <div class="col-label">参考版</div>
+            <ul>
+              <li>与主图相同构图，展示橡木色版本</li>
+              <li>用于变体切换时展示不同颜色</li>
+            </ul>
+          </div>
+          <div class="col new-col">
+            <div class="col-label">165mm版 <span class="tag-same">直接替换产品</span></div>
+            <ul>
+              <li>构图、背景、道具风格与主图保持一致</li>
+              <li>仅更换为165mm橡木色产品</li>
+              <li>道具可微调适配橡木色调性（龟背竹线描画芯等）</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Image 3 - Lifestyle -->
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title">图3 · 场景生活图 <span class="tag-change">中等修改</span></h2>
+        <p class="section-subtitle">参考版为宽敞厨房，165mm版建议改为窄空间场景</p>
+      </div>
+      <div class="section-divider"></div>
+
+      <div class="img-slot">
+        <div class="img-slot-header">
+          <div class="slot-num">03</div>
+          <div>
+            <div class="slot-title">图3 · Lifestyle Scene</div>
+            <div class="slot-type">实拍场景 · 2000×2000px</div>
+          </div>
+        </div>
+        <div class="img-slot-body">
+          <div class="col ref-col">
+            <div class="col-label">参考版</div>
+            <h4>厨房场景 · ORGANIZE YOUR SPACE</h4>
+            <ul>
+              <li>白色瓷砖厨房，女性伸手取物</li>
+              <li>三层胡桃木层板：干粮罐/餐具/锅碗/植物</li>
+              <li>画面宽敞，层板深度充足</li>
+              <li>传达：大容量、厨房收纳利器</li>
+            </ul>
+          </div>
+          <div class="col new-col">
+            <div class="col-label">165mm版 — 两个方案可选</div>
+            <h4>方案A：窄走廊/玄关场景 ⭐ 推荐</h4>
+            <ul>
+              <li>窄走廊墙面，层板在视线高度</li>
+              <li>陈列：钥匙盘 + 小型香薰 + 小相框 + 迷你绿植</li>
+              <li>走廊尽头自然光，强调「窄墙也能用」</li>
+              <li>文字叠加：「FITS WHERE OTHERS CAN'T」（Poppins 600）</li>
+              <li>传达：深层板放不下的窄墙，6.3″刚好</li>
+            </ul>
+            <h4 class="mt-2">方案B：紧凑浴室场景</h4>
+            <ul>
+              <li>小浴室马桶上方窄墙</li>
+              <li>陈列：卷好的毛巾 + 护肤品 + 小盆栽</li>
+              <li>文字叠加：「COMPACT BATHROOM READY」</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Image 4 - Bracket + Dimensions -->
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title">图4 · 支架系统 + 尺寸标注</h2>
+      </div>
+      <div class="section-divider"></div>
+
+      <div class="img-slot">
+        <div class="img-slot-header">
+          <div class="slot-num">04</div>
+          <div>
+            <div class="slot-title">图4 · Invisible Bracket &amp; Dimensions</div>
+            <div class="slot-type">产品特写 + 信息图 · 2000×2000px</div>
+          </div>
+        </div>
+        <div class="img-slot-body">
+          <div class="col ref-col">
+            <div class="col-label">参考版</div>
+            <h4>Smart & Invisible Bracket Design</h4>
+            <ul>
+              <li>层板俯视图，标注尺寸：<strong>1.5″厚 · 36″长 · 9.3″深</strong></li>
+              <li>Military Grade Iron 支架特写</li>
+              <li>「Ours vs Others」对比：嵌入式支架 vs 平板支架</li>
+              <li>绿色✓标注：Prevents Shelf Sagging / Flush Wall Fit</li>
+            </ul>
+          </div>
+          <div class="col new-col">
+            <div class="col-label">165mm版 <span class="tag-new">仅改数字</span></div>
+            <h4>设计建议</h4>
+            <ul>
+              <li>尺寸标注更新：1.5″厚 · 36″长 · <strong>6.3″深</strong></li>
+              <li>支架系统、对比图、Military Grade Iron 标注 <strong>完全不变</strong></li>
+              <li>层板俯视图中6.3″深度的视觉比例需准确</li>
+              <li>其余所有元素（图标、文字布局、绿色✓）保持一致</li>
+            </ul>
+            <table class="spec-table mt-2">
+              <tr><td>变更项</td><td>9.3" → <strong style="color:#064338;">6.3"</strong>，其余不变</td></tr>
+              <tr><td>难度</td><td>低——仅需修图替换数字</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Image 5 - The big change -->
+    <div class="section">
+      <div class="alert alert-warn">
+        <div class="alert-title">⚠️ 关键：图5需要完全重新设计</div>
+        <p>参考版图5的核心叙事是「Extra Deep & Thicker」——强调9.3″深度+1.5″厚度的组合优势。165mm版深度6.3″，不能再喊「Extra Deep」。这张图的叙事需要从零构思，围绕窄平板的差异化卖点展开。</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title">图5 · 重新设计（三个方案）</h2>
+        <p class="section-subtitle">替换参考版的「Extra Deep & Thicker」，围绕平板无唇优势</p>
+      </div>
+      <div class="section-divider"></div>
+
+      <!-- Option A -->
+      <div class="img-slot">
+        <div class="img-slot-header">
+          <div class="slot-num">A</div>
+          <div>
+            <div class="slot-title">方案A：Flat-Edge Freedom · 平板无唇优势 ⭐ 推荐</div>
+            <div class="slot-type">产品特写 + 对比图 · 2000×2000px</div>
+          </div>
+        </div>
+        <div class="img-slot-body">
+          <div class="col">
+            <div class="col-label">画面布局</div>
+            <ul>
+              <li><strong>上半部分：</strong>165mm层板侧视特写——突出1.5″厚度和平直的矩形截面，无唇边</li>
+              <li><strong>中间对比区：</strong></li>
+              <li style="list-style:none; margin-left:-16px;">「KovaScape Flat-Edge」<span class="tag-new">✓ 平板无唇</span> vs 「Picture Ledge」<span class="tag-change">✗ U型带唇</span></li>
+              <li>左侧图：一盆垂吊植物在KovaScape平板上，藤蔓自然越过边缘垂落</li>
+              <li>右侧图：同样植物在Picture Ledge上，藤蔓被唇边挡住</li>
+              <li><strong>下半部分：</strong>三个小型场景图标——植物垂落 / 画框自由层叠 / 纯平漂浮感</li>
+            </ul>
+          </div>
+          <div class="col">
+            <div class="col-label">文字叠加</div>
+            <h4>标题：FLAT-EDGE FREEDOM</h4>
+            <p>副标题：No lip. No limits. Designed for plants that cascade, art that layers, and walls that deserve a clean line.</p>
+            <table class="spec-table mt-2">
+              <tr><td>承重标注</td><td>保留50 LBS（与参考版相同承重）</td></tr>
+              <tr><td>厚度标注</td><td>保留1.5″厚度</td></tr>
+              <tr><td>深度标注</td><td>标注6.3″ Deep</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Option B -->
+      <div class="img-slot">
+        <div class="img-slot-header">
+          <div class="slot-num">B</div>
+          <div>
+            <div class="slot-title">方案B：Compact Yet Capable · 窄而不妥协</div>
+            <div class="slot-type">场景对比 · 2000×2000px</div>
+          </div>
+        </div>
+        <div class="img-slot-body">
+          <div class="col">
+            <div class="col-label">画面布局</div>
+            <ul>
+              <li><strong>左侧大图：</strong>窄走廊/小浴室中165mm层板完美安装，陈列精致</li>
+              <li><strong>右侧小图：</strong>标注50 LBS承重（金色强调）+ 1.5″厚度不变</li>
+              <li><strong>底部：</strong>一行小字「Same 50 lbs capacity. Same 1.5″ thickness. Now in a slimmer profile.」</li>
+              <li>传达核心：窄了，但承重和质感没有妥协</li>
+            </ul>
+          </div>
+          <div class="col">
+            <div class="col-label">文字叠加</div>
+            <h4>标题：COMPACT YET CAPABLE</h4>
+            <p>Same 50 lbs strength · Same 1.5″ thick profile · 6.3″ slim depth</p>
+            <p class="mt-1" style="color:#717171; font-size:12px;">此方案更接近参考版图5的构图逻辑（产品特写 + 数据标注），只是把「Extra Deep」改为「Compact Yet Capable」。</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Option C -->
+      <div class="img-slot">
+        <div class="img-slot-header">
+          <div class="slot-num">C</div>
+          <div>
+            <div class="slot-title">方案C：The Curated Row · 窄=策展级陈列</div>
+            <div class="slot-type">场景展示 · 2000×2000px</div>
+          </div>
+        </div>
+        <div class="img-slot-body">
+          <div class="col">
+            <div class="col-label">画面布局</div>
+            <ul>
+              <li>一块165mm胡桃木层板，上面只放4件精选物品：手工陶瓷花瓶+干枝、一本摊开的艺术书、一个小盆栽、一个香薰蜡烛</li>
+              <li>每件物品之间留白充足</li>
+              <li>柔和侧光，阴影清晰</li>
+              <li>传达：深度窄 = 自然限制 = 每一件都被看见</li>
+            </ul>
+          </div>
+          <div class="col">
+            <div class="col-label">文字叠加</div>
+            <h4>标题：THE CURATED ROW</h4>
+            <p>6.3 inches deep. Room for exactly what matters. No more, no less.</p>
+            <p class="mt-1" style="color:#717171; font-size:12px;">此方案走纯美学路线，不强调功能参数，适合品牌调性较高的呈现。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Image 6 -->
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title">图6 · 材质品质</h2>
+      </div>
+      <div class="section-divider"></div>
+
+      <div class="img-slot">
+        <div class="img-slot-header">
+          <div class="slot-num">06</div>
+          <div>
+            <div class="slot-title">图6 · Sturdy Material</div>
+            <div class="slot-type">产品特写 · 2000×2000px</div>
+          </div>
+        </div>
+        <div class="img-slot-body">
+          <div class="col ref-col">
+            <div class="col-label">参考版</div>
+            <h4>STURDY MATERIAL</h4>
+            <ul>
+              <li>胡桃木层板 + 书本+陶瓷碗</li>
+              <li>底部三个方形特写：木纹纹理 · 防水(水滴) · 防刮(螺丝刀)</li>
+              <li>文字：Superior durability meets authentic style</li>
+            </ul>
+          </div>
+          <div class="col new-col">
+            <div class="col-label">165mm版 <span class="tag-same">完全复用</span></div>
+            <ul>
+              <li>材质、木纹、防水、防刮——与深度无关</li>
+              <li>仅需将产品替换为165mm版本</li>
+              <li>如果实拍165mm产品，确保木纹纹理在同一质量标准</li>
+              <li>文字、布局、三个特写方框 <strong>完全不变</strong></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Image 7 -->
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title">图7 · 安装说明</h2>
+      </div>
+      <div class="section-divider"></div>
+
+      <div class="img-slot">
+        <div class="img-slot-header">
+          <div class="slot-num">07</div>
+          <div>
+            <div class="slot-title">图7 · Easy to Install</div>
+            <div class="slot-type">安装步骤图 · 2000×2000px</div>
+          </div>
+        </div>
+        <div class="img-slot-body">
+          <div class="col ref-col">
+            <div class="col-label">参考版</div>
+            <ul>
+              <li>胡桃木层板 + 书本+装饰球+干花</li>
+              <li>「5 min」时钟图标 + 「5 Minutes Assembly」</li>
+              <li>三步安装图示：Attach Bracket → Slide Shelf → Secure Shelf</li>
+              <li>配件清单可见：墙锚、螺丝、说明书、水平仪</li>
+            </ul>
+          </div>
+          <div class="col new-col">
+            <div class="col-label">165mm版 <span class="tag-same">仅换产品</span></div>
+            <ul>
+              <li>安装系统与深度无关——支架、螺丝、步骤完全相同</li>
+              <li>仅需将展示的层板替换为165mm版本</li>
+              <li>5分钟安装、三步图示、配件清单 <strong>完全不变</strong></li>
+              <li>注意：安装图中层板的侧视截面需准确反映165mm深度（比参考版窄）</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- New 3-grid scene image -->
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title">图8 · 窄板专属三分场景图</h2>
+        <p class="section-subtitle">Home Office · Kitchen · Laundry — 三个窄板深度优势场景</p>
+      </div>
+      <div class="section-divider"></div>
+
+      <div class="img-slot">
+        <div class="img-slot-header">
+          <div class="slot-num">08</div>
+          <div>
+            <div class="slot-title">图8 · Slim Depth, Full Utility — 三分场景拼图</div>
+            <div class="slot-type">三格横向或纵向拼图 · 2000×2000px</div>
+          </div>
+        </div>
+        <div class="img-slot-body">
+          <div class="col">
+            <div class="col-label">画面布局 — 上下三格或左中右三格</div>
+            <ul>
+              <li><strong>Home Office 书房：</strong>橡木色165mm层板挂在书桌上方白墙。陈列：2本设计书 + 小盆栽 + 陶瓷笔筒 + 迷你画框斜靠。层板不凸出工作区——下方笔记本和咖啡杯不受影响。自然窗光从侧面打入。传达：<em>狭窄墙面上的建筑感工作区延伸。</em></li>
+              <li class="mt-1"><strong>Kitchen 厨房：</strong>胡桃木色165mm层板装在白色地铁砖墙，位于吊柜与台面之间。陈列：一排玻璃调料罐 + 罗勒盆栽 + 橄榄油瓶。窄深度不挡台面操作——下方仍可自由切菜备餐。传达：<em>厨房窄墙上的香料吧台。</em></li>
+              <li class="mt-1"><strong>Laundry 洗衣房：</strong>白色165mm层板挂在洗衣机上方窄墙。陈列：洗衣凝珠玻璃罐 + 柔顺剂 + 折叠毛巾 + 迷你绿植。9.3″深层板在这里会撞头，6.3″刚好。传达：<em>洗衣房那面谁都用不了的窄墙，终于有解了。</em></li>
+            </ul>
+          </div>
+          <div class="col">
+            <div class="col-label">设计细节</div>
+            <h4>文字叠加方案</h4>
+            <p><strong>主标题：</strong>SLIM DEPTH. FULL UTILITY.</p>
+            <p class="mt-1"><strong>每格场景标签</strong>（Poppins 600, 白色, 场景图左下角）：</p>
+            <ul>
+              <li>Home Office · Desk-Side Display</li>
+              <li>Kitchen · Between-Cabinet Fit</li>
+              <li>Laundry · Over-Washer Solution</li>
+            </ul>
+            <h4 class="mt-2">颜色搭配</h4>
+            <ul>
+              <li>Home Office → 橡木 Oak，传达温暖专注</li>
+              <li>Kitchen → 胡桃木 Walnut，传达质感与耐用</li>
+              <li>Laundry → 白色 White，传达洁净利落</li>
+            </ul>
+            <p class="mt-1" style="font-size:12px; color:#064338; font-weight:500;">三色三场景 = 展示产品线的同时覆盖全屋功能叙事。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Production Notes -->
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title">制作优先级与建议</h2>
+      </div>
+      <div class="section-divider"></div>
+
+      <table class="summary-table">
+        <thead>
+          <tr>
+            <th>优先级</th>
+            <th>图位</th>
+            <th>制作方式</th>
+            <th>预估工作量</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>P0 必做</strong></td>
+            <td>主图</td>
+            <td>实拍165mm产品 + 后期叠加色板/文字</td>
+            <td>拍摄2h + 后期2h</td>
+          </tr>
+          <tr>
+            <td><strong>P0 必做</strong></td>
+            <td>图5（重做）</td>
+            <td>实拍 + 后期对比图排版</td>
+            <td>拍摄1h + 后期3h（含对比素材）</td>
+          </tr>
+          <tr>
+            <td><strong>P1 建议做</strong></td>
+            <td>图3（场景）</td>
+            <td>实拍窄空间场景</td>
+            <td>场景搭建+拍摄 3h + 后期1h</td>
+          </tr>
+          <tr>
+            <td><strong>P1 建议做</strong></td>
+            <td>图2（橡木色）</td>
+            <td>实拍或主图换色</td>
+            <td>拍摄1h + 后期1h</td>
+          </tr>
+          <tr>
+            <td><strong>P2 可复用</strong></td>
+            <td>图4（尺寸标注）</td>
+            <td>参考版PS修改数字 9.3″→6.3″</td>
+            <td>后期1h</td>
+          </tr>
+          <tr>
+            <td><strong>P2 可复用</strong></td>
+            <td>图6（材质）</td>
+            <td>参考版替换产品图</td>
+            <td>后期1h</td>
+          </tr>
+          <tr>
+            <td><strong>P2 可复用</strong></td>
+            <td>图7（安装）</td>
+            <td>参考版替换产品图</td>
+            <td>后期1h</td>
+          </tr>
+          <tr>
+            <td><strong>P3 可选</strong></td>
+            <td>图8（新增）</td>
+            <td>场景实拍或高质量AI生成</td>
+            <td>拍摄/AI生成 3-4h</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="alert alert-info mt-3">
+        <div class="alert-title">📸 拍摄注意事项</div>
+        <p>
+          • 主图必须纯白背景 #FFFFFF，产品占比70-80%<br>
+          • 165mm产品实拍时确保深度比例正确——比9.3″窄约32%，道具也需等比例缩小适配<br>
+          • 木纹颜色需与现有产品线一致（Walnut/Oak/Black/White/Rustic Brown五色体系）<br>
+          • 所有叠加文字使用 Playfair Display（标题）和 Poppins（标注），品牌配色 #064338 / #F3C546
+        </p>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title">参考来源</h2>
+      </div>
+      <div class="section-divider"></div>
+      <p style="font-size:13px; color:#717171; line-height:1.8;">
+        <strong>参考ASIN:</strong> <a href="https://www.amazon.com/dp/B0GGZ2XBZ5" target="_blank" style="color:#064338;">B0GGZ2XBZ5</a> — KovaScape Aero Series 36″×9.3″ 全套图片<br>
+        <strong>分析图片:</strong> 主图 + 7张附图全部通过 mediaAnalyze 逐张分析构图、文案、标注<br>
+        <strong>设计规范:</strong> KovaScape 品牌配色 (#064338/#F3C546)，字体 Playfair Display + Poppins<br>
+        <strong>相关文档:</strong> A+设计规格 / 客群美学定位v2.0<br>
+        <strong>文档版本:</strong> v1.0 — 2026年6月23日
+      </p>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    <div class="footer-inner">
+      <div>
+        <div class="footer-brand">KovaScape</div>
+        <div class="footer-meta">Aero Series · 165mm (6.3″) Hollow Shelf<br>主副图设计建议</div>
+      </div>
+      <div class="footer-meta">
+        Based on B0GGZ2XBZ5 image structure<br>
+        1 Main + 7 Secondary Image Specs<br>
+        June 23, 2026
+      </div>
+    </div>
+    <div class="footer-divider"></div>
+    <div class="footer-bottom">
+      Generated by <a href="https://allyhub.com" target="_blank">AllyHub AI</a>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,59 @@
+{
+  "tts_provider": "edge",
+  "voice_id": "zh-CN-XiaoxiaoNeural",
+  "bgm": null,
+  "bgm_pending": false,
+  "bgm_provider": null,
+  "bgm_pid": null,
+  "bgm_log": null,
+  "bgm_mode": null,
+  "bgm_target_duration_s": null,
+  "bgm_seed_duration_s": null,
+  "bgm_loop_count": null,
+  "voices": [
+    {
+      "id": "card-01",
+      "path": "assets/voice/card-01.wav",
+      "duration_s": 10.656,
+      "words": []
+    },
+    {
+      "id": "card-02",
+      "path": "assets/voice/card-02.wav",
+      "duration_s": 9.096,
+      "words": []
+    },
+    {
+      "id": "card-03",
+      "path": "assets/voice/card-03.wav",
+      "duration_s": 11.616,
+      "words": []
+    },
+    {
+      "id": "card-04",
+      "path": "assets/voice/card-04.wav",
+      "duration_s": 10.56,
+      "words": []
+    },
+    {
+      "id": "card-05",
+      "path": "assets/voice/card-05.wav",
+      "duration_s": 9.384,
+      "words": []
+    },
+    {
+      "id": "card-06",
+      "path": "assets/voice/card-06.wav",
+      "duration_s": 10.656,
+      "words": []
+    },
+    {
+      "id": "card-07",
+      "path": "assets/voice/card-07.wav",
+      "duration_s": 9.984,
+      "words": []
+    }
+  ],
+  "sfx": [],
+  "total_duration_s": 71.952
+}

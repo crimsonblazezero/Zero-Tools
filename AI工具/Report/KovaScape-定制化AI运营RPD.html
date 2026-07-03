@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="moss">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KovaScape · 定制化 AI 运营层 RPD v3.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Noto+Serif:wght@500&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --outer-bg: #E4E1DC;
+  --page-bg: #FDFCF9;
+  --surface: #FFFFFF;
+  --border: #E8E6E2;
+  --divider: #C5C0BA;
+  --text-primary: #151515;
+  --text-body: #3D3D3D;
+  --text-secondary: #717171;
+  --hero-bg: #DDE8D8;
+  --hero-deco: #93B888;
+  --hero-deco2: #5E8F52;
+  --success-bg: #E8FBCF; --success-fg: #3D4826;
+  --warning-bg: #FFF0DC; --warning-fg: #E47700;
+  --info-bg: #DEE5F7; --info-fg: #3E54CE;
+  --error-bg: #FDECEA; --error-fg: #C4433A;
+  --neutral-bg: #FDF9F2; --neutral-fg: #7C746F;
+  --brand-green: #064338;
+  --brand-gold: #F3C546;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter Tight', sans-serif; background: var(--outer-bg); color: var(--text-body); font-size: 14px; line-height: 1.6; }
+.page { max-width: 1200px; margin: 32px auto; background: var(--page-bg); border-radius: 24px; overflow: hidden; box-shadow: 0 4px 40px rgba(0,0,0,0.08); }
+
+/* HERO */
+.hero { background: var(--hero-bg); padding: 44px 56px 36px; position: relative; overflow: hidden; }
+.hero svg.blobs { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.hero-content { position: relative; z-index: 1; }
+.hero-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; color: var(--brand-green); text-transform: uppercase; background: rgba(6,67,56,0.1); display: inline-block; padding: 3px 10px; border-radius: 20px; margin-bottom: 14px; }
+.hero-title { font-family: 'Playfair Display', serif; font-size: 34px; font-weight: 700; color: var(--brand-green); line-height: 1.2; margin-bottom: 10px; }
+.hero-title span { color: var(--brand-gold); }
+.hero-subtitle { font-size: 14px; color: var(--text-secondary); max-width: 760px; margin-bottom: 24px; line-height: 1.7; }
+.hero-divider { border: none; border-top: 0.5px solid rgba(255,255,255,0.7); margin-bottom: 20px; }
+.hero-stats { display: flex; gap: 36px; flex-wrap: wrap; }
+.hero-stat-value { font-family: 'Noto Serif', serif; font-size: 28px; font-weight: 500; color: var(--brand-green); letter-spacing: -0.02em; }
+.hero-stat-label { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+/* CONTENT */
+.content { padding: 48px 56px; }
+.section { margin-bottom: 52px; }
+.section-header { margin-bottom: 20px; }
+.section-title { font-size: 17px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 10px; }
+.section-icon { width: 28px; height: 28px; border-radius: 8px; background: var(--brand-green); color: var(--brand-gold); display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+.section-sub { font-size: 12px; color: var(--text-secondary); margin-top: 4px; margin-left: 38px; }
+.section-rule { border: none; border-top: 0.5px solid var(--border); margin-top: 12px; }
+
+/* HIGHLIGHT BOX */
+.hbox { border-left: 3px solid var(--brand-gold); background: rgba(243,197,70,0.06); border-radius: 0 10px 10px 0; padding: 14px 18px; margin-bottom: 16px; }
+.hbox-title { font-size: 13px; font-weight: 600; color: var(--brand-green); margin-bottom: 4px; }
+.hbox-body { font-size: 13px; color: var(--text-body); }
+
+/* ALERT */
+.alert { border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
+.alert-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+.alert-body { font-size: 13px; }
+.alert.info { background: var(--info-bg); color: var(--info-fg); }
+.alert.warning { background: var(--warning-bg); color: var(--warning-fg); }
+.alert.success { background: var(--success-bg); color: var(--success-fg); }
+.alert.neutral { background: var(--neutral-bg); color: var(--neutral-fg); }
+
+/* ARCH LAYERS */
+.arch-diagram { display: flex; flex-direction: column; gap: 0; border: 0.5px solid var(--border); border-radius: 14px; overflow: hidden; }
+.arch-layer { padding: 18px 24px; display: flex; align-items: flex-start; gap: 20px; }
+.arch-layer-label { width: 90px; flex-shrink: 0; font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary); padding-top: 3px; }
+.arch-layer-content { flex: 1; }
+.arch-layer-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 5px; }
+.arch-layer-desc { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
+.arch-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.arch-tag { font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 10px; }
+.arch-layer.company { background: #f0f4f0; border-bottom: 0.5px solid var(--border); }
+.arch-layer.ours { background: rgba(243,197,70,0.07); border-bottom: 0.5px solid var(--border); }
+.arch-layer.brand { background: rgba(6,67,56,0.04); }
+.arch-layer.company .arch-tag { background: #dde8d8; color: #3D4826; }
+.arch-layer.ours .arch-tag { background: rgba(243,197,70,0.2); color: #7a5c00; }
+.arch-layer.brand .arch-tag { background: rgba(6,67,56,0.1); color: var(--brand-green); }
+.arch-arrow { text-align: center; padding: 5px 0; font-size: 16px; color: var(--divider); background: var(--page-bg); border-top: 0.5px solid var(--border); border-bottom: 0.5px solid var(--border); font-size: 12px; color: var(--text-secondary); }
+.layer-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 3px 8px; border-radius: 6px; margin-bottom: 6px; }
+.badge-company { background: #dde8d8; color: #3D4826; }
+.badge-ours { background: rgba(243,197,70,0.25); color: #7a5c00; }
+.badge-brand { background: rgba(6,67,56,0.12); color: var(--brand-green); }
+
+/* TOOL INVENTORY TABLE */
+.tool-table-wrap { overflow-x: auto; }
+.tool-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tool-table th { font-size: 11px; font-weight: 500; color: var(--text-secondary); text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--divider); white-space: nowrap; }
+.tool-table td { padding: 10px 14px; border-bottom: 0.5px solid var(--border); vertical-align: top; }
+.tool-table tr:last-child td { border-bottom: none; }
+.tool-table tr:hover td { background: rgba(6,67,56,0.015); }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+.dot-live { background: #5E8F52; }
+.dot-upgrade { background: #E47700; }
+.dot-integrate { background: #3E54CE; }
+.tbadge { font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 8px; white-space: nowrap; display: inline-block; }
+.tb-live { background: var(--success-bg); color: var(--success-fg); }
+.tb-upgrade { background: var(--warning-bg); color: var(--warning-fg); }
+.tb-integrate { background: var(--info-bg); color: var(--info-fg); }
+.tb-new { background: rgba(6,67,56,0.1); color: var(--brand-green); }
+
+/* MODULE CARDS */
+.module-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+.mcard { background: var(--surface); border: 0.5px solid var(--border); border-radius: 12px; overflow: hidden; }
+.mcard-head { padding: 14px 18px 12px; border-bottom: 0.5px solid var(--border); display: flex; align-items: flex-start; gap: 12px; }
+.mcard-icon { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.mcard-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.mcard-meta { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+.mcard-body { padding: 12px 18px; }
+.flist { list-style: none; }
+.flist li { font-size: 13px; color: var(--text-body); padding: 5px 0; border-bottom: 0.5px solid var(--border); display: flex; align-items: flex-start; gap: 8px; }
+.flist li:last-child { border-bottom: none; }
+.flist li::before { content: '›'; color: var(--brand-green); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+.tag-ai { font-size: 10px; font-weight: 500; background: rgba(6,67,56,0.08); color: var(--brand-green); padding: 1px 6px; border-radius: 8px; margin-left: auto; flex-shrink: 0; white-space: nowrap; }
+.tag-new { font-size: 10px; font-weight: 500; background: rgba(243,197,70,0.2); color: #7a5c00; padding: 1px 6px; border-radius: 8px; margin-left: auto; flex-shrink: 0; white-space: nowrap; }
+.tag-reuse { font-size: 10px; font-weight: 500; background: var(--success-bg); color: var(--success-fg); padding: 1px 6px; border-radius: 8px; margin-left: auto; flex-shrink: 0; white-space: nowrap; }
+.tag-upgrade { font-size: 10px; font-weight: 500; background: var(--warning-bg); color: var(--warning-fg); padding: 1px 6px; border-radius: 8px; margin-left: auto; flex-shrink: 0; white-space: nowrap; }
+
+/* PRIORITY TABLE */
+.ptable-wrap { overflow-x: auto; }
+.ptable { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ptable th { font-size: 11px; font-weight: 500; color: var(--text-secondary); text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--divider); white-space: nowrap; }
+.ptable td { padding: 11px 14px; border-bottom: 0.5px solid var(--border); vertical-align: top; }
+.ptable tr:last-child td { border-bottom: none; }
+.ptable tr:hover td { background: rgba(6,67,56,0.015); }
+.pbadge { font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px; white-space: nowrap; display: inline-block; }
+.p1 { background: #FDECEA; color: #C4433A; }
+.p2 { background: #FFF0DC; color: #E47700; }
+.p3 { background: #DEE5F7; color: #3E54CE; }
+.p4 { background: #E8FBCF; color: #3D4826; }
+.type-refine { background: rgba(243,197,70,0.18); color: #7a5c00; }
+.type-upgrade { background: var(--warning-bg); color: var(--warning-fg); }
+.type-new { background: rgba(6,67,56,0.1); color: var(--brand-green); }
+.type-integrate { background: var(--info-bg); color: var(--info-fg); }
+
+/* TABS */
+.tab-bar { display: flex; gap: 4px; margin-bottom: 20px; flex-wrap: wrap; }
+.tab-btn { font-size: 12px; font-weight: 500; padding: 6px 14px; border-radius: 20px; border: 0.5px solid var(--border); background: var(--surface); color: var(--text-secondary); cursor: pointer; transition: all 0.15s; }
+.tab-btn.active { background: var(--brand-green); color: #fff; border-color: var(--brand-green); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* TIMELINE */
+.timeline { position: relative; padding-left: 28px; }
+.timeline::before { content: ''; position: absolute; left: 8px; top: 8px; bottom: 8px; width: 2px; background: var(--border); }
+.titem { position: relative; margin-bottom: 28px; }
+.tdot { position: absolute; left: -24px; top: 5px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--surface); box-shadow: 0 0 0 2px var(--brand-green); background: var(--brand-green); }
+.tdot.future { background: var(--surface); }
+.tphase { font-size: 11px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+.ttitle { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
+.tdesc { font-size: 13px; color: var(--text-body); line-height: 1.65; }
+.ttags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.ttag { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 10px; background: rgba(6,67,56,0.08); color: var(--brand-green); }
+.ttag.gold { background: rgba(243,197,70,0.2); color: #7a5c00; }
+.ttag.blue { background: var(--info-bg); color: var(--info-fg); }
+
+/* CHART */
+.chart-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 12px; padding: 20px 24px; }
+.chart-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+.chart-sub { font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; }
+
+/* COVERAGE METER */
+.coverage-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.cov-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.cov-module { font-size: 12px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; }
+.cov-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.cov-bar-track { flex: 1; height: 5px; background: var(--border); border-radius: 3px; }
+.cov-bar-fill { height: 100%; border-radius: 3px; transition: width 1s ease; }
+.cov-pct { font-size: 11px; font-weight: 600; min-width: 30px; text-align: right; }
+.cov-tools { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
+/* FOOTER */
+.footer { background: var(--hero-bg); padding: 32px 56px; position: relative; overflow: hidden; }
+.footer svg.blobs { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.footer-content { position: relative; z-index: 1; }
+.footer-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px; padding-bottom: 20px; border-bottom: 0.5px solid rgba(255,255,255,0.6); margin-bottom: 16px; }
+.footer-brand { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: var(--brand-green); }
+.footer-brand-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.footer-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; }
+.footer-meta-item { font-size: 12px; color: var(--text-secondary); }
+.footer-meta-item strong { color: var(--text-primary); }
+.footer-bottom { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+.footer-doc { font-size: 12px; color: var(--text-secondary); }
+.footer-copy { font-size: 12px; color: var(--text-secondary); }
+.footer-copy a { color: var(--brand-green); text-decoration: none; }
+
+@media (max-width: 768px) {
+  .page { margin: 0; border-radius: 0; }
+  .hero, .content, .footer { padding: 28px 20px; }
+  .hero-title { font-size: 26px; }
+  .module-grid { grid-template-columns: 1fr; }
+  .coverage-grid { grid-template-columns: 1fr 1fr; }
+  .footer-top { flex-direction: column; }
+  .footer-meta { grid-template-columns: 1fr; }
+  .arch-layer { flex-direction: column; gap: 8px; }
+  .arch-layer-label { width: auto; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- HERO -->
+<div class="hero">
+  <svg class="blobs" viewBox="0 0 1200 280" xmlns="http://www.w3.org/2000/svg">
+    <path d="M70,50 C115,15 200,35 215,85 C230,135 170,170 125,150 C80,130 25,85 70,50Z" fill="#93B888" opacity="0.16"/>
+    <path d="M920,20 C975,5 1050,45 1060,100 C1070,155 1010,185 955,165 C900,145 865,55 920,20Z" fill="#5E8F52" opacity="0.12"/>
+    <path d="M480,185 C530,158 590,188 598,238 C606,262 555,278 510,260 C465,242 430,212 480,185Z" fill="#93B888" opacity="0.1"/>
+    <path d="M1120,170 C1155,155 1185,180 1188,215 C1191,250 1158,265 1125,252 C1092,239 1085,185 1120,170Z" fill="#5E8F52" opacity="0.13"/>
+  </svg>
+  <div class="hero-content">
+    <div class="hero-eyebrow">KovaScape · RPD v3.0 · 2026.06</div>
+    <div class="hero-title">定制化 AI 运营层<br><span>已有 19 个工具 · 补齐短板 · 构建飞轮</span></div>
+    <div class="hero-subtitle">
+      组内已自研 19 个工具覆盖核心运营场景，基础设施远比预想扎实。
+      本 RPD 的核心任务已从"从零建设"转变为：
+      <strong style="color:var(--brand-green);">盘点现有工具 → 识别真实缺口 → 集成打通 → 与公司系统协同提纯</strong>。
+    </div>
+    <hr class="hero-divider">
+    <div class="hero-stats">
+      <div><div class="hero-stat-value">19</div><div class="hero-stat-label">已有工具/面板</div></div>
+      <div><div class="hero-stat-value">8</div><div class="hero-stat-label">已覆盖运营模块</div></div>
+      <div><div class="hero-stat-value">4</div><div class="hero-stat-label">待补齐核心缺口</div></div>
+      <div><div class="hero-stat-value">1</div><div class="hero-stat-label">统一入口 Ops Hub</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- 1. 重新定位 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title"><div class="section-icon">🎯</div>重新定位 · Revised Positioning</div>
+      <hr class="section-rule">
+    </div>
+    <div class="hbox">
+      <div class="hbox-title">核心发现：工具已经很丰富，问题不是"没有"而是"没打通"</div>
+      <div class="hbox-body">
+        广告分析、库存决策、排产、财务、Listing 生成……这些核心模块都已有工具在跑。
+        现阶段的真正任务是：<strong>① 把分散的工具集成进 Ops Hub 形成统一工作流；
+        ② 识别并补齐真实缺口（合规/客服/竞品持续监控/公司系统提纯层）；
+        ③ 给每个工具加上 AI 增强层，从"数据展示"升级到"辅助决策"。</strong>
+      </div>
+    </div>
+
+    <!-- 三层架构 -->
+    <div class="arch-diagram">
+      <div class="arch-layer company">
+        <div class="arch-layer-label"><span class="layer-badge badge-company">公司层</span></div>
+        <div class="arch-layer-content">
+          <div class="arch-layer-title">公司 AI Agent 基础设施</div>
+          <div class="arch-layer-desc">通用能力，输出标准化 CSV 和策略建议</div>
+          <div class="arch-tags">
+            <span class="arch-tag">✅ 自动建仓</span>
+            <span class="arch-tag">✅ 销量预测 CSV</span>
+            <span class="arch-tag">✅ 采购排产 CSV</span>
+            <span class="arch-tag">🔨 广告 AI Agent（在建）</span>
+            <span class="arch-tag">🔨 店铺扫描（在建）</span>
+            <span class="arch-tag">🔨 Bulk 表回传（在建）</span>
+          </div>
+        </div>
+      </div>
+      <div class="arch-arrow">↓ 输出 CSV / 策略结果，我们组接收并提纯 ↓</div>
+      <div class="arch-layer ours">
+        <div class="arch-layer-label"><span class="layer-badge badge-ours">我们组层</span></div>
+        <div class="arch-layer-content">
+          <div class="arch-layer-title">KovaScape 定制化 AI 运营层（本项目）</div>
+          <div class="arch-layer-desc">19 个已有工具 + 缺口补齐 + AI 增强 + 公司系统提纯接口</div>
+          <div class="arch-tags">
+            <span class="arch-tag">✅ Ops Hub 统一入口</span>
+            <span class="arch-tag">✅ 广告分析面板</span>
+            <span class="arch-tag">✅ 决策面板/甘特图</span>
+            <span class="arch-tag">✅ 排产面板</span>
+            <span class="arch-tag">✅ 财务/利润核算</span>
+            <span class="arch-tag">✅ Listing 批量生成</span>
+            <span class="arch-tag">🔨 AI 增强层（各面板）</span>
+            <span class="arch-tag">🔨 合规监控（缺口）</span>
+            <span class="arch-tag">🔨 客服 AI（缺口）</span>
+            <span class="arch-tag">🔨 广告提纯接口（待触发）</span>
+          </div>
+        </div>
+      </div>
+      <div class="arch-arrow">↓ 精炼后的可执行运营动作 ↓</div>
+      <div class="arch-layer brand">
+        <div class="arch-layer-label"><span class="layer-badge badge-brand">品牌资产层</span></div>
+        <div class="arch-layer-content">
+          <div class="arch-layer-title">KovaScape 品牌能力沉淀（持续积累）</div>
+          <div class="arch-layer-desc">Skills + Web Notes + 方法论 + 51篇 Apollo Blog 知识库 + AMC 报告</div>
+          <div class="arch-tags">
+            <span class="arch-tag">品牌调性规范</span>
+            <span class="arch-tag">Listing 方法论 Skills</span>
+            <span class="arch-tag">Apollo Blog 51篇</span>
+            <span class="arch-tag">AMC 受众策略</span>
+            <span class="arch-tag">竞品知识库</span>
+            <span class="arch-tag">广告 benchmark</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 工具全景盘点 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title"><div class="section-icon">🗂️</div>工具全景盘点 · Tool Inventory</div>
+      <div class="section-sub">19 个已有工具的现状评估与下一步行动</div>
+      <hr class="section-rule">
+    </div>
+
+    <div style="display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);"><span class="status-dot dot-live"></span>稳定运行，维持现状</div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);"><span class="status-dot dot-upgrade"></span>需要升级/加 AI 增强</div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);"><span class="status-dot dot-integrate"></span>需要集成打通</div>
+    </div>
+
+    <div class="tool-table-wrap">
+      <table class="tool-table">
+        <thead>
+          <tr>
+            <th>工具名称</th>
+            <th>覆盖模块</th>
+            <th>现状</th>
+            <th>下一步行动</th>
+            <th>优先级</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="status-dot dot-live"></span><strong>KovaScape Ops Hub</strong></td>
+            <td>🏗️ 平台框架</td>
+            <td><span class="tbadge tb-live">运行中</span></td>
+            <td>持续集成新工具；加入工具使用数据统计；优化分类导航</td>
+            <td><span class="pbadge p1">P1</span></td>
+          </tr>
+          <tr>
+            <td><span class="status-dot dot-upgrade"></span><strong>广告综合分析面板 v6.10</strong></td>
+            <td>📢 广告分析</td>
+            <td><span class="tbadge tb-upgrade">待升级</span></td>
+            <td>接入公司广告 Agent 输出做提纯层；加入 AI 优化建议生成；与 Keywords Tagger 打通</td>
+            <td><span class="pbadge p1">P1</span></td>
+          </tr>
+          <tr>
+            <td><span class="status-dot dot-upgrade"></span><strong>决策面板 v7</strong></td>
+            <td>🏪 店铺/库存</td>
+            <td><span class="tbadge tb-upgrade">待升级</span></td>
+            <td>接入公司销量预测 CSV 新版格式；加入 AI 补货建议文字输出；与排产面板数据联动</td>
+            <td><span class="pbadge p1">P1</span></td>
+          </tr>
+          <tr>
+            <td><span class="status-dot dot-upgrade"></span><strong>排产面板 v5</strong></td>
+            <td>🚚 物流/排产</td>
+            <td><span class="tbadge tb-upgrade">待升级</span></td>
+            <td>加入物流单号/IEN 号回填功能；与决策面板库存数据双向联动；异常自动推送</td>
+            <td><span class="pbadge p1">P1</span></td>
+          </tr>
+          <tr>
+            <td><span class="status-dot dot-live"></span><strong>月报整合器 v4.15</strong></td>
+            <td>💰 财务数据</td>
+            <td><span class="tbadge tb-live">运行中</span></td>
+            <td>加入 AI 月报解读文字摘要；与 FBA 利润核算器数据打通</td>
+            <td><span class="pbadge p2">P2</span></td>
+          </tr>
+          <tr>
+            <td><span class="status-dot dot-upgrade"></span><strong>销量分析助手 v2.5</strong></td>
+            <td>📊 销售分析</td>
+            <td><span class="tbadge tb-upgrade">待升级</span></td>
+            <td>加入 AI 异常归因分析（流量/转化/价格/库存四维）；与广告面板数据关联</td>
+            <td><span class="pbadge p2">P2</span></td>
+          </tr>
+          <tr>
+            <td><span class="status-dot dot-live"></span><strong>FBA 利润核算器 (US/EU/JP)</strong></td>
+            <td>💰 财务数据</td>
+            <td><span class="tbadge tb-live">运行中</span></td>
+            <td>加入 CA/AU/SA/UAE 站点；与月报整合器打通；加入利润率目标对比（12-13.5%）</td>
+            <td><span class="pbadge p2">P2</span></td>
+          </tr>
+          <tr>
+            <td><span class="status-dot dot-upgrade"></span><strong>西柚数据对比面板 v1.5</strong></td>
+            <td>🔬 竞品/产品开发</td>
+            <td><span class="tbadge tb-upgrade">待升级</span></td>
+            <td>升级为持续监控系统；加入竞品排名变化追踪；与 Review 情感分析工具打通</td>
+            <td><span class="pbadge p2">P2</span></td>
+          </tr>
+          <tr>
+            <td><span class="status-dot dot-live"></span><strong>Variation 批量书写器 v4.0</strong></td>
+            <td>✍️ Listing 上架</td>
+            <td><span class="tbadge tb-live">运行中</span></td>
+            <td>集成 GEO 审计评分（CDQ 120分制）；加入多语言版本输出</td>
+            <td><span class="pbadge p2">P2</span></td>
+          </tr>
+          <tr>
+            <td><span class="status-dot dot-live"></span><strong>变体标题批量生成器 v3.6</strong></td>
+            <td>✍️ Listing 上架</td>
+            <td><span class="tbadge tb-live">运行中</span></td>
+            <td>与 Variation 书写器合并或深度联动；加入字符数实时校验（195-200字符目标）</td>
+            <td><span class="pbadge p2">P2</span></td>
+          </tr>
+          <tr>
+            <td><span class="status-dot dot-live"></span><strong>Amazon Image Tool v5.0</strong></td>
+            <td>✍️ Listing/图片</td>
+            <td><span class="tbadge tb-live">运行中</span></td>
+            <td>集成进 Ops Hub；加入批量下载后的图片质量评估</td>
+            <td><span class="pbadge p3">P3</span></td>
+          </tr>
+          <tr>
+            <td><span class="status-dot dot-live"></span><strong>Excel 列提取</strong></td>
+            <td>🔧 通用工具</td>
+            <td><span class="tbadge tb-live">运行中</span></td>
+            <td>维持现状，集成进 Ops Hub 通用工具区</td>
+            <td><span class="pbadge p4">P4</span></td>
+          </tr>
+          <tr>
+            <td><span class="status-dot dot-live"></span><strong>产品翻单计算器</strong></td>
+            <td>💰 财务/排产</td>
+            <td><span class="tbadge tb-live">运行中</span></td>
+            <td>与排产面板联动；加入多工厂成本对比</td>
+            <td><span class="pbadge p3">P3</span></td>
+          </tr>
+          <tr>
+            <td><span class="status-dot dot-live"></span><strong>欧洲站工作 SOP</strong></td>
+            <td>🔧 通用工具</td>
+            <td><span class="tbadge tb-live">运行中</span></td>
+            <td>定期更新；加入 GPSR 合规检查清单</td>
+            <td><span class="pbadge p3">P3</span></td>
+          </tr>
+          <tr>
+            <td><span class="status-dot dot-integrate"></span><strong>Dashboard (Streamlit)</strong></td>
+            <td>🏪 店铺扫描</td>
+            <td><span class="tbadge tb-integrate">待集成</span></td>
+            <td>评估是否迁移至 HTML 面板统一技术栈；或通过 iframe 集成进 Ops Hub</td>
+            <td><span class="pbadge p2">P2</span></td>
+          </tr>
+          <tr>
+            <td><span class="status-dot dot-integrate"></span><strong>Ads Panel</strong></td>
+            <td>📢 广告分析</td>
+            <td><span class="tbadge tb-integrate">待集成</span></td>
+            <td>与广告综合分析面板合并或明确分工；避免功能重叠</td>
+            <td><span class="pbadge p2">P2</span></td>
+          </tr>
+          <tr>
+            <td><span class="status-dot dot-upgrade"></span><strong>Keywords Tagger</strong></td>
+            <td>📢 广告/关键词</td>
+            <td><span class="tbadge tb-upgrade">待升级</span></td>
+            <td>与广告分析面板深度打通；加入关键词竞争度评分；支持批量导出</td>
+            <td><span class="pbadge p1">P1</span></td>
+          </tr>
+          <tr>
+            <td><span class="status-dot dot-upgrade"></span><strong>Apollo Blog 知识库（51篇）</strong></td>
+            <td>📢 广告知识</td>
+            <td><span class="tbadge tb-upgrade">待升级</span></td>
+            <td>结构化为可检索知识库；接入广告分析面板作为 AI 建议的知识底座</td>
+            <td><span class="pbadge p1">P1</span></td>
+          </tr>
+          <tr>
+            <td><span class="status-dot dot-live"></span><strong>品牌方案/AMC 报告</strong></td>
+            <td>📣 联盟/品牌</td>
+            <td><span class="tbadge tb-live">运行中</span></td>
+            <td>定期更新 AMC 受众策略；加入效果追踪对比</td>
+            <td><span class="pbadge p3">P3</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 3. 模块覆盖度 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title"><div class="section-icon">📊</div>模块覆盖度评估 · Coverage Assessment</div>
+      <div class="section-sub">现有工具对各运营模块的覆盖程度，以及真实缺口所在</div>
+      <hr class="section-rule">
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+      <div class="chart-card">
+        <div class="chart-title">各模块工具覆盖度</div>
+        <div class="chart-sub">绿色=已有工具，橙色=部分覆盖，红色=缺口</div>
+        <canvas id="coverageChart" height="260"></canvas>
+      </div>
+      <div>
+        <div class="alert success" style="margin-bottom:10px;">
+          <div class="alert-title">✅ 已充分覆盖（无需新建）</div>
+          <div class="alert-body">广告分析、库存决策、排产物流、财务利润、Listing 生成——这 5 个核心模块都有工具在跑，重点是升级和打通，不是重建。</div>
+        </div>
+        <div class="alert warning" style="margin-bottom:10px;">
+          <div class="alert-title">⚠️ 部分覆盖（需要升级）</div>
+          <div class="alert-body">竞品监控（西柚面板有但不持续）、销售分析（有工具但缺 AI 归因）、知识库（Apollo Blog 51篇未结构化）。</div>
+        </div>
+        <div class="alert info">
+          <div class="alert-title">🔴 真实缺口（需要新建）</div>
+          <div class="alert-body">
+            <strong>① 合规监控</strong>：跟卖/GPSR/下架申诉，完全没有工具<br>
+            <strong>② 客服邮件 AI</strong>：无任何辅助工具<br>
+            <strong>③ 公司系统提纯层</strong>：广告 Agent 上线后的接入接口<br>
+            <strong>④ 站外增长</strong>：社媒/红人/独立站，长期缺口
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 覆盖度条形图 -->
+    <div class="coverage-grid">
+      <div class="cov-card">
+        <div class="cov-module">📢 广告分析</div>
+        <div class="cov-bar-row">
+          <div class="cov-bar-track"><div class="cov-bar-fill" style="width:85%;background:#5E8F52;"></div></div>
+          <div class="cov-pct" style="color:#5E8F52;">85%</div>
+        </div>
+        <div class="cov-tools">广告面板 v6.10 · Ads Panel · Keywords Tagger · Apollo Blog</div>
+      </div>
+      <div class="cov-card">
+        <div class="cov-module">🏪 库存/店铺扫描</div>
+        <div class="cov-bar-row">
+          <div class="cov-bar-track"><div class="cov-bar-fill" style="width:80%;background:#5E8F52;"></div></div>
+          <div class="cov-pct" style="color:#5E8F52;">80%</div>
+        </div>
+        <div class="cov-tools">决策面板 v7 · Dashboard (Streamlit)</div>
+      </div>
+      <div class="cov-card">
+        <div class="cov-module">🚚 排产/物流</div>
+        <div class="cov-bar-row">
+          <div class="cov-bar-track"><div class="cov-bar-fill" style="width:75%;background:#5E8F52;"></div></div>
+          <div class="cov-pct" style="color:#5E8F52;">75%</div>
+        </div>
+        <div class="cov-tools">排产面板 v5 · 翻单计算器（缺：单号回填）</div>
+      </div>
+      <div class="cov-card">
+        <div class="cov-module">💰 财务数据</div>
+        <div class="cov-bar-row">
+          <div class="cov-bar-track"><div class="cov-bar-fill" style="width:80%;background:#5E8F52;"></div></div>
+          <div class="cov-pct" style="color:#5E8F52;">80%</div>
+        </div>
+        <div class="cov-tools">月报整合器 · FBA 利润核算器 · 翻单计算器</div>
+      </div>
+      <div class="cov-card">
+        <div class="cov-module">✍️ Listing 上架</div>
+        <div class="cov-bar-row">
+          <div class="cov-bar-track"><div class="cov-bar-fill" style="width:75%;background:#5E8F52;"></div></div>
+          <div class="cov-pct" style="color:#5E8F52;">75%</div>
+        </div>
+        <div class="cov-tools">Variation 书写器 · 标题生成器 · Image Tool（缺：GEO 审计集成）</div>
+      </div>
+      <div class="cov-card">
+        <div class="cov-module">🔬 竞品/产品开发</div>
+        <div class="cov-bar-row">
+          <div class="cov-bar-track"><div class="cov-bar-fill" style="width:50%;background:#E47700;"></div></div>
+          <div class="cov-pct" style="color:#E47700;">50%</div>
+        </div>
+        <div class="cov-tools">西柚对比面板（静态，缺持续监控）</div>
+      </div>
+      <div class="cov-card">
+        <div class="cov-module">🛡️ 合规管理</div>
+        <div class="cov-bar-row">
+          <div class="cov-bar-track"><div class="cov-bar-fill" style="width:10%;background:#C4433A;"></div></div>
+          <div class="cov-pct" style="color:#C4433A;">10%</div>
+        </div>
+        <div class="cov-tools">欧洲站 SOP（仅文档，无自动监控）</div>
+      </div>
+      <div class="cov-card">
+        <div class="cov-module">📧 客服邮件</div>
+        <div class="cov-bar-row">
+          <div class="cov-bar-track"><div class="cov-bar-fill" style="width:0%;background:#C4433A;"></div></div>
+          <div class="cov-pct" style="color:#C4433A;">0%</div>
+        </div>
+        <div class="cov-tools">完全空白，需新建</div>
+      </div>
+      <div class="cov-card">
+        <div class="cov-module">🎯 站内活动</div>
+        <div class="cov-bar-row">
+          <div class="cov-bar-track"><div class="cov-bar-fill" style="width:30%;background:#E47700;"></div></div>
+          <div class="cov-pct" style="color:#E47700;">30%</div>
+        </div>
+        <div class="cov-tools">月报整合器有部分数据（缺专项管理）</div>
+      </div>
+      <div class="cov-card">
+        <div class="cov-module">🚀 站外增长</div>
+        <div class="cov-bar-row">
+          <div class="cov-bar-track"><div class="cov-bar-fill" style="width:20%;background:#C4433A;"></div></div>
+          <div class="cov-pct" style="color:#C4433A;">20%</div>
+        </div>
+        <div class="cov-tools">AMC 报告（仅策略文档，无执行工具）</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 开发任务清单 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title"><div class="section-icon">📋</div>开发任务清单 · Task Backlog</div>
+      <div class="section-sub">按"升级现有工具"和"新建缺口模块"分类，标注与公司系统的协同关系</div>
+      <hr class="section-rule">
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('upgrade')">🔧 升级现有工具</button>
+      <button class="tab-btn" onclick="switchTab('integrate')">🔗 集成打通</button>
+      <button class="tab-btn" onclick="switchTab('newbuild')">🆕 新建缺口模块</button>
+      <button class="tab-btn" onclick="switchTab('company')">🤝 公司系统提纯</button>
+    </div>
+
+    <!-- 升级现有工具 -->
+    <div class="tab-panel active" id="tab-upgrade">
+      <div class="alert warning" style="margin-bottom:16px;">
+        <div class="alert-title">🔧 升级原则</div>
+        <div class="alert-body">现有工具已经跑通业务逻辑，升级重点是加 AI 增强层（从"展示数据"到"给出建议"）和打通数据接口。不要推倒重来。</div>
+      </div>
+      <div class="module-grid">
+        <div class="mcard">
+          <div class="mcard-head">
+            <div class="mcard-icon" style="background:rgba(243,197,70,0.15);">📢</div>
+            <div>
+              <div class="mcard-title">广告分析面板 → AI 建议层</div>
+              <div class="mcard-meta">v6.10 基础上加 AI 增强</div>
+            </div>
+          </div>
+          <div class="mcard-body">
+            <ul class="flist">
+              <li>将 Apollo Blog 51篇结构化为知识底座，支撑 AI 建议生成<span class="tag-upgrade">升级</span></li>
+              <li>高 ACOS 关键词自动标记 + AI 给出调价/否定/扩词建议<span class="tag-ai">AI 增强</span></li>
+              <li>与 Keywords Tagger 打通，关键词属性标注直接影响广告策略</li>
+              <li>加入新品 vs 老品策略切换（结合公司 30+ case benchmark）</li>
+              <li>预留公司广告 Agent 输出的接入接口<span class="tag-upgrade">待触发</span></li>
+            </ul>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-head">
+            <div class="mcard-icon" style="background:#dde8d8;">🏪</div>
+            <div>
+              <div class="mcard-title">决策面板 → 智能补货建议</div>
+              <div class="mcard-meta">v7 基础上加 AI 文字输出</div>
+            </div>
+          </div>
+          <div class="mcard-body">
+            <ul class="flist">
+              <li>加入 AI 补货建议文字摘要（"以下 3 个 SKU 需在 X 天内下单"）<span class="tag-ai">AI 增强</span></li>
+              <li>接入公司销量预测 CSV 新版格式，自动适配字段变化</li>
+              <li>与排产面板双向数据联动（补货决策 → 自动触发排产）</li>
+              <li>加入预测准确率反馈机制，帮助公司优化预测模型</li>
+            </ul>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-head">
+            <div class="mcard-icon" style="background:#DEE5F7;">🚚</div>
+            <div>
+              <div class="mcard-title">排产面板 → 物流回填</div>
+              <div class="mcard-meta">v5 基础上加物流跟踪</div>
+            </div>
+          </div>
+          <div class="mcard-body">
+            <ul class="flist">
+              <li>加入物流单号/IEN 号录入和回填功能<span class="tag-upgrade">升级</span></li>
+              <li>货件状态追踪（Working/Shipped/Receiving/Closed）</li>
+              <li>入库差异自动比对（发货数 vs 收货数）预警</li>
+              <li>异常批次自动推送通知（钉钉/企业微信）<span class="tag-ai">自动化</span></li>
+            </ul>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-head">
+            <div class="mcard-icon" style="background:#E8FBCF;">✍️</div>
+            <div>
+              <div class="mcard-title">Listing 工具 → GEO 审计集成</div>
+              <div class="mcard-meta">Variation 书写器 + 标题生成器</div>
+            </div>
+          </div>
+          <div class="mcard-body">
+            <ul class="flist">
+              <li>集成 GEO 审计评分（CDQ 120分制），生成后即时评分<span class="tag-upgrade">升级</span></li>
+              <li>标题字符数实时校验（目标 195-200 字符）</li>
+              <li>两个工具明确分工或合并，避免重叠</li>
+              <li>加入多语言版本一键生成（英/德/法/日）<span class="tag-ai">AI 增强</span></li>
+            </ul>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-head">
+            <div class="mcard-icon" style="background:#FFF0DC;">🔬</div>
+            <div>
+              <div class="mcard-title">西柚面板 → 持续竞品监控</div>
+              <div class="mcard-meta">从静态对比升级为动态追踪</div>
+            </div>
+          </div>
+          <div class="mcard-body">
+            <ul class="flist">
+              <li>加入竞品 ASIN 排名变化追踪（BSR/关键词排名）<span class="tag-upgrade">升级</span></li>
+              <li>价格/评分/Review 数变化监控，异常自动预警</li>
+              <li>与 Review 情感分析工具打通，痛点数据直接进面板<span class="tag-ai">AI 分析</span></li>
+              <li>情报沉淀为 Web Notes，持续积累竞品知识库</li>
+            </ul>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-head">
+            <div class="mcard-icon" style="background:#E8FBCF;">📚</div>
+            <div>
+              <div class="mcard-title">Apollo Blog → 可检索知识库</div>
+              <div class="mcard-meta">51篇文章结构化 + AI 检索</div>
+            </div>
+          </div>
+          <div class="mcard-body">
+            <ul class="flist">
+              <li>51篇文章按场景/策略/品类分类标签化<span class="tag-upgrade">升级</span></li>
+              <li>接入广告分析面板作为 AI 建议的知识底座</li>
+              <li>加入搜索功能：输入场景关键词，返回相关文章摘要<span class="tag-ai">AI 检索</span></li>
+              <li>定期更新，与公司广告 Agent benchmark 同步</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 集成打通 -->
+    <div class="tab-panel" id="tab-integrate">
+      <div class="alert info" style="margin-bottom:16px;">
+        <div class="alert-title">🔗 集成原则</div>
+        <div class="alert-body">Ops Hub 是统一入口，所有工具都应该能从这里进入。同时要解决工具间数据孤岛问题——同一个 SKU 的数据在不同面板里应该是联通的，不需要重复导入。</div>
+      </div>
+      <div class="module-grid">
+        <div class="mcard">
+          <div class="mcard-head">
+            <div class="mcard-icon" style="background:rgba(6,67,56,0.08);">🏗️</div>
+            <div>
+              <div class="mcard-title">Ops Hub 完善</div>
+              <div class="mcard-meta">统一入口 + 数据中转层</div>
+            </div>
+          </div>
+          <div class="mcard-body">
+            <ul class="flist">
+              <li>将所有工具（含 Streamlit Dashboard）集成进 Ops Hub<span class="tag-upgrade">集成</span></li>
+              <li>加入工具使用频率统计，识别高频/低频工具</li>
+              <li>建立 SKU 数据中转层：一次导入，多工具共享</li>
+              <li>加入快捷操作区：今日待办、异常预警汇总</li>
+            </ul>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-head">
+            <div class="mcard-icon" style="background:#DEE5F7;">🔗</div>
+            <div>
+              <div class="mcard-title">广告面板 × Keywords Tagger</div>
+              <div class="mcard-meta">关键词属性 → 广告策略联动</div>
+            </div>
+          </div>
+          <div class="mcard-body">
+            <ul class="flist">
+              <li>Keywords Tagger 标注的属性（流量/场景/人群）直接影响广告面板的策略建议</li>
+              <li>广告面板的高 ACOS 关键词自动推送到 Tagger 做属性复查</li>
+              <li>统一关键词数据库，两个工具共享同一份数据</li>
+            </ul>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-head">
+            <div class="mcard-icon" style="background:#E8FBCF;">🔗</div>
+            <div>
+              <div class="mcard-title">决策面板 × 排产面板</div>
+              <div class="mcard-meta">库存决策 → 排产联动</div>
+            </div>
+          </div>
+          <div class="mcard-body">
+            <ul class="flist">
+              <li>决策面板触发补货后，自动在排产面板生成排产任务</li>
+              <li>排产面板的交期数据反向更新决策面板的预计到货时间</li>
+              <li>两个面板共享同一份 SKU 基础数据（规格/箱规/工厂）</li>
+            </ul>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-head">
+            <div class="mcard-icon" style="background:#FFF0DC;">🔗</div>
+            <div>
+              <div class="mcard-title">Ads Panel × 广告综合分析面板</div>
+              <div class="mcard-meta">明确分工，避免重叠</div>
+            </div>
+          </div>
+          <div class="mcard-body">
+            <ul class="flist">
+              <li>评估两个广告工具的功能重叠度，决定合并或分工</li>
+              <li>建议：广告综合分析面板做分析层，Ads Panel 做操作层</li>
+              <li>统一数据源，避免同一份数据导入两次</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新建缺口 -->
+    <div class="tab-panel" id="tab-newbuild">
+      <div class="alert neutral" style="margin-bottom:16px;">
+        <div class="alert-title">🆕 新建原则</div>
+        <div class="alert-body">只新建现有工具真正覆盖不到的模块。合规监控和客服 AI 是最紧迫的两个空白，其余按优先级排队。</div>
+      </div>
+      <div class="module-grid">
+        <div class="mcard">
+          <div class="mcard-head">
+            <div class="mcard-icon" style="background:#FDECEA;">🛡️</div>
+            <div>
+              <div class="mcard-title">合规监控中心（新建）</div>
+              <div class="mcard-meta">跟卖 · GPSR · 下架申诉</div>
+            </div>
+          </div>
+          <div class="mcard-body">
+            <ul class="flist">
+              <li>Buy Box 异常监控，跟卖者信息自动抓取预警<span class="tag-new">新建</span></li>
+              <li>GPSR 合规文件有效期管理（欧盟站点）</li>
+              <li>被下架 Listing 自动识别，触发申诉流程</li>
+              <li>AI 生成 POA 申诉信草稿（结合品类知识）<span class="tag-ai">AI 生成</span></li>
+              <li>集成进 Ops Hub 合规区，与欧洲站 SOP 联动</li>
+            </ul>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-head">
+            <div class="mcard-icon" style="background:#DEE5F7;">📧</div>
+            <div>
+              <div class="mcard-title">客服邮件 AI 处理（新建）</div>
+              <div class="mcard-meta">品类知识库 + AI 分类 + 草稿生成</div>
+            </div>
+          </div>
+          <div class="mcard-body">
+            <ul class="flist">
+              <li>邮件自动分类（退款/换货/投诉/咨询）<span class="tag-new">新建</span></li>
+              <li>结合相框/层板品类知识生成回复草稿<span class="tag-ai">AI 生成</span></li>
+              <li>高风险邮件（A-to-Z）优先级标记，24h SLA 预警</li>
+              <li>常见问题知识库沉淀，持续优化回复质量</li>
+              <li>前置条件：先积累品类 FAQ 知识库（约 2-3 周）</li>
+            </ul>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-head">
+            <div class="mcard-icon" style="background:#FFF0DC;">🎯</div>
+            <div>
+              <div class="mcard-title">站内活动管理（新建）</div>
+              <div class="mcard-meta">活动日历 · 折扣 · 效果对比</div>
+            </div>
+          </div>
+          <div class="mcard-body">
+            <ul class="flist">
+              <li>Prime Day / BF / 旺季活动提报日历与提醒<span class="tag-new">新建</span></li>
+              <li>折扣设置批量操作（Coupon / Lightning Deal / PED）</li>
+              <li>活动前后数据对比报告自动生成<span class="tag-ai">自动生成</span></li>
+              <li>与月报整合器数据打通，活动 ROI 自动计算</li>
+            </ul>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-head">
+            <div class="mcard-icon" style="background:#E8FBCF;">🚀</div>
+            <div>
+              <div class="mcard-title">站外增长矩阵（长期）</div>
+              <div class="mcard-meta">社媒 · 红人 · 独立站</div>
+            </div>
+          </div>
+          <div class="mcard-body">
+            <ul class="flist">
+              <li>社媒内容 AI 批量生成（品牌调性约束）<span class="tag-ai">AI 生成</span></li>
+              <li>红人数据库：开发进度、合作状态、效果追踪</li>
+              <li>独立站 SEO 博客内容生成</li>
+              <li>前置条件：站内 ACOS 达到目标区间后再启动</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 公司系统提纯 -->
+    <div class="tab-panel" id="tab-company">
+      <div class="alert success" style="margin-bottom:16px;">
+        <div class="alert-title">🤝 提纯原则</div>
+        <div class="alert-body">公司系统上线新模块时，我们的第一反应是"如何接入提纯"而不是"要不要自己做"。提纯层的核心价值是：KSNE 前缀过滤 + 品类权重调整 + 运营节奏适配 + 放行确认界面。</div>
+      </div>
+      <div class="module-grid">
+        <div class="mcard">
+          <div class="mcard-head">
+            <div class="mcard-icon" style="background:#dde8d8;">📊</div>
+            <div>
+              <div class="mcard-title">供应链 CSV 提纯（已跑通）</div>
+              <div class="mcard-meta">决策面板 + 排产面板 接收公司 CSV</div>
+            </div>
+          </div>
+          <div class="mcard-body">
+            <ul class="flist">
+              <li>按 KSNE/KSNEUK/KSNEDE 等前缀自动筛选<span class="tag-reuse">已有</span></li>
+              <li>销量预测 + 排产计划甘特图可视化<span class="tag-reuse">已有</span></li>
+              <li>待升级：加入预测准确率反馈，帮公司优化模型<span class="tag-upgrade">迭代</span></li>
+              <li>待升级：CSV 格式变更时自动适配字段映射</li>
+            </ul>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-head">
+            <div class="mcard-icon" style="background:rgba(243,197,70,0.15);">📢</div>
+            <div>
+              <div class="mcard-title">广告 Agent 提纯层（待触发）</div>
+              <div class="mcard-meta">公司广告 Agent 上线后立即接入</div>
+            </div>
+          </div>
+          <div class="mcard-body">
+            <ul class="flist">
+              <li>接收公司 Agent 输出的策略建议<span class="tag-upgrade">待触发</span></li>
+              <li>按 KovaScape 品类逻辑二次过滤（相框/层板专属权重）</li>
+              <li>结合我们组 benchmark（30+ case）做策略校准<span class="tag-ai">AI 校准</span></li>
+              <li>放行确认界面：运营一键审核 → 触发 Bulk 表生成</li>
+              <li>执行后效果追踪，反馈给公司 Agent 优化模型</li>
+            </ul>
+          </div>
+        </div>
+        <div class="mcard">
+          <div class="mcard-head">
+            <div class="mcard-icon" style="background:#dde8d8;">🏪</div>
+            <div>
+              <div class="mcard-title">店铺扫描提纯层（待触发）</div>
+              <div class="mcard-meta">公司店铺扫描上线后接入</div>
+            </div>
+          </div>
+          <div class="mcard-body">
+            <ul class="flist">
+              <li>公司扫描结果按 KSNE 前缀过滤<span class="tag-upgrade">待触发</span></li>
+              <li>按问题严重程度重新排序（suppressed > stranded > 库龄）</li>
+              <li>结合我们组运营节奏生成"今日待办"清单<span class="tag-ai">AI 生成</span></li>
+              <li>集成进 Ops Hub 首页快捷操作区</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. 优先级总表 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title"><div class="section-icon">🎯</div>开发优先级总表 · Priority Backlog</div>
+      <div class="section-sub">综合"业务价值 × 开发成本 × 依赖关系"排序</div>
+      <hr class="section-rule">
+    </div>
+    <div class="ptable-wrap">
+      <table class="ptable">
+        <thead>
+          <tr>
+            <th>优先级</th>
+            <th>任务</th>
+            <th>类型</th>
+            <th>核心价值</th>
+            <th>依赖条件</th>
+            <th>预计周期</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="pbadge p1">P1 · 立即</span></td>
+            <td><strong>广告面板 + Apollo Blog 知识库打通</strong></td>
+            <td><span class="pbadge type-upgrade">升级</span></td>
+            <td>51篇知识结构化后，AI 建议质量大幅提升；直接影响广告 ACOS</td>
+            <td>已有工具，整合即可</td>
+            <td>2-3 周</td>
+          </tr>
+          <tr>
+            <td><span class="pbadge p1">P1 · 立即</span></td>
+            <td><strong>决策面板 + 排产面板双向联动</strong></td>
+            <td><span class="pbadge type-integrate">集成</span></td>
+            <td>消除数据孤岛，补货决策到排产执行一键打通</td>
+            <td>两个面板已有，加接口</td>
+            <td>1-2 周</td>
+          </tr>
+          <tr>
+            <td><span class="pbadge p1">P1 · 立即</span></td>
+            <td><strong>Keywords Tagger × 广告面板打通</strong></td>
+            <td><span class="pbadge type-integrate">集成</span></td>
+            <td>关键词属性直接驱动广告策略，两个工具形成闭环</td>
+            <td>两个工具已有</td>
+            <td>1-2 周</td>
+          </tr>
+          <tr>
+            <td><span class="pbadge p1">P1 · 立即</span></td>
+            <td><strong>排产面板加入物流单号/IEN 回填</strong></td>
+            <td><span class="pbadge type-upgrade">升级</span></td>
+            <td>解决手动回填痛点，减少出错率</td>
+            <td>排产面板已有</td>
+            <td>1 周</td>
+          </tr>
+          <tr>
+            <td><span class="pbadge p2">P2 · 1月内</span></td>
+            <td><strong>合规监控中心（新建）</strong></td>
+            <td><span class="pbadge type-new">新建</span></td>
+            <td>跟卖和下架是高风险事件，目前完全没有主动监控</td>
+            <td>亚马逊后台 API</td>
+            <td>3-4 周</td>
+          </tr>
+          <tr>
+            <td><span class="pbadge p2">P2 · 1月内</span></td>
+            <td><strong>Listing 工具集成 GEO 审计</strong></td>
+            <td><span class="pbadge type-upgrade">升级</span></td>
+            <td>生成即评分，Listing 质量可量化</td>
+            <td>GEO Skill 已有</td>
+            <td>1-2 周</td>
+          </tr>
+          <tr>
+            <td><span class="pbadge p2">P2 · 1月内</span></td>
+            <td><strong>西柚面板升级为持续竞品监控</strong></td>
+            <td><span class="pbadge type-upgrade">升级</span></td>
+            <td>从静态对比变为动态追踪，支撑选品和 Listing 优化</td>
+            <td>西柚面板已有</td>
+            <td>2-3 周</td>
+          </tr>
+          <tr>
+            <td><span class="pbadge p2">P2 · 1月内</span></td>
+            <td><strong>广告 Agent 提纯层（预研）</strong></td>
+            <td><span class="pbadge type-refine">提纯</span></td>
+            <td>提前设计接口，公司 Agent 上线后 1 周内接入</td>
+            <td>等公司广告 Agent 上线</td>
+            <td>预研 1 周（待触发）</td>
+          </tr>
+          <tr>
+            <td><span class="pbadge p3">P3 · 2-3月</span></td>
+            <td><strong>客服邮件 AI 处理（新建）</strong></td>
+            <td><span class="pbadge type-new">新建</span></td>
+            <td>需先积累品类 FAQ 知识库，AI 回复质量才能达标</td>
+            <td>品类知识库积累</td>
+            <td>3-4 周</td>
+          </tr>
+          <tr>
+            <td><span class="pbadge p3">P3 · 2-3月</span></td>
+            <td><strong>站内活动管理（新建）</strong></td>
+            <td><span class="pbadge type-new">新建</span></td>
+            <td>活动前后对比数据沉淀，指导下次活动策略</td>
+            <td>月报整合器先打通</td>
+            <td>2-3 周</td>
+          </tr>
+          <tr>
+            <td><span class="pbadge p3">P3 · 2-3月</span></td>
+            <td><strong>Ops Hub 数据中转层</strong></td>
+            <td><span class="pbadge type-integrate">集成</span></td>
+            <td>一次导入，多工具共享，消除重复导入</td>
+            <td>各工具接口梳理完成</td>
+            <td>3-4 周</td>
+          </tr>
+          <tr>
+            <td><span class="pbadge p4">P4 · 3月+</span></td>
+            <td><strong>站外增长矩阵（新建）</strong></td>
+            <td><span class="pbadge type-new">新建</span></td>
+            <td>站内稳定后再做，避免分散精力</td>
+            <td>ACOS 达到目标区间</td>
+            <td>持续建设</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 6. 路线图 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title"><div class="section-icon">🗓️</div>开发路线图 · Roadmap</div>
+      <div class="section-sub">与公司系统上线节奏协同，分阶段推进</div>
+      <hr class="section-rule">
+    </div>
+    <div class="timeline">
+      <div class="titem">
+        <div class="tdot"></div>
+        <div class="tphase">现在 · 立即启动（0-4 周）</div>
+        <div class="ttitle">🔴 打通现有工具，消除数据孤岛</div>
+        <div class="tdesc">
+          不需要新建任何东西，把已有的 19 个工具里最核心的几个打通。
+          决策面板 × 排产面板双向联动；Keywords Tagger × 广告面板打通；
+          Apollo Blog 51篇结构化为知识底座；排产面板加入物流单号回填。
+          这四件事全部是在现有工具上加接口，两周内可以全部完成。
+        </div>
+        <div class="ttags">
+          <span class="ttag">决策×排产联动</span>
+          <span class="ttag">Keywords×广告打通</span>
+          <span class="ttag">Apollo Blog 结构化</span>
+          <span class="ttag">物流单号回填</span>
+        </div>
+      </div>
+      <div class="titem">
+        <div class="tdot"></div>
+        <div class="tphase">第 1 个月</div>
+        <div class="ttitle">🟠 补齐合规缺口 + Listing 工具升级 + 竞品监控升级</div>
+        <div class="tdesc">
+          合规监控是目前最大的风险敞口，跟卖和下架完全没有主动监控，需要优先补齐。
+          同时把 Listing 工具集成 GEO 审计评分，西柚面板升级为持续监控。
+          预研广告 Agent 提纯层接口，等公司系统上线后 1 周内接入。
+        </div>
+        <div class="ttags">
+          <span class="ttag gold">合规监控（新建）</span>
+          <span class="ttag">Listing + GEO 审计</span>
+          <span class="ttag">西柚→持续监控</span>
+          <span class="ttag blue">广告提纯预研</span>
+        </div>
+      </div>
+      <div class="titem">
+        <div class="tdot future"></div>
+        <div class="tphase">第 2-3 个月</div>
+        <div class="ttitle">🔵 客服 AI + 活动管理 + 公司系统提纯接入</div>
+        <div class="tdesc">
+          品类 FAQ 知识库积累够了之后，上线客服邮件 AI 处理；
+          站内活动管理模块上线，活动前后对比数据开始沉淀；
+          公司广告 Agent 和店铺扫描上线后，立即接入提纯层；
+          Ops Hub 数据中转层建设，消除各工具间的重复导入。
+        </div>
+        <div class="ttags">
+          <span class="ttag gold">客服邮件 AI</span>
+          <span class="ttag gold">站内活动管理</span>
+          <span class="ttag blue">广告 Agent 提纯（待触发）</span>
+          <span class="ttag blue">店铺扫描提纯（待触发）</span>
+          <span class="ttag">Ops Hub 数据中转</span>
+        </div>
+      </div>
+      <div class="titem">
+        <div class="tdot future"></div>
+        <div class="tphase">3 个月+</div>
+        <div class="ttitle">🟢 站外增长 + 品牌资产飞轮</div>
+        <div class="tdesc">
+          站内 ACOS 达到目标区间（12-13.5%）后，开始建设站外增长矩阵。
+          每次运营动作的经验持续写回 Skills 和 Web Notes，
+          形成 KovaScape 专属的智能运营飞轮——越用越强，其他组无法复制。
+        </div>
+        <div class="ttags">
+          <span class="ttag gold">站外增长矩阵</span>
+          <span class="ttag">Skills 持续迭代</span>
+          <span class="ttag">品牌资产飞轮</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. 关键原则 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title"><div class="section-icon">📌</div>关键原则 · Guiding Principles</div>
+      <hr class="section-rule">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="hbox">
+        <div class="hbox-title">① 存量优先，不重复造轮子</div>
+        <div class="hbox-body">19 个工具是最大的存量资产。先打通、再升级、再新建。每次想新建一个工具前，先问：现有工具能不能改造解决？</div>
+      </div>
+      <div class="hbox">
+        <div class="hbox-title">② 公司系统是底座，我们做精炼</div>
+        <div class="hbox-body">公司在做的模块，我们只做 KSNE 品类过滤层和放行确认界面。精力集中在品类专属的精炼逻辑，不做底层数据管道。</div>
+      </div>
+      <div class="hbox">
+        <div class="hbox-title">③ 每个工具都要有 AI 增强层</div>
+        <div class="hbox-body">从"展示数据"升级到"给出建议"。广告面板给优化建议，决策面板给补货建议，Listing 工具给评分和改进建议。</div>
+      </div>
+      <div class="hbox">
+        <div class="hbox-title">④ 每次运营动作都沉淀资产</div>
+        <div class="hbox-body">新品上架经验写回 Listing Skill，广告优化结果更新 benchmark，竞品调研写入 Web Notes。知识不流失，越积累越强。</div>
+      </div>
+      <div class="hbox">
+        <div class="hbox-title">⑤ 预留公司系统接口意识</div>
+        <div class="hbox-body">每个自建模块都要预留"接收公司输出"的接口。公司系统上线新功能时，我们能快速切换到提纯模式，不需要重建。</div>
+      </div>
+      <div class="hbox">
+        <div class="hbox-title">⑥ AI 辅助，人工放行</div>
+        <div class="hbox-body">AI 生成草稿和建议，运营人员审核后执行。广告 Bulk 表、申诉信、Listing 文案，必须人工确认后才能执行。</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end content -->
+
+<!-- FOOTER -->
+<div class="footer">
+  <svg class="blobs" viewBox="0 0 1200 140" xmlns="http://www.w3.org/2000/svg">
+    <path d="M55,35 C95,8 155,28 162,65 C169,102 120,118 82,105 C44,92 15,62 55,35Z" fill="#93B888" opacity="0.15"/>
+    <path d="M1060,18 C1105,4 1158,32 1162,70 C1166,108 1118,128 1075,114 C1032,100 1015,32 1060,18Z" fill="#5E8F52" opacity="0.12"/>
+  </svg>
+  <div class="footer-content">
+    <div class="footer-top">
+      <div>
+        <div class="footer-brand">KovaScape</div>
+        <div class="footer-brand-sub">定制化 AI 运营层 · RPD v3.0 · 已有 19 个工具</div>
+      </div>
+      <div class="footer-meta">
+        <div class="footer-meta-item"><strong>文档类型</strong><br>产品需求文档 (RPD)</div>
+        <div class="footer-meta-item"><strong>版本</strong><br>v3.0 · 2026年6月</div>
+        <div class="footer-meta-item"><strong>已有工具</strong><br>19 个，覆盖 8 个模块</div>
+        <div class="footer-meta-item"><strong>真实缺口</strong><br>合规/客服/提纯层/站外</div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-doc">KovaScape Internal Document · Confidential</div>
+      <div class="footer-copy">Generated by <a href="https://allyhub.com" target="_blank">AllyHub AI</a></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end page -->
+
+<script>
+function switchTab(id) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// Coverage Chart
+const ctx = document.getElementById('coverageChart').getContext('2d');
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: ['广告分析','库存/店铺','排产/物流','财务数据','Listing','竞品监控','合规管理','客服邮件','站内活动','站外增长'],
+    datasets: [{
+      data: [85, 80, 75, 80, 75, 50, 10, 0, 30, 20],
+      backgroundColor: [
+        '#5E8F52','#5E8F52','#5E8F52','#5E8F52','#5E8F52',
+        '#E47700',
+        '#C4433A','#C4433A',
+        '#E47700','#C4433A'
+      ],
+      borderRadius: 4,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: {
+        min: 0, max: 100,
+        ticks: { font: { size: 10 }, color: '#717171', callback: v => v + '%' },
+        grid: { color: '#E8E6E2' }
+      },
+      y: { ticks: { font: { size: 10 }, color: '#717171' }, grid: { display: false } }
+    }
+  }
+});
+
+// Animate coverage bars
+window.addEventListener('load', () => {
+  document.querySelectorAll('.cov-bar-fill').forEach(el => {
+    const w = el.style.width;
+    el.style.width = '0';
+    setTimeout(() => { el.style.width = w; }, 400);
+  });
+});
+</script>
+</body>
+</html>

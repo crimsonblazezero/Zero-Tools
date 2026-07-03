@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>相框 & 层板 · 主图视频素材收集报告 | KovaScape</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --forest: #064338;
+  --gold: #F3C546;
+  --deep-green: #042E25;
+  --warm-white: #FDFCF9;
+  --light-cream: #FDF9F2;
+  --light-green: #E8F2F0;
+  --light-gold: #FFF8DC;
+  --body-gray: #717171;
+  --title-dark: #1D1B20;
+  --border: #E8E4DE;
+  --outer-bg: #F0EDE8;
+}
+
+body {
+  background: var(--outer-bg);
+  font-family: 'Poppins', sans-serif;
+  color: var(--body-gray);
+  font-size: 14px;
+  line-height: 1.65;
+  padding: 32px 16px;
+}
+
+.page {
+  background: var(--warm-white);
+  border-radius: 40px;
+  max-width: 1260px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  body { padding: 0; }
+  .page { border-radius: 0; }
+}
+
+/* Hero */
+.hero {
+  background: var(--forest);
+  padding: 64px 60px 52px;
+  position: relative;
+  overflow: hidden;
+}
+@media (max-width: 768px) { .hero { padding: 40px 28px 36px; } }
+
+.hero-blob { position: absolute; border-radius: 50%; opacity: 0.12; pointer-events: none; }
+.hero-blob-1 { width: 320px; height: 280px; background: var(--gold); top: -60px; right: -80px; transform: rotate(-15deg) scaleX(1.4) scaleY(0.7); }
+.hero-blob-2 { width: 180px; height: 200px; background: var(--gold); bottom: -40px; left: 10%; transform: rotate(25deg) scaleX(1.2) scaleY(0.85); }
+.hero-blob-3 { width: 120px; height: 100px; background: var(--gold); top: 40%; right: 25%; transform: rotate(-8deg) scaleX(1.5) scaleY(0.6); opacity: 0.07; }
+
+.hero-eyebrow {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 20px;
+}
+.hero-eyebrow-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); }
+.hero-eyebrow-text {
+  font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.7);
+  text-transform: uppercase; letter-spacing: 1px;
+}
+
+.hero-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 52px; font-weight: 500; color: #FFFFFF;
+  letter-spacing: -0.01em; line-height: 1.15; margin-bottom: 12px;
+}
+@media (max-width: 768px) { .hero-title { font-size: 34px; } }
+
+.hero-subtitle {
+  font-size: 14px; color: rgba(255,255,255,0.75); max-width: 600px;
+  line-height: 1.6;
+}
+
+.hero-metrics {
+  display: flex; gap: 48px; margin-top: 32px;
+  padding-top: 24px; border-top: 0.6px solid rgba(243,197,70,0.5);
+}
+@media (max-width: 768px) { .hero-metrics { gap: 28px; flex-wrap: wrap; } }
+
+.hero-metric-value {
+  font-family: 'Playfair Display', serif; font-size: 40px; font-weight: 500;
+  color: var(--gold); letter-spacing: -0.02em;
+}
+.hero-metric-label { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+
+/* Content */
+.content { padding: 48px 60px; max-width: 960px; margin: 0 auto; }
+@media (max-width: 768px) { .content { padding: 32px 24px; } }
+
+/* Section */
+.section { margin-bottom: 44px; }
+.section-title {
+  font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 500;
+  color: var(--title-dark); margin-bottom: 6px;
+}
+.section-subtitle { font-size: 14px; color: var(--body-gray); margin-bottom: 24px; }
+
+/* Alert */
+.alert {
+  border-radius: 12px; padding: 18px 24px; margin-bottom: 24px;
+  display: flex; gap: 16px; align-items: flex-start;
+}
+.alert-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+.alert-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+.alert-body { font-size: 13px; line-height: 1.6; }
+.alert-info { background: var(--light-green); border-left: 4px solid var(--forest); }
+.alert-info .alert-title { color: var(--forest); }
+.alert-warning { background: var(--light-gold); border-left: 4px solid var(--gold); }
+.alert-warning .alert-title { color: #B8860B; }
+.alert-success { background: var(--light-green); border-left: 4px solid var(--forest); }
+.alert-success .alert-title { color: var(--forest); }
+
+/* Card */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 768px) { .card-grid { grid-template-columns: 1fr; } }
+
+.card {
+  border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+  background: var(--warm-white); transition: box-shadow 0.2s;
+}
+.card:hover { box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
+.card-header {
+  padding: 22px 24px; border-bottom: 1px solid #F0EDE8;
+  display: flex; align-items: center; gap: 12px;
+}
+.card-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  font-size: 18px;
+}
+.card-icon-green { background: var(--light-green); color: var(--forest); }
+.card-icon-gold { background: var(--light-gold); color: #B8860B; }
+
+.card-header-title { font-weight: 600; font-size: 15px; color: var(--title-dark); }
+.card-header-meta { font-size: 12px; color: var(--body-gray); }
+
+.card-body { padding: 20px 24px; }
+
+/* Video Row */
+.video-row {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px 0; border-bottom: 0.5px solid var(--border);
+}
+.video-row:last-child { border-bottom: none; }
+.video-thumb {
+  width: 100px; height: 56px; border-radius: 8px; background: #F0EDE8;
+  flex-shrink: 0; object-fit: cover; overflow: hidden;
+}
+.video-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.video-info { flex: 1; min-width: 0; }
+.video-title {
+  font-size: 13px; font-weight: 500; color: var(--title-dark);
+  line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical; overflow: hidden;
+}
+.video-title a { color: var(--title-dark); text-decoration: none; }
+.video-title a:hover { color: var(--forest); text-decoration: underline; }
+.video-meta { font-size: 11px; color: var(--body-gray); margin-top: 3px; display: flex; gap: 12px; }
+
+/* Platform badge */
+.platform-badge {
+  display: inline-block; padding: 2px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 500;
+}
+.badge-youtube { background: #FDECEA; color: #C4433A; }
+.badge-amazon { background: #FFF0DC; color: #E47700; }
+.badge-pinterest { background: #FDECEA; color: #C4433A; }
+.badge-tiktok { background: var(--light-green); color: var(--forest); }
+
+/* Tags */
+.tag {
+  display: inline-block; padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 500; margin-right: 6px; margin-bottom: 4px;
+}
+.tag-green { background: var(--light-green); color: var(--forest); }
+.tag-gold { background: var(--light-gold); color: #B8860B; }
+
+/* Table */
+.table-wrap { overflow-x: auto; margin-bottom: 20px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead tr { background: var(--forest); }
+th {
+  color: var(--gold); font-size: 12px; font-weight: 500; text-align: left;
+  padding: 12px 16px; white-space: nowrap;
+}
+td { padding: 12px 16px; border-bottom: 1px solid #F0EDE8; color: var(--title-dark); }
+tr:hover td { background: #F8F5F0; }
+td a { color: var(--forest); text-decoration: none; font-weight: 500; }
+td a:hover { text-decoration: underline; }
+
+/* Amazon Video Card */
+.amz-video-link {
+  display: block; font-size: 11px; color: var(--body-gray);
+  word-break: break-all; padding: 4px 0; font-family: monospace; font-size: 10px;
+  background: #F8F5F0; padding: 6px 10px; border-radius: 6px;
+  margin-top: 4px;
+}
+
+/* Divider */
+.divider {
+  height: 0.5px; background: var(--border); margin: 36px 0;
+}
+.divider-gold {
+  height: 1px; background: linear-gradient(90deg, var(--gold), transparent);
+  margin: 36px 0;
+}
+
+/* Recommendations */
+.rec-card {
+  background: var(--light-cream); border: 1px solid var(--border);
+  border-radius: 12px; padding: 24px; margin-bottom: 16px;
+  border-left: 4px solid var(--forest);
+}
+.rec-card-title { font-weight: 600; font-size: 15px; color: var(--title-dark); margin-bottom: 8px; }
+.rec-card-body { font-size: 13px; color: var(--body-gray); line-height: 1.7; }
+
+/* Footer */
+.footer {
+  background: var(--deep-green); padding: 48px 60px 32px;
+  color: rgba(255,255,255,0.6); font-size: 13px;
+}
+@media (max-width: 768px) { .footer { padding: 36px 28px 24px; } }
+
+.footer-top {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 40px; margin-bottom: 28px;
+}
+@media (max-width: 768px) { .footer-top { flex-direction: column; gap: 24px; } }
+
+.footer-brand { font-family: 'Playfair Display', serif; color: var(--gold); font-size: 22px; font-weight: 500; }
+.footer-brand-sub { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 2px; }
+.footer-meta-col { min-width: 140px; }
+.footer-meta-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: rgba(255,255,255,0.35); margin-bottom: 8px; }
+.footer-meta-value { font-size: 13px; color: rgba(255,255,255,0.6); }
+
+.footer-divider { border: none; border-top: 0.6px solid rgba(243,197,70,0.3); margin-bottom: 20px; }
+.footer-bottom { display: flex; justify-content: space-between; font-size: 11px; color: rgba(255,255,255,0.35); }
+@media (max-width: 768px) { .footer-bottom { flex-direction: column; gap: 6px; } }
+
+/* Section accent bar */
+.section-accent {
+  width: 48px; height: 3px; background: var(--gold); border-radius: 2px;
+  margin-bottom: 16px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { height: 4px; }
+::-webkit-scrollbar-track { background: #F0EDE8; }
+::-webkit-scrollbar-thumb { background: #C5C0BA; border-radius: 4px; }
+
+/* Labels for category switch */
+.category-label {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 14px;
+  border-radius: 20px; font-size: 12px; font-weight: 500;
+  margin-bottom: 16px;
+}
+.cat-frame { background: var(--light-green); color: var(--forest); }
+.cat-shelf { background: var(--light-gold); color: #B8860B; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+<!-- ====== HERO ====== -->
+<div class="hero">
+  <div class="hero-blob hero-blob-1"></div>
+  <div class="hero-blob hero-blob-2"></div>
+  <div class="hero-blob hero-blob-3"></div>
+
+  <div class="hero-eyebrow">
+    <div class="hero-eyebrow-dot"></div>
+    <span class="hero-eyebrow-text">KovaScape · 视频素材库</span>
+  </div>
+  <h1 class="hero-title">
+    相框 & 层板<br>主图视频素材收集
+  </h1>
+  <p class="hero-subtitle">
+    覆盖 YouTube · Amazon · Pinterest · TikTok/Instagram 四大平台的高点击视频素材汇总，涵盖实木相框与浮动层板两大品类，供 Google Omini 二创参考。
+    <br><span style="color:rgba(255,255,255,0.5);">Report: Frame & Shelf Hero Video Collection for Secondary Creation | 2026.06.30</span>
+  </p>
+
+  <div class="hero-metrics">
+    <div>
+      <div class="hero-metric-value">45+</div>
+      <div class="hero-metric-label">视频链接收集 / Video Links Collected</div>
+    </div>
+    <div>
+      <div class="hero-metric-value">4</div>
+      <div class="hero-metric-label">平台覆盖 / Platforms Covered</div>
+    </div>
+    <div>
+      <div class="hero-metric-value">8</div>
+      <div class="hero-metric-label">Amazon 产品视频 / ASIN Video URLs</div>
+    </div>
+    <div>
+      <div class="hero-metric-value">1010万</div>
+      <div class="hero-metric-label">最高单支播放量 / Peak Views</div>
+    </div>
+  </div>
+</div>
+
+<!-- ====== CONTENT ====== -->
+<div class="content">
+
+<!-- Alert -->
+<div class="alert alert-info">
+  <div class="alert-icon">💡</div>
+  <div>
+    <div class="alert-title">使用说明 / How to Use This Report</div>
+    <div class="alert-body">
+      本报告收集的视频素材均来自公开平台，用于 <strong>Google Omini 二创参考</strong>（Secondary Creation）。
+      每支视频标注了平台、播放量/互动量、内容类型，方便筛选高潜力素材。<br>
+      <strong>注意</strong>：Amazon 产品视频为 .mp4 直链（来源于 m.media-amazon.com），可直接下载使用。
+      所有引用链接见底部「参考来源」章节。
+    </div>
+  </div>
+</div>
+
+<!-- ====== SECTION: 平台概况 ====== -->
+<div class="section">
+  <div class="section-accent"></div>
+  <h2 class="section-title">平台素材分布概览 / Platform Overview</h2>
+  <p class="section-subtitle">各平台适用场景与内容特点分析</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-green">▶</div>
+        <div>
+          <div class="card-header-title">YouTube — 长视频深度展示</div>
+          <div class="card-header-meta">23 支视频 · 最高 1010 万播放</div>
+        </div>
+      </div>
+      <div class="card-body" style="font-size:13px;line-height:1.7;">
+        <strong>适用二创方向</strong>：提取产品特写片段、安装演示、场景展示<br>
+        <strong>内容类型</strong>：产品测评、安装教程、DIY 改造、Room Tour、Gallery Wall 布置<br>
+        <strong>优势</strong>：画质高、细节清晰、可截取多段素材<br>
+        <span class="tag tag-green" style="margin-top:8px;">安装演示</span>
+        <span class="tag tag-green">Room Tour</span>
+        <span class="tag tag-green">产品测评</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-gold">🛒</div>
+        <div>
+          <div class="card-header-title">Amazon — 官方产品视频</div>
+          <div class="card-header-meta">3 个 ASIN · 8 支 .mp4 视频</div>
+        </div>
+      </div>
+      <div class="card-body" style="font-size:13px;line-height:1.7;">
+        <strong>适用二创方向</strong>：作为产品镜头素材库、了解竞品视频风格<br>
+        <strong>内容类型</strong>：产品360°展示、场景应用、材质特写、安装展示<br>
+        <strong>优势</strong>：直链 .mp4 格式，可直接下载；专业产品拍摄<br>
+        <span class="tag tag-gold" style="margin-top:8px;">产品展示</span>
+        <span class="tag tag-gold">场景应用</span>
+        <span class="tag tag-gold">竞品参考</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-green">📌</div>
+        <div>
+          <div class="card-header-title">Pinterest — 视觉灵感库</div>
+          <div class="card-header-meta">27+ 精选 Pin · 高保存率内容</div>
+        </div>
+      </div>
+      <div class="card-body" style="font-size:13px;line-height:1.7;">
+        <strong>适用二创方向</strong>：场景构图参考、配色方案、风格定位<br>
+        <strong>内容类型</strong>：Gallery Wall 布置、层板搭配、Japandi/北欧风格<br>
+        <strong>优势</strong>：高质量静物摄影、风格多样、适合做 mood board<br>
+        <span class="tag tag-green" style="margin-top:8px;">风格参考</span>
+        <span class="tag tag-green">配色灵感</span>
+        <span class="tag tag-green">场景构图</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-gold">📱</div>
+        <div>
+          <div class="card-header-title">TikTok / Instagram — 社媒爆款</div>
+          <div class="card-header-meta">趋势分析 · 高互动短内容</div>
+        </div>
+      </div>
+      <div class="card-body" style="font-size:13px;line-height:1.7;">
+        <strong>适用二创方向</strong>：短视频节奏参考、hooks 设计、转场创意<br>
+        <strong>热门趋势</strong>：Room Transformation、Before/After、ASMR 安装、3D Gallery Wall<br>
+        <strong>优势</strong>：传播性强、有明确的 viral 公式可复制<br>
+        <span class="tag tag-gold" style="margin-top:8px;">短视频节奏</span>
+        <span class="tag tag-gold">转场创意</span>
+        <span class="tag tag-gold">hooks设计</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ====== SECTION: 相框视频 ====== -->
+<div class="section">
+  <div class="section-accent"></div>
+  <span class="category-label cat-frame">🖼️ 品类一：相框 / Photo Frames</span>
+  <h2 class="section-title">相框 · 高点击视频素材 / Frame Video Collection</h2>
+  <p class="section-subtitle">YouTube 高播放量视频 + Amazon 产品视频 + Pinterest 灵感源</p>
+
+  <h3 style="font-size:17px;font-weight:600;color:var(--title-dark);margin-bottom:14px;">
+    <span class="platform-badge badge-youtube">YouTube</span> 高播放量相框视频
+  </h3>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>视频标题 / Title</th><th>频道</th><th>播放量</th><th>内容类型 / Type</th><th>链接</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>DIY photo frame with popsicle sticks | Ice cream sticks recycle idea</td>
+          <td>Laiba's Creativity</td>
+          <td><strong>297万</strong></td>
+          <td><span class="tag tag-green">DIY手工</span></td>
+          <td><a href="https://www.youtube.com/watch?v=lWEex1dOuVo" target="_blank">观看 →</a></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>7 Easy and quick Photo frame Making ideas | Beautiful handmade Photo frames for Wall</td>
+          <td>HK creative world</td>
+          <td><strong>171万</strong></td>
+          <td><span class="tag tag-green">DIY手工</span></td>
+          <td><a href="https://www.youtube.com/watch?v=Sc8bS6W29Tk" target="_blank">观看 →</a></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>How to Create a Timeless Gallery Wall with Picture Frames | Pottery Barn</td>
+          <td>PotteryBarn</td>
+          <td><strong>26万</strong></td>
+          <td><span class="tag tag-gold">Gallery Wall</span></td>
+          <td><a href="https://www.youtube.com/watch?v=b9zcrzL5aHQ" target="_blank">观看 →</a></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>Best Photo Frame Set From Amazon | Frames For Gallery Wall | Unboxing & Review</td>
+          <td>Crafty Tales by Sushma</td>
+          <td><strong>25万</strong></td>
+          <td><span class="tag tag-green">产品测评+安装</span></td>
+          <td><a href="https://www.youtube.com/watch?v=kp650h4-A4U" target="_blank">观看 →</a></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>How to hang photo frames | Installation | Seamless nails | Amazon</td>
+          <td>Neha and Nitu</td>
+          <td><strong>16万</strong></td>
+          <td><span class="tag tag-green">安装教程</span></td>
+          <td><a href="https://www.youtube.com/watch?v=l8maQd1LVjw" target="_blank">观看 →</a></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td>DIY Resin Photo Frame | Home Decor Ideas</td>
+          <td>Prativa's Handmade</td>
+          <td><strong>16万</strong></td>
+          <td><span class="tag tag-green">滴胶艺术</span></td>
+          <td><a href="https://www.youtube.com/watch?v=c3s_6G6t_gg" target="_blank">观看 →</a></td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td>How to Create A Gallery Wall | Eclectic, Farmhouse, Minimal, Scandi Styles</td>
+          <td>Alexandra Gater</td>
+          <td><strong>12万</strong></td>
+          <td><span class="tag tag-gold">风格指南</span></td>
+          <td><a href="https://www.youtube.com/watch?v=YGIIO1Ixkio" target="_blank">观看 →</a></td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td>How To Hang A Gallery Wall EVENLY!</td>
+          <td>Reluctant DIYers</td>
+          <td><strong>4.9万</strong></td>
+          <td><span class="tag tag-green">安装技巧</span></td>
+          <td><a href="https://www.youtube.com/watch?v=uHYPxOj_QWI" target="_blank">观看 →</a></td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td>scrap Wood wall décor and scrap wood wall art ideas</td>
+          <td>5-Minute Projects</td>
+          <td><strong>113万</strong></td>
+          <td><span class="tag tag-green">木艺装饰</span></td>
+          <td><a href="https://www.youtube.com/watch?v=4y5RmcF27go" target="_blank">观看 →</a></td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td>DIY - 5 Easy Ideas from Wooden Sticks | Wooden Stick Crafts</td>
+          <td>Magic Pen Art</td>
+          <td><strong>95万</strong></td>
+          <td><span class="tag tag-green">木工DIY</span></td>
+          <td><a href="https://www.youtube.com/watch?v=nBnFRTpaWmQ" target="_blank">观看 →</a></td>
+        </tr>
+        <tr>
+          <td>11</td>
+          <td>Biggest Photo Frames and Wall Paintings Factory Of Delhi</td>
+          <td>Yours daily vlog</td>
+          <td><strong>27万</strong></td>
+          <td><span class="tag tag-green">工厂参观</span></td>
+          <td><a href="https://www.youtube.com/watch?v=-x7aAdnsShQ" target="_blank">观看 →</a></td>
+        </tr>
+        <tr>
+          <td>12</td>
+          <td>Wooden Wall Hanging | DIY Home Decor Ideas</td>
+          <td>Kashmira Art</td>
+          <td><strong>5.9万</strong></td>
+          <td><span class="tag tag-green">木艺装饰</span></td>
+          <td><a href="https://www.youtube.com/watch?v=LgCyAJcTOM0" target="_blank">观看 →</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="font-size:17px;font-weight:600;color:var(--title-dark);margin:28px 0 14px;">
+    <span class="platform-badge badge-amazon">Amazon</span> 相框产品视频直链
+  </h3>
+
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header">
+      <div class="card-icon card-icon-gold">🛒</div>
+      <div>
+        <div class="card-header-title">Vittanly 8x10 Picture Frame Set of 4 — Black</div>
+        <div class="card-header-meta">ASIN: B0DC611TMD · 4.7★ · $16.14 · Engineered Wood + Plexiglass</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <p style="font-size:12px;color:var(--body-gray);margin-bottom:10px;">
+        <strong>竞品参考价值</strong>：Engineered Wood 材质、4 件套装、Gallery Wall 定位、带 Mat 展示——与 KovaScape 实木相框相近价位段竞品。
+      </p>
+      <div class="amz-video-link">https://m.media-amazon.com/images/S/al-na-9d5791cf-3faf/dfa51503-8a66-4579-b42f-9e5290d5bd4f.mp4/productVideoOptimized.mp4</div>
+      <div class="amz-video-link">https://m.media-amazon.com/images/S/al-na-9d5791cf-3faf/c42661e2-53a1-4a61-ba9a-bc2a56641f39.mp4/productVideoOptimized.mp4</div>
+      <div class="amz-video-link">https://m.media-amazon.com/images/S/al-na-9d5791cf-3faf/56c56260-891c-454b-881c-1cb4aa36638b.mp4/productVideoOptimized.mp4</div>
+      <div class="amz-video-link">https://m.media-amazon.com/images/S/al-na-9d5791cf-3faf/42851c44-a3f0-4e19-9ad3-10055be12bf1.mp4/productVideoOptimized.mp4</div>
+    </div>
+  </div>
+
+  <h3 style="font-size:17px;font-weight:600;color:var(--title-dark);margin:28px 0 14px;">
+    <span class="platform-badge badge-pinterest">Pinterest</span> 相框灵感 Pin 推荐
+  </h3>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-body" style="font-size:13px;">
+        <strong style="color:var(--title-dark);">Natural Wood Frames — Warmth and Texture for Your Gallery Wall</strong>
+        <p style="font-size:12px;color:var(--body-gray);margin-top:4px;">
+          自然木色相框陈列墙，温润质感搭配——与 KovaScape 橡木/胡桃木色高度契合
+        </p>
+        <a href="https://www.pinterest.com/pin/210050770118287463/" target="_blank" style="font-size:11px;">pinterest.com/pin/210050770118287463/</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body" style="font-size:13px;">
+        <strong style="color:var(--title-dark);">Minimalist Double Walnut Oak Picture Frames — Scandinavian Japandi</strong>
+        <p style="font-size:12px;color:var(--body-gray);margin-top:4px;">
+          胡桃木+橡木双色搭配，Japandi 极简风格——KovaScape 品牌调性高度吻合
+        </p>
+        <a href="https://www.pinterest.com/pin/542965298848212281/" target="_blank" style="font-size:11px;">pinterest.com/pin/542965298848212281/</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body" style="font-size:13px;">
+        <strong style="color:var(--title-dark);">Elegant Wall Photo Frame Decor Ideas — Modern Gallery Wall Inspiration</strong>
+        <p style="font-size:12px;color:var(--body-gray);margin-top:4px;">
+          现代画廊墙布置灵感，多框组合 + 留白艺术
+        </p>
+        <a href="https://www.pinterest.com/pin/1133851643710005256/" target="_blank" style="font-size:11px;">pinterest.com/pin/1133851643710005256/</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body" style="font-size:13px;">
+        <strong style="color:var(--title-dark);">Floating Wood Gallery Frames — Modern Minimal</strong>
+        <p style="font-size:12px;color:var(--body-gray);margin-top:4px;">
+          悬浮木质画框展示，极简现代风——适合主图场景参考
+        </p>
+        <a href="https://www.pinterest.com/pin/267612402852409707/" target="_blank" style="font-size:11px;">pinterest.com/pin/267612402852409707/</a>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-size:17px;font-weight:600;color:var(--title-dark);margin:28px 0 14px;">
+    <span class="platform-badge badge-tiktok">TikTok / IG</span> 相框社媒趋势
+  </h3>
+
+  <div class="alert alert-success" style="margin-bottom:12px;">
+    <div class="alert-icon">🔥</div>
+    <div>
+      <div class="alert-title">热门内容公式 / Viral Content Formulas for Frames</div>
+      <div class="alert-body">
+        <strong>① Room Transformation</strong>（改造前后对比）：空白墙 → Gallery Wall 完工 · 强视觉冲击<br>
+        <strong>② Unboxing + First Impressions</strong>：开箱 + 实物质感特写 · 适合 TikTok Shop 风格<br>
+        <strong>③ "POV: You finally built your dream gallery wall"</strong>：情绪共鸣型内容<br>
+        <strong>④ ASMR 安装</strong>：水平仪、钉子、挂框——声音治愈 + 过程满足<br>
+        <strong>⑤ "This $XX frame set vs $XXX designer frames"</strong>：性价比对比 · 强种草力
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider divider-gold"></div>
+
+<!-- ====== SECTION: 层板视频 ====== -->
+<div class="section">
+  <div class="section-accent"></div>
+  <span class="category-label cat-shelf">🪵 品类二：层板 / Floating Shelves</span>
+  <h2 class="section-title">层板 · 高点击视频素材 / Shelf Video Collection</h2>
+  <p class="section-subtitle">YouTube 高播放量视频 + Amazon 产品视频 + Pinterest 风格源 + 社媒趋势</p>
+
+  <h3 style="font-size:17px;font-weight:600;color:var(--title-dark);margin-bottom:14px;">
+    <span class="platform-badge badge-youtube">YouTube</span> 高播放量层板视频
+  </h3>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th><th>视频标题 / Title</th><th>频道</th><th>播放量</th><th>内容类型 / Type</th><th>链接</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td>Easy DIY FLOATING SHELVES No bracket | DIY CREATORS</td>
+          <td>DIY Creators</td>
+          <td><strong>1010万</strong></td>
+          <td><span class="tag tag-green">DIY教程</span></td>
+          <td><a href="https://www.youtube.com/watch?v=wki3wMAbtLg" target="_blank">观看 →</a></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>Wall Box Shelve Making from Waste Paper | House Shape Shelves</td>
+          <td>Bir Parça Kağıt</td>
+          <td><strong>410万</strong></td>
+          <td><span class="tag tag-green">创意DIY</span></td>
+          <td><a href="https://www.youtube.com/watch?v=Ah8sdGIF7O0" target="_blank">观看 →</a></td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>DIY wall shelf decor | Cardboard wall shelf decorating ideas</td>
+          <td>Nook & Renew</td>
+          <td><strong>390万</strong></td>
+          <td><span class="tag tag-green">装饰教程</span></td>
+          <td><a href="https://www.youtube.com/watch?v=Fgbr3J_UAgY" target="_blank">观看 →</a></td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td>2 Ways To Do Floating Shelves - Which Is Stronger?</td>
+          <td>A Mere Creator</td>
+          <td><strong>352万</strong></td>
+          <td><span class="tag tag-green">对比测评</span></td>
+          <td><a href="https://www.youtube.com/watch?v=5fAdRs6CDVg" target="_blank">观看 →</a></td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td>Why don't people use these for floating shelves?</td>
+          <td>Lincoln St. Woodworks</td>
+          <td><strong>285万</strong></td>
+          <td><span class="tag tag-green">木工技巧</span></td>
+          <td><a href="https://www.youtube.com/watch?v=IJ1aRAK5KiM" target="_blank">观看 →</a></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td>100+ Creative Wooden Wall Shelves Mount Ideas</td>
+          <td>Experience the World</td>
+          <td><strong>242万</strong></td>
+          <td><span class="tag tag-gold">灵感合集</span></td>
+          <td><a href="https://www.youtube.com/watch?v=qCiA8GdN-0Y" target="_blank">观看 →</a></td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td>3 Ways to Build Floating Shelves</td>
+          <td>Mr. Build It</td>
+          <td><strong>244万</strong></td>
+          <td><span class="tag tag-green">DIY教程</span></td>
+          <td><a href="https://www.youtube.com/watch?v=6clJWTTRWTE" target="_blank">观看 →</a></td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td>DIY Bedroom Makeover ($250 Budget)</td>
+          <td>Workin' with Wolkon</td>
+          <td><strong>382万</strong></td>
+          <td><span class="tag tag-gold">Room Tour</span></td>
+          <td><a href="https://www.youtube.com/watch?v=YT-tHdNQ9eA" target="_blank">观看 →</a></td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td>Wall Shelf Installation 🔨 | Flipkart Wall Shelves In Budget</td>
+          <td>Sagar Styles</td>
+          <td><strong>22万</strong></td>
+          <td><span class="tag tag-green">安装+测评</span></td>
+          <td><a href="https://www.youtube.com/watch?v=vQQCpOpuR4U" target="_blank">观看 →</a></td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td>BAYKA Wall Floating Shelves (How to INSTALL and FULL REVIEW)</td>
+          <td>Nicholas Demski</td>
+          <td><strong>4,949</strong></td>
+          <td><span class="tag tag-green">产品测评</span></td>
+          <td><a href="https://www.youtube.com/watch?v=6QZY1r3ecuM" target="_blank">观看 →</a></td>
+        </tr>
+        <tr>
+          <td>11</td>
+          <td>How to Install Floating Shelves | Origin21 Product Review</td>
+          <td>How To and Product Reviews</td>
+          <td><strong>2.4万</strong></td>
+          <td><span class="tag tag-green">安装+测评</span></td>
+          <td><a href="https://www.youtube.com/watch?v=CM9a56oV4fM" target="_blank">观看 →</a></td>
+        </tr>
+        <tr>
+          <td>12</td>
+          <td>How to Assemble Wooden Wall Shelf | Review</td>
+          <td>Health Teacher</td>
+          <td><strong>2.9万</strong></td>
+          <td><span class="tag tag-green">安装+测评</span></td>
+          <td><a href="https://www.youtube.com/watch?v=NHUmWJO_mew" target="_blank">观看 →</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="font-size:17px;font-weight:600;color:var(--title-dark);margin:28px 0 14px;">
+    <span class="platform-badge badge-amazon">Amazon</span> 层板产品视频直链
+  </h3>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-gold">🛒</div>
+        <div>
+          <div class="card-header-title">BGMG Wood Floating Shelves 24" Set of 2 — Dark Walnut</div>
+          <div class="card-header-meta">ASIN: B0C77YY4RZ · 4.8★ · $53.98 · Rustic Wooden</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p style="font-size:12px;color:var(--body-gray);margin-bottom:10px;">
+          <strong>竞品参考价值</strong>：Dark Walnut 色、隐藏支架、Rustic 风格——与 KovaScape 胡桃木层板直接竞品。
+        </p>
+        <div class="amz-video-link">…/6cbdef81-e614-43ab-a2cf-0898fab8c6ae.mp4/productVideoOptimized.mp4</div>
+        <div class="amz-video-link">…/18463734-26ee-4338-9554-06c136444bef.mp4/productVideoOptimized.mp4</div>
+        <div class="amz-video-link">…/553f8f26-b722-4fcd-a2e4-807671425464.mp4/productVideoOptimized.mp4</div>
+        <div class="amz-video-link">…/77811489-acd5-4f85-8875-55dc63d077c0.mp4/productVideoOptimized.mp4</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-gold">🛒</div>
+        <div>
+          <div class="card-header-title">Homeforia Walnut 18" Floating Shelf — Solid Real Wood</div>
+          <div class="card-header-meta">ASIN: B0DRW1YWBG · 4.8★ · $59.99 · Solid Real Wood</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p style="font-size:12px;color:var(--body-gray);margin-bottom:10px;">
+          <strong>竞品参考价值</strong>：Solid Real Wood（实木）、Walnut 色、高端定位——与 KovaScape 实木层板最接近的竞品。
+        </p>
+        <div class="amz-video-link">…/6cbdef81-e614-43ab-a2cf-0898fab8c6ae.mp4/productVideoOptimized.mp4</div>
+        <div class="amz-video-link">…/f52c735b-a635-48e6-9ed1-af4cb16a0bb4.mp4/productVideoOptimized.mp4</div>
+        <div class="amz-video-link">…/553f8f26-b722-4fcd-a2e4-807671425464.mp4/productVideoOptimized.mp4</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert alert-info" style="margin-top:16px;">
+    <div class="alert-icon">ℹ️</div>
+    <div>
+      <div class="alert-title">完整视频 URL / Full MP4 URLs</div>
+      <div class="alert-body">
+        Amazon 视频完整直链前缀均为 <code>https://m.media-amazon.com/images/S/al-na-9d5791cf-3faf/</code>，上方仅展示文件名。完整链接可通过访问对应产品页面（ASIN链接见参考来源）查看 Video Gallery 获取。
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-size:17px;font-weight:600;color:var(--title-dark);margin:28px 0 14px;">
+    <span class="platform-badge badge-pinterest">Pinterest</span> 层板搭配灵感 Pin 推荐
+  </h3>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-body" style="font-size:13px;">
+        <strong style="color:var(--title-dark);">19 Modern Floating Shelf Decor Ideas with Indoor Plants</strong>
+        <p style="font-size:12px;color:var(--body-gray);margin-top:4px;">
+          绿植+层板组合搭配——自然材质的场景化展示
+        </p>
+        <a href="https://www.pinterest.com/pin/1066790230705112557/" target="_blank" style="font-size:11px;">pinterest.com/pin/1066790230705112557/</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body" style="font-size:13px;">
+        <strong style="color:var(--title-dark);">Japandi Floating Shelf Styling Inspiration</strong>
+        <p style="font-size:12px;color:var(--body-gray);margin-top:4px;">
+          Japandi 风格层板搭配——与 KovaScape 品牌调性高度一致
+        </p>
+        <a href="https://www.pinterest.com/pin/700450548343983851/" target="_blank" style="font-size:11px;">pinterest.com/pin/700450548343983851/</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body" style="font-size:13px;">
+        <strong style="color:var(--title-dark);">Light Oak Floating Wall Shelves — Plants, Candles, Books</strong>
+        <p style="font-size:12px;color:var(--body-gray);margin-top:4px;">
+          浅橡木层板搭配——绿植+书籍+蜡烛，温馨生活感
+        </p>
+        <a href="https://www.pinterest.com/pin/1135751599805159665/" target="_blank" style="font-size:11px;">pinterest.com/pin/1135751599805159665/</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body" style="font-size:13px;">
+        <strong style="color:var(--title-dark);">Minimalist Floating Shelf Styling Ideas</strong>
+        <p style="font-size:12px;color:var(--body-gray);margin-top:4px;">
+          极简层板陈列——少即是多的陈列哲学
+        </p>
+        <a href="https://www.pinterest.com/pin/604256475045611961/" target="_blank" style="font-size:11px;">pinterest.com/pin/604256475045611961/</a>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-size:17px;font-weight:600;color:var(--title-dark);margin:28px 0 14px;">
+    <span class="platform-badge badge-tiktok">TikTok / IG</span> 层板社媒趋势
+  </h3>
+
+  <div class="alert alert-warning" style="margin-bottom:12px;">
+    <div class="alert-icon">📐</div>
+    <div>
+      <div class="alert-title">热门内容公式 / Viral Content Formulas for Shelves</div>
+      <div class="alert-body">
+        <strong>① "Shelf Styling Formula"</strong>：三角形构图 + 书本横竖交替 + 绿植点缀 · 教科书级技法展示<br>
+        <strong>② Before/After Installation</strong>：空墙 → 安装过程 → 成品陈列 · 高完播率公式<br>
+        <strong>③ "What I put on my floating shelves"</strong>：个人化陈列分享 · 引发模仿+收藏<br>
+        <strong>④ LED Strip + Floating Shelf</strong>：暗光环境下的氛围灯层板 · 视觉冲击力强<br>
+        <strong>⑤ "3 Ways to Style the Same Shelf"</strong>：同一层板不同风格切换 · 展示产品适配性
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider divider-gold"></div>
+
+<!-- ====== SECTION: 二创建议 ====== -->
+<div class="section">
+  <div class="section-accent"></div>
+  <h2 class="section-title">Google Omini 二创建议 / Secondary Creation Strategy</h2>
+  <p class="section-subtitle">基于收集素材的二创方向与技术参考</p>
+
+  <div class="rec-card">
+    <div class="rec-card-title">① 相框主图视频 — 推荐脚本结构</div>
+    <div class="rec-card-body">
+      <strong>开场 Hook（3秒）</strong>：Gallery Wall 成品特写 → 推远展示全貌<br>
+      <strong>材质展示（5秒）</strong>：实木纹理特写（微距镜头风格）+ 玻璃反光效果<br>
+      <strong>场景切换（8秒）</strong>：客厅 → 卧室 → 走廊，多场景快速切换<br>
+      <strong>安装演示（5秒）</strong>：快放安装过程，强调"简单易挂"<br>
+      <strong>结尾 CTA（3秒）</strong>：品牌 Logo + 多色/多尺寸选择展示<br>
+      <strong style="color:var(--forest);">总时长目标：20-30秒（Amazon主图视频）</strong>
+    </div>
+  </div>
+
+  <div class="rec-card">
+    <div class="rec-card-title">② 层板主图视频 — 推荐脚本结构</div>
+    <div class="rec-card-body">
+      <strong>开场 Hook（3秒）</strong>：层板承重展示（放书本/装饰品）— 证明稳固性<br>
+      <strong>安装演示（5秒）</strong>：隐藏支架安装过程快放 + 水平仪校准<br>
+      <strong>陈列展示（10秒）</strong>：三种不同陈列风格快速切换（极简/温馨/办公）<br>
+      <strong>材质特写（4秒）</strong>：实木纹理 + 边缘打磨细节<br>
+      <strong>结尾 CTA（3秒）</strong>：多尺寸选择 + 品牌展示<br>
+      <strong style="color:var(--forest);">总时长目标：25-35秒</strong>
+    </div>
+  </div>
+
+  <div class="rec-card">
+    <div class="rec-card-title">③ 社媒短视频 — 分平台策略</div>
+    <div class="rec-card-body">
+      <strong>TikTok / IG Reels（9-15秒竖版）</strong>：<br>
+      · 公式A：ASMR 安装过程（无旁白，纯声音）<br>
+      · 公式B：Before/After 改造（3秒空白墙 → 12秒展示）<br>
+      · 公式C：3 Styles 同一产品（快节奏切换）<br><br>
+      <strong>YouTube Shorts（15-30秒竖版）</strong>：<br>
+      · 公式A：Styling Tips 系列（"3 tips for perfect gallery wall"）<br>
+      · 公式B：Unboxing + First Look（开箱即展示）<br><br>
+      <strong>Pinterest Video Pin（15-30秒竖版）</strong>：<br>
+      · 静音观看友好（加字幕/文字覆盖层）<br>
+      · 重点：成品美感画面 > 过程演示
+    </div>
+  </div>
+
+  <div class="rec-card">
+    <div class="rec-card-title">④ 竞品视频亮点提炼（可借鉴元素）</div>
+    <div class="rec-card-body">
+      <strong>Pottery Barn Gallery Wall 视频</strong>：专业灯光 + 慢速推镜 + 温暖色调 → 高级感<br>
+      <strong>BAYKA 层板测评视频</strong>：承重实测 + 细节对比 → 信任感建立<br>
+      <strong>Homeforia 实木层板视频</strong>：木纹特写 + 自然光场景 → 实木质感的正确展示方式<br>
+      <strong>TikTok Room Transformation</strong>：改造前后对比 + 速度变化节奏 → 高完播率公式<br>
+      <strong>Pinterest 场景图</strong>：Japandi/Minimal 风格 + 绿植搭配 → 品牌调性方向
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ====== SECTION: 参考来源 ====== -->
+<div class="section">
+  <div class="section-accent"></div>
+  <h2 class="section-title">参考来源 / References</h2>
+  <p class="section-subtitle">所有外部链接与数据源</p>
+
+  <h3 style="font-size:15px;font-weight:600;color:var(--title-dark);margin-bottom:10px;">Amazon 产品页</h3>
+  <ul style="font-size:13px;color:var(--body-gray);line-height:2;list-style:none;padding:0;">
+    <li>· <a href="https://www.amazon.com/dp/B0DC611TMD" target="_blank" style="color:var(--forest);">Vittanly 8x10 Picture Frame Set of 4</a> — ASIN: B0DC611TMD</li>
+    <li>· <a href="https://www.amazon.com/dp/B0C77YY4RZ" target="_blank" style="color:var(--forest);">BGMG Wood Floating Shelves 24" Set of 2</a> — ASIN: B0C77YY4RZ</li>
+    <li>· <a href="https://www.amazon.com/dp/B0DRW1YWBG" target="_blank" style="color:var(--forest);">Homeforia Walnut 18" Floating Shelf — Solid Real Wood</a> — ASIN: B0DRW1YWBG</li>
+  </ul>
+
+  <h3 style="font-size:15px;font-weight:600;color:var(--title-dark);margin:20px 0 10px;">YouTube 视频</h3>
+  <ul style="font-size:13px;color:var(--body-gray);line-height:2;list-style:none;padding:0;">
+    <li>· <a href="https://www.youtube.com/watch?v=b9zcrzL5aHQ" target="_blank" style="color:var(--forest);">Pottery Barn — How to Create a Timeless Gallery Wall</a> (26万 views)</li>
+    <li>· <a href="https://www.youtube.com/watch?v=kp650h4-A4U" target="_blank" style="color:var(--forest);">Crafty Tales — Best Photo Frame Set From Amazon Review</a> (25万 views)</li>
+    <li>· <a href="https://www.youtube.com/watch?v=YGIIO1Ixkio" target="_blank" style="color:var(--forest);">Alexandra Gater — Gallery Wall: Eclectic, Farmhouse, Minimal, Scandi</a> (12万 views)</li>
+    <li>· <a href="https://www.youtube.com/watch?v=wki3wMAbtLg" target="_blank" style="color:var(--forest);">DIY Creators — Easy DIY FLOATING SHELVES</a> (1010万 views)</li>
+    <li>· <a href="https://www.youtube.com/watch?v=5fAdRs6CDVg" target="_blank" style="color:var(--forest);">A Mere Creator — 2 Ways To Do Floating Shelves</a> (352万 views)</li>
+    <li>· <a href="https://www.youtube.com/watch?v=IJ1aRAK5KiM" target="_blank" style="color:var(--forest);">Lincoln St. Woodworks — Floating Shelves Alternative</a> (285万 views)</li>
+    <li>· <a href="https://www.youtube.com/watch?v=qCiA8GdN-0Y" target="_blank" style="color:var(--forest);">Experience the World — 100+ Wooden Wall Shelves Ideas</a> (242万 views)</li>
+    <li>· <a href="https://www.youtube.com/watch?v=6QZY1r3ecuM" target="_blank" style="color:var(--forest);">Nicholas Demski — BAYKA Floating Shelves FULL REVIEW</a> (4,949 views)</li>
+  </ul>
+
+  <h3 style="font-size:15px;font-weight:600;color:var(--title-dark);margin:20px 0 10px;">Pinterest</h3>
+  <ul style="font-size:13px;color:var(--body-gray);line-height:2;list-style:none;padding:0;">
+    <li>· <a href="https://www.pinterest.com/pin/210050770118287463/" target="_blank" style="color:var(--forest);">Natural Wood Frames — Gallery Wall</a></li>
+    <li>· <a href="https://www.pinterest.com/pin/542965298848212281/" target="_blank" style="color:var(--forest);">Minimalist Double Walnut Oak Frames — Japandi</a></li>
+    <li>· <a href="https://www.pinterest.com/pin/700450548343983851/" target="_blank" style="color:var(--forest);">Japandi Floating Shelf Styling</a></li>
+    <li>· <a href="https://www.pinterest.com/pin/1066790230705112557/" target="_blank" style="color:var(--forest);">19 Modern Floating Shelf Decor Ideas</a></li>
+    <li>· <a href="https://www.pinterest.com/pin/1135751599805159665/" target="_blank" style="color:var(--forest);">Light Oak Floating Shelves — Plants & Books</a></li>
+  </ul>
+</div>
+
+</div>
+
+<!-- ====== FOOTER ====== -->
+<div class="footer">
+  <div class="footer-top">
+    <div>
+      <div class="footer-brand">KovaScape</div>
+      <div class="footer-brand-sub">Nordic Minimalism × Mid-Century Modern</div>
+    </div>
+    <div class="footer-meta-col">
+      <div class="footer-meta-label">报告类型</div>
+      <div class="footer-meta-value">视频素材收集 / Video Collection</div>
+    </div>
+    <div class="footer-meta-col">
+      <div class="footer-meta-label">生成日期</div>
+      <div class="footer-meta-value">2026.06.30</div>
+    </div>
+    <div class="footer-meta-col">
+      <div class="footer-meta-label">用途</div>
+      <div class="footer-meta-value">Google Omini 二创参考</div>
+    </div>
+  </div>
+  <hr class="footer-divider">
+  <div class="footer-bottom">
+    <span>本报告仅供内部参考 · 素材版权归原作者所有</span>
+    <span>Generated by <a href="https://allyhub.com" target="_blank" style="color:rgba(255,255,255,0.4);">AllyHub AI</a></span>
+  </div>
+</div>
+
+</div>
+
+</body>
+</html>

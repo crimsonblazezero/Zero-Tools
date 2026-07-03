@@ -1,0 +1,20 @@
+{
+  "name": "钉钉套件",
+  "installedAt": 1782648608912,
+  "source": "marketplace",
+  "version": "1.0.0",
+  "skillId": "skill_2054903319109931008",
+  "examples_zh": [
+    "帮我查一下今天钉钉日程里有哪些会议",
+    "在钉钉里搜索张三，并给他发一条消息",
+    "帮我创建一个钉钉待办，明天下午提醒我跟进评审结论"
+  ],
+  "examples_en": [
+    "Show my DingTalk meetings for today",
+    "Find Zhangsan in DingTalk and send a message",
+    "Create a DingTalk todo to follow up on the review tomorrow afternoon"
+  ],
+  "iconSource": "https://openplatform-cdn.codebuddy.cn/public/45edac6b-2078-4678-89f3-6f9800cf5e5f/avatar/skill/au_f86d24fc-c6c.svg",
+  "iconLocalPath": "C:\\Users\\Administrator\\.workbuddy\\skills\\skill_2054903319109931008\\_icon.svg",
+  "iconDownloadedFrom": "https://openplatform-cdn.codebuddy.cn/public/45edac6b-2078-4678-89f3-6f9800cf5e5f/avatar/skill/au_f86d24fc-c6c.svg"
+}

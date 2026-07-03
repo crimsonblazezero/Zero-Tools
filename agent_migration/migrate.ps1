@@ -1,4 +1,4 @@
-# Run this script as Administrator / 请以管理员身份运行此脚本
+﻿# Run this script as Administrator / 请以管理员身份运行此脚本
 
 # 1. Define Target Base Directory / 定义目标迁移根目录
 $targetDrive = "D:"  # Change to your target drive (e.g., E:, F:) / 可改为其他盘符如 E:, F:

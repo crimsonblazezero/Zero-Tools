@@ -2809,6 +2809,9 @@ function handleFileUploadDec(e){const f=e.target.files[0];if(f)processDecFile(f)
 }
 
 function parseCSV(text){
+  if (text.startsWith('\ufeff')) {
+    text = text.slice(1);
+  }
   const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
   if(!lines.length)return[];
   const headers=splitCSVLine(lines[0]);

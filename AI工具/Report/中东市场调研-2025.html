@@ -1,0 +1,1584 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KovaScape · 亚马逊中东站市场调研报告 2025</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #F0EDE8;
+    font-family: 'Poppins', sans-serif;
+    color: #1D1B20;
+    line-height: 1.6;
+  }
+  .page {
+    background: #FDFCF9;
+    border-radius: 40px;
+    max-width: 1260px;
+    margin: 32px auto;
+    overflow: hidden;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    background: #064338;
+    padding: 64px 80px 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: rgba(243,197,70,0.06);
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: 40px; left: -60px;
+    width: 240px; height: 240px;
+    border-radius: 50%;
+    background: rgba(243,197,70,0.04);
+  }
+  .hero-eyebrow {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 24px;
+  }
+  .hero-dot { width: 8px; height: 8px; border-radius: 50%; background: #F3C546; }
+  .hero-eyebrow span {
+    font-size: 11px; font-weight: 500;
+    color: rgba(255,255,255,0.65);
+    text-transform: uppercase; letter-spacing: 1.5px;
+  }
+  .hero-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 52px; font-weight: 500;
+    color: #fff;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+    margin-bottom: 16px;
+  }
+  .hero-title em { color: #F3C546; font-style: normal; }
+  .hero-subtitle {
+    font-size: 15px; color: rgba(255,255,255,0.7);
+    max-width: 600px; margin-bottom: 48px;
+  }
+  .hero-metrics {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    border-top: 0.6px solid rgba(243,197,70,0.4);
+    margin: 0 -80px;
+    padding: 0 80px;
+  }
+  .hero-metric {
+    padding: 28px 0;
+    border-right: 0.6px solid rgba(255,255,255,0.1);
+  }
+  .hero-metric:last-child { border-right: none; }
+  .hero-metric-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px; font-weight: 500;
+    color: #F3C546; display: block;
+  }
+  .hero-metric-label {
+    font-size: 11px; color: rgba(255,255,255,0.55);
+    text-transform: uppercase; letter-spacing: 0.8px;
+    margin-top: 4px;
+  }
+
+  /* ── BODY ── */
+  .body { padding: 64px 80px; }
+
+  /* ── SECTION ── */
+  .section { margin-bottom: 64px; }
+  .section-header { margin-bottom: 32px; }
+  .section-eyebrow {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 10px;
+  }
+  .section-eyebrow-line {
+    width: 32px; height: 2px;
+    background: linear-gradient(90deg, #F3C546, transparent);
+  }
+  .section-eyebrow span {
+    font-size: 11px; font-weight: 500;
+    color: #F3C546; text-transform: uppercase; letter-spacing: 1.2px;
+  }
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px; font-weight: 500;
+    color: #1D1B20;
+  }
+  .section-subtitle { font-size: 14px; color: #717171; margin-top: 6px; }
+
+  /* ── CARDS ── */
+  .card {
+    border: 1px solid #E8E4DE;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #FDFCF9;
+  }
+  .card-header {
+    padding: 24px 28px;
+    border-bottom: 1px solid #F0EDE8;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px; font-weight: 500; color: #1D1B20;
+  }
+  .card-body { padding: 28px; }
+
+  /* ── GRID ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 11px; font-weight: 500;
+  }
+  .badge-green { background: #E8F2F0; color: #064338; }
+  .badge-yellow { background: #FFF8DC; color: #B8860B; }
+  .badge-red { background: #FDECEA; color: #C4433A; }
+  .badge-neutral { background: #F0EDE8; color: #7C746F; }
+
+  /* ── ALERTS ── */
+  .alert {
+    border-radius: 12px; padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+  .alert-success { background: #E8F2F0; border-left: 4px solid #064338; }
+  .alert-warning { background: #FFF8DC; border-left: 4px solid #F3C546; }
+  .alert-info { background: #FDF9F2; border-left: 4px solid #7C746F; }
+  .alert-danger { background: #FDECEA; border-left: 4px solid #C4433A; }
+  .alert-title { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+  .alert-success .alert-title { color: #064338; }
+  .alert-warning .alert-title { color: #B8860B; }
+  .alert-info .alert-title { color: #064338; }
+  .alert-danger .alert-title { color: #C4433A; }
+  .alert p { font-size: 13px; color: #4A4A4A; line-height: 1.6; }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid #E8E4DE; }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: #064338; }
+  th {
+    color: #F3C546; font-size: 11px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.8px;
+    padding: 14px 16px; text-align: left;
+  }
+  td { padding: 13px 16px; font-size: 13px; border-bottom: 1px solid #F0EDE8; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #F8F5F0; }
+  .td-bold { font-weight: 600; color: #1D1B20; }
+
+  /* ── STAT CARDS ── */
+  .stat-card {
+    background: #FDFCF9;
+    border: 1px solid #E8E4DE;
+    border-radius: 14px;
+    padding: 24px;
+  }
+  .stat-label { font-size: 11px; color: #717171; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+  .stat-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px; font-weight: 500; color: #064338;
+    line-height: 1;
+  }
+  .stat-sub { font-size: 12px; color: #717171; margin-top: 6px; }
+  .stat-trend { font-size: 12px; font-weight: 500; margin-top: 8px; }
+  .stat-trend.up { color: #064338; }
+  .stat-trend.warn { color: #B8860B; }
+
+  /* ── BAR CHART ── */
+  .bar-chart { display: flex; flex-direction: column; gap: 12px; }
+  .bar-item { display: flex; align-items: center; gap: 12px; }
+  .bar-label { font-size: 12px; color: #717171; width: 140px; flex-shrink: 0; text-align: right; }
+  .bar-track { flex: 1; background: #F0EDE8; border-radius: 4px; height: 10px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; background: #064338; transition: width 0.6s ease; }
+  .bar-fill.gold { background: #F3C546; }
+  .bar-fill.red { background: #C4433A; }
+  .bar-value { font-size: 12px; font-weight: 600; color: #1D1B20; width: 50px; }
+
+  /* ── COMPARISON ── */
+  .compare-row {
+    display: flex; gap: 0;
+    border: 1px solid #E8E4DE;
+    border-radius: 12px; overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .compare-label {
+    background: #064338; color: #F3C546;
+    font-size: 11px; font-weight: 500;
+    padding: 12px 16px;
+    display: flex; align-items: center;
+    width: 160px; flex-shrink: 0;
+    text-transform: uppercase; letter-spacing: 0.6px;
+  }
+  .compare-sa { background: #FDF9F2; flex: 1; padding: 12px 16px; font-size: 13px; border-right: 1px solid #F0EDE8; }
+  .compare-ae { background: #FDFCF9; flex: 1; padding: 12px 16px; font-size: 13px; }
+
+  /* ── TIMELINE ── */
+  .timeline { position: relative; padding-left: 28px; }
+  .timeline::before {
+    content: '';
+    position: absolute; left: 8px; top: 8px; bottom: 8px;
+    width: 2px; background: linear-gradient(180deg, #064338, #F3C546, #064338);
+  }
+  .timeline-item { position: relative; margin-bottom: 28px; }
+  .timeline-dot {
+    position: absolute; left: -24px; top: 4px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #064338; border: 2px solid #F3C546;
+  }
+  .timeline-title { font-size: 14px; font-weight: 600; color: #1D1B20; margin-bottom: 4px; }
+  .timeline-desc { font-size: 13px; color: #717171; }
+
+  /* ── PRIORITY MATRIX ── */
+  .priority-item {
+    display: flex; align-items: flex-start; gap: 16px;
+    padding: 20px; border-radius: 12px;
+    border: 1px solid #E8E4DE;
+    margin-bottom: 12px;
+  }
+  .priority-num {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: #064338; color: #F3C546;
+    font-family: 'Playfair Display', serif;
+    font-size: 16px; font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .priority-content { flex: 1; }
+  .priority-title { font-size: 14px; font-weight: 600; color: #1D1B20; margin-bottom: 4px; }
+  .priority-desc { font-size: 13px; color: #717171; }
+
+  /* ── PRODUCT CARD ── */
+  .product-card {
+    border: 1px solid #E8E4DE;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #FDFCF9;
+  }
+  .product-card-header {
+    background: #064338;
+    padding: 16px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .product-card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 15px; font-weight: 500; color: #fff;
+  }
+  .product-card-body { padding: 20px; }
+  .product-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #F0EDE8; }
+  .product-row:last-child { border-bottom: none; }
+  .product-row-label { font-size: 12px; color: #717171; }
+  .product-row-value { font-size: 13px; font-weight: 500; color: #1D1B20; }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #F3C546, transparent);
+    margin: 48px 0;
+  }
+
+  /* ── TAG ── */
+  .tag {
+    display: inline-block;
+    background: #E8F2F0; color: #064338;
+    font-size: 11px; font-weight: 500;
+    padding: 3px 10px; border-radius: 20px;
+    margin: 3px;
+  }
+  .tag-gold { background: #FFF8DC; color: #B8860B; }
+
+  /* ── FOOTER ── */
+  .footer {
+    background: #042E25;
+    padding: 40px 80px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .footer-brand {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px; font-weight: 500; color: #F3C546;
+  }
+  .footer-meta { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 4px; }
+  .footer-right { text-align: right; }
+  .footer-note { font-size: 11px; color: rgba(255,255,255,0.4); }
+
+  /* ── HIGHLIGHT BOX ── */
+  .highlight-box {
+    background: linear-gradient(135deg, #064338 0%, #042E25 100%);
+    border-radius: 16px;
+    padding: 32px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+  .highlight-box::after {
+    content: '';
+    position: absolute; top: -30px; right: -30px;
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: rgba(243,197,70,0.1);
+  }
+  .highlight-box-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px; font-weight: 500; color: #F3C546;
+    margin-bottom: 12px;
+  }
+  .highlight-box p { font-size: 13px; color: rgba(255,255,255,0.8); line-height: 1.7; }
+
+  /* ── CHECKLIST ── */
+  .checklist { list-style: none; }
+  .checklist li {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 8px 0; font-size: 13px; color: #4A4A4A;
+    border-bottom: 1px solid #F0EDE8;
+  }
+  .checklist li:last-child { border-bottom: none; }
+  .check-icon { color: #064338; font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+  .warn-icon { color: #B8860B; font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+  .danger-icon { color: #C4433A; font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .hero { padding: 40px 32px 0; }
+    .hero-metrics { margin: 0 -32px; padding: 0 32px; grid-template-columns: repeat(3, 1fr); }
+    .body { padding: 40px 32px; }
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .footer { padding: 32px; flex-direction: column; gap: 16px; text-align: center; }
+    .footer-right { text-align: center; }
+    .hero-title { font-size: 36px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ══════════════════════════════════════════
+       HERO
+  ══════════════════════════════════════════ -->
+  <div class="hero">
+    <div class="hero-eyebrow">
+      <div class="hero-dot"></div>
+      <span>KovaScape · 市场调研报告 · 2025年5月</span>
+    </div>
+    <h1 class="hero-title">
+      亚马逊<em>中东站</em>市场调研<br>相框 &amp; 层板品类深度分析
+    </h1>
+    <p class="hero-subtitle">
+      覆盖沙特阿拉伯（Amazon.sa）与阿联酋（Amazon.ae）两大站点，深度解析市场规模、竞争格局、消费者偏好及首批发货策略建议
+    </p>
+    <div class="hero-metrics">
+      <div class="hero-metric">
+        <span class="hero-metric-value">$8.4B</span>
+        <div class="hero-metric-label">UAE家居电商规模</div>
+      </div>
+      <div class="hero-metric">
+        <span class="hero-metric-value">17.1%</span>
+        <div class="hero-metric-label">沙特家居装饰增速</div>
+      </div>
+      <div class="hero-metric">
+        <span class="hero-metric-value">+23%</span>
+        <div class="hero-metric-label">2024斋月销售增长</div>
+      </div>
+      <div class="hero-metric">
+        <span class="hero-metric-value">81%</span>
+        <div class="hero-metric-label">阿拉伯语搜索占比</div>
+      </div>
+      <div class="hero-metric">
+        <span class="hero-metric-value">5.8天</span>
+        <div class="hero-metric-label">中国→中东物流时效</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       BODY
+  ══════════════════════════════════════════ -->
+  <div class="body">
+
+    <!-- ── 执行摘要 ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">
+          <div class="section-eyebrow-line"></div>
+          <span>Executive Summary</span>
+        </div>
+        <h2 class="section-title">执行摘要</h2>
+      </div>
+
+      <div class="alert alert-success">
+        <div class="alert-title">✅ 核心结论：中东站是 KovaScape 值得优先布局的新兴市场</div>
+        <p>沙特和阿联酋家居装饰电商市场正处于高速增长期（CAGR 11–17%），相框和层板品类竞争格局尚未成熟，头部品牌以 Amazon Basics 等基础款为主，高品质实木/铝框产品存在明显空白。亚马逊当前提供新卖家激励政策（首年佣金减免5%、广告抵扣券），是入场的窗口期。</p>
+      </div>
+
+      <div class="alert alert-warning">
+        <div class="alert-title">⚠️ 关键注意事项</div>
+        <p>沙特 VAT 税率高达 15%（阿联酋为 5%），FBA 卖家需在首笔订单后 30 天内完成 VAT 注册。阿拉伯语 listing 本地化已成为流量获取的必要条件（2025年阿拉伯语搜索占比升至 81%）。建议优先以阿联酋站作为试水站点，再扩展至沙特站。</p>
+      </div>
+
+      <div class="grid-4" style="margin-top: 24px;">
+        <div class="stat-card">
+          <div class="stat-label">推荐入场顺序</div>
+          <div class="stat-value" style="font-size: 24px;">UAE 先</div>
+          <div class="stat-sub">VAT 5%，保税仓可免注册</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">相框品类机会</div>
+          <div class="stat-value" style="font-size: 24px;">高</div>
+          <div class="stat-sub">实木/铝框竞争空白明显</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">层板品类机会</div>
+          <div class="stat-value" style="font-size: 24px;">中高</div>
+          <div class="stat-sub">IKEA 主导，差异化空间存在</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">首批建议发货量</div>
+          <div class="stat-value" style="font-size: 24px;">50–100</div>
+          <div class="stat-sub">件/SKU，测试市场反应</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── 市场概况 ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">
+          <div class="section-eyebrow-line"></div>
+          <span>Market Overview</span>
+        </div>
+        <h2 class="section-title">中东电商市场概况</h2>
+        <p class="section-subtitle">沙特阿拉伯 vs 阿联酋 — 双站点对比分析</p>
+      </div>
+
+      <!-- 双站对比 -->
+      <div class="compare-row" style="margin-bottom: 0; border-radius: 12px 12px 0 0;">
+        <div class="compare-label">对比维度</div>
+        <div class="compare-sa" style="font-weight: 600; color: #064338;">🇸🇦 沙特阿拉伯（Amazon.sa）</div>
+        <div class="compare-ae" style="font-weight: 600; color: #064338;">🇦🇪 阿联酋（Amazon.ae）</div>
+      </div>
+      <div class="compare-row" style="border-radius: 0; border-top: none;">
+        <div class="compare-label">家居电商规模</div>
+        <div class="compare-sa">约 $6.6B（家具大类）</div>
+        <div class="compare-ae">约 $8.4B（家具大类）</div>
+      </div>
+      <div class="compare-row" style="border-radius: 0; border-top: none;">
+        <div class="compare-label">家居装饰增速</div>
+        <div class="compare-sa"><span class="badge badge-red">17.1% CAGR</span> 高速增长</div>
+        <div class="compare-ae"><span class="badge badge-yellow">11.3% CAGR</span> 稳健增长</div>
+      </div>
+      <div class="compare-row" style="border-radius: 0; border-top: none;">
+        <div class="compare-label">VAT 税率</div>
+        <div class="compare-sa"><span class="badge badge-red">15%</span> 较高，需尽早合规</div>
+        <div class="compare-ae"><span class="badge badge-green">5%</span> 较低，保税仓可免注册</div>
+      </div>
+      <div class="compare-row" style="border-radius: 0; border-top: none;">
+        <div class="compare-label">主要竞争平台</div>
+        <div class="compare-sa">Amazon.sa + Noon（本土强竞争）</div>
+        <div class="compare-ae">Amazon.ae + Noon（亚马逊更强势）</div>
+      </div>
+      <div class="compare-row" style="border-radius: 0; border-top: none;">
+        <div class="compare-label">消费者特征</div>
+        <div class="compare-sa">71% 认为"价格越高质量越好"，偏好品质</div>
+        <div class="compare-ae">高人均 GDP，国际化程度高，接受溢价</div>
+      </div>
+      <div class="compare-row" style="border-radius: 0; border-top: none;">
+        <div class="compare-label">语言要求</div>
+        <div class="compare-sa">阿拉伯语搜索占比 81%，本地化必须</div>
+        <div class="compare-ae">英语+阿拉伯语双语，英语可接受</div>
+      </div>
+      <div class="compare-row" style="border-radius: 0; border-top: none;">
+        <div class="compare-label">FBA 仓库</div>
+        <div class="compare-sa">独立仓库，需单独备货</div>
+        <div class="compare-ae">独立仓库，保税仓可免 VAT 注册</div>
+      </div>
+      <div class="compare-row" style="border-radius: 12px; border-radius: 0 0 12px 12px; border-top: none;">
+        <div class="compare-label">新卖家激励</div>
+        <div class="compare-sa">佣金减免5%（最高$100万销售额）+ 广告抵扣券</div>
+        <div class="compare-ae">品牌奖励 175,000 AED + 广告抵扣券</div>
+      </div>
+
+      <div style="margin-top: 32px;">
+        <div class="alert alert-info">
+          <div class="alert-title">📊 市场驱动因素</div>
+          <p>① 沙特"2030愿景"提高住房拥有率，直接拉动家居品类需求；② 中东人口年轻化（35岁以下为主力消费群），线上购物渗透率超过50%；③ 斋月/开斋节是重要销售节点，2024年斋月期间亚马逊中东站销售额增长23%；④ 中东本土轻工业不发达，高度依赖进口，中国卖家具有供应链优势。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── 相框品类分析 ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">
+          <div class="section-eyebrow-line"></div>
+          <span>Picture Frame Category</span>
+        </div>
+        <h2 class="section-title">相框品类深度分析</h2>
+        <p class="section-subtitle">传统相框 · 实木相框 · 铝框 · 滴胶相框</p>
+      </div>
+
+      <!-- 竞争格局 -->
+      <div class="grid-2" style="margin-bottom: 32px;">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">竞争格局概览</span>
+            <span class="badge badge-green">机会较大</span>
+          </div>
+          <div class="card-body">
+            <p style="font-size: 13px; color: #717171; margin-bottom: 16px;">中东站相框品类竞争格局尚未成熟，头部以基础款为主，高品质产品存在明显空白。</p>
+            <div class="bar-chart">
+              <div class="bar-item">
+                <div class="bar-label">Amazon Basics</div>
+                <div class="bar-track"><div class="bar-fill" style="width: 75%;"></div></div>
+                <div class="bar-value">主导</div>
+              </div>
+              <div class="bar-item">
+                <div class="bar-label">无品牌/仿制品</div>
+                <div class="bar-track"><div class="bar-fill gold" style="width: 55%;"></div></div>
+                <div class="bar-value">较多</div>
+              </div>
+              <div class="bar-item">
+                <div class="bar-label">FNP（礼品定制）</div>
+                <div class="bar-track"><div class="bar-fill" style="width: 30%;"></div></div>
+                <div class="bar-value">细分</div>
+              </div>
+              <div class="bar-item">
+                <div class="bar-label">高端品牌</div>
+                <div class="bar-track"><div class="bar-fill gold" style="width: 15%;"></div></div>
+                <div class="bar-value">稀少</div>
+              </div>
+              <div class="bar-item">
+                <div class="bar-label">实木/铝框品牌</div>
+                <div class="bar-track"><div class="bar-fill red" style="width: 10%;"></div></div>
+                <div class="bar-value">空白</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">价格带分布</span>
+            <span class="badge badge-yellow">中高端空间大</span>
+          </div>
+          <div class="card-body">
+            <div class="bar-chart">
+              <div class="bar-item">
+                <div class="bar-label">入门款 &lt;SAR 60</div>
+                <div class="bar-track"><div class="bar-fill" style="width: 80%;"></div></div>
+                <div class="bar-value">竞争激烈</div>
+              </div>
+              <div class="bar-item">
+                <div class="bar-label">中端 SAR 60–150</div>
+                <div class="bar-track"><div class="bar-fill gold" style="width: 45%;"></div></div>
+                <div class="bar-value">机会区间</div>
+              </div>
+              <div class="bar-item">
+                <div class="bar-label">中高端 SAR 150–300</div>
+                <div class="bar-track"><div class="bar-fill" style="width: 25%;"></div></div>
+                <div class="bar-value">空间大</div>
+              </div>
+              <div class="bar-item">
+                <div class="bar-label">高端 SAR 300+</div>
+                <div class="bar-track"><div class="bar-fill gold" style="width: 10%;"></div></div>
+                <div class="bar-value">奢侈品牌</div>
+              </div>
+            </div>
+            <div style="margin-top: 16px; padding: 12px; background: #E8F2F0; border-radius: 8px;">
+              <p style="font-size: 12px; color: #064338;"><strong>KovaScape 建议定价区间：</strong>SAR 80–200 / AED 80–200，对应实木相框和铝框大留白，避开低价红海，主打品质差异化。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 三条产品线机会评估 -->
+      <h3 style="font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 500; color: #1D1B20; margin-bottom: 20px;">KovaScape 三条产品线机会评估</h3>
+      <div class="grid-3" style="margin-bottom: 32px;">
+        <div class="product-card">
+          <div class="product-card-header">
+            <span class="product-card-title">🪵 实木相框</span>
+            <span class="badge badge-green" style="font-size: 10px;">强烈推荐</span>
+          </div>
+          <div class="product-card-body">
+            <div class="product-row">
+              <span class="product-row-label">市场机会</span>
+              <span class="product-row-value">⭐⭐⭐⭐⭐</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">竞争强度</span>
+              <span class="product-row-value">低（空白市场）</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">目标价格</span>
+              <span class="product-row-value">SAR 120–250</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">消费者契合度</span>
+              <span class="product-row-value">高（偏好木质调）</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">推荐首发尺寸</span>
+              <span class="product-row-value">5x7 / 8x10</span>
+            </div>
+            <div style="margin-top: 12px;">
+              <p style="font-size: 12px; color: #717171;">中东消费者偏好深色木质调（胡桃木）和自然质感（橡木），与 KovaScape 产品线高度契合。礼品属性强，斋月/开斋节需求旺盛。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="product-card">
+          <div class="product-card-header">
+            <span class="product-card-title">🖼️ 铝框大留白相框</span>
+            <span class="badge badge-yellow" style="font-size: 10px;">推荐</span>
+          </div>
+          <div class="product-card-body">
+            <div class="product-row">
+              <span class="product-row-label">市场机会</span>
+              <span class="product-row-value">⭐⭐⭐⭐</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">竞争强度</span>
+              <span class="product-row-value">中低</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">目标价格</span>
+              <span class="product-row-value">SAR 80–180</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">消费者契合度</span>
+              <span class="product-row-value">中高（极简风流行）</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">推荐首发尺寸</span>
+              <span class="product-row-value">8x10 / 11x14</span>
+            </div>
+            <div style="margin-top: 12px;">
+              <p style="font-size: 12px; color: #717171;">中东现代家居风格偏好极简奢华，大留白相框契合"gallery wall"趋势。黑色和金色是最受欢迎的颜色，与品牌调性高度吻合。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="product-card">
+          <div class="product-card-header">
+            <span class="product-card-title">✨ 滴胶珐琅相框</span>
+            <span class="badge badge-neutral" style="font-size: 10px;">谨慎评估</span>
+          </div>
+          <div class="product-card-body">
+            <div class="product-row">
+              <span class="product-row-label">市场机会</span>
+              <span class="product-row-value">⭐⭐⭐</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">竞争强度</span>
+              <span class="product-row-value">中（礼品市场竞争）</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">目标价格</span>
+              <span class="product-row-value">SAR 60–120</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">消费者契合度</span>
+              <span class="product-row-value">中（礼品属性强）</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">推荐首发尺寸</span>
+              <span class="product-row-value">4x6 / 5x7</span>
+            </div>
+            <div style="margin-top: 12px;">
+              <p style="font-size: 12px; color: #717171;">礼品市场有需求，但 FNP 等礼品品牌已占据一定份额。建议作为第二批次产品，先验证实木和铝框的市场反应。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 消费者偏好 -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">中东消费者相框偏好洞察</span>
+        </div>
+        <div class="card-body">
+          <div class="grid-2">
+            <div>
+              <h4 style="font-size: 14px; font-weight: 600; color: #064338; margin-bottom: 12px;">✅ 高契合度偏好</h4>
+              <ul class="checklist">
+                <li><span class="check-icon">✓</span>深色木质调（胡桃木、深棕）——与中东奢华室内设计高度契合</li>
+                <li><span class="check-icon">✓</span>金色/黑色金属框——与"大地奢华风"趋势吻合</li>
+                <li><span class="check-icon">✓</span>礼品属性——斋月/开斋节/婚礼礼品需求旺盛</li>
+                <li><span class="check-icon">✓</span>高清钢化玻璃——消费者重视品质，愿意为耐用性付费</li>
+                <li><span class="check-icon">✓</span>多尺寸套装——gallery wall 趋势在中东年轻群体中流行</li>
+                <li><span class="check-icon">✓</span>可挂墙+桌面两用——中东家居空间利用率高</li>
+              </ul>
+            </div>
+            <div>
+              <h4 style="font-size: 14px; font-weight: 600; color: #B8860B; margin-bottom: 12px;">⚠️ 需要注意的差异</h4>
+              <ul class="checklist">
+                <li><span class="warn-icon">!</span>阿拉伯书法/伊斯兰图案相框有本土需求，可作为差异化方向</li>
+                <li><span class="warn-icon">!</span>白色相框在中东市场接受度高（与白色墙面搭配）</li>
+                <li><span class="warn-icon">!</span>大尺寸相框（16x20+）需求较强，中东家居空间普遍较大</li>
+                <li><span class="warn-icon">!</span>产品图片需展示中东风格家居场景，提升本地化感知</li>
+                <li><span class="warn-icon">!</span>避免含有宗教敏感图案的画芯展示</li>
+                <li><span class="warn-icon">!</span>包装需标注阿拉伯语产品信息（合规要求）</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── 层板品类分析 ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">
+          <div class="section-eyebrow-line"></div>
+          <span>Floating Shelf Category</span>
+        </div>
+        <h2 class="section-title">层板品类深度分析</h2>
+        <p class="section-subtitle">空心层板 · 显性层板（金属支架）· 实木层板</p>
+      </div>
+
+      <div class="grid-2" style="margin-bottom: 32px;">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">竞争格局概览</span>
+            <span class="badge badge-yellow">中等竞争</span>
+          </div>
+          <div class="card-body">
+            <p style="font-size: 13px; color: #717171; margin-bottom: 16px;">IKEA 是最强竞争对手，凭借品牌认知和线下门店占据主导。亚马逊上无品牌/仿制品较多，品质参差不齐。</p>
+            <div class="bar-chart">
+              <div class="bar-item">
+                <div class="bar-label">IKEA（LACK系列）</div>
+                <div class="bar-track"><div class="bar-fill" style="width: 70%;"></div></div>
+                <div class="bar-value">主导</div>
+              </div>
+              <div class="bar-item">
+                <div class="bar-label">无品牌/仿制品</div>
+                <div class="bar-track"><div class="bar-fill gold" style="width: 50%;"></div></div>
+                <div class="bar-value">较多</div>
+              </div>
+              <div class="bar-item">
+                <div class="bar-label">Home Box（本土）</div>
+                <div class="bar-track"><div class="bar-fill" style="width: 35%;"></div></div>
+                <div class="bar-value">区域性</div>
+              </div>
+              <div class="bar-item">
+                <div class="bar-label">SRIWATANA/BAMEOS</div>
+                <div class="bar-track"><div class="bar-fill gold" style="width: 20%;"></div></div>
+                <div class="bar-value">少量</div>
+              </div>
+              <div class="bar-item">
+                <div class="bar-label">工业风金属支架</div>
+                <div class="bar-track"><div class="bar-fill red" style="width: 12%;"></div></div>
+                <div class="bar-value">空白</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">价格带分布</span>
+            <span class="badge badge-green">中端机会明显</span>
+          </div>
+          <div class="card-body">
+            <div class="bar-chart">
+              <div class="bar-item">
+                <div class="bar-label">入门 AED/SAR &lt;50</div>
+                <div class="bar-track"><div class="bar-fill" style="width: 85%;"></div></div>
+                <div class="bar-value">IKEA 主导</div>
+              </div>
+              <div class="bar-item">
+                <div class="bar-label">中端 50–150</div>
+                <div class="bar-track"><div class="bar-fill gold" style="width: 40%;"></div></div>
+                <div class="bar-value">机会区间</div>
+              </div>
+              <div class="bar-item">
+                <div class="bar-label">中高端 150–300</div>
+                <div class="bar-track"><div class="bar-fill" style="width: 20%;"></div></div>
+                <div class="bar-value">空间大</div>
+              </div>
+              <div class="bar-item">
+                <div class="bar-label">高端 300+</div>
+                <div class="bar-track"><div class="bar-fill gold" style="width: 8%;"></div></div>
+                <div class="bar-value">设计师品牌</div>
+              </div>
+            </div>
+            <div style="margin-top: 16px; padding: 12px; background: #E8F2F0; border-radius: 8px;">
+              <p style="font-size: 12px; color: #064338;"><strong>KovaScape 建议定价：</strong>空心层板 AED/SAR 80–150，显性层板 AED/SAR 120–220，避开 IKEA 低价区间，主打承重和工业风差异化。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 三类层板机会评估 -->
+      <h3 style="font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 500; color: #1D1B20; margin-bottom: 20px;">KovaScape 三类层板机会评估</h3>
+      <div class="grid-3" style="margin-bottom: 32px;">
+        <div class="product-card">
+          <div class="product-card-header">
+            <span class="product-card-title">🔩 显性层板（金属支架）</span>
+            <span class="badge badge-green" style="font-size: 10px;">强烈推荐</span>
+          </div>
+          <div class="product-card-body">
+            <div class="product-row">
+              <span class="product-row-label">市场机会</span>
+              <span class="product-row-value">⭐⭐⭐⭐⭐</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">竞争强度</span>
+              <span class="product-row-value">低（IKEA 无此类）</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">目标价格</span>
+              <span class="product-row-value">SAR 120–220</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">核心卖点</span>
+              <span class="product-row-value">承重强、工业风</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">推荐首发尺寸</span>
+              <span class="product-row-value">24" / 36"</span>
+            </div>
+            <div style="margin-top: 12px;">
+              <p style="font-size: 12px; color: #717171;">中东家居空间大，对承重层板需求强。工业风金属支架在中东年轻消费者中流行，IKEA 无对应产品，差异化明显。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="product-card">
+          <div class="product-card-header">
+            <span class="product-card-title">📦 空心层板（MDF）</span>
+            <span class="badge badge-yellow" style="font-size: 10px;">推荐</span>
+          </div>
+          <div class="product-card-body">
+            <div class="product-row">
+              <span class="product-row-label">市场机会</span>
+              <span class="product-row-value">⭐⭐⭐⭐</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">竞争强度</span>
+              <span class="product-row-value">中（IKEA 有竞争）</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">目标价格</span>
+              <span class="product-row-value">SAR 80–150</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">核心卖点</span>
+              <span class="product-row-value">仿木纹、易安装</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">推荐首发颜色</span>
+              <span class="product-row-value">白色 / 棕色</span>
+            </div>
+            <div style="margin-top: 12px;">
+              <p style="font-size: 12px; color: #717171;">白色和棕色是中东最受欢迎的层板颜色。RTA（即装即用）特性受欢迎，需强调安装简便性。与 IKEA 竞争需在品质和包装上差异化。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="product-card">
+          <div class="product-card-header">
+            <span class="product-card-title">🌳 实木层板</span>
+            <span class="badge badge-neutral" style="font-size: 10px;">第二批次</span>
+          </div>
+          <div class="product-card-body">
+            <div class="product-row">
+              <span class="product-row-label">市场机会</span>
+              <span class="product-row-value">⭐⭐⭐</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">竞争强度</span>
+              <span class="product-row-value">低（高端空白）</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">目标价格</span>
+              <span class="product-row-value">SAR 180–350</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">核心卖点</span>
+              <span class="product-row-value">自然野性、高端感</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">推荐首发尺寸</span>
+              <span class="product-row-value">24" / 36"</span>
+            </div>
+            <div style="margin-top: 12px;">
+              <p style="font-size: 12px; color: #717171;">中东消费者对木材家具有强烈偏好，实木层板高端定位有市场。但物流成本较高，建议在验证市场后作为第二批次引入。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 层板消费者偏好 -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">中东消费者层板偏好洞察</span>
+        </div>
+        <div class="card-body">
+          <div class="grid-2">
+            <div>
+              <h4 style="font-size: 14px; font-weight: 600; color: #064338; margin-bottom: 12px;">热门颜色偏好</h4>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
+                <span class="tag">⬜ 白色（最热门）</span>
+                <span class="tag">🟫 棕色</span>
+                <span class="tag">🟤 米色</span>
+                <span class="tag">⬛ 黑色</span>
+                <span class="tag-gold">🪵 原木色</span>
+              </div>
+              <h4 style="font-size: 14px; font-weight: 600; color: #064338; margin-bottom: 12px;">热门材质偏好</h4>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                <span class="tag">天然木材（最受欢迎）</span>
+                <span class="tag">MDF 工程木</span>
+                <span class="tag-gold">金属支架</span>
+                <span class="tag">玻璃</span>
+              </div>
+            </div>
+            <div>
+              <h4 style="font-size: 14px; font-weight: 600; color: #064338; margin-bottom: 12px;">购买决策关键因素</h4>
+              <ul class="checklist">
+                <li><span class="check-icon">✓</span>模块化/可定制（8–10% CAGR 增长驱动）</li>
+                <li><span class="check-icon">✓</span>易于安装（RTA 占市场 50–60%）</li>
+                <li><span class="check-icon">✓</span>承重能力（中东家居物品多，承重是核心关注点）</li>
+                <li><span class="check-icon">✓</span>配送速度（67% 消费者将配送效率列为选购因素）</li>
+                <li><span class="warn-icon">!</span>环保认证（CARB/FSC 认证日益受关注）</li>
+                <li><span class="warn-icon">!</span>甲醛排放标准（买家开始主动询问）</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── 节日营销机会 ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">
+          <div class="section-eyebrow-line"></div>
+          <span>Seasonal Opportunities</span>
+        </div>
+        <h2 class="section-title">节日营销机会</h2>
+        <p class="section-subtitle">中东独特的节日购物节点与营销策略</p>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <div class="timeline">
+            <div class="timeline-item">
+              <div class="timeline-dot"></div>
+              <div class="timeline-title">🌙 斋月前夕（提前 2–3 周）</div>
+              <div class="timeline-desc">消费者提前装饰房屋，家居装饰需求激增。相框（展示家庭照片）和层板（摆放装饰品）是核心品类。建议提前 4–6 周备货入仓。</div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-dot"></div>
+              <div class="timeline-title">🌙 斋月期间（凌晨购物高峰）</div>
+              <div class="timeline-desc">线上购物高峰出现在凌晨 4–5 点（晨祷后）。广告投放需调整时段，避开白天禁食时段。2024年斋月销售额增长 23%。</div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-dot"></div>
+              <div class="timeline-title">🎉 开斋节（Eid al-Fitr）</div>
+              <div class="timeline-desc">互赠礼物、添置新家具的高峰期。相框礼品属性强，建议推出礼品套装（多尺寸组合）。</div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-dot"></div>
+              <div class="timeline-title">🎊 宰牲节（Eid al-Adha）</div>
+              <div class="timeline-desc">第二大节日，家庭聚会和礼品需求旺盛。层板（展示装饰品）和相框（家庭合影）均有需求。</div>
+            </div>
+            <div class="timeline-item">
+              <div class="timeline-dot"></div>
+              <div class="timeline-title">🛍️ 沙特国庆日（9月23日）</div>
+              <div class="timeline-desc">沙特本土重要购物节点，家居装饰品销量显著提升。</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="highlight-box" style="margin-bottom: 20px;">
+            <div class="highlight-box-title">斋月营销策略建议</div>
+            <p>① 提前 4–6 周将货物入仓，确保斋月期间有充足库存<br><br>② 广告投放时段：凌晨 12–6 点（购物高峰），避开白天<br><br>③ 主图/A+页面加入斋月场景（灯笼、暖光、家庭聚会）<br><br>④ 推出礼品套装 listing（多尺寸相框组合），提升客单价<br><br>⑤ 使用"Ramadan Kareem"等节日问候语，增强本地化感知</p>
+          </div>
+
+          <div class="alert alert-warning">
+            <div class="alert-title">⚠️ 2026年斋月时间参考</div>
+            <p>2026年斋月预计于 2026年2月17日 开始，开斋节约在 3月19日。建议 2025年12月前完成首批备货入仓，确保斋月前有充足库存。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── 合规与运营要求 ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">
+          <div class="section-eyebrow-line"></div>
+          <span>Compliance & Operations</span>
+        </div>
+        <h2 class="section-title">合规与运营要求</h2>
+        <p class="section-subtitle">入场前必须了解的关键合规事项</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🇦🇪 阿联酋站合规要求</span>
+            <span class="badge badge-green">相对友好</span>
+          </div>
+          <div class="card-body">
+            <ul class="checklist">
+              <li><span class="check-icon">✓</span><strong>VAT 5%</strong>：FBA 卖家需在首笔订单后 30 天内注册。<strong>保税仓方案</strong>：将货物发至阿联酋自由贸易区保税仓，由亚马逊管理，可免 VAT 注册。</li>
+              <li><span class="check-icon">✓</span><strong>产品认证</strong>：部分产品需获得符合性证书（COC），相框/层板通常不在强制范围内，但需确认。</li>
+              <li><span class="check-icon">✓</span><strong>环保包装税</strong>：2025年1月起征收 8% 环保税，使用 FBA 生物降解包装可全额免税。</li>
+              <li><span class="check-icon">✓</span><strong>原产国信息（COO）</strong>：需在亚马逊后台提供，标注"Made in China"。</li>
+              <li><span class="warn-icon">!</span><strong>阿拉伯语 listing</strong>：2025年阿拉伯语搜索占比 81%，强烈建议提供阿拉伯语版本。</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🇸🇦 沙特站合规要求</span>
+            <span class="badge badge-yellow">需要重点关注</span>
+          </div>
+          <div class="card-body">
+            <ul class="checklist">
+              <li><span class="danger-icon">!</span><strong>VAT 15%</strong>：税率较高，FBA 卖家必须注册。2026年1月起平台将直接代扣未合规卖家的 15% 增值税，账户可能被冻结。</li>
+              <li><span class="warn-icon">!</span><strong>VAT 注册流程复杂</strong>：需阿拉伯语表格和当地手机号验证，强烈建议委托专业会计师事务所代理。</li>
+              <li><span class="check-icon">✓</span><strong>沙特质量标志（SQM）</strong>：高风险产品强制要求，相框/层板通常不在范围内。</li>
+              <li><span class="check-icon">✓</span><strong>罚金豁免</strong>：沙特税局豁免政策延长至 2025年6月30日，尽早完成合规可申请减免罚金。</li>
+              <li><span class="warn-icon">!</span><strong>阿拉伯语 listing 必须</strong>：沙特阿拉伯语搜索占比更高，英语 listing 流量大幅下降。</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 24px;">
+        <div class="alert alert-info">
+          <div class="alert-title">💡 合规行动建议</div>
+          <p>① <strong>优先开通阿联酋站</strong>：VAT 仅 5%，保税仓方案可免注册，合规门槛低；② 阿联酋站稳定后再开通沙特站，同步完成沙特 VAT 注册；③ 立即委托专业机构处理 VAT 注册，避免 2026年1月代扣政策生效后的账户风险；④ 所有 listing 提供阿拉伯语版本（可使用亚马逊 AI 翻译工具辅助，但需人工审核）。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── FBA 物流策略 ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">
+          <div class="section-eyebrow-line"></div>
+          <span>FBA Logistics Strategy</span>
+        </div>
+        <h2 class="section-title">FBA 物流策略</h2>
+        <p class="section-subtitle">中国→中东 物流方案与成本优化</p>
+      </div>
+
+      <div class="grid-3" style="margin-bottom: 32px;">
+        <div class="stat-card">
+          <div class="stat-label">中国→中东物流时效</div>
+          <div class="stat-value">5.8天</div>
+          <div class="stat-sub">已从14天缩短至5.8天（2024年优化）</div>
+          <div class="stat-trend up">↑ 大幅改善</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">FBA 运费补贴</div>
+          <div class="stat-value">15%</div>
+          <div class="stat-sub">中国卖家使用 FBA 中东仓可享受运费补贴</div>
+          <div class="stat-trend up">↑ 新卖家激励</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Amazon SEND 返现</div>
+          <div class="stat-value">10%</div>
+          <div class="stat-sub">使用亚马逊跨境承运伙伴方案首程物流返现</div>
+          <div class="stat-trend up">↑ 可叠加使用</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">物流方案对比</span>
+        </div>
+        <div class="card-body">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>方案</th>
+                  <th>时效</th>
+                  <th>成本</th>
+                  <th>适用场景</th>
+                  <th>推荐度</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="td-bold">Amazon SEND 空运</td>
+                  <td>5–8天</td>
+                  <td>较高，享10%返现</td>
+                  <td>首批测试、斋月备货</td>
+                  <td><span class="badge badge-green">强烈推荐</span></td>
+                </tr>
+                <tr>
+                  <td class="td-bold">Amazon SEND 海运</td>
+                  <td>25–35天</td>
+                  <td>低，享10%返现</td>
+                  <td>大批量补货、常规备货</td>
+                  <td><span class="badge badge-green">推荐</span></td>
+                </tr>
+                <tr>
+                  <td class="td-bold">亚马逊远程配送计划</td>
+                  <td>利用欧洲仓库存</td>
+                  <td>无额外成本</td>
+                  <td>已有欧洲站库存时</td>
+                  <td><span class="badge badge-yellow">条件推荐</span></td>
+                </tr>
+                <tr>
+                  <td class="td-bold">第三方货代</td>
+                  <td>7–15天（空运）</td>
+                  <td>中等</td>
+                  <td>灵活补货</td>
+                  <td><span class="badge badge-neutral">可选</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 24px;">
+        <div class="alert alert-warning">
+          <div class="alert-title">⚠️ 仓储费用注意事项</div>
+          <p>自2025年4月起，存放超过270天的库存将被自动移除（每件0.15美元或每立方英尺1.5美元，取高值）。中东站为独立仓库，沙特和阿联酋需分别备货，不可共用库存。建议首批少量发货（50–100件/SKU），验证市场后再加大备货量。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── 首批发货建议 ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">
+          <div class="section-eyebrow-line"></div>
+          <span>First Shipment Strategy</span>
+        </div>
+        <h2 class="section-title">首批发货建议</h2>
+        <p class="section-subtitle">基于市场分析的 KovaScape 中东站入场策略</p>
+      </div>
+
+      <!-- 入场策略 -->
+      <div class="highlight-box" style="margin-bottom: 32px;">
+        <div class="highlight-box-title">核心策略：阿联酋先行，沙特跟进</div>
+        <p>建议以阿联酋站（Amazon.ae）作为中东市场的试水站点。原因：① VAT 仅 5%，保税仓方案可免注册；② 消费者国际化程度高，英语 listing 可接受；③ 亚马逊在阿联酋市场份额更强，Noon 竞争相对较弱；④ 品牌奖励政策（175,000 AED）对新卖家吸引力大。阿联酋站验证成功后，3–6 个月内扩展至沙特站。</p>
+      </div>
+
+      <!-- 分阶段发货计划 -->
+      <h3 style="font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 500; color: #1D1B20; margin-bottom: 20px;">分阶段发货计划</h3>
+
+      <div class="table-wrap" style="margin-bottom: 32px;">
+        <table>
+          <thead>
+            <tr>
+              <th>阶段</th>
+              <th>时间节点</th>
+              <th>站点</th>
+              <th>产品线</th>
+              <th>SKU 数量</th>
+              <th>每 SKU 发货量</th>
+              <th>目标</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="td-bold">第一阶段</td>
+              <td>Month 1–2</td>
+              <td>🇦🇪 阿联酋</td>
+              <td>实木相框（橡木+胡桃木）</td>
+              <td>4–6 个</td>
+              <td>50–80 件</td>
+              <td>验证市场接受度</td>
+            </tr>
+            <tr>
+              <td class="td-bold">第一阶段</td>
+              <td>Month 1–2</td>
+              <td>🇦🇪 阿联酋</td>
+              <td>显性层板（24" / 36"）</td>
+              <td>2–4 个</td>
+              <td>50–80 件</td>
+              <td>验证层板市场</td>
+            </tr>
+            <tr>
+              <td class="td-bold">第二阶段</td>
+              <td>Month 3–4</td>
+              <td>🇦🇪 阿联酋</td>
+              <td>铝框大留白相框</td>
+              <td>3–4 个</td>
+              <td>80–120 件</td>
+              <td>扩充相框品类</td>
+            </tr>
+            <tr>
+              <td class="td-bold">第二阶段</td>
+              <td>Month 3–4</td>
+              <td>🇦🇪 阿联酋</td>
+              <td>空心层板（白色/棕色）</td>
+              <td>2–3 个</td>
+              <td>80–120 件</td>
+              <td>扩充层板品类</td>
+            </tr>
+            <tr>
+              <td class="td-bold">第三阶段</td>
+              <td>Month 5–6</td>
+              <td>🇸🇦 沙特</td>
+              <td>阿联酋验证成功的 SKU</td>
+              <td>6–10 个</td>
+              <td>100–150 件</td>
+              <td>复制成功模型</td>
+            </tr>
+            <tr>
+              <td class="td-bold">第四阶段</td>
+              <td>Month 7+</td>
+              <td>🇦🇪🇸🇦 双站</td>
+              <td>斋月备货（全品类）</td>
+              <td>全部 SKU</td>
+              <td>200–300 件</td>
+              <td>斋月销售冲刺</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 首批 SKU 优先级 -->
+      <h3 style="font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 500; color: #1D1B20; margin-bottom: 20px;">首批 SKU 优先级推荐</h3>
+
+      <div class="priority-item">
+        <div class="priority-num">1</div>
+        <div class="priority-content">
+          <div class="priority-title">实木相框 — 胡桃木 5x7 / 8x10（KSNEUAE）</div>
+          <div class="priority-desc">胡桃木深色调与中东奢华室内设计高度契合，5x7 和 8x10 是全球最通用尺寸，礼品属性强。建议每个尺寸发货 50–80 件，共 100–160 件。</div>
+        </div>
+        <span class="badge badge-green">最高优先级</span>
+      </div>
+
+      <div class="priority-item">
+        <div class="priority-num">2</div>
+        <div class="priority-content">
+          <div class="priority-title">显性层板 — 24" 黑色/棕色（KSNEUAE）</div>
+          <div class="priority-desc">工业风金属支架在中东年轻消费者中流行，IKEA 无对应产品，差异化明显。24" 是最通用尺寸，黑色和棕色是中东热门颜色。建议每个颜色发货 50–80 件。</div>
+        </div>
+        <span class="badge badge-green">高优先级</span>
+      </div>
+
+      <div class="priority-item">
+        <div class="priority-num">3</div>
+        <div class="priority-content">
+          <div class="priority-title">实木相框 — 橡木 5x7 / 8x10（KSNEUAE）</div>
+          <div class="priority-desc">橡木自然质感契合中东"大地奢华风"趋势，与胡桃木形成材质差异化，满足不同消费者偏好。建议每个尺寸发货 50 件。</div>
+        </div>
+        <span class="badge badge-yellow">高优先级</span>
+      </div>
+
+      <div class="priority-item">
+        <div class="priority-num">4</div>
+        <div class="priority-content">
+          <div class="priority-title">铝框大留白相框 — 黑色/金色 8x10 / 11x14（KSNEUAE）</div>
+          <div class="priority-desc">极简风格契合中东现代家居趋势，黑色和金色是最受欢迎的颜色。建议第二阶段引入，每个 SKU 发货 80–100 件。</div>
+        </div>
+        <span class="badge badge-yellow">中优先级</span>
+      </div>
+
+      <div class="priority-item">
+        <div class="priority-num">5</div>
+        <div class="priority-content">
+          <div class="priority-title">空心层板 — 白色/棕色 24" / 36"（KSNEUAE）</div>
+          <div class="priority-desc">白色和棕色是中东最热门层板颜色，24" 和 36" 是最通用尺寸。与 IKEA 竞争需在品质和包装上差异化。建议第二阶段引入。</div>
+        </div>
+        <span class="badge badge-neutral">中优先级</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── Listing 本地化建议 ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">
+          <div class="section-eyebrow-line"></div>
+          <span>Listing Localization</span>
+        </div>
+        <h2 class="section-title">Listing 本地化建议</h2>
+        <p class="section-subtitle">中东站 listing 优化的关键差异点</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">阿拉伯语关键词策略</span>
+          </div>
+          <div class="card-body">
+            <h4 style="font-size: 13px; font-weight: 600; color: #064338; margin-bottom: 12px;">相框核心关键词（阿拉伯语）</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;">
+              <span class="tag">إطار صور (相框)</span>
+              <span class="tag">إطار خشبي (木框)</span>
+              <span class="tag">إطار معدني (金属框)</span>
+              <span class="tag">إطار حائط (挂墙框)</span>
+              <span class="tag">هدية (礼品)</span>
+            </div>
+            <h4 style="font-size: 13px; font-weight: 600; color: #064338; margin-bottom: 12px;">层板核心关键词（阿拉伯语）</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <span class="tag">رف حائط (墙架)</span>
+              <span class="tag">رف عائم (浮动层板)</span>
+              <span class="tag">رف خشبي (木质层板)</span>
+              <span class="tag">تخزين (收纳)</span>
+            </div>
+            <div style="margin-top: 16px; padding: 12px; background: #FFF8DC; border-radius: 8px;">
+              <p style="font-size: 12px; color: #B8860B;"><strong>注意：</strong>2025年阿拉伯语搜索占比已升至 81%，未通过 AI 审核的英语商品流量可能大幅下降。建议使用亚马逊 AI 翻译工具生成阿拉伯语版本，并由母语人士审核。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">中东站 Listing 差异化要点</span>
+          </div>
+          <div class="card-body">
+            <ul class="checklist">
+              <li><span class="check-icon">✓</span><strong>主图场景本地化</strong>：加入中东风格家居场景（暖色调、大理石、金属装饰），避免纯西方风格场景</li>
+              <li><span class="check-icon">✓</span><strong>礼品属性强调</strong>：在标题和五点描述中突出礼品属性，尤其是斋月/开斋节礼品场景</li>
+              <li><span class="check-icon">✓</span><strong>尺寸双制表示</strong>：同时提供英制（inch）和公制（cm）尺寸，中东市场公制更常用</li>
+              <li><span class="check-icon">✓</span><strong>承重数据明确</strong>：层板产品需明确标注承重数据（中东消费者对此高度关注）</li>
+              <li><span class="warn-icon">!</span><strong>避免宗教敏感内容</strong>：画芯展示避免含有宗教敏感图案，人物照片需注意文化适宜性</li>
+              <li><span class="warn-icon">!</span><strong>包装阿拉伯语标注</strong>：产品包装需包含阿拉伯语产品信息（合规要求）</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── 新卖家激励政策 ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">
+          <div class="section-eyebrow-line"></div>
+          <span>New Seller Incentives</span>
+        </div>
+        <h2 class="section-title">新卖家激励政策汇总</h2>
+        <p class="section-subtitle">2024–2025 亚马逊中东站新卖家专属福利</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🇦🇪 阿联酋站激励</span>
+            <span class="badge badge-green">高价值</span>
+          </div>
+          <div class="card-body">
+            <div class="product-row">
+              <span class="product-row-label">品牌所有者奖励</span>
+              <span class="product-row-value" style="color: #064338; font-weight: 600;">175,000 AED</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">奖励形式</span>
+              <span class="product-row-value">推荐费折扣（5%）</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">适用销售额上限</span>
+              <span class="product-row-value">3,500,000 AED</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">广告抵扣券</span>
+              <span class="product-row-value">约 $1,000（3,500 AED）</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">月租费</span>
+              <span class="product-row-value">免费（新卖家）</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">触发条件</span>
+              <span class="product-row-value">2025年7月22日后上架首个 ASIN + 完成品牌注册</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🇸🇦 沙特站激励</span>
+            <span class="badge badge-yellow">标准激励</span>
+          </div>
+          <div class="card-body">
+            <div class="product-row">
+              <span class="product-row-label">佣金抵扣</span>
+              <span class="product-row-value" style="color: #064338; font-weight: 600;">5% 销售佣金减免</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">最高抵扣销售额</span>
+              <span class="product-row-value">约 $1,000,000</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">广告抵扣券</span>
+              <span class="product-row-value">约 $1,000（3,500 SAR）</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">月租费</span>
+              <span class="product-row-value">免费（新卖家）</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">FBA 运费补贴</span>
+              <span class="product-row-value">15% 运费补贴</span>
+            </div>
+            <div class="product-row">
+              <span class="product-row-label">Amazon SEND 返现</span>
+              <span class="product-row-value">首程物流 10% 返现</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── 风险评估 ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">
+          <div class="section-eyebrow-line"></div>
+          <span>Risk Assessment</span>
+        </div>
+        <h2 class="section-title">风险评估与应对策略</h2>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>风险类型</th>
+              <th>风险等级</th>
+              <th>具体风险</th>
+              <th>应对策略</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="td-bold">VAT 合规风险</td>
+              <td><span class="badge badge-red">高</span></td>
+              <td>沙特 2026年1月起代扣 15% VAT，未合规账户可能被冻结</td>
+              <td>优先完成沙特 VAT 注册，委托专业机构代理，利用豁免期（2025年6月30日前）</td>
+            </tr>
+            <tr>
+              <td class="td-bold">语言本地化风险</td>
+              <td><span class="badge badge-red">高</span></td>
+              <td>阿拉伯语搜索占比 81%，英语 listing 流量大幅下降</td>
+              <td>所有 listing 提供阿拉伯语版本，使用亚马逊 AI 翻译 + 人工审核</td>
+            </tr>
+            <tr>
+              <td class="td-bold">库存积压风险</td>
+              <td><span class="badge badge-yellow">中</span></td>
+              <td>中东站为新市场，销量不确定，超龄库存费用高</td>
+              <td>首批少量发货（50–80件/SKU），验证后再加大备货量</td>
+            </tr>
+            <tr>
+              <td class="td-bold">竞争风险</td>
+              <td><span class="badge badge-yellow">中</span></td>
+              <td>IKEA 在层板品类主导，Amazon Basics 在相框品类主导</td>
+              <td>差异化定位（实木/工业风），避开低价区间，主打品质和设计</td>
+            </tr>
+            <tr>
+              <td class="td-bold">文化适应风险</td>
+              <td><span class="badge badge-yellow">中</span></td>
+              <td>产品图片/文案不符合中东文化习惯，影响转化率</td>
+              <td>主图加入中东风格场景，避免宗教敏感内容，强调礼品属性</td>
+            </tr>
+            <tr>
+              <td class="td-bold">物流风险</td>
+              <td><span class="badge badge-green">低</span></td>
+              <td>物流时效已大幅改善（5.8天），但仍有不确定性</td>
+              <td>使用 Amazon SEND，享受 10% 返现，斋月前提前 4–6 周备货</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ── 行动清单 ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-eyebrow">
+          <div class="section-eyebrow-line"></div>
+          <span>Action Plan</span>
+        </div>
+        <h2 class="section-title">行动清单</h2>
+        <p class="section-subtitle">按优先级排序的入场行动步骤</p>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <h4 style="font-size: 14px; font-weight: 600; color: #064338; margin-bottom: 16px;">🔴 立即行动（Month 1）</h4>
+          <ul class="checklist">
+            <li><span class="check-icon">✓</span>开通亚马逊阿联酋站（Amazon.ae）卖家账户</li>
+            <li><span class="check-icon">✓</span>完成品牌注册（触发 175,000 AED 品牌奖励）</li>
+            <li><span class="check-icon">✓</span>委托专业机构启动阿联酋 VAT 注册（或选择保税仓方案）</li>
+            <li><span class="check-icon">✓</span>准备首批 SKU 的阿拉伯语 listing（标题+五点描述）</li>
+            <li><span class="check-icon">✓</span>主图加入中东风格场景图（暖色调、大理石背景）</li>
+            <li><span class="check-icon">✓</span>确认产品包装包含阿拉伯语产品信息</li>
+          </ul>
+        </div>
+        <div>
+          <h4 style="font-size: 14px; font-weight: 600; color: #B8860B; margin-bottom: 16px;">🟡 短期行动（Month 2–3）</h4>
+          <ul class="checklist">
+            <li><span class="warn-icon">!</span>首批发货：实木相框（胡桃木 5x7/8x10）+ 显性层板（24"）</li>
+            <li><span class="warn-icon">!</span>开启 Sponsored Products 广告（利用广告抵扣券）</li>
+            <li><span class="warn-icon">!</span>监控首批销售数据，评估市场反应</li>
+            <li><span class="warn-icon">!</span>启动沙特站 VAT 注册流程（利用豁免期）</li>
+            <li><span class="warn-icon">!</span>准备第二批 SKU（铝框大留白 + 空心层板）</li>
+            <li><span class="warn-icon">!</span>研究斋月营销策略，准备节日专属素材</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="margin-top: 24px;">
+        <div class="alert alert-success">
+          <div class="alert-title">✅ 中长期目标（Month 4–12）</div>
+          <p>① 阿联酋站验证成功后，Month 5–6 扩展至沙特站；② 斋月前（提前 4–6 周）完成全品类备货，冲刺节日销售；③ 逐步建立中东站品牌认知，积累评价（目标：每个 SKU 50+ 评价）；④ 评估是否引入阿拉伯书法/伊斯兰图案相框等本土化产品；⑤ 探索 Noon 平台作为补充渠道。</p>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /body -->
+
+  <!-- ══════════════════════════════════════════
+       FOOTER
+  ══════════════════════════════════════════ -->
+  <div class="footer">
+    <div>
+      <div class="footer-brand">KovaScape</div>
+      <div class="footer-meta">亚马逊中东站市场调研报告 · 2025年5月</div>
+    </div>
+    <div class="footer-right">
+      <div class="footer-note">数据来源：亚马逊官方、Statista、MetricsCart、IndexBox、行业研究报告</div>
+      <div class="footer-note" style="margin-top: 4px;">本报告仅供内部决策参考，市场数据以实际运营数据为准</div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+</body>
+</html>
