@@ -1,0 +1,1025 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>KovaScape Intelligence Ads Diagnostic Suite v6.10</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Serif+SC:wght@600;800&family=Noto+Sans+SC:wght@400;700&display=swap');
+
+      :root {
+        --bg: #03251e; /* Deep Emerald Background */
+        --accent-gold: #F3C546; /* KovaScape Accent Gold */
+        --font-zh: "Noto Serif SC", "Songti SC", serif;
+        --font-en: "Inter", sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+        font-family: var(--font-en);
+      }
+      #stage {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        background: #021713;
+        overflow: hidden;
+      }
+      
+      /* Left half - Card panel (Expanded to full 1920px canvas) */
+      .left-panel {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1920px;
+        height: 1080px;
+        background: var(--bg);
+        overflow: hidden;
+        z-index: 2;
+      }
+
+      /* Cards Styling */
+      .card-host {
+        position: absolute;
+        pointer-events: none;
+        overflow: hidden;
+      }
+      .card {
+        width: 100%;
+        height: 100%;
+      }
+      .card .root {
+        width: 100%;
+        height: 100%;
+        padding: 90px 140px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 15px;
+      }
+      
+      .kicker-wrap {
+        align-self: center; /* Center-aligned kicker */
+      }
+      .kicker {
+        color: var(--accent-gold);
+        font-family: var(--font-en);
+        font-weight: 700;
+        font-size: 18px;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        border-bottom: 2px solid var(--accent-gold);
+        padding-bottom: 6px;
+      }
+      
+      .zh-title-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+        text-align: center;
+      }
+      .zh-line {
+        font-family: var(--font-zh);
+        font-weight: 800;
+        font-size: 44px;
+        line-height: 1.4;
+        color: #ffffff;
+      }
+      .zh-char {
+        display: inline-block;
+      }
+      
+      .divider {
+        width: 100%;
+        max-width: 1300px;
+        margin: 0 auto;
+        height: 2px;
+        background: linear-gradient(90deg, rgba(243, 197, 70, 0.1) 0%, var(--accent-gold) 50%, rgba(243, 197, 70, 0.1) 100%);
+        transform-origin: center center;
+      }
+      
+      .en-sub-wrap {
+        font-family: var(--font-en);
+        font-size: 26px;
+        line-height: 1.5;
+        color: #8c9e9a;
+        max-width: 90%;
+        margin: 0 auto;
+        text-align: center;
+        opacity: 0;
+      }
+      
+      /* Data Visual Common */
+      .data-visual {
+        width: 100%;
+        max-width: 1640px;
+        height: 420px;
+        background: rgba(2, 23, 19, 0.6);
+        border: 1px solid rgba(243, 197, 70, 0.15);
+        border-radius: 8px;
+        position: relative;
+        overflow: hidden;
+        margin: 5px auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+      }
+
+      /* Card 1: Comparison Table */
+      .comparison-table {
+        width: 100%;
+        max-width: 1200px;
+        border-collapse: collapse;
+        font-size: 22px;
+        color: #fff;
+      }
+      .comparison-table th, .comparison-table td {
+        padding: 18px 24px;
+        text-align: left;
+        border-bottom: 1px solid rgba(243, 197, 70, 0.15);
+      }
+      .comparison-table th {
+        color: var(--accent-gold);
+        font-family: var(--font-en);
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 16px;
+        letter-spacing: 0.1em;
+      }
+      .comparison-table td.saas-col {
+        color: #c98888;
+        background: rgba(255, 0, 0, 0.04);
+      }
+      .comparison-table td.kovascape-col {
+        color: #8cdead;
+        background: rgba(6, 67, 56, 0.3);
+        font-weight: 700;
+        border-left: 3px solid var(--accent-gold);
+      }
+      .comparison-table tr.c1-row-1, .comparison-table tr.c1-row-2 {
+        opacity: 0;
+      }
+
+      /* Card 2: Product structure KPI and trend line */
+      .dashboard-mockup {
+        width: 100%;
+        height: 100%;
+        padding: 25px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+      .kpi-row {
+        display: flex;
+        gap: 30px;
+        justify-content: center;
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto 10px auto;
+      }
+      .kpi-card {
+        background: rgba(6, 67, 56, 0.4);
+        border: 1px solid rgba(243, 197, 70, 0.2);
+        padding: 12px 25px;
+        border-radius: 8px;
+        text-align: center;
+        width: 25%;
+        opacity: 0;
+      }
+      .kpi-val {
+        font-size: 24px;
+        font-weight: 700;
+        color: #fff;
+        margin-top: 5px;
+      }
+      .kpi-label {
+        font-size: 12px;
+        color: #8c9e9a;
+        text-transform: uppercase;
+      }
+      .chart-container {
+        width: 100%;
+        height: 220px;
+        position: relative;
+      }
+      .chart-svg {
+        width: 100%;
+        height: 100%;
+      }
+      .chart-line {
+        stroke: var(--accent-gold);
+        stroke-width: 5;
+        fill: none;
+        stroke-dasharray: 1000;
+        stroke-dashoffset: 1000;
+      }
+      .chart-area {
+        fill: url(#chart-grad);
+        opacity: 0;
+      }
+
+      /* Card 3: Local sandbox flow */
+      .sandbox-flow {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        padding: 20px 80px;
+        position: relative;
+      }
+      .flow-node {
+        background: rgba(6, 67, 56, 0.5);
+        border: 2px solid rgba(243, 197, 70, 0.3);
+        border-radius: 8px;
+        padding: 15px 25px;
+        text-align: center;
+        width: 220px;
+        font-size: 18px;
+        color: #fff;
+        z-index: 2;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        opacity: 0;
+      }
+      .flow-node.highlight {
+        border-color: var(--accent-gold);
+        box-shadow: 0 0 15px rgba(243, 197, 70, 0.25);
+      }
+      .flow-arrow {
+        position: relative;
+        width: 220px;
+        height: 4px;
+        background: rgba(243, 197, 70, 0.25);
+        z-index: 1;
+      }
+      .flow-arrow::after {
+        content: '';
+        position: absolute;
+        right: -5px;
+        top: -6px;
+        border-top: 8px solid transparent;
+        border-bottom: 8px solid transparent;
+        border-left: 12px solid rgba(243, 197, 70, 0.5);
+      }
+      .flow-arrow.blocked {
+        background: rgba(255, 0, 0, 0.2);
+      }
+      .flow-arrow.blocked::after {
+        border-left-color: rgba(255, 0, 0, 0.5);
+      }
+      .particle {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        background: var(--accent-gold);
+        border-radius: 50%;
+        top: -2px;
+        left: 0;
+        box-shadow: 0 0 8px var(--accent-gold);
+      }
+      .blocked-stamp {
+        position: absolute;
+        left: 58%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        border: 5px solid #ff4a4a;
+        color: #ff4a4a;
+        font-family: var(--font-en);
+        font-weight: 800;
+        font-size: 20px;
+        padding: 8px 16px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        opacity: 0;
+        z-index: 3;
+        letter-spacing: 0.1em;
+        background: rgba(2, 23, 19, 0.95);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      }
+
+      /* Card 4: Deduplication Funnel */
+      .funnel-container {
+        width: 100%;
+        max-width: 1300px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px 40px;
+      }
+      .rows-source {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 250px;
+      }
+      .data-row-item {
+        background: rgba(255,255,255,0.04);
+        border: 1px dashed rgba(243, 197, 70, 0.25);
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 14px;
+        font-family: var(--font-en);
+        color: #8c9e9a;
+        text-align: center;
+        opacity: 0;
+      }
+      .data-row-item.duplicate {
+        background: rgba(255,0,0,0.04);
+        border-color: rgba(255,0,0,0.25);
+        color: #c98888;
+      }
+      .funnel-icon-wrap {
+        position: relative;
+        width: 150px;
+        height: 150px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .funnel-svg {
+        width: 100px;
+        height: 100px;
+        fill: var(--accent-gold);
+      }
+      .funnel-gear {
+        position: absolute;
+        width: 32px;
+        height: 32px;
+        fill: #8c9e9a;
+        transform-origin: center;
+      }
+      .funnel-gear.g1 { top: 30px; left: 40px; }
+      .funnel-gear.g2 { top: 55px; left: 75px; }
+      .metrics-dest {
+        background: rgba(6, 67, 56, 0.6);
+        border: 2px solid var(--accent-gold);
+        border-radius: 8px;
+        padding: 20px;
+        width: 260px;
+        text-align: center;
+        opacity: 0;
+      }
+
+      /* Card 5: Smart Negation */
+      .negation-visual {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+      .negation-card {
+        background: rgba(255, 0, 0, 0.02);
+        border: 1px solid rgba(255, 0, 0, 0.15);
+        border-radius: 8px;
+        width: 100%;
+        max-width: 1100px;
+        padding: 25px;
+        position: relative;
+        opacity: 0;
+      }
+      .negation-title {
+        color: #ff4a4a;
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 15px;
+        font-family: var(--font-en);
+      }
+      .negation-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+      }
+      .negation-stat {
+        text-align: center;
+      }
+      .negation-stat-val {
+        font-size: 24px;
+        font-weight: 700;
+        color: #ff4a4a;
+      }
+      .negation-stat-lbl {
+        font-size: 12px;
+        color: #8c9e9a;
+        text-transform: uppercase;
+      }
+      .negated-stamp {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border: 5px solid var(--accent-gold);
+        color: var(--accent-gold);
+        font-family: var(--font-en);
+        font-weight: 900;
+        font-size: 26px;
+        padding: 10px 25px;
+        border-radius: 6px;
+        text-transform: uppercase;
+        opacity: 0;
+        background: rgba(3, 37, 30, 0.96);
+        box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+      }
+
+      /* Card 6: Inventory Bar and Bid Cooldown */
+      .inventory-visual {
+        width: 100%;
+        height: 100%;
+        padding: 30px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 25px;
+      }
+      .inv-bar-wrap {
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      .inv-bar-header {
+        display: flex;
+        justify-content: space-between;
+        font-size: 16px;
+        color: #fff;
+        margin-bottom: 8px;
+      }
+      .inv-bar-track {
+        width: 100%;
+        height: 24px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.1);
+      }
+      .inv-bar-fill {
+        height: 100%;
+        width: 100%;
+        background: linear-gradient(90deg, #F3C546 0%, #ff4a4a 100%);
+        border-radius: 12px;
+      }
+      .cooldown-wrap {
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: rgba(6, 67, 56, 0.3);
+        border: 1px solid rgba(243, 197, 70, 0.15);
+        border-radius: 8px;
+        padding: 15px 25px;
+        position: relative;
+        overflow: hidden;
+      }
+      .cooldown-text {
+        font-size: 18px;
+        color: #fff;
+      }
+      .cooldown-val {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--accent-gold);
+      }
+      .ice-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, rgba(140, 222, 237, 0.2) 0%, rgba(140, 222, 237, 0) 100%);
+        border: 2px solid #8cdeed;
+        box-shadow: 0 0 15px rgba(140, 222, 237, 0.4);
+        border-radius: 8px;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* Card 7: National Roadshow timeline */
+      .roadshow-visual {
+        width: 100%;
+        height: 100%;
+        padding: 30px 10px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        position: relative;
+      }
+      .roadshow-line {
+        position: absolute;
+        left: 15%;
+        right: 15%;
+        top: 55%;
+        height: 4px;
+        background: rgba(243, 197, 70, 0.15);
+      }
+      .roadshow-line-fill {
+        height: 100%;
+        width: 0;
+        background: var(--accent-gold);
+      }
+      .roadshow-nodes {
+        display: flex;
+        justify-content: space-between;
+        padding: 0 15%;
+        position: relative;
+        z-index: 2;
+        width: 100%;
+      }
+      .roadshow-node {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        opacity: 0;
+      }
+      .roadshow-pin {
+        font-size: 32px;
+        margin-bottom: 8px;
+        filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5));
+      }
+      .roadshow-city {
+        font-size: 18px;
+        font-weight: 700;
+        color: #fff;
+      }
+      .roadshow-date {
+        font-size: 13px;
+        color: var(--accent-gold);
+        margin-top: 4px;
+      }
+      .rocket-emoji {
+        position: absolute;
+        font-size: 36px;
+        opacity: 0;
+        z-index: 3;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="stage"
+      data-composition-id="ad-panel-intro"
+      data-start="0"
+      data-duration="71.9520"
+      data-fps="30"
+      data-width="1920"
+      data-height="1080"
+    >
+      <!-- Left side: text cards (Expanded to full screen) -->
+      <div class="left-panel">
+
+      <!-- Card card-01 Host -->
+      <div class="card-host clip" data-card-id="card-01" data-start="0.0000" data-duration="10.6560" data-track-index="2" style="left:0;top:0;width:1920px;height:1080px;visibility:hidden;opacity:0;">
+        <div class="card" data-card-id="card-01">
+          <div class="root">
+            <div class="kicker-wrap">
+              <span class="kicker">01 / 行业痛点 · INDUSTRY PAIN POINTS</span>
+            </div>
+            <div class="zh-title-wrap">
+              <div class="zh-line"><span class="zh-char" id="card-01-zh-0">您</span><span class="zh-char" id="card-01-zh-1">是</span><span class="zh-char" id="card-01-zh-2">否</span><span class="zh-char" id="card-01-zh-3">，</span><span class="zh-char" id="card-01-zh-4">厌</span><span class="zh-char" id="card-01-zh-5">倦</span><span class="zh-char" id="card-01-zh-6">了</span><span class="zh-char" id="card-01-zh-7">亚</span><span class="zh-char" id="card-01-zh-8">马</span><span class="zh-char" id="card-01-zh-9">逊</span><span class="zh-char" id="card-01-zh-10">广</span><span class="zh-char" id="card-01-zh-11">告</span><span class="zh-char" id="card-01-zh-12">报</span><span class="zh-char" id="card-01-zh-13">表</span><span class="zh-char" id="card-01-zh-14">，</span><span class="zh-char" id="card-01-zh-15">泄</span><span class="zh-char" id="card-01-zh-16">露</span><span class="zh-char" id="card-01-zh-17">利</span><span class="zh-char" id="card-01-zh-18">润</span><span class="zh-char" id="card-01-zh-19">数</span><span class="zh-char" id="card-01-zh-20">据</span><span class="zh-char" id="card-01-zh-21">？</span></div>
+<div class="zh-line"><span class="zh-char" id="card-01-zh-22">还</span><span class="zh-char" id="card-01-zh-23">是</span><span class="zh-char" id="card-01-zh-24">，</span><span class="zh-char" id="card-01-zh-25">正</span><span class="zh-char" id="card-01-zh-26">在</span><span class="zh-char" id="card-01-zh-27">为</span><span class="zh-char" id="card-01-zh-28">，</span><span class="zh-char" id="card-01-zh-29">广</span><span class="zh-char" id="card-01-zh-30">告</span><span class="zh-char" id="card-01-zh-31">组</span><span class="zh-char" id="card-01-zh-32">合</span><span class="zh-char" id="card-01-zh-33">的</span><span class="zh-char" id="card-01-zh-34">销</span><span class="zh-char" id="card-01-zh-35">售</span><span class="zh-char" id="card-01-zh-36">额</span><span class="zh-char" id="card-01-zh-37">归</span><span class="zh-char" id="card-01-zh-38">因</span><span class="zh-char" id="card-01-zh-39">错</span><span class="zh-char" id="card-01-zh-40">误</span><span class="zh-char" id="card-01-zh-41">，</span><span class="zh-char" id="card-01-zh-42">而</span><span class="zh-char" id="card-01-zh-43">备</span><span class="zh-char" id="card-01-zh-44">受</span><span class="zh-char" id="card-01-zh-45">困</span><span class="zh-char" id="card-01-zh-46">扰</span><span class="zh-char" id="card-01-zh-47">？</span></div>
+            </div>
+            
+            
+            <div class="data-visual">
+              <table class="comparison-table">
+                <thead>
+                  <tr>
+                    <th>安全与归因指标</th>
+                    <th>传统云端 SaaS</th>
+                    <th>KovaScape 本地套件</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="c1-row-1">
+                    <td>数据传输 (Data Flow)</td>
+                    <td class="saas-col">上传三方云 ⚠️ 泄露风险</td>
+                    <td class="kovascape-col">100% 本地运行 🔒 零外流</td>
+                  </tr>
+                  <tr class="c1-row-2">
+                    <td>销售归因 (Attribution)</td>
+                    <td class="saas-col">归因重复 💸 高估 18%</td>
+                    <td class="kovascape-col">去重防污染 🎯 100% 还原</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+    
+            
+            <div class="divider" id="card-01-divider"></div>
+            <div class="en-sub-wrap" id="card-01-en-sub">
+              Are you tired of Amazon ad reports leaking your profit data? Or frustrated by wrong portfolio sales attribution?
+            </div>
+          </div>
+        </div>
+      </div>
+    
+
+      <!-- Card card-02 Host -->
+      <div class="card-host clip" data-card-id="card-02" data-start="10.6560" data-duration="9.0960" data-track-index="2" style="left:0;top:0;width:1920px;height:1080px;visibility:hidden;opacity:0;">
+        <div class="card" data-card-id="card-02">
+          <div class="root">
+            <div class="kicker-wrap">
+              <span class="kicker">02 / 核心产品 · CORE PRODUCT</span>
+            </div>
+            <div class="zh-title-wrap">
+              <div class="zh-line"><span class="zh-char" id="card-02-zh-0">为</span><span class="zh-char" id="card-02-zh-1">您</span><span class="zh-char" id="card-02-zh-2">呈</span><span class="zh-char" id="card-02-zh-3">现</span><span class="zh-char" id="card-02-zh-4">，</span><span class="zh-char" id="card-02-zh-5">K</span><span class="zh-char" id="card-02-zh-6">o</span><span class="zh-char" id="card-02-zh-7">v</span><span class="zh-char" id="card-02-zh-8">a</span><span class="zh-char" id="card-02-zh-9">S</span><span class="zh-char" id="card-02-zh-10">c</span><span class="zh-char" id="card-02-zh-11">a</span><span class="zh-char" id="card-02-zh-12">p</span><span class="zh-char" id="card-02-zh-13">e</span> <span class="zh-char" id="card-02-zh-14">智</span><span class="zh-char" id="card-02-zh-15">能</span><span class="zh-char" id="card-02-zh-16">广</span><span class="zh-char" id="card-02-zh-17">告</span><span class="zh-char" id="card-02-zh-18">诊</span><span class="zh-char" id="card-02-zh-19">断</span><span class="zh-char" id="card-02-zh-20">套</span><span class="zh-char" id="card-02-zh-21">件</span><span class="zh-char" id="card-02-zh-22">。</span></div>
+<div class="zh-line"><span class="zh-char" id="card-02-zh-23">本</span><span class="zh-char" id="card-02-zh-24">地</span><span class="zh-char" id="card-02-zh-25">运</span><span class="zh-char" id="card-02-zh-26">行</span><span class="zh-char" id="card-02-zh-27">、</span><span class="zh-char" id="card-02-zh-28">数</span><span class="zh-char" id="card-02-zh-29">据</span><span class="zh-char" id="card-02-zh-30">安</span><span class="zh-char" id="card-02-zh-31">全</span><span class="zh-char" id="card-02-zh-32">、</span><span class="zh-char" id="card-02-zh-33">精</span><span class="zh-char" id="card-02-zh-34">准</span><span class="zh-char" id="card-02-zh-35">剖</span><span class="zh-char" id="card-02-zh-36">析</span><span class="zh-char" id="card-02-zh-37">的</span><span class="zh-char" id="card-02-zh-38">，</span><span class="zh-char" id="card-02-zh-39">诊</span><span class="zh-char" id="card-02-zh-40">断</span><span class="zh-char" id="card-02-zh-41">面</span><span class="zh-char" id="card-02-zh-42">板</span><span class="zh-char" id="card-02-zh-43">。</span></div>
+            </div>
+            
+            
+            <div class="data-visual">
+              <div class="dashboard-mockup">
+                <div class="kpi-row">
+                  <div class="kpi-card c2-kpi-1">
+                    <div class="kpi-label">ACoS</div>
+                    <div class="kpi-val" style="color:#8cdead;">18.2% 📉</div>
+                  </div>
+                  <div class="kpi-card c2-kpi-2">
+                    <div class="kpi-label">Sales</div>
+                    <div class="kpi-val" style="color:var(--accent-gold);">$24,800 📈</div>
+                  </div>
+                  <div class="kpi-card c2-kpi-3">
+                    <div class="kpi-label">Leak Risk</div>
+                    <div class="kpi-val" style="color:#fff;">0.0% 🛡️</div>
+                  </div>
+                </div>
+                <div class="chart-container">
+                  <svg class="chart-svg" viewBox="0 0 1600 200">
+                    <defs>
+                      <linearGradient id="chart-grad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="var(--accent-gold)" stop-opacity="0.4"></stop>
+                        <stop offset="100%" stop-color="var(--accent-gold)" stop-opacity="0"></stop>
+                      </linearGradient>
+                    </defs>
+                    <path class="chart-line" id="c2-line" d="M 50,180 C 250,150 450,70 650,110 C 850,150 1050,30 1250,60 C 1450,70 1550,15 1600,15"></path>
+                    <path class="chart-area" id="c2-area" d="M 50,180 C 250,150 450,70 650,110 C 850,150 1050,30 1250,60 C 1450,70 1550,15 1600,15 L 1600,200 L 50,200 Z"></path>
+                  </svg>
+                </div>
+              </div>
+            </div>
+    
+            
+            <div class="divider" id="card-02-divider"></div>
+            <div class="en-sub-wrap" id="card-02-en-sub">
+              Introducing KovaScape Intelligence Ads Diagnostic Suite: The local, secure, and precise ads diagnostic panel.
+            </div>
+          </div>
+        </div>
+      </div>
+    
+
+      <!-- Card card-03 Host -->
+      <div class="card-host clip" data-card-id="card-03" data-start="19.7520" data-duration="11.6160" data-track-index="2" style="left:0;top:0;width:1920px;height:1080px;visibility:hidden;opacity:0;">
+        <div class="card" data-card-id="card-03">
+          <div class="root">
+            <div class="kicker-wrap">
+              <span class="kicker">03 / 本地安全 · LOCAL SECURITY</span>
+            </div>
+            <div class="zh-title-wrap">
+              <div class="zh-line"><span class="zh-char" id="card-03-zh-0">与</span><span class="zh-char" id="card-03-zh-1">传</span><span class="zh-char" id="card-03-zh-2">统</span><span class="zh-char" id="card-03-zh-3">云</span><span class="zh-char" id="card-03-zh-4">端</span> <span class="zh-char" id="card-03-zh-5">S</span><span class="zh-char" id="card-03-zh-6">a</span><span class="zh-char" id="card-03-zh-7">a</span><span class="zh-char" id="card-03-zh-8">S</span> <span class="zh-char" id="card-03-zh-9">不</span><span class="zh-char" id="card-03-zh-10">同</span><span class="zh-char" id="card-03-zh-11">，</span><span class="zh-char" id="card-03-zh-12">我</span><span class="zh-char" id="card-03-zh-13">们</span><span class="zh-char" id="card-03-zh-14">的</span><span class="zh-char" id="card-03-zh-15">面</span><span class="zh-char" id="card-03-zh-16">板</span><span class="zh-char" id="card-03-zh-17">在</span><span class="zh-char" id="card-03-zh-18">浏</span><span class="zh-char" id="card-03-zh-19">览</span><span class="zh-char" id="card-03-zh-20">器</span><span class="zh-char" id="card-03-zh-21">中</span><span class="zh-char" id="card-03-zh-22">，</span><span class="zh-char" id="card-03-zh-23">百</span><span class="zh-char" id="card-03-zh-24">分</span><span class="zh-char" id="card-03-zh-25">之</span><span class="zh-char" id="card-03-zh-26">百</span><span class="zh-char" id="card-03-zh-27">本</span><span class="zh-char" id="card-03-zh-28">地</span><span class="zh-char" id="card-03-zh-29">运</span><span class="zh-char" id="card-03-zh-30">行</span><span class="zh-char" id="card-03-zh-31">。</span></div>
+<div class="zh-line"><span class="zh-char" id="card-03-zh-32">您</span><span class="zh-char" id="card-03-zh-33">的</span><span class="zh-char" id="card-03-zh-34">产</span><span class="zh-char" id="card-03-zh-35">品</span><span class="zh-char" id="card-03-zh-36">目</span><span class="zh-char" id="card-03-zh-37">录</span><span class="zh-char" id="card-03-zh-38">、</span><span class="zh-char" id="card-03-zh-39">广</span><span class="zh-char" id="card-03-zh-40">告</span><span class="zh-char" id="card-03-zh-41">成</span><span class="zh-char" id="card-03-zh-42">本</span><span class="zh-char" id="card-03-zh-43">与</span><span class="zh-char" id="card-03-zh-44">利</span><span class="zh-char" id="card-03-zh-45">润</span><span class="zh-char" id="card-03-zh-46">数</span><span class="zh-char" id="card-03-zh-47">据</span><span class="zh-char" id="card-03-zh-48">，</span><span class="zh-char" id="card-03-zh-49">绝</span><span class="zh-char" id="card-03-zh-50">不</span><span class="zh-char" id="card-03-zh-51">上</span><span class="zh-char" id="card-03-zh-52">传</span><span class="zh-char" id="card-03-zh-53">云</span><span class="zh-char" id="card-03-zh-54">端</span><span class="zh-char" id="card-03-zh-55">。</span></div>
+            </div>
+            
+            
+            <div class="data-visual">
+              <div class="sandbox-flow">
+                <div class="flow-node c3-node-1 highlight">💻 本地终端<br><span style="font-size:12px;color:rgba(255,255,255,0.7);">（产品/利润数据）</span></div>
+                <div class="flow-arrow c3-arrow-1">
+                  <div class="particle" id="c3-p1"></div>
+                </div>
+                <div class="flow-node c3-node-2">🛡️ 沙盒浏览器<br><span style="font-size:12px;color:var(--accent-gold);">（100% 隔离）</span></div>
+                <div class="flow-arrow blocked c3-arrow-2">
+                  <div class="particle" id="c3-p2"></div>
+                </div>
+                <div class="flow-node c3-node-3" style="border-color:#ff4a4a;background:rgba(255,0,0,0.05);">🌐 第三方云<br><span style="font-size:12px;color:#ff4a4a;">（上传阻断 🚫）</span></div>
+                <div class="blocked-stamp" id="c3-stamp">🚫 Upload Blocked</div>
+              </div>
+            </div>
+    
+            
+            <div class="divider" id="card-03-divider"></div>
+            <div class="en-sub-wrap" id="card-03-en-sub">
+              Unlike cloud SaaS, our panel runs 100% locally in your browser. Your catalog, cost, and profit data never leave your computer.
+            </div>
+          </div>
+        </div>
+      </div>
+    
+
+      <!-- Card card-04 Host -->
+      <div class="card-host clip" data-card-id="card-04" data-start="31.3680" data-duration="10.5600" data-track-index="2" style="left:0;top:0;width:1920px;height:1080px;visibility:hidden;opacity:0;">
+        <div class="card" data-card-id="card-04">
+          <div class="root">
+            <div class="kicker-wrap">
+              <span class="kicker">04 / 技术突破 · TECH BREAKTHROUGH</span>
+            </div>
+            <div class="zh-title-wrap">
+              <div class="zh-line"><span class="zh-char" id="card-04-zh-0">全</span><span class="zh-char" id="card-04-zh-1">新</span><span class="zh-char" id="card-04-zh-2">升</span><span class="zh-char" id="card-04-zh-3">级</span><span class="zh-char" id="card-04-zh-4">的</span> <span class="zh-char" id="card-04-zh-5">v</span><span class="zh-char" id="card-04-zh-6">6</span><span class="zh-char" id="card-04-zh-7">.</span><span class="zh-char" id="card-04-zh-8">1</span><span class="zh-char" id="card-04-zh-9">0</span><span class="zh-char" id="card-04-zh-10">，</span><span class="zh-char" id="card-04-zh-11">拥</span><span class="zh-char" id="card-04-zh-12">有</span><span class="zh-char" id="card-04-zh-13">最</span><span class="zh-char" id="card-04-zh-14">前</span><span class="zh-char" id="card-04-zh-15">沿</span><span class="zh-char" id="card-04-zh-16">的</span><span class="zh-char" id="card-04-zh-17">，</span><span class="zh-char" id="card-04-zh-18">防</span><span class="zh-char" id="card-04-zh-19">污</span><span class="zh-char" id="card-04-zh-20">染</span><span class="zh-char" id="card-04-zh-21">映</span><span class="zh-char" id="card-04-zh-22">射</span><span class="zh-char" id="card-04-zh-23">逻</span><span class="zh-char" id="card-04-zh-24">辑</span><span class="zh-char" id="card-04-zh-25">。</span></div>
+<div class="zh-line"><span class="zh-char" id="card-04-zh-26">彻</span><span class="zh-char" id="card-04-zh-27">底</span><span class="zh-char" id="card-04-zh-28">消</span><span class="zh-char" id="card-04-zh-29">除</span><span class="zh-char" id="card-04-zh-30">重</span><span class="zh-char" id="card-04-zh-31">复</span><span class="zh-char" id="card-04-zh-32">数</span><span class="zh-char" id="card-04-zh-33">据</span><span class="zh-char" id="card-04-zh-34">行</span><span class="zh-char" id="card-04-zh-35">，</span><span class="zh-char" id="card-04-zh-36">还</span><span class="zh-char" id="card-04-zh-37">原</span><span class="zh-char" id="card-04-zh-38">最</span><span class="zh-char" id="card-04-zh-39">真</span><span class="zh-char" id="card-04-zh-40">实</span><span class="zh-char" id="card-04-zh-41">的</span><span class="zh-char" id="card-04-zh-42">，</span><span class="zh-char" id="card-04-zh-43">运</span><span class="zh-char" id="card-04-zh-44">营</span><span class="zh-char" id="card-04-zh-45">指</span><span class="zh-char" id="card-04-zh-46">标</span><span class="zh-char" id="card-04-zh-47">。</span></div>
+            </div>
+            
+            
+            <div class="data-visual">
+              <div class="funnel-container">
+                <div class="rows-source">
+                  <div class="data-row-item c4-row-1">Row 1: Normal ad click</div>
+                  <div class="data-row-item duplicate c4-row-2">Row 2: Duplicate ⚠️</div>
+                  <div class="data-row-item c4-row-3">Row 3: Normal conversion</div>
+                  <div class="data-row-item duplicate c4-row-4">Row 4: Duplicate ⚠️</div>
+                </div>
+                <div class="funnel-icon-wrap">
+                  <svg class="funnel-svg" viewBox="0 0 24 24">
+                    <path d="M10 20h4v-6h6V4H4v10h6z"></path>
+                  </svg>
+                  <svg class="funnel-gear g1" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                  <svg class="funnel-gear g2" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                </div>
+                <div class="metrics-dest" id="c4-metrics">
+                  <div style="font-size:12px;color:#8c9e9a;">100% 净指标还原</div>
+                  <div style="font-size:28px;font-weight:800;color:var(--accent-gold);margin-top:10px;">True ACoS: 12.8%</div>
+                  <div style="font-size:13px;color:#8cdead;margin-top:5px;">✓ 去除重复行: 2行</div>
+                </div>
+              </div>
+            </div>
+    
+            
+            <div class="divider" id="card-04-divider"></div>
+            <div class="en-sub-wrap" id="card-04-en-sub">
+              Our newly updated v6.10 features state-of-the-art anti-pollution mapping logic. No more duplicate rows corrupting your metrics.
+            </div>
+          </div>
+        </div>
+      </div>
+    
+
+      <!-- Card card-05 Host -->
+      <div class="card-host clip" data-card-id="card-05" data-start="41.9280" data-duration="9.3840" data-track-index="2" style="left:0;top:0;width:1920px;height:1080px;visibility:hidden;opacity:0;">
+        <div class="card" data-card-id="card-05">
+          <div class="root">
+            <div class="kicker-wrap">
+              <span class="kicker">05 / 智能止损 · SMART PROTECTION</span>
+            </div>
+            <div class="zh-title-wrap">
+              <div class="zh-line"><span class="zh-char" id="card-05-zh-0">支</span><span class="zh-char" id="card-05-zh-1">持</span><span class="zh-char" id="card-05-zh-2">精</span><span class="zh-char" id="card-05-zh-3">准</span><span class="zh-char" id="card-05-zh-4">的</span><span class="zh-char" id="card-05-zh-5">，</span><span class="zh-char" id="card-05-zh-6">C</span><span class="zh-char" id="card-05-zh-7">P</span><span class="zh-char" id="card-05-zh-8">A</span> <span class="zh-char" id="card-05-zh-9">目</span><span class="zh-char" id="card-05-zh-10">标</span><span class="zh-char" id="card-05-zh-11">否</span><span class="zh-char" id="card-05-zh-12">定</span><span class="zh-char" id="card-05-zh-13">，</span><span class="zh-char" id="card-05-zh-14">以</span><span class="zh-char" id="card-05-zh-15">及</span><span class="zh-char" id="card-05-zh-16">低</span><span class="zh-char" id="card-05-zh-17">点</span><span class="zh-char" id="card-05-zh-18">击</span><span class="zh-char" id="card-05-zh-19">率</span><span class="zh-char" id="card-05-zh-20">早</span><span class="zh-char" id="card-05-zh-21">期</span><span class="zh-char" id="card-05-zh-22">否</span><span class="zh-char" id="card-05-zh-23">定</span><span class="zh-char" id="card-05-zh-24">。</span></div>
+<div class="zh-line"><span class="zh-char" id="card-05-zh-25">在</span><span class="zh-char" id="card-05-zh-26">广</span><span class="zh-char" id="card-05-zh-27">告</span><span class="zh-char" id="card-05-zh-28">预</span><span class="zh-char" id="card-05-zh-29">算</span><span class="zh-char" id="card-05-zh-30">流</span><span class="zh-char" id="card-05-zh-31">失</span><span class="zh-char" id="card-05-zh-32">之</span><span class="zh-char" id="card-05-zh-33">前</span><span class="zh-char" id="card-05-zh-34">，</span><span class="zh-char" id="card-05-zh-35">为</span><span class="zh-char" id="card-05-zh-36">您</span><span class="zh-char" id="card-05-zh-37">及</span><span class="zh-char" id="card-05-zh-38">时</span><span class="zh-char" id="card-05-zh-39">止</span><span class="zh-char" id="card-05-zh-40">损</span><span class="zh-char" id="card-05-zh-41">。</span></div>
+            </div>
+            
+            
+            <div class="data-visual">
+              <div class="negation-visual">
+                <div class="negation-card">
+                  <div class="negation-title">⚠️ CPA Alert: Keyword "cheap photo frames"</div>
+                  <div class="negation-grid">
+                    <div class="negation-stat">
+                      <div class="negation-stat-lbl">Clicks</div>
+                      <div class="negation-stat-val" style="color:#ff4a4a;">28</div>
+                    </div>
+                    <div class="negation-stat">
+                      <div class="negation-stat-lbl">CTR</div>
+                      <div class="negation-stat-val" style="color:#ff4a4a;">0.8%</div>
+                    </div>
+                    <div class="negation-stat">
+                      <div class="negation-stat-lbl">Orders</div>
+                      <div class="negation-stat-val" style="color:#ff4a4a;">0</div>
+                    </div>
+                  </div>
+                  <div class="negated-stamp" id="c5-stamp">🚫 Auto Negated</div>
+                </div>
+              </div>
+            </div>
+    
+            
+            <div class="divider" id="card-05-divider"></div>
+            <div class="en-sub-wrap" id="card-05-en-sub">
+              With precise CPA target negation, and low-CTR early negation, we cut your ad budget bleed before it's too late.
+            </div>
+          </div>
+        </div>
+      </div>
+    
+
+      <!-- Card card-06 Host -->
+      <div class="card-host clip" data-card-id="card-06" data-start="51.3120" data-duration="10.6560" data-track-index="2" style="left:0;top:0;width:1920px;height:1080px;visibility:hidden;opacity:0;">
+        <div class="card" data-card-id="card-06">
+          <div class="root">
+            <div class="kicker-wrap">
+              <span class="kicker">06 / 库存协同 · INVENTORY SYNC</span>
+            </div>
+            <div class="zh-title-wrap">
+              <div class="zh-line"><span class="zh-char" id="card-06-zh-0">深</span><span class="zh-char" id="card-06-zh-1">度</span><span class="zh-char" id="card-06-zh-2">对</span><span class="zh-char" id="card-06-zh-3">接</span> <span class="zh-char" id="card-06-zh-4">F</span><span class="zh-char" id="card-06-zh-5">B</span><span class="zh-char" id="card-06-zh-6">A</span> <span class="zh-char" id="card-06-zh-7">库</span><span class="zh-char" id="card-06-zh-8">存</span><span class="zh-char" id="card-06-zh-9">。</span></div>
+<div class="zh-line"><span class="zh-char" id="card-06-zh-10">当</span><span class="zh-char" id="card-06-zh-11">可</span><span class="zh-char" id="card-06-zh-12">售</span><span class="zh-char" id="card-06-zh-13">库</span><span class="zh-char" id="card-06-zh-14">存</span><span class="zh-char" id="card-06-zh-15">低</span><span class="zh-char" id="card-06-zh-16">于</span><span class="zh-char" id="card-06-zh-17">三</span><span class="zh-char" id="card-06-zh-18">十</span><span class="zh-char" id="card-06-zh-19">天</span><span class="zh-char" id="card-06-zh-20">时</span><span class="zh-char" id="card-06-zh-21">，</span><span class="zh-char" id="card-06-zh-22">自</span><span class="zh-char" id="card-06-zh-23">动</span><span class="zh-char" id="card-06-zh-24">触</span><span class="zh-char" id="card-06-zh-25">发</span><span class="zh-char" id="card-06-zh-26">保</span><span class="zh-char" id="card-06-zh-27">护</span><span class="zh-char" id="card-06-zh-28">性</span><span class="zh-char" id="card-06-zh-29">竞</span><span class="zh-char" id="card-06-zh-30">价</span><span class="zh-char" id="card-06-zh-31">冷</span><span class="zh-char" id="card-06-zh-32">却</span><span class="zh-char" id="card-06-zh-33">，</span><span class="zh-char" id="card-06-zh-34">从</span><span class="zh-char" id="card-06-zh-35">根</span><span class="zh-char" id="card-06-zh-36">本</span><span class="zh-char" id="card-06-zh-37">上</span><span class="zh-char" id="card-06-zh-38">防</span><span class="zh-char" id="card-06-zh-39">止</span><span class="zh-char" id="card-06-zh-40">爆</span><span class="zh-char" id="card-06-zh-41">单</span><span class="zh-char" id="card-06-zh-42">断</span><span class="zh-char" id="card-06-zh-43">货</span><span class="zh-char" id="card-06-zh-44">。</span></div>
+            </div>
+            
+            
+            <div class="data-visual">
+              <div class="inventory-visual">
+                <div class="inv-bar-wrap">
+                  <div class="inv-bar-header">
+                    <span>📦 FBA 可售库存天数 (Days of Stock)</span>
+                    <span id="c6-stock-days" style="font-weight:700;color:#ff4a4a;">15天</span>
+                  </div>
+                  <div class="inv-bar-track">
+                    <div class="inv-bar-fill" id="c6-bar"></div>
+                  </div>
+                </div>
+                <div class="cooldown-wrap" id="c6-cooldown-box">
+                  <div class="cooldown-text">
+                    🔒 保护性竞价冷却触发：<span style="font-weight:700;text-decoration:line-through;color:#c98888;">$2.50</span> → 
+                  </div>
+                  <div class="cooldown-val" id="c6-bid-val">$0.80</div>
+                  <div class="ice-overlay" id="c6-ice"></div>
+                </div>
+              </div>
+            </div>
+    
+            
+            <div class="divider" id="card-06-divider"></div>
+            <div class="en-sub-wrap" id="card-06-en-sub">
+              Plus, it automatically syncs with FBA inventory. Under 30 days of stock triggers a protective bid cooldown to prevent stockouts.
+            </div>
+          </div>
+        </div>
+      </div>
+    
+
+      <!-- Card card-07 Host -->
+      <div class="card-host clip" data-card-id="card-07" data-start="61.9680" data-duration="9.9840" data-track-index="2" style="left:0;top:0;width:1920px;height:1080px;visibility:hidden;opacity:0;">
+        <div class="card" data-card-id="card-07">
+          <div class="root">
+            <div class="kicker-wrap">
+              <span class="kicker">07 / 路演启航 · NATIONAL ROADSHOW</span>
+            </div>
+            <div class="zh-title-wrap">
+              <div class="zh-line"><span class="zh-char" id="card-07-zh-0">安</span><span class="zh-char" id="card-07-zh-1">全</span><span class="zh-char" id="card-07-zh-2">、</span><span class="zh-char" id="card-07-zh-3">精</span><span class="zh-char" id="card-07-zh-4">准</span><span class="zh-char" id="card-07-zh-5">，</span><span class="zh-char" id="card-07-zh-6">专</span><span class="zh-char" id="card-07-zh-7">为</span><span class="zh-char" id="card-07-zh-8">专</span><span class="zh-char" id="card-07-zh-9">业</span><span class="zh-char" id="card-07-zh-10">亚</span><span class="zh-char" id="card-07-zh-11">马</span><span class="zh-char" id="card-07-zh-12">逊</span><span class="zh-char" id="card-07-zh-13">卖</span><span class="zh-char" id="card-07-zh-14">家</span><span class="zh-char" id="card-07-zh-15">量</span><span class="zh-char" id="card-07-zh-16">身</span><span class="zh-char" id="card-07-zh-17">打</span><span class="zh-char" id="card-07-zh-18">造</span><span class="zh-char" id="card-07-zh-19">。</span></div>
+<div class="zh-line"><span class="zh-char" id="card-07-zh-20">立</span><span class="zh-char" id="card-07-zh-21">即</span><span class="zh-char" id="card-07-zh-22">掌</span><span class="zh-char" id="card-07-zh-23">控</span><span class="zh-char" id="card-07-zh-24">您</span><span class="zh-char" id="card-07-zh-25">的</span><span class="zh-char" id="card-07-zh-26">广</span><span class="zh-char" id="card-07-zh-27">告</span><span class="zh-char" id="card-07-zh-28">主</span><span class="zh-char" id="card-07-zh-29">权</span><span class="zh-char" id="card-07-zh-30">，</span><span class="zh-char" id="card-07-zh-31">欢</span><span class="zh-char" id="card-07-zh-32">迎</span><span class="zh-char" id="card-07-zh-33">莅</span><span class="zh-char" id="card-07-zh-34">临</span><span class="zh-char" id="card-07-zh-35">，</span><span class="zh-char" id="card-07-zh-36">我</span><span class="zh-char" id="card-07-zh-37">们</span><span class="zh-char" id="card-07-zh-38">的</span><span class="zh-char" id="card-07-zh-39">全</span><span class="zh-char" id="card-07-zh-40">国</span><span class="zh-char" id="card-07-zh-41">路</span><span class="zh-char" id="card-07-zh-42">演</span><span class="zh-char" id="card-07-zh-43">！</span></div>
+            </div>
+            
+            
+            <div class="data-visual">
+              <div class="roadshow-visual">
+                <div class="roadshow-line">
+                  <div class="roadshow-line-fill" id="c7-line-fill"></div>
+                </div>
+                <div class="roadshow-nodes">
+                  <div class="roadshow-node c7-node-1">
+                    <span class="roadshow-pin">📍</span>
+                    <span class="roadshow-city">深圳</span>
+                    <span class="roadshow-date">07.10</span>
+                  </div>
+                  <div class="roadshow-node c7-node-2">
+                    <span class="roadshow-pin">📍</span>
+                    <span class="roadshow-city">义乌</span>
+                    <span class="roadshow-date">07.15</span>
+                  </div>
+                  <div class="roadshow-node c7-node-3">
+                    <span class="roadshow-pin">📍</span>
+                    <span class="roadshow-city">宁波</span>
+                    <span class="roadshow-date">07.20</span>
+                  </div>
+                </div>
+                <div class="rocket-emoji" id="c7-rocket">🚀</div>
+              </div>
+            </div>
+    
+            
+            <div class="divider" id="card-07-divider"></div>
+            <div class="en-sub-wrap" id="card-07-en-sub">
+              Secure, precise, and built for professional sellers. Take control of your Amazon Ads now and join our national roadshow!
+            </div>
+          </div>
+        </div>
+      </div>
+    
+      </div>
+
+      <!-- Audio track -->
+      <audio
+        id="voiceover"
+        src="audio.wav"
+        data-start="0"
+        data-duration="71.9520"
+        data-track-index="1"
+      ></audio>
+
+      <script src="vendor/gsap.min.js"></script>
+      <script>
+        (function () {
+          const tl = window.gsap.timeline({ paused: true });
+
+          // --- card-01 Lifecycle ---
+          tl.set('.card-host[data-card-id="card-01"]', { visibility: "visible" }, 0.000);
+          tl.fromTo('.card-host[data-card-id="card-01"]', { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 0.000);
+          tl.fromTo('.card[data-card-id="card-01"] .zh-char', { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.3, stagger: 0.04, ease: "back.out(1.5)" }, 0.300);
+          tl.fromTo('.card[data-card-id="card-01"] #card-01-divider', { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power2.out" }, 0.500);
+          tl.fromTo('.card[data-card-id="card-01"] .en-sub-wrap', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 0.400);
+          tl.fromTo('.card[data-card-id="card-01"] .c1-row-1', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 1.800);
+          tl.fromTo('.card[data-card-id="card-01"] .c1-row-2', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 2.500);
+          tl.to('.card-host[data-card-id="card-01"]', { opacity: 0, duration: 0.3, ease: "power2.in" }, 10.356);
+          tl.set('.card-host[data-card-id="card-01"]', { visibility: "hidden" }, 10.656);
+
+          // --- card-02 Lifecycle ---
+          tl.set('.card-host[data-card-id="card-02"]', { visibility: "visible" }, 10.656);
+          tl.fromTo('.card-host[data-card-id="card-02"]', { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 10.656);
+          tl.fromTo('.card[data-card-id="card-02"] .zh-char', { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.3, stagger: 0.04, ease: "back.out(1.5)" }, 10.956);
+          tl.fromTo('.card[data-card-id="card-02"] #card-02-divider', { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power2.out" }, 11.156);
+          tl.fromTo('.card[data-card-id="card-02"] .en-sub-wrap', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 11.056);
+          tl.fromTo('.card[data-card-id="card-02"] .c2-kpi-1', { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out" }, 12.456);
+          tl.fromTo('.card[data-card-id="card-02"] .c2-kpi-2', { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out" }, 12.756);
+          tl.fromTo('.card[data-card-id="card-02"] .c2-kpi-3', { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out" }, 13.056);
+          tl.fromTo('.card[data-card-id="card-02"] #c2-line', { strokeDashoffset: 1000 }, { strokeDashoffset: 0, duration: 2.0, ease: "power2.out" }, 12.156);
+          tl.fromTo('.card[data-card-id="card-02"] #c2-area', { opacity: 0 }, { opacity: 0.15, duration: 1.0 }, 13.156);
+          tl.to('.card-host[data-card-id="card-02"]', { opacity: 0, duration: 0.3, ease: "power2.in" }, 19.452);
+          tl.set('.card-host[data-card-id="card-02"]', { visibility: "hidden" }, 19.752);
+
+          // --- card-03 Lifecycle ---
+          tl.set('.card-host[data-card-id="card-03"]', { visibility: "visible" }, 19.752);
+          tl.fromTo('.card-host[data-card-id="card-03"]', { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 19.752);
+          tl.fromTo('.card[data-card-id="card-03"] .zh-char', { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.3, stagger: 0.04, ease: "back.out(1.5)" }, 20.052);
+          tl.fromTo('.card[data-card-id="card-03"] #card-03-divider', { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power2.out" }, 20.252);
+          tl.fromTo('.card[data-card-id="card-03"] .en-sub-wrap', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 20.152);
+          tl.fromTo('.card[data-card-id="card-03"] .c3-node-1', { opacity: 0 }, { opacity: 1, duration: 0.4 }, 20.952);
+          tl.fromTo('.card[data-card-id="card-03"] .c3-node-2', { opacity: 0 }, { opacity: 1, duration: 0.4 }, 21.752);
+          tl.fromTo('.card[data-card-id="card-03"] .c3-node-3', { opacity: 0 }, { opacity: 1, duration: 0.4 }, 23.552);
+          tl.fromTo('.card[data-card-id="card-03"] #c3-p1', { left: 0 }, { left: "240px", duration: 1.0, repeat: 2 }, 21.252);
+          tl.fromTo('.card[data-card-id="card-03"] #c3-p2', { left: 0, opacity: 1 }, { left: "100px", opacity: 0, duration: 0.5, ease: "power1.out" }, 22.552);
+          tl.fromTo('.card[data-card-id="card-03"] #c3-stamp', { scale: 3, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "bounce.out" }, 22.952);
+          tl.to('.card-host[data-card-id="card-03"]', { opacity: 0, duration: 0.3, ease: "power2.in" }, 31.068);
+          tl.set('.card-host[data-card-id="card-03"]', { visibility: "hidden" }, 31.368);
+
+          // --- card-04 Lifecycle ---
+          tl.set('.card-host[data-card-id="card-04"]', { visibility: "visible" }, 31.368);
+          tl.fromTo('.card-host[data-card-id="card-04"]', { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 31.368);
+          tl.fromTo('.card[data-card-id="card-04"] .zh-char', { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.3, stagger: 0.04, ease: "back.out(1.5)" }, 31.668);
+          tl.fromTo('.card[data-card-id="card-04"] #card-04-divider', { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power2.out" }, 31.868);
+          tl.fromTo('.card[data-card-id="card-04"] .en-sub-wrap', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 31.768);
+          tl.fromTo('.card[data-card-id="card-04"] .c4-row-1', { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.3 }, 32.368);
+          tl.fromTo('.card[data-card-id="card-04"] .c4-row-2', { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.3 }, 32.668);
+          tl.fromTo('.card[data-card-id="card-04"] .c4-row-3', { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.3 }, 32.968);
+          tl.fromTo('.card[data-card-id="card-04"] .c4-row-4', { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.3 }, 33.268);
+          tl.to('.card[data-card-id="card-04"] .duplicate', { y: 60, opacity: 0, duration: 0.5 }, 33.868);
+          tl.to('.card[data-card-id="card-04"] .funnel-gear.g1', { rotation: 360, duration: 1.5, ease: "none" }, 33.568);
+          tl.to('.card[data-card-id="card-04"] .funnel-gear.g2', { rotation: -360, duration: 1.5, ease: "none" }, 33.568);
+          tl.fromTo('.card[data-card-id="card-04"] #c4-metrics', { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out" }, 34.868);
+          tl.to('.card-host[data-card-id="card-04"]', { opacity: 0, duration: 0.3, ease: "power2.in" }, 41.628);
+          tl.set('.card-host[data-card-id="card-04"]', { visibility: "hidden" }, 41.928);
+
+          // --- card-05 Lifecycle ---
+          tl.set('.card-host[data-card-id="card-05"]', { visibility: "visible" }, 41.928);
+          tl.fromTo('.card-host[data-card-id="card-05"]', { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 41.928);
+          tl.fromTo('.card[data-card-id="card-05"] .zh-char', { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.3, stagger: 0.04, ease: "back.out(1.5)" }, 42.228);
+          tl.fromTo('.card[data-card-id="card-05"] #card-05-divider', { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power2.out" }, 42.428);
+          tl.fromTo('.card[data-card-id="card-05"] .en-sub-wrap', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 42.328);
+          tl.fromTo('.card[data-card-id="card-05"] .negation-card', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5 }, 43.128);
+          tl.fromTo('.card[data-card-id="card-05"] .negation-card', { borderColor: "rgba(255,0,0,0.2)" }, { borderColor: "rgba(255,0,0,0.8)", repeat: 3, yoyo: true, duration: 0.3 }, 43.428);
+          tl.fromTo('.card[data-card-id="card-05"] #c5-stamp', { scale: 4, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.4, ease: "bounce.out" }, 44.428);
+          tl.to('.card-host[data-card-id="card-05"]', { opacity: 0, duration: 0.3, ease: "power2.in" }, 51.012);
+          tl.set('.card-host[data-card-id="card-05"]', { visibility: "hidden" }, 51.312);
+
+          // --- card-06 Lifecycle ---
+          tl.set('.card-host[data-card-id="card-06"]', { visibility: "visible" }, 51.312);
+          tl.fromTo('.card-host[data-card-id="card-06"]', { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 51.312);
+          tl.fromTo('.card[data-card-id="card-06"] .zh-char', { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.3, stagger: 0.04, ease: "back.out(1.5)" }, 51.612);
+          tl.fromTo('.card[data-card-id="card-06"] #card-06-divider', { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power2.out" }, 51.812);
+          tl.fromTo('.card[data-card-id="card-06"] .en-sub-wrap', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 51.712);
+          tl.fromTo('.card[data-card-id="card-06"] #c6-bar', { width: "100%" }, { width: "33%", duration: 1.8, ease: "power2.out" }, 52.512);
+          tl.fromTo('.card[data-card-id="card-06"] #c6-ice', { opacity: 0 }, { opacity: 1, duration: 0.5 }, 54.112);
+          tl.fromTo('.card[data-card-id="card-06"] #c6-bid-val', { scale: 1 }, { scale: 1.2, color: "#8cdeed", duration: 0.3, yoyo: true, repeat: 1 }, 54.412);
+          tl.to('.card-host[data-card-id="card-06"]', { opacity: 0, duration: 0.3, ease: "power2.in" }, 61.668);
+          tl.set('.card-host[data-card-id="card-06"]', { visibility: "hidden" }, 61.968);
+
+          // --- card-07 Lifecycle ---
+          tl.set('.card-host[data-card-id="card-07"]', { visibility: "visible" }, 61.968);
+          tl.fromTo('.card-host[data-card-id="card-07"]', { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power2.out" }, 61.968);
+          tl.fromTo('.card[data-card-id="card-07"] .zh-char', { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.3, stagger: 0.04, ease: "back.out(1.5)" }, 62.268);
+          tl.fromTo('.card[data-card-id="card-07"] #card-07-divider', { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power2.out" }, 62.468);
+          tl.fromTo('.card[data-card-id="card-07"] .en-sub-wrap', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 62.368);
+          tl.fromTo('.card[data-card-id="card-07"] #c7-line-fill', { width: 0 }, { width: "100%", duration: 2.0, ease: "power1.inOut" }, 63.168);
+          tl.fromTo('.card[data-card-id="card-07"] .c7-node-1', { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out" }, 63.468);
+          tl.fromTo('.card[data-card-id="card-07"] .c7-node-2', { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out" }, 64.168);
+          tl.fromTo('.card[data-card-id="card-07"] .c7-node-3', { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out" }, 64.868);
+          tl.fromTo('.card[data-card-id="card-07"] #c7-rocket', { left: "15%", top: "60%", opacity: 0 }, { left: "85%", top: "35%", opacity: 1, duration: 2.5, ease: "sine.inOut" }, 63.168);
+          tl.to('.card-host[data-card-id="card-07"]', { opacity: 0, duration: 0.3, ease: "power2.in" }, 71.652);
+          tl.set('.card-host[data-card-id="card-07"]', { visibility: "hidden" }, 71.952);
+
+
+          window.__timelines = window.__timelines || {};
+          window.__timelines["ad-panel-intro"] = tl;
+        })();
+      </script>
+    </div>
+  </body>
+</html>

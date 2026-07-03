@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KovaScape 独立站 30天流量提升行动计划</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --forest: #064338;
+  --gold: #F3C546;
+  --deep-green: #042E25;
+  --warm-white: #FDFCF9;
+  --light-cream: #FDF9F2;
+  --light-green: #E8F2F0;
+  --light-gold: #FFF8DC;
+  --text-dark: #1D1B20;
+  --text-body: #3D3D3D;
+  --text-secondary: #717171;
+  --border: #E8E4DE;
+  --divider: #F0EDE8;
+  --success-bg: #E8F2F0;
+  --success-fg: #064338;
+  --warning-bg: #FFF8DC;
+  --warning-fg: #B8860B;
+  --danger-bg: #FDECEA;
+  --danger-fg: #C4433A;
+  --info-bg: #FDF9F2;
+  --info-fg: #7C746F;
+}
+
+body {
+  background: #F0EDE8;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  color: var(--text-body);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  background: var(--warm-white);
+  border-radius: 40px;
+  overflow: hidden;
+  box-shadow: 0 4px 40px rgba(0,0,0,0.06);
+}
+
+/* HERO */
+.hero {
+  background: var(--forest);
+  padding: 56px 56px 48px;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -80px; right: -60px;
+  width: 320px; height: 320px;
+  border: 1.5px solid rgba(243,197,70,0.15);
+  border-radius: 48% 52% 61% 39% / 43% 57% 43% 57%;
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: -40px; left: 10%;
+  width: 200px; height: 200px;
+  border: 1px solid rgba(243,197,70,0.1);
+  border-radius: 56% 44% 43% 57% / 39% 51% 49% 61%;
+}
+.hero-blob-3 {
+  position: absolute;
+  top: 30%; left: 60%;
+  width: 140px; height: 140px;
+  border: 1px solid rgba(243,197,70,0.12);
+  border-radius: 44% 56% 57% 43% / 52% 43% 57% 48%;
+}
+.hero-blob-4 {
+  position: absolute;
+  top: 45%; left: -2%;
+  width: 100px; height: 100px;
+  border: 1px solid rgba(243,197,70,0.08);
+  border-radius: 60% 40% 41% 59% / 51% 55% 45% 49%;
+}
+.hero-eyebrow {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 20px; position: relative; z-index: 1;
+}
+.hero-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--gold);
+}
+.hero-eyebrow span {
+  font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.7);
+  text-transform: uppercase; letter-spacing: 1.5px;
+}
+.hero-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 46px; font-weight: 500; color: #FFF;
+  letter-spacing: -0.01em; line-height: 1.15;
+  position: relative; z-index: 1;
+}
+.hero-subtitle {
+  color: rgba(255,255,255,0.7); font-size: 15px; margin-top: 12px;
+  position: relative; z-index: 1; max-width: 620px;
+}
+.hero-metrics {
+  display: flex; gap: 48px; margin-top: 36px;
+  padding-top: 28px;
+  border-top: 0.6px solid rgba(243,197,70,0.35);
+  position: relative; z-index: 1;
+}
+.hero-metric-item { display: flex; flex-direction: column; gap: 2px; }
+.hero-metric-value { font-family: 'Playfair Display', serif; font-size: 40px; font-weight: 600; color: var(--gold); line-height: 1; }
+.hero-metric-label { font-size: 12px; color: rgba(255,255,255,0.55); letter-spacing: 0.5px; }
+.hero-metric-arrow { color: var(--gold); font-size: 20px; margin-left: 4px; }
+
+/* CONTENT */
+.content { padding: 48px 56px; }
+
+/* SECTION */
+.section { margin-bottom: 48px; }
+.section:last-child { margin-bottom: 0; }
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 24px; font-weight: 500; color: var(--text-dark);
+  margin-bottom: 6px;
+}
+.section-subtitle {
+  font-size: 14px; color: var(--text-secondary); margin-bottom: 24px;
+}
+.section-divider {
+  width: 100%; height: 0.5px; background: var(--border);
+  margin-bottom: 28px;
+}
+.section-divider-gold {
+  width: 48px; height: 3px; background: var(--gold);
+  border-radius: 2px; margin-bottom: 24px;
+}
+
+/* ALERT */
+.alert {
+  border-radius: 12px; padding: 20px 24px; margin-bottom: 20px;
+  border-left: 4px solid;
+}
+.alert-success { background: var(--success-bg); border-left-color: var(--forest); }
+.alert-warning { background: var(--warning-bg); border-left-color: var(--gold); }
+.alert-danger { background: var(--danger-bg); border-left-color: var(--danger-fg); }
+.alert-info { background: var(--info-bg); border-left-color: var(--info-fg); }
+.alert-title { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+.alert-success .alert-title { color: var(--success-fg); }
+.alert-warning .alert-title { color: var(--warning-fg); }
+.alert-danger .alert-title { color: var(--danger-fg); }
+.alert-info .alert-title { color: var(--text-dark); }
+
+/* CARD */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.card-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.card {
+  border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+  background: var(--warm-white); transition: box-shadow 0.2s;
+}
+.card:hover { box-shadow: 0 4px 24px rgba(0,0,0,0.05); }
+.card-header {
+  padding: 20px 24px; border-bottom: 1px solid var(--divider);
+  display: flex; align-items: flex-start; gap: 14px;
+}
+.card-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.card-icon-green { background: var(--light-green); color: var(--forest); }
+.card-icon-gold { background: var(--light-gold); color: var(--warning-fg); }
+.card-icon-info { background: var(--info-bg); color: var(--info-fg); }
+.card-icon-red { background: var(--danger-bg); color: var(--danger-fg); }
+.card-title { font-size: 15px; font-weight: 600; color: var(--text-dark); }
+.card-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.card-body { padding: 20px 24px; }
+.card-body p { margin-bottom: 10px; }
+.card-body p:last-child { margin-bottom: 0; }
+
+/* WEEK BADGE */
+.week-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600; padding: 4px 14px;
+  border-radius: 20px; margin-bottom: 12px; letter-spacing: 0.3px;
+}
+.week-badge-1 { background: var(--light-green); color: var(--forest); }
+.week-badge-2 { background: #D7EDE2; color: #064338; }
+.week-badge-3 { background: var(--light-gold); color: var(--warning-fg); }
+.week-badge-4 { background: #E8DDEF; color: #5E3B76; }
+
+/* PROGRESS BAR */
+.progress-wrap { margin-bottom: 14px; }
+.progress-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+.progress-label .label { font-weight: 500; color: var(--text-dark); }
+.progress-label .value { color: var(--text-secondary); }
+.progress-track { height: 6px; border-radius: 3px; background: var(--divider); overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+.progress-fill-green { background: var(--forest); }
+.progress-fill-gold { background: var(--gold); }
+.progress-fill-red { background: var(--danger-fg); }
+
+/* TABLE */
+.table-wrap { overflow-x: auto; margin-bottom: 20px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead tr { background: var(--forest); }
+th { color: var(--gold); font-size: 12px; font-weight: 500; padding: 12px 16px; text-align: left; letter-spacing: 0.5px; }
+td { padding: 12px 16px; border-bottom: 1px solid var(--divider); color: var(--text-body); }
+tr:hover td { background: var(--light-cream); }
+
+/* BADGE */
+.badge {
+  display: inline-block; padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 500;
+}
+.badge-high { background: var(--danger-bg); color: var(--danger-fg); }
+.badge-medium { background: var(--warning-bg); color: var(--warning-fg); }
+.badge-low { background: var(--success-bg); color: var(--success-fg); }
+.badge-info { background: var(--info-bg); color: var(--info-fg); }
+
+/* TIMELINE */
+.timeline { position: relative; padding-left: 32px; }
+.timeline::before {
+  content: ''; position: absolute; left: 11px; top: 0; bottom: 0;
+  width: 2px; background: var(--divider);
+}
+.timeline-item { position: relative; margin-bottom: 32px; }
+.timeline-item:last-child { margin-bottom: 0; }
+.timeline-dot {
+  position: absolute; left: -25px; top: 4px;
+  width: 12px; height: 12px; border-radius: 50%;
+}
+.timeline-dot-green { background: var(--forest); }
+.timeline-dot-gold { background: var(--gold); }
+.timeline-dot-red { background: var(--danger-fg); }
+.timeline-title { font-weight: 600; font-size: 15px; color: var(--text-dark); margin-bottom: 4px; }
+.timeline-desc { font-size: 13px; color: var(--text-secondary); }
+
+/* CHECKLIST */
+.checklist { list-style: none; padding: 0; }
+.checklist li {
+  padding: 10px 0; border-bottom: 1px solid var(--divider);
+  display: flex; align-items: flex-start; gap: 12px; font-size: 13px;
+}
+.checklist li:last-child { border-bottom: none; }
+.checklist-icon {
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--light-green); color: var(--forest); font-size: 11px;
+  margin-top: 1px;
+}
+
+/* QUOTE */
+.blockquote {
+  border-left: 3px solid var(--gold); padding: 12px 20px;
+  background: var(--light-cream); border-radius: 0 10px 10px 0;
+  margin: 16px 0; font-style: italic; color: var(--text-secondary);
+}
+
+/* METRIC ROW */
+.metric-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+  margin-bottom: 24px;
+}
+.metric-card {
+  text-align: center; padding: 20px 16px; border: 1px solid var(--border);
+  border-radius: 12px; background: var(--warm-white);
+}
+.metric-card .value {
+  font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 600;
+  color: var(--forest); line-height: 1;
+}
+.metric-card .label { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+
+/* FOOTER */
+.footer {
+  background: var(--deep-green); padding: 40px 56px 28px;
+}
+.footer-top { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 32px; margin-bottom: 24px; }
+.footer-brand { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--gold); font-weight: 500; }
+.footer-label { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+.footer-meta { display: flex; gap: 48px; }
+.footer-col { display: flex; flex-direction: column; gap: 6px; }
+.footer-col-title { font-size: 12px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+.footer-col a { font-size: 13px; color: rgba(255,255,255,0.65); text-decoration: none; }
+.footer-col a:hover { color: var(--gold); }
+.footer-divider { border: none; border-top: 0.5px solid rgba(243,197,70,0.2); margin-bottom: 16px; }
+.footer-bottom { display: flex; justify-content: space-between; font-size: 12px; color: rgba(255,255,255,0.4); }
+.footer-bottom a { color: rgba(255,255,255,0.4); text-decoration: none; }
+.footer-bottom a:hover { color: var(--gold); }
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .page { border-radius: 0; }
+  .hero { padding: 36px 28px 32px; }
+  .hero-title { font-size: 32px; }
+  .hero-metrics { flex-wrap: wrap; gap: 24px; }
+  .hero-metric-value { font-size: 30px; }
+  .content { padding: 28px 20px; }
+  .card-grid, .card-grid-3 { grid-template-columns: 1fr; }
+  .metric-row { grid-template-columns: 1fr 1fr; }
+  .footer { padding: 32px 28px 20px; }
+  .footer-top { flex-direction: column; }
+  .footer-meta { gap: 24px; }
+  th, td { padding: 10px 12px; }
+}
+
+/* CHARTS */
+.chart-wrap { position: relative; height: 240px; margin: 16px 0 20px; }
+
+@media print {
+  body { background: #fff; }
+  .page { box-shadow: none; border-radius: 0; max-width: 100%; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- HERO -->
+<header class="hero">
+  <div class="hero-blob-3"></div>
+  <div class="hero-blob-4"></div>
+  <div class="hero-eyebrow">
+    <div class="hero-dot"></div>
+    <span>KovaScape · 独立站增长战略</span>
+  </div>
+  <h1 class="hero-title">从 50 到 250：<br>30天流量倍增行动计划</h1>
+  <p class="hero-subtitle">基于当前站点诊断、内容资产盘点与行业增长策略研究，制定未来四周可执行的流量提升方案。目标是日均 Session 从 50 提升至 250，实现 5× 增长。</p>
+  <div class="hero-metrics">
+    <div class="hero-metric-item">
+      <div class="hero-metric-value">50<span class="hero-metric-arrow">→250</span></div>
+      <div class="hero-metric-label">日均 Session 目标</div>
+    </div>
+    <div class="hero-metric-item">
+      <div class="hero-metric-value">20</div>
+      <div class="hero-metric-label">现有博客文章</div>
+    </div>
+    <div class="hero-metric-item">
+      <div class="hero-metric-value">30</div>
+      <div class="hero-metric-label">行动天数</div>
+    </div>
+    <div class="hero-metric-item">
+      <div class="hero-metric-value">4</div>
+      <div class="hero-metric-label">执行周次</div>
+    </div>
+  </div>
+</header>
+
+<!-- CONTENT -->
+<main class="content">
+
+<!-- 现状诊断 -->
+<section class="section">
+  <h2 class="section-title">📊 现状诊断</h2>
+  <p class="section-subtitle">基于 2026年6月 站点全面审查，关键发现如下</p>
+  <div class="section-divider"></div>
+
+  <div class="metric-row">
+    <div class="metric-card">
+      <div class="value">50</div>
+      <div class="label">日均 Sessions</div>
+    </div>
+    <div class="metric-card">
+      <div class="value">20</div>
+      <div class="label">博客文章数</div>
+    </div>
+    <div class="metric-card">
+      <div class="value">0</div>
+      <div class="label">产品上架数</div>
+    </div>
+    <div class="metric-card">
+      <div class="value">0</div>
+      <div class="label">客户评价数</div>
+    </div>
+  </div>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-green">✅</div>
+        <div>
+          <div class="card-title">已完成项</div>
+          <div class="card-meta">基础建设扎实，值得肯定</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <ul class="checklist">
+          <li><span class="checklist-icon">✓</span> SEO 基础配置完成（Canonical、Hreflang、Schema）</li>
+          <li><span class="checklist-icon">✓</span> 20篇高质量博客文章覆盖相框/层板核心话题</li>
+          <li><span class="checklist-icon">✓</span> Instagram 已绑定，自动同步 Blog → INS → Pinterest</li>
+          <li><span class="checklist-icon">✓</span> Wix 平台性能良好（DOM加载 422ms，整页 819ms）</li>
+          <li><span class="checklist-icon">✓</span> BlogPosting Schema 已配置</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-red">⚠️</div>
+        <div>
+          <div class="card-title">待修复 / 缺失项</div>
+          <div class="card-meta">影响流量与转化的重要因素</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <ul class="checklist">
+          <li><span class="checklist-icon">!</span> 产品未从亚马逊迁移，全站无商品可购</li>
+          <li><span class="checklist-icon">!</span> 无评价系统、无 Newsletter、无信任徽章</li>
+          <li><span class="checklist-icon">!</span> 产品/分类/博文页 Meta Description 缺失</li>
+          <li><span class="checklist-icon">!</span> Product Schema、BreadcrumbList、FAQ Schema 缺失</li>
+          <li><span class="checklist-icon">!</span> Pinterest 链接错误指向 Wix 官方账号</li>
+          <li><span class="checklist-icon">!</span> ABOUT 导航链接指向首页、Inspiration 页为空</li>
+          <li><span class="checklist-icon">!</span> WebP 图片占比极低（41张中仅2张）</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 四周计划总览 -->
+<section class="section">
+  <h2 class="section-title">🗓️ 四周执行路线图</h2>
+  <p class="section-subtitle">每周聚焦一个核心主题，层层递进</p>
+  <div class="section-divider"></div>
+
+  <div class="card-grid" style="grid-template-columns: repeat(4, 1fr);">
+    <div class="card" style="border-top: 4px solid var(--forest);">
+      <div class="card-header">
+        <div class="card-icon card-icon-green">W1</div>
+        <div>
+          <div class="card-title">技术修复 + 产品上线</div>
+          <div class="card-meta">Day 1–7</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="progress-wrap">
+          <div class="progress-label"><span class="label">预期 Session 提升</span><span class="value">50 → 80</span></div>
+          <div class="progress-track"><div class="progress-fill progress-fill-green" style="width: 16%;"></div></div>
+        </div>
+        <p style="font-size:13px;">修复技术问题 / 迁移产品 / 上评价系统 / 修Schema</p>
+      </div>
+    </div>
+    <div class="card" style="border-top: 4px solid #5FA882;">
+      <div class="card-header">
+        <div class="card-icon card-icon-green">W2</div>
+        <div>
+          <div class="card-title">内容分发 + 社媒爆发</div>
+          <div class="card-meta">Day 8–14</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="progress-wrap">
+          <div class="progress-label"><span class="label">预期 Session 提升</span><span class="value">80 → 130</span></div>
+          <div class="progress-track"><div class="progress-fill progress-fill-green" style="width: 26%;"></div></div>
+        </div>
+        <p style="font-size:13px;">博客SEO矩阵 / Pinterest策略 / INS内容升级 / 首评获取</p>
+      </div>
+    </div>
+    <div class="card" style="border-top: 4px solid var(--gold);">
+      <div class="card-header">
+        <div class="card-icon card-icon-gold">W3</div>
+        <div>
+          <div class="card-title">渠道扩展 + 外部引流</div>
+          <div class="card-meta">Day 15–21</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="progress-wrap">
+          <div class="progress-label"><span class="label">预期 Session 提升</span><span class="value">130 → 195</span></div>
+          <div class="progress-track"><div class="progress-fill progress-fill-gold" style="width: 39%;"></div></div>
+        </div>
+        <p style="font-size:13px;">外链建设 / Newsletter / Guest Post / 社区营销 / 轻量广告测试</p>
+      </div>
+    </div>
+    <div class="card" style="border-top: 4px solid #8F6AAF;">
+      <div class="card-header">
+        <div class="card-icon card-icon-red">W4</div>
+        <div>
+          <div class="card-title">优化迭代 + 稳定规模</div>
+          <div class="card-meta">Day 22–30</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="progress-wrap">
+          <div class="progress-label"><span class="label">预期 Session 提升</span><span class="value">195 → 250</span></div>
+          <div class="progress-track"><div class="progress-fill progress-fill-red" style="width: 50%;"></div></div>
+        </div>
+        <p style="font-size:13px;">数据分析 / 广告扩量 / 转化优化 / 复购机制</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 第一周 -->
+<section class="section">
+  <h2 class="section-title">第一周：基础修复 + 产品上线</h2>
+  <p class="section-subtitle">Day 1–7 · 主题：「先把门打开」</p>
+  <div class="section-divider"></div>
+
+  <div class="alert alert-warning">
+    <div class="alert-title">⚡ 本周核心逻辑</div>
+    没有产品可买 = 所有流量都是浪费。第一优先级是让站点具备完整电商能力（产品上线 + 可下单 + 可评价），同时修复影响SEO和用户体验的技术缺陷。
+  </div>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-red">🔧</div>
+        <div>
+          <div class="card-title">技术修复（Day 1–2）</div>
+          <div class="card-meta"><span class="badge badge-high">高优先级</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <table>
+          <thead><tr><th>修复项</th><th>影响</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr><td>Pinterest 链接修正</td><td>社媒引流走错</td><td>Wix 设置 → 社交链接 → 改为真实 Pinterest</td></tr>
+            <tr><td>ABOUT 导航修正</td><td>用户体验</td><td>指向 /about-us 页面</td></tr>
+            <tr><td>/category/mental 修正</td><td>URL 规范</td><td>改为 /category/metal</td></tr>
+            <tr><td>Inspiration 页填充</td><td>品牌展示</td><td>上传10+张高质量场景图</td></tr>
+            <tr><td>全站图片批量转 WebP</td><td>加载速度</td><td>Wix 媒体管理器逐个替换</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-green">📦</div>
+        <div>
+          <div class="card-title">产品迁移（Day 2–4）</div>
+          <div class="card-meta"><span class="badge badge-high">高优先级</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p><strong>分批次上线，优先核心SKU：</strong></p>
+        <ul class="checklist">
+          <li><span class="checklist-icon">1</span> 第一批（Day 2）：Best Seller 产品 5-8 款，完整填写标题/描述/图片</li>
+          <li><span class="checklist-icon">2</span> 第二批（Day 3）：中等表现产品 10-15 款</li>
+          <li><span class="checklist-icon">3</span> 第三批（Day 4）：长尾产品，补齐所有 SKU</li>
+        </ul>
+        <p style="margin-top:12px;"><strong>每款产品必须配置：</strong></p>
+        <ul class="checklist">
+          <li><span class="checklist-icon">✓</span> 产品标题含核心关键词（如 "Solid Oak Picture Frame 8x10"）</li>
+          <li><span class="checklist-icon">✓</span> Meta Description（150-160字符，含关键词 + CTA）</li>
+          <li><span class="checklist-icon">✓</span> Alt Text 给每张产品图</li>
+          <li><span class="checklist-icon">✓</span> Product Schema 标记（Wix 通常自动生成，需验证）</li>
+          <li><span class="checklist-icon">✓</span> 价格、库存状态设为 In Stock</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-gold">⭐</div>
+        <div>
+          <div class="card-title">评价系统搭建（Day 4–5）</div>
+          <div class="card-meta"><span class="badge badge-medium">中优先级</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p>Wix 原生评价 App 或第三方（Judge.me / Stamped.io / Loox）：</p>
+        <ul class="checklist">
+          <li><span class="checklist-icon">1</span> 安装评价 App 并配置自动邀评邮件（下单后7-14天触发）</li>
+          <li><span class="checklist-icon">2</span> 从亚马逊导入现有评价作为种子内容（标注来源，符合平台规则）</li>
+          <li><span class="checklist-icon">3</span> 设置照片评价额外奖励（折扣码 / 积分）</li>
+          <li><span class="checklist-icon">4</span> 在首页和产品页展示评价模块（Social Proof 信号）</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-info">📧</div>
+        <div>
+          <div class="card-title">基础设施补齐（Day 5–7）</div>
+          <div class="card-meta"><span class="badge badge-medium">中优先级</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <ul class="checklist">
+          <li><span class="checklist-icon">✓</span> <strong>Newsletter 订阅弹窗：</strong>首页设置10%首单折扣诱饵，连接 Wix Email Marketing</li>
+          <li><span class="checklist-icon">✓</span> <strong>Schema 补全：</strong>BreadcrumbList、FAQ（相框选购FAQ）、Organization</li>
+          <li><span class="checklist-icon">✓</span> <strong>信任徽章：</strong>Footer 添加安全支付、SSL、退换货政策图标</li>
+          <li><span class="checklist-icon">✓</span> <strong>About Us 页完善：</strong>品牌故事、材质来源、工艺说明</li>
+          <li><span class="checklist-icon">✓</span> <strong>分类页 Meta Description：</strong>Picture Frames / Floating Shelves 两大分类补齐</li>
+          <li><span class="checklist-icon">✓</span> <strong>博客文章 Meta Description：</strong>逐篇补齐（20篇约需2-3小时）</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 第二周 -->
+<section class="section">
+  <h2 class="section-title">第二周：内容分发 + 社媒爆发</h2>
+  <p class="section-subtitle">Day 8–14 · 主题：「让内容流动起来」</p>
+  <div class="section-divider"></div>
+
+  <div class="alert alert-info">
+    <div class="alert-title">💡 本周核心逻辑</div>
+    20篇博客 + 自动同步INS已经建立了内容飞轮基础，但飞轮转得太慢。本周核心：① 提升每篇博客的SEO排名（内链+长尾关键词）② Pinterest独立运营（不等INS同步）③ 获取第一批产品评价。
+  </div>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-green">🔗</div>
+        <div>
+          <div class="card-title">博客 SEO 矩阵优化（Day 8–10）</div>
+          <div class="card-meta"><span class="badge badge-high">高优先级</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p><strong>内链织网（Topic Cluster）：</strong></p>
+        <ul class="checklist">
+          <li><span class="checklist-icon">1</span> 创建 Pillar Page：「The Ultimate Guide to Picture Frames」（聚合型长文）</li>
+          <li><span class="checklist-icon">2</span> 所有相框相关博文 → 内链指向 Pillar Page</li>
+          <li><span class="checklist-icon">3</span> 每篇博文嵌入 2-3 个相关产品链接（产品上线后执行）</li>
+          <li><span class="checklist-icon">4</span> 博文间交叉链接（如 "橡木vs胡桃木" 链到 "橡木框最佳摆放房间"）</li>
+        </ul>
+        <p style="margin-top:10px;"><strong>长尾关键词覆盖（新写 3-5 篇）：</strong></p>
+        <ul class="checklist">
+          <li><span class="checklist-icon">+</span> "How to hang picture frames without damaging walls"</li>
+          <li><span class="checklist-icon">+</span> "Best picture frame styles for gallery walls 2025"</li>
+          <li><span class="checklist-icon">+</span> "Floating shelves weight capacity guide"</li>
+          <li><span class="checklist-icon">+</span> "Picture frame size guide: from 4x6 to 24x36"</li>
+          <li><span class="checklist-icon">+</span> "How to clean and maintain wood picture frames"</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-red">📌</div>
+        <div>
+          <div class="card-title">Pinterest 独立运营（Day 8–14 持续）</div>
+          <div class="card-meta"><span class="badge badge-high">高优先级 · 最大增量来源</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-success" style="margin-bottom:14px;">
+          <div class="alert-title">Pinterest = 家居品类的搜索引擎</div>
+          85% Pinterest 用户基于平台内容开始新项目并做购买决策。家居装饰是 Pinterest 第一大品类。
+        </div>
+        <p><strong>独立运营策略（不等 INS 同步）：</strong></p>
+        <ul class="checklist">
+          <li><span class="checklist-icon">1</span> <strong>创建 10+ 主题 Board：</strong>Gallery Wall Ideas / Oak Frame Styling / Floating Shelf Decor / Home Office Decor / Wedding Photo Display / Minimalist Home 等</li>
+          <li><span class="checklist-icon">2</span> <strong>每日 Pin 5-8 条：</strong>3条自有内容（博客图+产品图），5条行业 curation</li>
+          <li><span class="checklist-icon">3</span> <strong>每篇博客创建 3-5 个不同设计的 Pin 图：</strong>Canva 模板批量制作，竖版 2:3 比例</li>
+          <li><span class="checklist-icon">4</span> <strong>启用 Rich Pins：</strong>产品 Pin 自动显示价格、库存、描述</li>
+          <li><span class="checklist-icon">5</span> <strong>Idea Pin 每周 2 条：</strong>展示产品使用场景的短视频（15-30s）</li>
+        </ul>
+        <p style="margin-top:10px; font-size:13px; color:var(--text-secondary);">预期：Pinterest 在 2-4 周内开始贡献稳定流量，家居类平均 CTR 0.5%-1.5%，月展示可达 50K-200K。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-gold">📱</div>
+        <div>
+          <div class="card-title">Instagram 内容升级（Day 10–14）</div>
+          <div class="card-meta"><span class="badge badge-medium">中优先级</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p>当前自动同步博客→INS 是被动策略，需要叠加主动内容：</p>
+        <ul class="checklist">
+          <li><span class="checklist-icon">📸</span> <strong>Reels 每周 3 条：</strong>产品特写、安装过程、room makeover 前后对比（15-30秒）</li>
+          <li><span class="checklist-icon">🎞️</span> <strong>Carousel 每周 2 条：</strong>同款不同色/不同场景搭配、Before & After</li>
+          <li><span class="checklist-icon">🏷️</span> <strong>Shoppable Posts：</strong>产品上线后立即标记，用户可从 INS 直达产品页</li>
+          <li><span class="checklist-icon">🏠</span> <strong>互动 Stories：</strong>投票 "Oak or Walnut?"、问答 "Where would you hang this?"</li>
+          <li><span class="checklist-icon">🤝</span> <strong>微网红合作：</strong>联系 3-5 位家居/DIY 类 Nano 博主（1K-10K粉），寄送样品换 content</li>
+        </ul>
+        <p style="margin-top:10px; font-size:13px; color:var(--text-secondary);">INS → Pinterest 自动同步保持，但 Pinterest 需要独立运营，因为两个平台的内容形态和用户意图完全不同。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-info">⭐</div>
+        <div>
+          <div class="card-title">首批评价获取（Day 10–14）</div>
+          <div class="card-meta"><span class="badge badge-high">高优先级</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p><strong>种子评价策略（无单可出时的做法）：</strong></p>
+        <ul class="checklist">
+          <li><span class="checklist-icon">1</span> <strong>亚马逊评价迁移：</strong>从品牌亚马逊店铺导出已有五星评价，手动录入独立站（标注 Verified Purchase from Amazon）</li>
+          <li><span class="checklist-icon">2</span> <strong>亲友种子评价：</strong>送 5-8 个产品给亲友/同事，请他们下单后留真实评价（带照片）</li>
+          <li><span class="checklist-icon">3</span> <strong>网红合作评价：</strong>寄送样品给 Nano 博主时，同时请他们在网站留评</li>
+          <li><span class="checklist-icon">4</span> <strong>首单激励：</strong>第一位真实客户评价 = $10 gift card</li>
+        </ul>
+        <p style="margin-top:10px; font-size:13px; color:var(--text-secondary);">目标：每个核心产品获得至少 3-5 条评价（含图文），本周内完成。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 第三周 -->
+<section class="section">
+  <h2 class="section-title">第三周：渠道扩展 + 外部引流</h2>
+  <p class="section-subtitle">Day 15–21 · 主题：「把网撒出去」</p>
+  <div class="section-divider"></div>
+
+  <div class="alert alert-info">
+    <div class="alert-title">🔑 本周核心逻辑</div>
+    前三周的 SEO + 社媒已经产生基础流量，但要从 130 跃升到 190+，必须叠加外部渠道：外链建设、社区参与、轻量广告测试、邮件营销冷启动。
+  </div>
+
+  <div class="card-grid-3">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-green">🔗</div>
+        <div>
+          <div class="card-title">外链建设（Backlinks）</div>
+          <div class="card-meta"><span class="badge badge-high">高优先级</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <ul class="checklist">
+          <li><span class="checklist-icon">1</span> <strong>Guest Post：</strong>联系 3-5 个家居/DIY 博客投稿（带 dofollow 链接回官网）</li>
+          <li><span class="checklist-icon">2</span> <strong>HARO / Qwoted：</strong>注册记者问答平台，以家居装饰专家身份回答，获取权威媒体外链</li>
+          <li><span class="checklist-icon">3</span> <strong>家居论坛参与：</strong>Reddit r/HomeDecor / r/interiordesign / Houzz 论坛，有用评论中自然带链接</li>
+          <li><span class="checklist-icon">4</span> <strong>目录提交：</strong>Google Business Profile、Bing Places、Yelp、Trustpilot</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-gold">📧</div>
+        <div>
+          <div class="card-title">邮件营销启动</div>
+          <div class="card-meta"><span class="badge badge-medium">中优先级</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <ul class="checklist">
+          <li><span class="checklist-icon">1</span> <strong>Welcome 序列：</strong>订阅 → 首日：品牌故事 + 10%码 → 第3日：相框选购指南 → 第7日：热销产品推荐</li>
+          <li><span class="checklist-icon">2</span> <strong>博客推送：</strong>每周一封 "本周家居灵感" 精选2-3篇新博文</li>
+          <li><span class="checklist-icon">3</span> <strong>Abandoned Cart：</strong>加购未付 → 2小时/24小时/72小时三封挽回邮件</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-red">📢</div>
+        <div>
+          <div class="card-title">轻量广告测试</div>
+          <div class="card-meta"><span class="badge badge-low">低预算</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <ul class="checklist">
+          <li><span class="checklist-icon">1</span> <strong>Pinterest Ads：</strong>$5-10/天，测试 3 个高潜力 Pin（CPC 极低 $0.1-0.5）</li>
+          <li><span class="checklist-icon">2</span> <strong>Google Ads：</strong>$10/天，品牌词 + 长尾购买意图词（如 "buy oak picture frame 8x10"）</li>
+          <li><span class="checklist-icon">3</span> <strong>Facebook Retargeting：</strong>安装 Pixel，对网站访客做再营销（$5/天）</li>
+        </ul>
+        <p style="font-size:12px; color:var(--text-secondary); margin-top:8px;">每周预算约 $140-175，小步快跑测试 ROI，数据驱动扩量。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-green">🏠</div>
+        <div>
+          <div class="card-title">社区深度运营</div>
+          <div class="card-meta"><span class="badge badge-medium">中优先级</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <ul class="checklist">
+          <li><span class="checklist-icon">1</span> <strong>Facebook Groups：</strong>加入 5+ 家居装饰/DIY 群组，分享有价值内容（非硬广）</li>
+          <li><span class="checklist-icon">2</span> <strong>Reddit：</strong>在 r/HomeDecor、r/AmateurRoomPorn、r/CozyPlaces 发高质量帖子</li>
+          <li><span class="checklist-icon">3</span> <strong>Houzz：</strong>创建品牌主页，上传项目照片，参与 Discussion</li>
+          <li><span class="checklist-icon">4</span> <strong>回答型平台：</strong>Quora "What's the best picture frame material?" 类问题，末尾自然引向网站</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-gold">🎬</div>
+        <div>
+          <div class="card-title">视频内容拓展</div>
+          <div class="card-meta"><span class="badge badge-medium">中优先级</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <ul class="checklist">
+          <li><span class="checklist-icon">1</span> <strong>YouTube Shorts：</strong>将 INS Reels 同步到 YouTube，开 Shorts 频道</li>
+          <li><span class="checklist-icon">2</span> <strong>TikTok：</strong>注册品牌账号，发 3-5 条测试内容（#homedecor #pictureframes）</li>
+          <li><span class="checklist-icon">3</span> <strong>产品使用视频：</strong>拍摄安装教程、搭配展示，嵌入对应产品页</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-info">🔍</div>
+        <div>
+          <div class="card-title">Google Search Console 深度利用</div>
+          <div class="card-meta"><span class="badge badge-high">高优先级</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <ul class="checklist">
+          <li><span class="checklist-icon">1</span> 导出 GSC 搜索查询报告，找出排名 8-20 位（第二页）的高潜力关键词</li>
+          <li><span class="checklist-icon">2</span> 对这些关键词对应的页面做针对性优化（H标签、正文密度、内链）</li>
+          <li><span class="checklist-icon">3</span> 识别零点击但高展示的关键词 → 写专门文章覆盖</li>
+          <li><span class="checklist-icon">4</span> 提交所有新页面和更新页面到 Search Console 请求索引</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 第四周 -->
+<section class="section">
+  <h2 class="section-title">第四周：优化迭代 + 稳定规模</h2>
+  <p class="section-subtitle">Day 22–30 · 主题：「稳住流量，提升转化」</p>
+  <div class="section-divider"></div>
+
+  <div class="alert alert-success">
+    <div class="alert-title">🎯 本周核心逻辑</div>
+    前三周的投入开始产生复利效应。本周关键：① 数据分析 → 砍掉无效动作、加码有效渠道 ② 转化率优化 → 不让流量白来 ③ 复购/留存机制建立 ④ 为第二个月持续增长打基础。
+  </div>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-green">📊</div>
+        <div>
+          <div class="card-title">数据分析与渠道归因（Day 22–23）</div>
+          <div class="card-meta"><span class="badge badge-high">高优先级</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <table>
+          <thead><tr><th>分析维度</th><th>工具</th><th>决策标准</th></tr></thead>
+          <tbody>
+            <tr><td>流量来源占比</td><td>Wix Analytics / GA4</td><td>哪个渠道贡献最大 → 加码</td></tr>
+            <tr><td>Top 落地页</td><td>GSC + GA4</td><td>高流量低转化页 → 优化CTA</td></tr>
+            <tr><td>关键词排名变化</td><td>GSC / Ahrefs</td><td>排名上升词 → 强化；下降词 → 排查</td></tr>
+            <tr><td>广告 ROI</td><td>各平台 Ads Manager</td><td>ROAS &lt;1 → 暂停；ROAS &gt;3 → 加预算</td></tr>
+            <tr><td>社媒内容表现</td><td>Meta / Pinterest Analytics</td><td>高互动内容类型 → 加大产出</td></tr>
+            <tr><td>用户行为流</td><td>GA4 / Hotjar（安装）</td><td>高跳出页 → 优化内容/速度/CTA</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-gold">🔄</div>
+        <div>
+          <div class="card-title">转化率优化 CRO（Day 23–25）</div>
+          <div class="card-meta"><span class="badge badge-high">高优先级</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <ul class="checklist">
+          <li><span class="checklist-icon">1</span> <strong>首页产品展示优化：</strong>确保首屏直接展示热销产品（而非仅Banner），减少点击深度</li>
+          <li><span class="checklist-icon">2</span> <strong>产品页增强：</strong>添加尺寸对比图、材质特写、场景搭配图、FAQ 折叠模块</li>
+          <li><span class="checklist-icon">3</span> <strong>紧迫感元素：</strong>限时折扣标签、库存提示 "Only 3 left"、新品 "Just launched" 标识</li>
+          <li><span class="checklist-icon">4</span> <strong>简化结账：</strong>减少表单字段、添加 PayPal/Apple Pay 快速支付</li>
+          <li><span class="checklist-icon">5</span> <strong>Exit Intent 弹窗：</strong>用户要离开时弹出折扣码挽留</li>
+          <li><span class="checklist-icon">6</span> <strong>Mobile 专项优化：</strong>移动端占家居流量 60%+，必须针对性检查按钮大小、图片加载</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-red">🎁</div>
+        <div>
+          <div class="card-title">复购与推荐机制（Day 25–27）</div>
+          <div class="card-meta"><span class="badge badge-medium">中优先级</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <ul class="checklist">
+          <li><span class="checklist-icon">1</span> <strong>Referral Program：</strong>老客户推荐朋友 → 双方各得 15% off（Wix 应用市场有现成 App）</li>
+          <li><span class="checklist-icon">2</span> <strong>Bundle 折扣：</strong>"买 3 个相框 9 折" → 提升 AOV</li>
+          <li><span class="checklist-icon">3</span> <strong>购后邮件序列：</strong>感谢 → 使用贴士 → 7天后求评 → 14天后推荐搭配产品</li>
+          <li><span class="checklist-icon">4</span> <strong>Loyalty 积分：</strong>评论得积分、分享得积分、生日双倍积分</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-info">📅</div>
+        <div>
+          <div class="card-title">第二个月内容日历规划（Day 27–28）</div>
+          <div class="card-meta"><span class="badge badge-medium">中优先级</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <table>
+          <thead><tr><th>内容类型</th><th>频率</th><th>渠道</th></tr></thead>
+          <tbody>
+            <tr><td>SEO 博客文章</td><td>2篇/周</td><td>官网 Blog</td></tr>
+            <tr><td>Pinterest Pin</td><td>5-8条/天</td><td>Pinterest</td></tr>
+            <tr><td>Instagram Reel</td><td>3条/周</td><td>Instagram → TikTok</td></tr>
+            <tr><td>Instagram Carousel</td><td>2条/周</td><td>Instagram</td></tr>
+            <tr><td>Newsletter</td><td>1封/周</td><td>Email</td></tr>
+            <tr><td>Idea Pin / 短视频</td><td>2条/周</td><td>Pinterest + TikTok</td></tr>
+            <tr><td>Guest Post / 外链</td><td>1-2个/月</td><td>外部博客</td></tr>
+            <tr><td>社区互动</td><td>每天30分钟</td><td>Reddit / FB Groups / Houzz</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 关键指标 -->
+<section class="section">
+  <h2 class="section-title">📈 关键指标追踪仪表盘</h2>
+  <p class="section-subtitle">每周复盘时必看的核心数据</p>
+  <div class="section-divider"></div>
+
+  <div class="card-grid-3">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-green">📊</div>
+        <div>
+          <div class="card-title">流量指标</div>
+          <div class="card-meta">Wix Analytics / GA4</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="progress-wrap">
+          <div class="progress-label"><span class="label">Daily Sessions</span><span class="value">目标: 250</span></div>
+          <div class="progress-track"><div class="progress-fill progress-fill-green" style="width: 20%;"></div></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span class="label">Organic Traffic %</span><span class="value">目标: 40%+</span></div>
+          <div class="progress-track"><div class="progress-fill progress-fill-green" style="width: 15%;"></div></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span class="label">Social Traffic %</span><span class="value">目标: 35%+</span></div>
+          <div class="progress-track"><div class="progress-fill progress-fill-gold" style="width: 12%;"></div></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span class="label">Avg Session Duration</span><span class="value">目标: 2m+</span></div>
+          <div class="progress-track"><div class="progress-fill progress-fill-green" style="width: 18%;"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-gold">🎯</div>
+        <div>
+          <div class="card-title">转化指标</div>
+          <div class="card-meta">Wix Store Analytics</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="progress-wrap">
+          <div class="progress-label"><span class="label">Conversion Rate</span><span class="value">目标: 2-3%</span></div>
+          <div class="progress-track"><div class="progress-fill progress-fill-gold" style="width: 10%;"></div></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span class="label">Add to Cart %</span><span class="value">目标: 8%+</span></div>
+          <div class="progress-track"><div class="progress-fill progress-fill-gold" style="width: 10%;"></div></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span class="label">Bounce Rate</span><span class="value">目标: &lt;50%</span></div>
+          <div class="progress-track"><div class="progress-fill progress-fill-red" style="width: 70%;"></div></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span class="label">AOV</span><span class="value">目标: $35+</span></div>
+          <div class="progress-track"><div class="progress-fill progress-fill-gold" style="width: 12%;"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-red">📢</div>
+        <div>
+          <div class="card-title">社媒指标</div>
+          <div class="card-meta">Meta / Pinterest Analytics</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="progress-wrap">
+          <div class="progress-label"><span class="label">Pinterest Monthly Views</span><span class="value">目标: 100K+</span></div>
+          <div class="progress-track"><div class="progress-fill progress-fill-red" style="width: 5%;"></div></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span class="label">Pinterest Outbound Clicks</span><span class="value">目标: 500+/mo</span></div>
+          <div class="progress-track"><div class="progress-fill progress-fill-red" style="width: 5%;"></div></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span class="label">INS Engagement Rate</span><span class="value">目标: 3%+</span></div>
+          <div class="progress-track"><div class="progress-fill progress-fill-gold" style="width: 8%;"></div></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span class="label">Email List Size</span><span class="value">目标: 200+</span></div>
+          <div class="progress-track"><div class="progress-fill progress-fill-green" style="width: 5%;"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 每日执行节奏 -->
+<section class="section">
+  <h2 class="section-title">⏰ 每日执行节奏建议</h2>
+  <p class="section-subtitle">把有限时间投入到最高ROI的动作上</p>
+  <div class="section-divider"></div>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-green">🌅</div>
+        <div>
+          <div class="card-title">上午（30min）</div>
+          <div class="card-meta">内容分发 + 社区互动</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <ul class="checklist">
+          <li><span class="checklist-icon">✓</span> Pinterest 手动 Pin 5-8 条（10分钟）</li>
+          <li><span class="checklist-icon">✓</span> Reddit / FB Groups 互动（10分钟）</li>
+          <li><span class="checklist-icon">✓</span> 回复 INS 评论和私信（10分钟）</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-gold">🌤️</div>
+        <div>
+          <div class="card-title">下午（45–60min）</div>
+          <div class="card-meta">内容创作 + 技术优化</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <ul class="checklist">
+          <li><span class="checklist-icon">✓</span> 按周计划执行核心任务（产品上架/写文章/做图）</li>
+          <li><span class="checklist-icon">✓</span> 检查 GSC 数据、回复 HARO 请求</li>
+          <li><span class="checklist-icon">✓</span> 制作 Pinterest 图片 / INS 内容</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-red">🌙</div>
+        <div>
+          <div class="card-title">晚上（15min）</div>
+          <div class="card-meta">数据复盘 + 次日规划</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <ul class="checklist">
+          <li><span class="checklist-icon">✓</span> 快速看 Wix Analytics 今日数据</li>
+          <li><span class="checklist-icon">✓</span> 确认次日 3 件最重要的事</li>
+          <li><span class="checklist-icon">✓</span> 更新进度追踪表</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <p style="margin-top:20px; font-size:13px; color:var(--text-secondary); text-align:center;">
+    每日总投入约 1.5–2 小时。关键不是时间多长，而是<strong>每天坚持</strong>。SEO 和 Pinterest 都是复利增长，前两周可能感觉不明显，第三周开始加速。
+  </p>
+</section>
+
+<!-- 预算估算 -->
+<section class="section">
+  <h2 class="section-title">💰 四周预算估算</h2>
+  <p class="section-subtitle">不含产品采购和样品成本</p>
+  <div class="section-divider"></div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>类别</th><th>工具 / 服务</th><th>月度费用</th><th>优先级</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>评价 App</td><td>Judge.me (Free Plan) 或 Stamped.io</td><td>$0–$19/mo</td><td><span class="badge badge-high">必须</span></td></tr>
+        <tr><td>Email Marketing</td><td>Wix Email Marketing 内置 / Mailchimp Free</td><td>$0–$10/mo</td><td><span class="badge badge-high">必须</span></td></tr>
+        <tr><td>设计工具</td><td>Canva Pro</td><td>$13/mo</td><td><span class="badge badge-high">必须</span></td></tr>
+        <tr><td>Pinterest Ads</td><td>测试预算</td><td>$150–210/mo</td><td><span class="badge badge-medium">推荐</span></td></tr>
+        <tr><td>Google Ads</td><td>测试预算</td><td>$150–300/mo</td><td><span class="badge badge-medium">推荐</span></td></tr>
+        <tr><td>FB Retargeting</td><td>测试预算</td><td>$100–150/mo</td><td><span class="badge badge-low">可选</span></td></tr>
+        <tr><td>SEO 工具</td><td>Ahrefs / Semrush (入门版)</td><td>$30–$130/mo</td><td><span class="badge badge-low">可选</span></td></tr>
+        <tr><td>网红合作</td><td>Nano 博主寄样（5人×$15运费）</td><td>$75/mo</td><td><span class="badge badge-medium">推荐</span></td></tr>
+        <tr style="background: var(--light-cream); font-weight: 600;">
+          <td><strong>合计</strong></td><td></td><td><strong>$518–$907</strong></td><td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:13px; color:var(--text-secondary);">如果不投广告，最低月度工具成本约 <strong>$30–50</strong>（Canva + Email），也能跑通内容驱动增长路线，只是增速会慢一些。</p>
+</section>
+
+<!-- 风险提示 -->
+<section class="section">
+  <h2 class="section-title">⚠️ 风险与应对</h2>
+  <div class="section-divider"></div>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-red">!</div>
+        <div>
+          <div class="card-title">产品迁移延期</div>
+          <div class="card-meta"><span class="badge badge-high">高风险</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p><strong>应对：</strong>即使只上 5 款核心产品也比全不上好。先上 Best Seller，长尾产品可以后续补齐。产品页可以先上线再优化，不要追求完美。</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-gold">!</div>
+        <div>
+          <div class="card-title">SEO 见效慢</div>
+          <div class="card-meta"><span class="badge badge-medium">中风险</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p><strong>应对：</strong>SEO 需要 2-6 个月才有显著效果。30天内主要靠 Social + Pinterest + Direct 渠道弥补。不要因为 SEO 没立竿见影就放弃，坚持就是壁垒。</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-gold">!</div>
+        <div>
+          <div class="card-title">时间不够</div>
+          <div class="card-meta"><span class="badge badge-medium">中风险</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p><strong>应对：</strong>本计划已按优先级分层。如果时间紧，紧盯「高优先级」标签任务：产品上线 → Pinterest 运营 → 评价获取。其他可延后。</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon card-icon-info">!</div>
+        <div>
+          <div class="card-title">广告亏钱</div>
+          <div class="card-meta"><span class="badge badge-low">低风险</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p><strong>应对：</strong>设置每日预算上限（$5-10/天），ROAS < 1 立即暂停。前三周可完全不投广告，纯靠内容驱动。广告是加速器不是发动机。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 30天后 -->
+<section class="section">
+  <h2 class="section-title">🚀 30天后：下一阶段展望</h2>
+  <div class="section-divider"></div>
+
+  <div class="alert alert-success">
+    <div class="alert-title">如果本计划顺利执行，30天后你将拥有：</div>
+    <ul class="checklist">
+      <li><span class="checklist-icon">✅</span> 一个产品齐全、可正常下单的电商独立站</li>
+      <li><span class="checklist-icon">✅</span> 每个核心产品 3-5 条真实图文评价</li>
+      <li><span class="checklist-icon">✅</span> 20+ 篇 SEO 优化的博客文章（含内链矩阵）</li>
+      <li><span class="checklist-icon">✅</span> Pinterest 月展示 50K-200K，持续带来点击流量</li>
+      <li><span class="checklist-icon">✅</span> Instagram 活跃度提升，与 INS 到 Pinterest 的自动同步跑通</li>
+      <li><span class="checklist-icon">✅</span> Email List 至少 100-200 订阅用户</li>
+      <li><span class="checklist-icon">✅</span> 基础外链 10+ 条</li>
+      <li><span class="checklist-icon">✅</span> 日均 Sessions 达到或接近 250</li>
+    </ul>
+  </div>
+
+  <p style="margin-top:20px;"><strong>第二个月重点方向：</strong></p>
+  <div class="card-grid-3">
+    <div class="card">
+      <div class="card-body">
+        <p style="font-weight:600; color:var(--forest);">📈 广告扩量</p>
+        <p style="font-size:13px;">根据四周测试数据，对 ROAS > 3 的广告渠道加预算，探索 TikTok Ads</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <p style="font-weight:600; color:var(--forest);">🔗 外链规模化</p>
+        <p style="font-size:13px;">持续 Guest Post + HARO，目标 DR 30+，为 SEO 长期排名打基础</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <p style="font-weight:600; color:var(--forest);">🔄 独立站→亚马逊联动</p>
+        <p style="font-size:13px;">独立站流量引导至 Amazon Store、Amazon 包裹卡引导至独立站，形成双渠道闭环</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 参考来源 -->
+<section class="section">
+  <h2 class="section-title">📚 参考来源</h2>
+  <div class="section-divider"></div>
+  <div style="font-size:13px; color:var(--text-secondary); line-height:2;">
+    <p>1. Wix SEO Learning Hub — <a href="https://www.wix.com/seo/learn" target="_blank" style="color:var(--forest);">wix.com/seo/learn</a></p>
+    <p>2. Pinterest Business — Home Decor Marketing Guide — <a href="https://business.pinterest.com/verticals/home-decor/" target="_blank" style="color:var(--forest);">business.pinterest.com</a></p>
+    <p>3. Digital Engage — Wix Ecommerce Traffic Growth Strategies — <a href="https://digitalengage.net" target="_blank" style="color:var(--forest);">digitalengage.net</a></p>
+    <p>4. Ogrelogic — Ecommerce Traffic Generation Guide — <a href="https://ogrelogic.com" target="_blank" style="color:var(--forest);">ogrelogic.com</a></p>
+    <p>5. Influencer Marketing Hub — Home Decor Social Media Strategy 2025 — <a href="https://influencermarketinghub.com" target="_blank" style="color:var(--forest);">influencermarketinghub.com</a></p>
+    <p>6. Authentic Interior — Home Decor Trends & Content Strategy — <a href="https://authenticinterior.com" target="_blank" style="color:var(--forest);">authenticinterior.com</a></p>
+    <p>7. Okendo — Customer Review Generation Strategies — <a href="https://okendo.io" target="_blank" style="color:var(--forest);">okendo.io</a></p>
+    <p>8. Klaviyo — Ecommerce Email Marketing Best Practices — <a href="https://klaviyo.com" target="_blank" style="color:var(--forest);">klaviyo.com</a></p>
+    <p>9. KovaScape 独立站 — <a href="https://www.kovascapehomedecor.com" target="_blank" style="color:var(--forest);">kovascapehomedecor.com</a></p>
+    <p>10. KovaScape Instagram — <a href="https://www.instagram.com/kovascape/" target="_blank" style="color:var(--forest);">instagram.com/kovascape</a></p>
+  </div>
+</section>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-top">
+    <div>
+      <div class="footer-brand">KovaScape</div>
+      <div class="footer-label">Picture Frames & Floating Shelves</div>
+    </div>
+    <div class="footer-meta">
+      <div class="footer-col">
+        <div class="footer-col-title">网站</div>
+        <a href="https://www.kovascapehomedecor.com" target="_blank">独立站</a>
+        <a href="https://www.amazon.com/stores/KovaScapeHomeDecor" target="_blank">Amazon Store</a>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-title">社交媒体</div>
+        <a href="https://www.instagram.com/kovascape/" target="_blank">Instagram</a>
+        <a href="https://www.pinterest.com/kovascape/" target="_blank">Pinterest</a>
+      </div>
+    </div>
+  </div>
+  <hr class="footer-divider">
+  <div class="footer-bottom">
+    <span>报告生成日期：2026年6月10日 · 版本 v1.0</span>
+    <span>Generated by <a href="https://allyhub.com" target="_blank">AllyHub AI</a></span>
+  </div>
+</footer>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+// 流量增长趋势图
+(function() {
+  const ctx = document.createElement('canvas');
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:relative;height:220px;margin:24px 0;';
+  wrap.appendChild(ctx);
+  const chartSection = document.querySelector('.section:nth-child(2)');
+  if (chartSection) {
+    const divider = chartSection.querySelector('.section-divider');
+    divider.after(wrap);
+  }
+  
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ['Day0','Day3','Day7','Day10','Day14','Day18','Day21','Day25','Day28','Day30'],
+      datasets: [{
+        label: '保守预估',
+        data: [50,55,65,80,110,130,155,195,225,250],
+        borderColor: '#064338',
+        backgroundColor: 'rgba(6,67,56,0.06)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 3,
+        pointBackgroundColor: '#064338',
+        borderWidth: 2,
+      },{
+        label: '乐观预估',
+        data: [50,58,72,95,135,165,200,250,290,330],
+        borderColor: '#F3C546',
+        backgroundColor: 'rgba(243,197,70,0.08)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        borderWidth: 2,
+        borderDash: [5, 3],
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: true, position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { family: 'Poppins', size: 11 }, color: '#717171' } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { family: 'Poppins', size: 10 }, color: '#717171' } },
+        y: { grid: { color: '#F0EDE8' }, ticks: { font: { family: 'Poppins', size: 10 }, color: '#717171', callback: v => v }, min: 0, max: 350 }
+      }
+    }
+  });
+})();
+
+// 流量渠道占比饼图
+(function() {
+  const canvas = document.createElement('canvas');
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:relative;height:220px;margin:24px 0;';
+  wrap.appendChild(canvas);
+  
+  const chartSection = document.querySelector('.section:nth-child(2)');
+  if (chartSection) {
+    const existingWrap = chartSection.querySelector('div[style]');
+    if (existingWrap && existingWrap.nextSibling) {
+      existingWrap.nextSibling.after(wrap);
+    }
+  }
+  
+  new Chart(canvas, {
+    type: 'doughnut',
+    data: {
+      labels: ['Organic Search','Pinterest','Instagram','Direct','Email','Paid Ads','Other Social'],
+      datasets: [{
+        data: [70,65,40,30,20,15,10],
+        backgroundColor: ['#064338','#BD3B3B','#E4405F','#042E25','#F3C546','#5FA882','#E8E4DE'],
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '60%',
+      plugins: {
+        legend: { display: true, position: 'right', labels: { usePointStyle: true, boxWidth: 8, font: { family: 'Poppins', size: 10 }, color: '#717171', padding: 8 } }
+      }
+    }
+  });
+  wrap.style.gridColumn = 'span 2';
+})();
+</script>
+
+</body>
+</html>

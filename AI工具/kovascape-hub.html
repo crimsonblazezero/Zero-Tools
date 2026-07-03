@@ -370,7 +370,7 @@ body{font-family:'Poppins',sans-serif;background:#F0EDE8;display:flex;height:100
           <button class="rpt-vt-btn active" id="rpt-vt-card" onclick="setRptView('card')" title="卡片视图">▦</button>
           <button class="rpt-vt-btn" id="rpt-vt-list" onclick="setRptView('list')" title="列表视图">☰</button>
         </div>
-      <span id="batch-del-bar" style="display:none;padding:3px 0;font-size:11.5px;color:var(--body-gray)">已选 <span id="batch-del-count">0</span> 项
+      <span id="batch-del-bar" style="display:none;padding:3px 0;font-size:11.5px;color:var(--body-gray)"><label style="cursor:pointer;margin-right:6px;user-select:none"><input type="checkbox" id="rpt-select-all" onclick="toggleSelectAllReports()" style="width:14px;height:14px;accent-color:var(--green);vertical-align:middle"> 全选</label> 已选 <span id="batch-del-count">0</span> 项
         <button class="btn-danger" style="padding:4px 12px;font-size:11px;margin-left:6px" onclick="batchDeleteReports()">🗑 批量删除</button>
       </span>
       </div>
@@ -1037,11 +1037,20 @@ function buildRptCatSelect(selectId,selected){
 // BATCH DELETE
 // ═══════════════════════════════════════════════════════════════════════════════
 function updateBatchDelBtn(){
+  const all=document.querySelectorAll('.rpt-checkbox');
   const c=document.querySelectorAll('.rpt-checkbox:checked');
   const b=document.getElementById('batch-del-bar');
   const n=document.getElementById('batch-del-count');
+  const sa=document.getElementById('rpt-select-all');
+  if(all.length&&sa){sa.checked=c.length===all.length;sa.indeterminate=c.length>0&&c.length<all.length;}
   if(c.length){b.style.display='inline';n.textContent=c.length;}
   else{b.style.display='none';}
+}
+function toggleSelectAllReports(){
+  const sa=document.getElementById('rpt-select-all');
+  const all=document.querySelectorAll('.rpt-checkbox');
+  all.forEach(cb=>{cb.checked=sa.checked;});
+  updateBatchDelBtn();
 }
 function batchDeleteReports(){
   const c=document.querySelectorAll('.rpt-checkbox:checked');

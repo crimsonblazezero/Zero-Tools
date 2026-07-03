@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A+ 多框展示溶图方案 · KovaScape</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #F0EDE8; font-family: 'Poppins', sans-serif; color: #1D1B20; line-height: 1.7; }
+
+  .page {
+    background: #FDFCF9; border-radius: 40px;
+    max-width: 1160px; margin: 32px auto;
+    overflow: hidden; box-shadow: 0 8px 48px rgba(6,67,56,0.10);
+  }
+
+  /* HERO */
+  .hero {
+    background: #064338; padding: 64px 64px 0 64px;
+    position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: ''; position: absolute; top: -80px; right: -80px;
+    width: 380px; height: 380px; border-radius: 50%;
+    border: 1.5px solid rgba(243,197,70,0.15);
+  }
+  .hero::after {
+    content: ''; position: absolute; bottom: 10px; right: 100px;
+    width: 180px; height: 180px; border-radius: 50%;
+    border: 1px solid rgba(243,197,70,0.08);
+  }
+  .hero-eyebrow { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+  .hero-dot { width: 8px; height: 8px; border-radius: 50%; background: #F3C546; flex-shrink: 0; }
+  .hero-eyebrow span { font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1.5px; }
+  .hero-title { font-family: 'Playfair Display', serif; font-size: 46px; font-weight: 500; color: #fff; letter-spacing: -0.01em; line-height: 1.2; margin-bottom: 14px; }
+  .hero-title em { color: #F3C546; font-style: normal; }
+  .hero-subtitle { font-size: 14px; color: rgba(255,255,255,0.62); max-width: 620px; margin-bottom: 40px; line-height: 1.7; }
+  .hero-metrics { display: flex; border-top: 0.6px solid rgba(243,197,70,0.3); margin: 0 -64px; padding: 0 64px; }
+  .hero-metric { padding: 20px 36px 20px 0; margin-right: 36px; border-right: 0.6px solid rgba(255,255,255,0.08); }
+  .hero-metric:last-child { border-right: none; }
+  .hero-metric-value { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 600; color: #F3C546; display: block; }
+  .hero-metric-label { font-size: 11px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.8px; }
+
+  /* BODY */
+  .body { padding: 56px 64px; }
+
+  /* SECTION */
+  .section { margin-bottom: 60px; }
+  .section-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid #F0EDE8; }
+  .section-number { width: 44px; height: 44px; border-radius: 12px; background: #064338; color: #F3C546; font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+  .section-title { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 500; color: #1D1B20; line-height: 1.3; }
+  .section-subtitle { font-size: 13px; color: #717171; margin-top: 4px; }
+
+  /* SCENE CARD */
+  .scene-card {
+    border: 1px solid #E8E4DE; border-radius: 20px;
+    overflow: hidden; margin-bottom: 28px; background: #FDFCF9;
+  }
+  .scene-card-header {
+    background: #064338; padding: 18px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .scene-card-title { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 500; color: #fff; }
+  .scene-card-meta { display: flex; gap: 8px; align-items: center; }
+  .scene-tag {
+    font-size: 10px; font-weight: 500; padding: 3px 10px; border-radius: 20px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .tag-gold { background: rgba(243,197,70,0.2); color: #F3C546; border: 1px solid rgba(243,197,70,0.35); }
+  .tag-white { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.8); border: 1px solid rgba(255,255,255,0.2); }
+  .scene-card-body { padding: 24px 28px; }
+
+  /* SCENE VISUAL DIAGRAM */
+  .scene-diagram {
+    background: #F0EDE8; border-radius: 14px; padding: 20px 24px;
+    margin-bottom: 20px; display: flex; align-items: center; gap: 16px;
+  }
+  .diagram-label { font-size: 11px; font-weight: 600; color: #064338; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+  .diagram-visual { flex: 1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .frame-box {
+    border: 2px solid #064338; border-radius: 4px; background: #FDFCF9;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 600; color: #064338; text-align: center;
+    line-height: 1.3;
+  }
+  .frame-box.walnut { background: #4A2C17; border-color: #3a2010; color: #f5e6d0; }
+  .frame-box.oak { background: #C8A96E; border-color: #a08050; color: #fff; }
+  .frame-box.black { background: #1D1B20; border-color: #000; color: #fff; }
+  .frame-box.white-frame { background: #F5F5F0; border-color: #ccc; color: #555; }
+  .diagram-arrow { color: #F3C546; font-size: 16px; font-weight: 700; }
+
+  /* CONCEPT CARD */
+  .concept-card { background: #FDF9F2; border: 1px solid #E8E4DE; border-radius: 14px; padding: 20px 24px; margin-bottom: 18px; }
+  .concept-card h4 { font-size: 12px; font-weight: 600; color: #064338; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .concept-card h4::before { content: ''; display: inline-block; width: 4px; height: 13px; background: #F3C546; border-radius: 2px; }
+  .concept-card p { font-size: 13px; color: #717171; line-height: 1.65; }
+
+  /* PROMPT BLOCK */
+  .prompt-block { background: #1D1B20; border-radius: 14px; overflow: hidden; margin-bottom: 16px; }
+  .prompt-label { background: #064338; padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .prompt-label-text { font-size: 11px; font-weight: 500; color: #F3C546; text-transform: uppercase; letter-spacing: 0.8px; }
+  .prompt-tag { font-size: 10px; background: rgba(243,197,70,0.15); color: #F3C546; padding: 2px 8px; border-radius: 20px; border: 1px solid rgba(243,197,70,0.3); white-space: nowrap; }
+  .prompt-text { padding: 20px 24px; font-size: 13px; color: #E8E4DE; line-height: 1.85; font-family: 'Poppins', sans-serif; }
+  .prompt-text .var { color: #F3C546; font-weight: 500; }
+  .prompt-text .key { color: #7dd3c8; }
+  .prompt-text .lock { color: #ff9f7f; font-weight: 600; }
+  .prompt-text .comment { color: #666; font-style: italic; font-size: 11.5px; }
+  .prompt-text .section-break { display: block; height: 8px; }
+
+  /* STEP FLOW */
+  .step-flow { display: flex; flex-direction: column; gap: 0; margin-bottom: 20px; }
+  .step-row { display: flex; gap: 16px; align-items: flex-start; padding: 16px 20px; background: #FDFCF9; border: 1px solid #E8E4DE; border-bottom: none; }
+  .step-row:first-child { border-radius: 14px 14px 0 0; }
+  .step-row:last-child { border-bottom: 1px solid #E8E4DE; border-radius: 0 0 14px 14px; }
+  .step-row:only-child { border-radius: 14px; border-bottom: 1px solid #E8E4DE; }
+  .step-num { width: 28px; height: 28px; border-radius: 50%; background: #064338; color: #F3C546; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .step-content { flex: 1; }
+  .step-title { font-size: 13px; font-weight: 600; color: #1D1B20; margin-bottom: 4px; }
+  .step-desc { font-size: 12px; color: #717171; line-height: 1.6; }
+  .step-badge { display: inline-block; font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 20px; margin-left: 8px; vertical-align: middle; }
+  .badge-green { background: #E8F2F0; color: #064338; }
+  .badge-yellow { background: #FFF8DC; color: #B8860B; }
+  .badge-red { background: #FDECEA; color: #C4433A; }
+
+  /* TIPS GRID */
+  .tips-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; }
+  .tip-card { background: #FDFCF9; border: 1px solid #E8E4DE; border-radius: 12px; padding: 18px 20px; }
+  .tip-card .tip-icon { font-size: 18px; margin-bottom: 8px; display: block; }
+  .tip-card h5 { font-size: 12px; font-weight: 600; color: #1D1B20; margin-bottom: 5px; }
+  .tip-card p { font-size: 11.5px; color: #717171; line-height: 1.6; }
+
+  /* ALERT */
+  .alert-info { background: #E8F2F0; border-left: 4px solid #064338; border-radius: 12px; padding: 18px 22px; margin-bottom: 40px; }
+  .alert-info .alert-title { font-size: 12px; font-weight: 600; color: #064338; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .alert-info p { font-size: 13px; color: #3a6b62; line-height: 1.65; }
+  .alert-warning { background: #FFF8DC; border-left: 4px solid #F3C546; border-radius: 12px; padding: 14px 18px; margin-top: 14px; }
+  .alert-warning .alert-title { font-size: 11px; font-weight: 600; color: #B8860B; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .alert-warning p { font-size: 12px; color: #8a6a00; line-height: 1.6; }
+
+  /* DIVIDER */
+  .divider { height: 1px; background: linear-gradient(90deg, #F3C546, transparent); margin: 52px 0; opacity: 0.4; }
+
+  /* SPEC TABLE */
+  .spec-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 14px; }
+  .spec-table thead tr { background: #064338; }
+  .spec-table th { color: #F3C546; font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.6px; padding: 11px 16px; text-align: left; }
+  .spec-table td { padding: 11px 16px; border-bottom: 1px solid #F0EDE8; color: #3a3a3a; vertical-align: top; line-height: 1.55; }
+  .spec-table tr:hover td { background: #F8F5F0; }
+
+  /* FORMULA BAR */
+  .formula-bar { display: flex; align-items: center; background: #F0EDE8; border-radius: 12px; padding: 14px 18px; margin: 16px 0; flex-wrap: wrap; gap: 6px; }
+  .formula-item { background: #064338; color: #FDFCF9; font-size: 11px; font-weight: 500; padding: 5px 11px; border-radius: 20px; white-space: nowrap; }
+  .formula-arrow { color: #F3C546; font-size: 13px; font-weight: 700; padding: 0 2px; }
+
+  /* FOOTER */
+  .footer { background: #042E25; padding: 30px 64px; display: flex; align-items: center; justify-content: space-between; }
+  .footer-brand { font-family: 'Playfair Display', serif; font-size: 18px; color: #F3C546; font-weight: 500; }
+  .footer-meta { font-size: 12px; color: rgba(255,255,255,0.4); }
+  .footer-divider { width: 1px; height: 28px; background: rgba(243,197,70,0.25); margin: 0 20px; }
+
+  @media (max-width: 768px) {
+    .hero, .body { padding: 36px 24px; }
+    .hero-title { font-size: 30px; }
+    .tips-grid { grid-template-columns: 1fr; }
+    .hero-metrics { flex-wrap: wrap; }
+    .footer { flex-direction: column; gap: 10px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-eyebrow">
+      <div class="hero-dot"></div>
+      <span>KovaScape · A+ 内容制作</span>
+    </div>
+    <h1 class="hero-title">A+ 多框展示图<br><em>溶图合成</em>完整方案</h1>
+    <p class="hero-subtitle">针对高级A+页面「多框条共同展示」模块，规划5种构图场景 × 完整提示词公式 × 分步操作流程。覆盖：Gallery Wall · 平铺对比 · 材质特写 · 尺寸梯度 · 生活场景。</p>
+    <div class="hero-metrics">
+      <div class="hero-metric">
+        <span class="hero-metric-value">5</span>
+        <span class="hero-metric-label">构图场景</span>
+      </div>
+      <div class="hero-metric">
+        <span class="hero-metric-value">15+</span>
+        <span class="hero-metric-label">提示词公式</span>
+      </div>
+      <div class="hero-metric">
+        <span class="hero-metric-value">3步</span>
+        <span class="hero-metric-label">标准操作流程</span>
+      </div>
+      <div class="hero-metric">
+        <span class="hero-metric-value">2</span>
+        <span class="hero-metric-label">材质（橡木/胡桃木）</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div class="body">
+
+    <!-- INTRO -->
+    <div class="alert-info">
+      <div class="alert-title">📐 使用前：理解A+多框图的核心目标</div>
+      <p>A+多框展示图的核心不是「展示产品」，而是<strong style="color:#064338;">让买家想象自己家的样子</strong>。每张图都要回答一个问题：「这些相框放在我家会是什么效果？」。因此，每个场景都需要：① 真实的家居环境感；② 多框之间的视觉层次；③ 产品细节清晰可辨。本方案所有提示词均已内置「防细节丢失」指令。</p>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <!-- 通用三步操作流程 -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-number" style="background:#F3C546;color:#064338;">▶</div>
+        <div>
+          <div class="section-title">通用三步操作流程</div>
+          <div class="section-subtitle">所有5种场景均遵循此流程，先读懂再执行</div>
+        </div>
+      </div>
+
+      <div class="step-flow">
+        <div class="step-row">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">准备素材图 <span class="step-badge badge-yellow">上传前必做</span></div>
+            <div class="step-desc">
+              <strong>产品图：</strong>每个相框款式准备一张「白底正面高清图」作为锚点参考图（分辨率越高越好）。<br>
+              <strong>场景图：</strong>从 INS/Pinterest 找到目标场景图，确保构图中有明显的「放置相框的空间」（墙面/桌面/层板）。<br>
+              <strong>画芯图：</strong>胡桃木配黑白艺术照，橡木配龟背竹线描图——提前准备好画芯素材。
+            </div>
+          </div>
+        </div>
+        <div class="step-row">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">执行溶图（按场景选对应公式）<span class="step-badge badge-green">核心步骤</span></div>
+            <div class="step-desc">
+              上传「场景图 + 所有产品参考图」，使用下方对应场景的提示词公式。<strong>关键：每次都要同时上传所有产品参考图</strong>，不要只上传场景图。如果一次上传图片数量有限制，优先用「两步法」（先生成单框，再组合）。
+            </div>
+          </div>
+        </div>
+        <div class="step-row">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Canva 后期加字 <span class="step-badge badge-green">最终输出</span></div>
+            <div class="step-desc">
+              AI生成图导入Canva，叠加文字层。字体使用 <strong>Playfair Display</strong>（标题）+ <strong>Cormorant Garamond</strong>（正文）。文字颜色：深色背景用白色，浅色背景用 #1D1B20。<strong>不使用亚马逊原生标题字体</strong>，避免模块割裂感。
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 画芯策略提示 -->
+      <div class="concept-card">
+        <h4>画芯选择策略（已确认）</h4>
+        <p>
+          <strong>胡桃木相框</strong> → 画芯使用<strong>黑白艺术照</strong>（人像/建筑/风景均可）：深棕木色 + 黑白画面 = 高级感对比，避免暖色画芯与木色撞色。<br>
+          <strong>橡木相框</strong> → 画芯使用<strong>龟背竹线描图</strong>（或植物线稿）：浅金木色 + 绿植线描 = 北欧自然感，与橡木温润质感高度契合。<br>
+          多框组合时，同一画面内可混用两种画芯，形成视觉节奏感。
+        </p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <!-- SCENE 1: Gallery Wall 挂墙展示 -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-number">1</div>
+        <div>
+          <div class="section-title">Gallery Wall · 挂墙多框组合</div>
+          <div class="section-subtitle">A+最高转化场景 · 展示多尺寸/多材质共存的墙面效果</div>
+        </div>
+      </div>
+
+      <!-- 构图示意 -->
+      <div class="scene-diagram">
+        <div class="diagram-label">构图示意</div>
+        <div class="diagram-visual">
+          <div class="frame-box walnut" style="width:56px;height:70px;">胡桃木<br>8×10</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div class="frame-box oak" style="width:44px;height:56px;">橡木<br>5×7</div>
+            <div class="frame-box walnut" style="width:44px;height:36px;">胡桃木<br>4×6</div>
+          </div>
+          <div class="frame-box oak" style="width:64px;height:80px;">橡木<br>11×14</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div class="frame-box walnut" style="width:44px;height:36px;">胡桃木<br>4×6</div>
+            <div class="frame-box oak" style="width:44px;height:56px;">橡木<br>5×7</div>
+          </div>
+        </div>
+        <div class="diagram-label" style="color:#717171;font-size:10px;">非对称沙龙式排列</div>
+      </div>
+
+      <div class="concept-card">
+        <h4>场景定位</h4>
+        <p>展示「多尺寸相框如何在同一面墙上和谐共存」。核心卖点：尺寸系列完整、材质可混搭、整体风格统一。适合A+第2-3模块，作为「系列展示」的主视觉。</p>
+      </div>
+
+      <!-- 主提示词 -->
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <div class="prompt-label-text">公式 1-A · Gallery Wall 完整版（推荐）</div>
+          <span class="prompt-tag">上传所有产品图 + 场景图</span>
+        </div>
+        <div class="prompt-text">
+          <span class="comment">// 上传：场景图（白墙北欧风室内）+ 各款相框白底图</span><br><br>
+
+          Create a <span class="key">gallery wall arrangement</span> using the picture frames from the uploaded product images. Place them on the wall in the scene from <span class="var">[场景图]</span>.<br><br>
+
+          <span class="key">Arrangement style:</span> asymmetric salon-style layout — mix of portrait and landscape orientations, varying sizes creating visual rhythm. Largest frame (<span class="var">[e.g. 11×14 oak]</span>) anchors the center-left; medium frames (<span class="var">[e.g. 8×10, 5×7]</span>) cluster around it; smallest frames (<span class="var">[e.g. 4×6]</span>) fill the gaps. Spacing between frames: approximately <span class="key">2–3 inches visually</span>.<br><br>
+
+          <span class="lock">PRESERVE for each frame individually:</span><br>
+          — Walnut frames: deep warm brown, straight fine grain, satin finish<br>
+          — Oak frames: light honey-blonde, prominent grain, natural warmth<br>
+          — Frame width: wide molding profile, do not make frames look thin<br>
+          — Glass: clear with subtle specular reflection on each frame<br>
+          — Artwork inside: walnut frames show <span class="key">black and white fine art photography</span>; oak frames show <span class="key">botanical monstera line drawing</span><br><br>
+
+          <span class="key">Lighting:</span> soft, diffused natural light from the left side. Each frame casts a <span class="key">subtle cast shadow on the wall</span> — consistent shadow direction. <span class="lock">Do NOT adapt frame colors to the wall's ambient light.</span><br><br>
+
+          Background: <span class="var">[e.g. warm white plaster wall, slightly textured, Japandi interior with a glimpse of a linen sofa in the lower corner]</span>. Photorealistic, interior design magazine quality. Shot as if with a 50mm lens, slight depth of field.
+        </div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <div class="prompt-label-text">公式 1-B · 纯白墙极简版（白底A+模块适用）</div>
+          <span class="prompt-tag">上传产品图</span>
+        </div>
+        <div class="prompt-text">
+          Arrange <span class="var">[数量, e.g. 5]</span> picture frames from the uploaded images in a <span class="key">clean gallery wall composition</span> on a <span class="key">pure warm white wall (#F8F6F2)</span>.<br><br>
+
+          Layout: <span class="var">[e.g. 2 rows — top row: 3 frames (5×7, 8×10, 5×7); bottom row: 2 frames (4×6, 4×6) centered under the gaps]</span>. Even spacing, <span class="key">aligned by top edge</span> for a structured look.<br><br>
+
+          <span class="lock">Each frame must match its uploaded reference exactly</span> — color, grain, width, proportions. Soft studio lighting, single source from upper-left. Realistic wall shadows behind each frame. <span class="key">No background furniture or props</span> — clean, product-focused. High-resolution output suitable for Amazon A+ content (minimum 970px wide).
+        </div>
+      </div>
+
+      <div class="tips-grid">
+        <div class="tip-card">
+          <span class="tip-icon">📐</span>
+          <h5>排列黄金法则</h5>
+          <p>奇数框（3/5/7）比偶数框更自然。最大框做视觉锚点，其余围绕它展开，间距保持视觉一致</p>
+        </div>
+        <div class="tip-card">
+          <span class="tip-icon">🌿</span>
+          <h5>增加生活感的道具</h5>
+          <p>「a small potted plant on a shelf below」「a linen throw draped over a chair in the foreground」— 不抢主角但增加真实感</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <!-- SCENE 2: 平铺对比图 -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-number">2</div>
+        <div>
+          <div class="section-title">平铺对比 · Flat Lay 俯拍</div>
+          <div class="section-subtitle">展示全系列尺寸/材质对比 · 适合A+选型模块</div>
+        </div>
+      </div>
+
+      <!-- 构图示意 -->
+      <div class="scene-diagram">
+        <div class="diagram-label">构图示意</div>
+        <div class="diagram-visual">
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:center;">
+            <div class="frame-box walnut" style="width:80px;height:64px;">胡桃木 8×10</div>
+            <div class="frame-box oak" style="width:64px;height:50px;">橡木 5×7</div>
+            <div class="frame-box walnut" style="width:50px;height:40px;">胡桃木 4×6</div>
+          </div>
+          <div class="diagram-arrow">→</div>
+          <div style="font-size:11px;color:#717171;max-width:120px;line-height:1.5;">从大到小梯度排列，俯拍视角，木质背景</div>
+        </div>
+      </div>
+
+      <div class="concept-card">
+        <h4>场景定位</h4>
+        <p>让买家一眼看清「这个系列有哪些尺寸/材质」。核心卖点：系列完整性、材质质感细节、尺寸直观对比。适合A+选型表模块（第7模块）上方的视觉引导图。</p>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <div class="prompt-label-text">公式 2-A · 尺寸梯度平铺（主推）</div>
+          <span class="prompt-tag">上传所有产品图</span>
+        </div>
+        <div class="prompt-text">
+          Create a <span class="key">flat lay overhead shot</span> of the picture frames from the uploaded images. Arrange them on <span class="var">[背景, e.g. a light natural oak wood surface / a warm linen fabric]</span>.<br><br>
+
+          <span class="key">Arrangement:</span> diagonal cascade from top-left to bottom-right, largest frame at top-left, smallest at bottom-right. Frames slightly overlapping at corners to show depth. Each frame tilted <span class="key">5–10 degrees</span> for a natural, editorial feel — not perfectly parallel.<br><br>
+
+          <span class="lock">Preserve for each frame:</span> exact wood color (walnut = deep warm brown; oak = light honey-blonde), grain texture, frame width, glass reflection. <span class="key">Artwork inside:</span> walnut frames → B&W portrait photo; oak frames → monstera botanical line drawing.<br><br>
+
+          <span class="key">Lighting:</span> soft diffused overhead light, no harsh shadows. Subtle soft shadow beneath each frame. <span class="lock">Do not blend frame colors into the background surface color.</span><br><br>
+
+          Camera: directly overhead (90° top-down), <span class="key">no perspective distortion</span>. Clean, minimal, Japandi aesthetic. High-resolution, suitable for Amazon A+ content.
+        </div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <div class="prompt-label-text">公式 2-B · 橡木 vs 胡桃木材质对比（双列）</div>
+          <span class="prompt-tag">上传2款产品图</span>
+        </div>
+        <div class="prompt-text">
+          Create a <span class="key">side-by-side material comparison flat lay</span>. Left side: <span class="key">oak frame</span> (light honey-blonde, prominent grain). Right side: <span class="key">walnut frame</span> (deep warm brown, fine grain). Same size frame for both.<br><br>
+
+          Background: <span class="var">[e.g. split surface — left half light linen, right half dark slate / or unified warm white surface]</span>. A subtle <span class="key">thin dividing line or natural gap</span> between the two frames to emphasize the contrast.<br><br>
+
+          <span class="lock">Critical:</span> the color difference between oak and walnut must be clearly visible and accurate. Do not let the background color bleed into the frame colors. Each frame shows its characteristic grain pattern clearly.<br><br>
+
+          Overhead shot, soft even lighting. The image should communicate: <span class="key">「two distinct materials, one design language」</span>. Clean, editorial, no props.
+        </div>
+      </div>
+
+      <div class="tips-grid">
+        <div class="tip-card">
+          <span class="tip-icon">📸</span>
+          <h5>俯拍防变形关键词</h5>
+          <p>「directly overhead (90° top-down)」「no perspective distortion」「no lens barrel distortion」— 防止框条变形</p>
+        </div>
+        <div class="tip-card">
+          <span class="tip-icon">🎨</span>
+          <h5>背景选择建议</h5>
+          <p>橡木系列配浅色背景（白/米/浅灰）；胡桃木系列配深色背景（深灰/深蓝/黑）；混搭时用中性米色</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <!-- SCENE 3: 材质特写 -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-number">3</div>
+        <div>
+          <div class="section-title">材质特写 · 框条细节放大</div>
+          <div class="section-subtitle">展示木纹/榫卯/玻璃反光等核心卖点 · 适合A+卖点模块</div>
+        </div>
+      </div>
+
+      <div class="concept-card">
+        <h4>场景定位</h4>
+        <p>「实木质感」「榫卯结构」「高清钢化玻璃」是产品核心卖点，但在整体场景图中细节难以辨认。材质特写图专门解决这个问题，让买家「看得见摸得着」。适合A+卖点模块（M2/M3），配合文字标注使用。</p>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <div class="prompt-label-text">公式 3-A · 木纹质感特写（单框角部）</div>
+          <span class="prompt-tag">上传1张产品图</span>
+        </div>
+        <div class="prompt-text">
+          Create an <span class="key">extreme close-up detail shot</span> of the picture frame corner from the uploaded image. Focus on the <span class="var">[walnut / oak]</span> frame's corner joint area.<br><br>
+
+          <span class="key">Show clearly:</span><br>
+          — The <span class="var">[walnut: deep warm brown / oak: honey-blonde]</span> wood grain running along the frame molding<br>
+          — The <span class="key">clean mitered corner joint</span> with grain continuity across the joint<br>
+          — The <span class="key">satin surface finish</span> — subtle sheen, not glossy<br>
+          — The <span class="key">frame profile depth</span> — the 3D cross-section of the molding<br>
+          — The <span class="key">glass edge</span> catching a thin specular highlight<br><br>
+
+          <span class="lock">The wood color must be accurate</span> — do not over-saturate or desaturate. Lighting: <span class="key">single raking light from the side</span> to emphasize texture and depth. Macro photography style, shallow depth of field, background softly blurred. Ultra-high detail, no smoothing of grain texture.
+        </div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <div class="prompt-label-text">公式 3-B · 玻璃反光卖点图</div>
+          <span class="prompt-tag">上传1张产品图</span>
+        </div>
+        <div class="prompt-text">
+          Create a lifestyle detail shot showcasing the <span class="key">high-clarity tempered glass</span> of the picture frame from the uploaded image.<br><br>
+
+          Composition: the frame is placed near a <span class="var">[window / soft light source]</span>. The glass surface shows a <span class="key">clean, elegant specular reflection</span> of the light source — demonstrating optical clarity. The reflection should be <span class="key">subtle and refined</span>, not harsh or distracting. The artwork inside the frame remains clearly visible through the glass.<br><br>
+
+          <span class="lock">Frame color and proportions must match the uploaded reference exactly.</span> The image should communicate: <span class="key">「crystal-clear glass that enhances, not obscures, your artwork」</span>. Soft natural lighting, warm interior atmosphere. Close-medium shot, 50mm equivalent focal length.
+        </div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <div class="prompt-label-text">公式 3-C · 双框材质并排特写（橡木 vs 胡桃木）</div>
+          <span class="prompt-tag">上传2张产品图</span>
+        </div>
+        <div class="prompt-text">
+          Create a <span class="key">side-by-side close-up</span> of two frame corners — oak frame on the left, walnut frame on the right. Both frames are the same size and design, showing only the top-right corner of each.<br><br>
+
+          The image should clearly show the <span class="key">contrast between the two wood species</span>:<br>
+          — Left (Oak): <span class="key">light honey-blonde, prominent open grain, warm golden undertone</span><br>
+          — Right (Walnut): <span class="key">deep chocolate brown, fine tight grain, rich warm undertone</span><br><br>
+
+          <span class="key">Raking side light</span> to emphasize grain texture on both. The gap between the two frames: approximately 1cm, with a <span class="key">thin neutral gray dividing line</span>. Background: <span class="var">[warm white / light gray]</span>. The image communicates: <span class="key">「same craftsmanship, two distinct personalities」</span>. Macro detail, ultra-sharp, no smoothing.
+        </div>
+      </div>
+
+      <div class="alert-warning">
+        <div class="alert-title">⚠️ 特写图最常见失败</div>
+        <p>AI 在特写模式下更容易「美化」木纹，将真实纹理替换为「通用木纹」。防止方法：加「do not replace the grain pattern with a generic wood texture — use the exact grain from the reference image」。</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <!-- SCENE 4: 尺寸梯度展示 -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-number">4</div>
+        <div>
+          <div class="section-title">尺寸梯度 · 多尺寸直观对比</div>
+          <div class="section-subtitle">让买家直观感受尺寸差异 · 适合A+尺寸说明模块</div>
+        </div>
+      </div>
+
+      <!-- 构图示意 -->
+      <div class="scene-diagram">
+        <div class="diagram-label">构图示意</div>
+        <div class="diagram-visual">
+          <div class="frame-box walnut" style="width:36px;height:46px;font-size:8px;">4×6</div>
+          <div class="frame-box oak" style="width:44px;height:56px;font-size:8px;">5×7</div>
+          <div class="frame-box walnut" style="width:52px;height:64px;font-size:8px;">6×8</div>
+          <div class="frame-box oak" style="width:64px;height:80px;font-size:8px;">8×10</div>
+          <div class="frame-box walnut" style="width:80px;height:100px;font-size:8px;">11×14</div>
+        </div>
+        <div class="diagram-label" style="color:#717171;font-size:10px;">从小到大线性排列</div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <div class="prompt-label-text">公式 4-A · 尺寸梯度挂墙展示</div>
+          <span class="prompt-tag">上传所有尺寸产品图</span>
+        </div>
+        <div class="prompt-text">
+          Create a <span class="key">size progression display</span> of picture frames on a wall. Arrange <span class="var">[数量]</span> frames in a <span class="key">single horizontal row</span>, ordered from smallest (left) to largest (right): <span class="var">[4×6, 5×7, 6×8, 8×10, 11×14]</span>.<br><br>
+
+          All frames <span class="key">aligned by their bottom edge</span>, creating a clear ascending size gradient. Spacing between frames: equal, approximately <span class="key">1.5 inches visually</span>.<br><br>
+
+          <span class="lock">Each frame must match its uploaded reference exactly.</span> Alternate materials for visual rhythm: <span class="var">[e.g. walnut, oak, walnut, oak, walnut]</span>. Each frame contains appropriate artwork: walnut → B&W photo, oak → botanical line drawing.<br><br>
+
+          Background: <span class="var">[clean white wall, minimal Japandi interior]</span>. Soft even lighting, subtle wall shadows. The image should clearly communicate the <span class="key">size range of the product line</span>. Straight-on camera angle (no perspective tilt). High-resolution.
+        </div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <div class="prompt-label-text">公式 4-B · 尺寸对比（含人手参照）</div>
+          <span class="prompt-tag">上传产品图</span>
+        </div>
+        <div class="prompt-text">
+          Create a <span class="key">size reference lifestyle shot</span>. Show <span class="var">[2–3 frames of different sizes]</span> leaning against a wall on a console table or shelf.<br><br>
+
+          Include <span class="key">a pair of hands</span> gently holding or adjusting the smallest frame — providing a <span class="key">human scale reference</span> that helps buyers understand the actual size. The hands should be <span class="var">[natural skin tone, clean nails, casual]</span>.<br><br>
+
+          <span class="lock">All frames must match their uploaded references exactly.</span> The size difference between frames should be clearly visible and proportionally accurate. Setting: <span class="var">[warm minimalist interior, natural light]</span>. The image communicates: <span class="key">「available in multiple sizes to fit any space」</span>.
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <!-- SCENE 5: 生活场景多风格 -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-number">5</div>
+        <div>
+          <div class="section-title">生活场景 · 多风格适配展示</div>
+          <div class="section-subtitle">展示相框在不同家居风格中的适配性 · 适合A+场景模块</div>
+        </div>
+      </div>
+
+      <div class="concept-card">
+        <h4>场景定位</h4>
+        <p>「这款相框适合我家的风格吗？」是买家最大的顾虑。多风格展示图直接回答这个问题。每张图对应一种家居风格，展示相框在该风格中的自然融入感。建议规划3种风格：北欧简约 / 中世纪复古 / 现代极简。</p>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <div class="prompt-label-text">公式 5-A · 北欧简约风（Japandi）</div>
+          <span class="prompt-tag">上传产品图 + 场景图</span>
+        </div>
+        <div class="prompt-text">
+          Place the frames from the uploaded product images into a <span class="key">Japandi-style living room scene</span>.<br><br>
+
+          Scene elements: <span class="key">white plaster walls, light oak wood furniture, linen textiles, minimal decor, a single potted plant (monstera or olive branch)</span>. Natural daylight from a large window, soft and diffused. Color palette: warm whites, natural wood tones, muted sage green accents.<br><br>
+
+          Frame arrangement: <span class="var">[e.g. 3 frames in a small gallery cluster on the wall above a low sideboard]</span>. <span class="lock">Preserve each frame's exact color and texture.</span> The overall mood: <span class="key">calm, intentional, lived-in but curated</span>. The frames feel like they belong — not placed, but chosen. Interior design editorial style, 35mm lens, natural grain.
+        </div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <div class="prompt-label-text">公式 5-B · 中世纪复古风（Mid-Century Modern）</div>
+          <span class="prompt-tag">上传产品图 + 场景图</span>
+        </div>
+        <div class="prompt-text">
+          Place the frames from the uploaded product images into a <span class="key">mid-century modern interior scene</span>.<br><br>
+
+          Scene elements: <span class="key">warm walnut wood furniture with tapered legs, mustard yellow or terracotta accent cushions, geometric rug, warm incandescent lighting</span>. Color palette: warm browns, amber, deep teal accents, cream walls.<br><br>
+
+          Frame arrangement: <span class="var">[e.g. 2 walnut frames flanking a vintage-style wall clock, or a row of 3 frames above a credenza]</span>. <span class="lock">Walnut frames especially — preserve the deep warm brown color, do not let it blend into the warm-toned furniture.</span> The mood: <span class="key">warm, sophisticated, nostalgic yet fresh</span>. Lifestyle photography style, warm color grade.
+        </div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <div class="prompt-label-text">公式 5-C · 现代极简风（Modern Minimal）</div>
+          <span class="prompt-tag">上传产品图 + 场景图</span>
+        </div>
+        <div class="prompt-text">
+          Place the frames from the uploaded product images into a <span class="key">modern minimalist interior scene</span>.<br><br>
+
+          Scene elements: <span class="key">pure white walls, concrete or light gray flooring, black metal accents (lamp, shelf brackets), very minimal decor — one or two objects maximum</span>. Color palette: white, light gray, black, with the wood frames as the only warm element.<br><br>
+
+          Frame arrangement: <span class="var">[e.g. a single large walnut frame as a statement piece, or 3 frames in a precise grid arrangement]</span>. The frames should provide <span class="key">warmth and organic contrast</span> against the cool, hard surfaces. <span class="lock">Preserve frame colors exactly — the contrast between warm wood and cool surroundings is the key visual message.</span> Clean, architectural photography style, straight lines, no distortion.
+        </div>
+      </div>
+
+      <div class="tips-grid">
+        <div class="tip-card">
+          <span class="tip-icon">🏡</span>
+          <h5>风格关键词速查</h5>
+          <p>北欧：「Japandi」「Scandinavian」「wabi-sabi」「organic minimalism」<br>复古：「mid-century modern」「warm retro」「1960s inspired」<br>极简：「modern minimal」「architectural」「monochromatic」</p>
+        </div>
+        <div class="tip-card">
+          <span class="tip-icon">💡</span>
+          <h5>防止相框「消失」在场景中</h5>
+          <p>当相框颜色与背景相近时（如橡木 + 木质墙面），加「ensure the frame remains visually distinct from the background — add subtle shadow or contrast」</p>
+        </div>
+        <div class="tip-card">
+          <span class="tip-icon">📱</span>
+          <h5>A+移动端适配</h5>
+          <p>多框图在手机上会被压缩，确保每个框的尺寸在最终图中不小于100px宽，否则细节在移动端不可见</p>
+        </div>
+        <div class="tip-card">
+          <span class="tip-icon">✂️</span>
+          <h5>Canva后期文字建议</h5>
+          <p>场景图上叠加风格标签：「Japandi Style」「Mid-Century Modern」「Modern Minimal」— 用Playfair Display，白色或深色，放在图片角落</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ═══════════════════════════════════════════════ -->
+    <!-- 6模块规划对照表 -->
+    <!-- ═══════════════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-number" style="background:#F3C546;color:#064338;">★</div>
+        <div>
+          <div class="section-title">A+ 6模块 × 溶图场景对照表</div>
+          <div class="section-subtitle">每个A+模块应使用哪种溶图场景，一表对齐</div>
+        </div>
+      </div>
+
+      <table class="spec-table">
+        <thead>
+          <tr>
+            <th>A+模块</th>
+            <th>内容定位</th>
+            <th>推荐溶图场景</th>
+            <th>画面重点</th>
+            <th>优先级</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>M1 · 品牌故事</strong></td>
+            <td>建立品牌调性与信任感</td>
+            <td>场景5-A（Japandi生活场景）</td>
+            <td>1-2框，强调氛围感，人物背影/手部互动</td>
+            <td><span class="step-badge badge-green">P0</span></td>
+          </tr>
+          <tr>
+            <td><strong>M2 · 核心卖点1</strong></td>
+            <td>实木质感 + 榫卯工艺</td>
+            <td>场景3-A（木纹特写）+ 场景3-C（双材质对比）</td>
+            <td>框条细节放大，木纹清晰可见</td>
+            <td><span class="step-badge badge-green">P0</span></td>
+          </tr>
+          <tr>
+            <td><strong>M3 · 核心卖点2</strong></td>
+            <td>高清钢化玻璃</td>
+            <td>场景3-B（玻璃反光卖点图）</td>
+            <td>玻璃透光感，画芯清晰度对比</td>
+            <td><span class="step-badge badge-yellow">P1</span></td>
+          </tr>
+          <tr>
+            <td><strong>M4 · 多框展示</strong></td>
+            <td>系列完整性 + 混搭效果</td>
+            <td>场景1-A（Gallery Wall）</td>
+            <td>5框以上，橡木+胡桃木混搭，非对称排列</td>
+            <td><span class="step-badge badge-green">P0</span></td>
+          </tr>
+          <tr>
+            <td><strong>M5 · 场景适配</strong></td>
+            <td>多风格家居适配性</td>
+            <td>场景5-A/B/C（三种风格）</td>
+            <td>每种风格一张，展示相框的百搭性</td>
+            <td><span class="step-badge badge-yellow">P1</span></td>
+          </tr>
+          <tr>
+            <td><strong>M6 · 尺寸说明</strong></td>
+            <td>尺寸系列直观展示</td>
+            <td>场景4-A（尺寸梯度）+ 场景2-A（平铺对比）</td>
+            <td>尺寸从小到大清晰排列，含尺寸标注</td>
+            <td><span class="step-badge badge-yellow">P1</span></td>
+          </tr>
+          <tr>
+            <td><strong>M7 · 选型表</strong></td>
+            <td>SKU对比选择</td>
+            <td>场景2-B（材质对比平铺）</td>
+            <td>橡木vs胡桃木并排，配选型表格</td>
+            <td><span class="step-badge badge-yellow">P1</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- FINAL NOTE -->
+    <div class="alert-info" style="margin-top: 40px;">
+      <div class="alert-title">🔑 执行优先级建议</div>
+      <p><strong style="color:#064338;">先做P0（M1/M2/M4）</strong>：这三个模块对转化率影响最大。M4多框展示图是整个A+页面的视觉高潮，建议用场景1-A的完整版公式，一次性生成5框以上的Gallery Wall图。<br><br>
+      <strong style="color:#064338;">关于模块间衔接：</strong>所有图片的光线方向保持一致（统一为左侧光源），色调保持统一（暖白背景系列 or 深色背景系列二选一），避免模块间视觉跳跃。Canva加字时不使用亚马逊原生标题字体，模块间留白统一规划。</p>
+    </div>
+
+  </div><!-- /body -->
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div style="display:flex;align-items:center;gap:16px;">
+      <div class="footer-brand">KovaScape</div>
+      <div class="footer-divider"></div>
+      <div class="footer-meta">A+ 多框展示溶图方案 · 2026</div>
+    </div>
+    <div class="footer-meta">5场景 · 15+公式 · 7模块对照</div>
+  </div>
+
+</div><!-- /page -->
+</body>
+</html>

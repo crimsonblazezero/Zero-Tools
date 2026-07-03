@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KovaScape 证书框市场调研报告</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Noto+Serif:wght@500&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --outer-bg: #E4E1DC;
+  --page-bg: #FDFCF9;
+  --surface: #FFFFFF;
+  --border: #E8E6E2;
+  --divider: #C5C0BA;
+  --text-primary: #151515;
+  --text-body: #3D3D3D;
+  --text-secondary: #717171;
+  --hero-bg: #D7EDE2;
+  --hero-deco: #8FC5A8;
+  --hero-deco2: #5FA882;
+  --success-bg: #E8FBCF; --success-fg: #3D4826;
+  --warning-bg: #FFF0DC; --warning-fg: #E47700;
+  --info-bg: #DEE5F7; --info-fg: #3E54CE;
+  --error-bg: #FDECEA; --error-fg: #C4433A;
+  --neutral-bg: #FDF9F2; --neutral-fg: #7C746F;
+  --brand-green: #064338;
+  --brand-gold: #F3C546;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter Tight', sans-serif;
+  background: var(--outer-bg);
+  display: flex; justify-content: center;
+  padding: 32px 16px;
+  color: var(--text-body);
+  line-height: 1.6;
+}
+
+.page {
+  max-width: 1200px; width: 100%;
+  background: var(--page-bg);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+/* --- HERO --- */
+.hero {
+  background: var(--hero-bg);
+  padding: 40px 48px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-blob {
+  position: absolute;
+  border-radius: 60% 40% 55% 45% / 55% 45% 55% 45%;
+  opacity: 0.18;
+  pointer-events: none;
+}
+.hero-blob-1 { width: 260px; height: 200px; background: var(--hero-deco); top: -40px; right: -60px; }
+.hero-blob-2 { width: 180px; height: 140px; background: var(--hero-deco2); bottom: -20px; left: 60%; border-radius: 45% 55% 40% 60% / 50% 45% 55% 50%; }
+.hero-blob-3 { width: 120px; height: 100px; background: var(--hero-deco); top: 30%; left: -30px; border-radius: 50% 50% 40% 60% / 40% 55% 45% 60%; }
+
+.hero-eyebrow {
+  font-size: 12px; font-weight: 500; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--brand-green); margin-bottom: 8px;
+  position: relative; z-index: 1;
+}
+.hero-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 32px; font-weight: 700; color: var(--text-primary);
+  position: relative; z-index: 1;
+}
+.hero-subtitle {
+  font-size: 15px; color: var(--text-secondary); margin-top: 8px;
+  position: relative; z-index: 1;
+}
+.hero-divider {
+  width: 60px; height: 2px; background: var(--brand-gold);
+  margin: 16px 0; border: none; position: relative; z-index: 1;
+}
+.hero-metrics {
+  display: flex; gap: 40px; flex-wrap: wrap;
+  position: relative; z-index: 1;
+}
+.hero-metric-item .value {
+  font-family: 'Noto Serif', serif;
+  font-size: 48px; font-weight: 500; letter-spacing: -0.02em;
+  color: var(--brand-green); line-height: 1.1;
+}
+.hero-metric-item .label {
+  font-size: 13px; color: var(--text-secondary); margin-top: 2px;
+}
+
+/* --- CONTENT --- */
+.content { padding: 32px 48px; }
+
+/* Section */
+.section { margin-bottom: 40px; }
+.section-title {
+  font-size: 17px; font-weight: 600; color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.section-sub {
+  font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;
+}
+.section-rule {
+  border: none; border-top: 0.5px solid var(--border); margin-bottom: 20px;
+}
+
+/* Grid */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+/* Card */
+.card {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: 12px; padding: 20px;
+}
+.card-title {
+  font-size: 15px; font-weight: 600; color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.card-meta {
+  font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;
+}
+.card-body { font-size: 14px; color: var(--text-body); }
+
+/* Metric Cards */
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+.metric-card {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: 10px; padding: 16px;
+  text-align: center;
+}
+.metric-card .m-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+.metric-card .m-value { font-size: 26px; font-weight: 600; color: var(--text-primary); }
+.metric-card .m-delta { font-size: 12px; margin-top: 2px; }
+
+/* Pills */
+.pill {
+  display: inline-block;
+  font-size: 11px; font-weight: 500;
+  padding: 3px 9px; border-radius: 20px;
+}
+.pill-high { background: var(--error-bg); color: var(--error-fg); }
+.pill-mid { background: var(--warning-bg); color: var(--warning-fg); }
+.pill-low { background: var(--success-bg); color: var(--success-fg); }
+.pill-info { background: var(--info-bg); color: var(--info-fg); }
+.pill-brand { background: #E8F0EE; color: var(--brand-green); }
+
+/* Table */
+.table-wrap {
+  overflow-x: auto;
+  border: 0.5px solid var(--border);
+  border-radius: 10px;
+}
+table {
+  width: 100%; border-collapse: collapse;
+  font-size: 13px; min-width: 700px;
+}
+thead th {
+  font-size: 12px; font-weight: 500; color: var(--text-secondary);
+  text-align: left; padding: 12px 16px;
+  border-bottom: 1px solid var(--divider);
+  background: var(--page-bg); white-space: nowrap;
+}
+tbody td {
+  padding: 11px 16px;
+  border-bottom: 0.5px solid var(--border);
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: #FAFAF8; }
+.highlight-row { background: #F8F6F0; }
+.highlight-row:hover { background: #F3F0E8; }
+
+/* Alert */
+.alert {
+  border-radius: 10px; padding: 14px 16px;
+  font-size: 13px; margin-top: 16px;
+}
+.alert-title { font-weight: 600; margin-bottom: 4px; }
+.alert-info { background: var(--info-bg); color: var(--info-fg); }
+.alert-success { background: var(--success-bg); color: var(--success-fg); }
+.alert-warning { background: var(--warning-bg); color: var(--warning-fg); }
+
+/* Progress */
+.progress-wrap { margin-bottom: 12px; }
+.progress-label-row {
+  display: flex; justify-content: space-between;
+  font-size: 13px; margin-bottom: 4px;
+}
+.progress-track {
+  height: 6px; background: var(--border); border-radius: 3px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%; border-radius: 3px;
+  transition: width 0.6s ease;
+}
+
+/* Donut + Legend */
+.chart-legend {
+  display: flex; flex-wrap: wrap; gap: 14px;
+  margin-top: 14px; justify-content: center;
+}
+.legend-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text-secondary);
+}
+.legend-swatch {
+  width: 10px; height: 10px; border-radius: 2px;
+}
+
+/* Bar */
+.bar-item { margin-bottom: 10px; }
+.bar-label-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 3px; }
+.bar-track { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
+
+/* Footer */
+.footer {
+  background: var(--hero-bg); padding: 32px 48px 24px;
+  position: relative; overflow: hidden;
+}
+.footer-blob {
+  position: absolute; border-radius: 55% 45% 50% 50% / 50% 55% 45% 50%;
+  opacity: 0.15; pointer-events: none;
+}
+.footer-blob-1 { width: 200px; height: 150px; background: var(--hero-deco); bottom: -40px; right: -50px; }
+.footer-blob-2 { width: 140px; height: 100px; background: var(--hero-deco2); top: 20px; left: 20%; }
+.footer-top { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px; position: relative; z-index: 1; }
+.footer-brand { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 600; color: var(--brand-green); }
+.footer-brand-sub { font-size: 12px; color: var(--text-secondary); }
+.footer-col h4 { font-size: 12px; font-weight: 600; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+.footer-col a { display: block; font-size: 13px; color: var(--text-secondary); text-decoration: none; margin-bottom: 4px; }
+.footer-col a:hover { color: var(--brand-green); }
+.footer-divider { border: none; border-top: 0.5px solid var(--divider); margin: 20px 0; position: relative; z-index: 1; }
+.footer-bottom { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); position: relative; z-index: 1; }
+
+/* Mobile */
+@media (max-width: 768px) {
+  body { padding: 0; }
+  .page { border-radius: 0; }
+  .hero { padding: 28px 20px; }
+  .hero-title { font-size: 24px; }
+  .hero-metrics { gap: 20px; }
+  .hero-metric-item .value { font-size: 36px; }
+  .content { padding: 20px; }
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .footer { padding: 24px 20px; }
+  .footer-top { flex-direction: column; gap: 16px; }
+}
+
+/* Custom styles */
+.brand-accent { color: var(--brand-green); font-weight: 600; }
+.gold-accent { color: #B8921A; font-weight: 600; }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+.mt-12 { margin-top: 12px; }
+.mt-20 { margin-top: 20px; }
+.mb-16 { margin-bottom: 16px; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+<!-- ========== HERO ========== -->
+<div class="hero">
+  <div class="hero-blob hero-blob-1"></div>
+  <div class="hero-blob hero-blob-2"></div>
+  <div class="hero-blob hero-blob-3"></div>
+
+  <div class="hero-eyebrow">Amazon Market Research · 2026年6月</div>
+  <div class="hero-title">证书框 — 美英德三市场调研</div>
+  <div class="hero-subtitle">聚焦 8.5×11" & 11×14" 尺寸 · 四组框色+卡纸配色组合 · 首批下单配比建议</div>
+  <hr class="hero-divider">
+
+  <div class="hero-metrics">
+    <div class="hero-metric-item">
+      <div class="value">$15</div>
+      <div class="label">美国 8.5×11" 中位价</div>
+    </div>
+    <div class="hero-metric-item">
+      <div class="value">$23</div>
+      <div class="label">美国 11×14" 中位价</div>
+    </div>
+    <div class="hero-metric-item">
+      <div class="value">8</div>
+      <div class="label">首批建议 SKU 数</div>
+    </div>
+    <div class="hero-metric-item">
+      <div class="value">4</div>
+      <div class="label">差异化配色组合</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== CONTENT ========== -->
+<div class="content">
+
+<!-- Section 1: Market Overview -->
+<div class="section">
+  <div class="section-title">📊 三市场总览</div>
+  <div class="section-sub">美国市场成熟、需求旺盛；英国市场中度竞争；德国市场价格敏感、以A4为主</div>
+  <hr class="section-rule">
+
+  <div class="table-wrap mb-16">
+    <table>
+      <thead>
+        <tr>
+          <th>市场</th><th>尺寸关键词</th><th>首页竞品</th><th>价格区间</th>
+          <th>中位价</th><th>主流材质</th><th>竞争强度</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>🇺🇸 美国</strong></td>
+          <td>certificate frame 8.5×11</td>
+          <td>48+</td>
+          <td>$5.89 – $44.59</td>
+          <td><strong>$15.98</strong></td>
+          <td>实木 / 工程木 / MDF</td>
+          <td><span class="pill pill-high">极高</span></td>
+        </tr>
+        <tr>
+          <td><strong>🇺🇸 美国</strong></td>
+          <td>certificate frame 11×14</td>
+          <td>48+</td>
+          <td>$5.99 – $51.46</td>
+          <td><strong>$22.99</strong></td>
+          <td>实木 / 工程木 / 金属</td>
+          <td><span class="pill pill-mid">高</span></td>
+        </tr>
+        <tr>
+          <td><strong>🇬🇧 英国</strong></td>
+          <td>certificate frame 8.5×11</td>
+          <td>48</td>
+          <td>£5.99 – £39.47</td>
+          <td><strong>£9.99</strong></td>
+          <td>工程木 / MDF / 塑料</td>
+          <td><span class="pill pill-mid">中等</span></td>
+        </tr>
+        <tr>
+          <td><strong>🇬🇧 英国</strong></td>
+          <td>certificate frame 11×14</td>
+          <td>48+</td>
+          <td>£6.80 – £34.99</td>
+          <td><strong>£12.99</strong></td>
+          <td>工程木 / MDF / 实木</td>
+          <td><span class="pill pill-low">中低</span></td>
+        </tr>
+        <tr>
+          <td><strong>🇩🇪 德国</strong></td>
+          <td>Urkundenrahmen / A4</td>
+          <td>48</td>
+          <td>€4.78 – €38.65</td>
+          <td><strong>€7.55</strong></td>
+          <td>MDF / 塑料 / 金属</td>
+          <td><span class="pill pill-low">中低</span></td>
+        </tr>
+        <tr>
+          <td><strong>🇩🇪 德国</strong></td>
+          <td>Bilderrahmen 30×40cm</td>
+          <td>48</td>
+          <td>€5.03 – €31.05</td>
+          <td><strong>€10.92</strong></td>
+          <td>MDF / 工程木 / 金属</td>
+          <td><span class="pill pill-low">中低</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Market price distribution chart -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">🇺🇸 美国市场价格分布</div>
+      <div class="card-meta">8.5×11" vs 11×14" 价格带对比</div>
+      <div style="position:relative; height:220px;">
+        <canvas id="chartUsPrice"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🌍 三市场均价对比</div>
+      <div class="card-meta">8.5×11" / A4 尺寸等效对比 (USD)</div>
+      <div style="position:relative; height:220px;">
+        <canvas id="chartMarketPrice"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 2: Color Combo Analysis -->
+<div class="section">
+  <div class="section-title">🎨 四种选定配色组合 — 美国市场竞争格局</div>
+  <div class="section-sub">直接竞品数量、价格带、评分、差异化机会分析</div>
+  <hr class="section-rule">
+
+  <div class="table-wrap mb-16">
+    <table>
+      <thead>
+        <tr>
+          <th>框色 / 卡纸配色</th><th>首页直接竞品</th><th>代表竞品品牌</th>
+          <th>竞品价格带</th><th>竞品平均分</th><th>差异化机会</th><th>竞争评级</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="pill pill-brand">SKU 01/02</span> <strong>黑色/蓝/金</strong></td>
+          <td>12~15个</td>
+          <td>Frametory · Golden State Art · upsimples · DOAI ART</td>
+          <td>$17.99 – $33.99</td>
+          <td>4.6 ★</td>
+          <td>中等：可通过实木材质、高清玻璃、礼品包装差异化</td>
+          <td><span class="pill pill-mid">高竞争</span></td>
+        </tr>
+        <tr class="highlight-row">
+          <td><span class="pill pill-brand">SKU 03/04</span> <strong>胡桃木色/蓝/金</strong></td>
+          <td>5~8个</td>
+          <td>GraduationMall · DOAI ART · 少数白牌</td>
+          <td>$27.99 – $33.95</td>
+          <td>4.4 ★</td>
+          <td><strong>高</strong>：胡桃木+蓝金搭配竞品极少，可主打质感与独特性</td>
+          <td><span class="pill pill-low">低竞争</span></td>
+        </tr>
+        <tr>
+          <td><span class="pill pill-brand">SKU 05/06</span> <strong>黑色/黑/金</strong></td>
+          <td>20+个</td>
+          <td>HOUSE DAY · upsimples · Golden State Art · 大量白牌</td>
+          <td>$10.99 – $37.99</td>
+          <td>4.5 ★</td>
+          <td>低：最主流组合，价格战激烈。需规模化成本优势或包装差异化</td>
+          <td><span class="pill pill-high">极高竞争</span></td>
+        </tr>
+        <tr class="highlight-row">
+          <td><span class="pill pill-brand">SKU 07/08</span> <strong>胡桃木色/黑/金</strong></td>
+          <td>8~10个</td>
+          <td>GraduationMall · Golden State Art · 白牌</td>
+          <td>$20.99 – $36.99</td>
+          <td>4.5 ★</td>
+          <td>中等：经典搭配有稳定需求，胡桃木质感提供溢价基础</td>
+          <td><span class="pill pill-mid">中竞争</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="alert alert-info">
+    <div class="alert-title">💡 关键发现</div>
+    胡桃木色+蓝金组合在美亚首页仅有 5~8 个直接竞品，且多数为 Cherry/Mahogany 仿木而非真正 Walnut 实木。这是 <strong>四个组合中差异化空间最大的配色</strong>，建议重点打造视觉卖点。
+  </div>
+</div>
+
+<!-- Section 3: Competition Level Visual -->
+<div class="section">
+  <div class="section-title">📈 四组合竞争强度对比</div>
+  <hr class="section-rule">
+  <div class="grid-2">
+    <div style="position:relative; height:280px;">
+      <canvas id="chartCompetition"></canvas>
+    </div>
+    <div>
+      <div class="progress-wrap">
+        <div class="progress-label-row"><span>黑色 / 黑金</span><span>竞品 20+ | 极高竞争</span></div>
+        <div class="progress-track"><div class="progress-fill" style="width:100%; background:#C4433A;"></div></div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-label-row"><span>黑色 / 蓝金</span><span>竞品 12-15 | 高竞争</span></div>
+        <div class="progress-track"><div class="progress-fill" style="width:75%; background:#E47700;"></div></div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-label-row"><span>胡桃木色 / 黑金</span><span>竞品 8-10 | 中竞争</span></div>
+        <div class="progress-track"><div class="progress-fill" style="width:50%; background:#3E54CE;"></div></div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-label-row"><span>胡桃木色 / 蓝金</span><span>竞品 5-8 | 低竞争</span></div>
+        <div class="progress-track"><div class="progress-fill" style="width:35%; background:#3D4826;"></div></div>
+      </div>
+
+      <div class="card mt-20">
+        <div class="card-title">竞争格局解读</div>
+        <div class="card-body">
+          <p style="margin-bottom:8px;"><strong>黑框+黑金卡纸</strong> 是证书框的"标配组合"，20+竞品直接竞争，价格从 $10 到 $38 全覆盖。必须以价格优势或品牌调性取胜。</p>
+          <p><strong>胡桃木框+蓝金卡纸</strong> 是明显的蓝海。当前竞品以 Cherry/Mahogany 仿木纹为主，真正 Walnut 实木 + 蓝金搭配极为稀缺。这是品牌溢价的最佳切入点。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 4: Size Mix -->
+<div class="section">
+  <div class="section-title">📐 尺寸配比策略</div>
+  <div class="section-sub">8.5×11"（走量） vs 11×14"（利润）的市场需求差异</div>
+  <hr class="section-rule">
+
+  <div class="grid-3">
+    <div class="metric-card">
+      <div class="m-label">8.5×11" 搜索结果</div>
+      <div class="m-value">3000+</div>
+      <div class="m-delta" style="color:var(--success-fg);">▲ 更大需求基数</div>
+    </div>
+    <div class="metric-card">
+      <div class="m-label">11×14" 搜索结果</div>
+      <div class="m-value">2000+</div>
+      <div class="m-delta" style="color:var(--text-secondary);">需求约为8.5×11的2/3</div>
+    </div>
+    <div class="metric-card">
+      <div class="m-label">11×14" 溢价幅度</div>
+      <div class="m-value">+53%</div>
+      <div class="m-delta" style="color:var(--success-fg);">▲ 中位价比8.5×11高$7-8</div>
+    </div>
+  </div>
+
+  <div class="grid-2 mt-20">
+    <div class="card">
+      <div class="card-title">8.5×11" — 主力走量款</div>
+      <div class="card-body">
+        <ul style="padding-left:18px;">
+          <li>证书框标准尺寸，需求最大</li>
+          <li>多包装需求明显（2/4/6/10包）</li>
+          <li>竞品最多、价格战最激烈</li>
+          <li>黑色框走量，胡桃木框做品质</li>
+          <li><strong>建议首批占比：60-65%</strong></li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">11×14" — 利润溢价款</div>
+      <div class="card-body">
+        <ul style="padding-left:18px;">
+          <li>大型证书/海报展示，需求稳健</li>
+          <li>多包装较少，以单品为主</li>
+          <li>溢价空间更大（+50%以上）</li>
+          <li>实木材质溢价效果更显著</li>
+          <li><strong>建议首批占比：35-40%</strong></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Size mix donut -->
+  <div class="grid-2 mt-20">
+    <div style="position:relative; height:260px;">
+      <canvas id="chartSizeMix"></canvas>
+    </div>
+    <div class="chart-legend" style="flex-direction:column; justify-content:center;">
+      <div class="legend-item"><span class="legend-swatch" style="background:#064338;"></span> 8.5×11" — 62.5% (走量)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#5FA882;"></span> 11×14" — 37.5% (利润)</div>
+      <div class="legend-item" style="margin-top:6px; font-size:11px; color:var(--text-secondary);">
+        以首批1000个为例：<br>8.5×11" ≈ 625个 / 11×14" ≈ 375个
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 5: Order Mix Recommendation -->
+<div class="section">
+  <div class="section-title">🎯 首批下单配比建议</div>
+  <div class="section-sub">基于竞争格局、市场需求、差异化空间的综合配比</div>
+  <hr class="section-rule">
+
+  <div class="table-wrap mb-16">
+    <table>
+      <thead>
+        <tr>
+          <th>SKU</th><th>框色</th><th>卡纸配色</th><th>尺寸</th>
+          <th style="text-align:right;">配比%</th>
+          <th style="text-align:right;">首批量<br>(1000为例)</th>
+          <th>定位策略</th>
+          <th style="text-align:right;">建议售价</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>SKU-01</strong></td><td>黑色</td><td>蓝/金</td><td>8.5×11"</td>
+          <td class="text-right"><strong>20%</strong></td><td class="text-right">200</td>
+          <td>主力走量款 — 蓝金毕业季需求大</td>
+          <td class="text-right gold-accent">$16.99–19.99</td>
+        </tr>
+        <tr>
+          <td><strong>SKU-02</strong></td><td>黑色</td><td>蓝/金</td><td>11×14"</td>
+          <td class="text-right"><strong>12%</strong></td><td class="text-right">120</td>
+          <td>利润款 — 与8.5×11形成尺寸套装</td>
+          <td class="text-right gold-accent">$23.99–28.99</td>
+        </tr>
+        <tr class="highlight-row">
+          <td><strong>SKU-03</strong></td><td>胡桃木色</td><td>蓝色/金色</td><td>8.5×11"</td>
+          <td class="text-right"><strong>10%</strong></td><td class="text-right">100</td>
+          <td>差异化尖刀款 — 竞品少、溢价高</td>
+          <td class="text-right gold-accent">$25.99–29.99</td>
+        </tr>
+        <tr class="highlight-row">
+          <td><strong>SKU-04</strong></td><td>胡桃木色</td><td>蓝色/金色</td><td>11×14"</td>
+          <td class="text-right"><strong>8%</strong></td><td class="text-right">80</td>
+          <td>高端利润款 — 稀缺组合</td>
+          <td class="text-right gold-accent">$30.99–35.99</td>
+        </tr>
+        <tr>
+          <td><strong>SKU-05</strong></td><td>黑色</td><td>黑/金</td><td>8.5×11"</td>
+          <td class="text-right"><strong>22%</strong></td><td class="text-right">220</td>
+          <td>最大走量款 — 最主流组合</td>
+          <td class="text-right gold-accent">$14.99–17.99</td>
+        </tr>
+        <tr>
+          <td><strong>SKU-06</strong></td><td>黑色</td><td>黑/金</td><td>11×14"</td>
+          <td class="text-right"><strong>13%</strong></td><td class="text-right">130</td>
+          <td>经典利润款 — 稳定需求</td>
+          <td class="text-right gold-accent">$20.99–25.99</td>
+        </tr>
+        <tr>
+          <td><strong>SKU-07</strong></td><td>胡桃木色</td><td>黑色/金色</td><td>8.5×11"</td>
+          <td class="text-right"><strong>8%</strong></td><td class="text-right">80</td>
+          <td>品质款 — 经典配色+实木质感</td>
+          <td class="text-right gold-accent">$23.99–27.99</td>
+        </tr>
+        <tr>
+          <td><strong>SKU-08</strong></td><td>胡桃木色</td><td>黑色/金色</td><td>11×14"</td>
+          <td class="text-right"><strong>7%</strong></td><td class="text-right">70</td>
+          <td>高端款 — 大尺寸实木证书框</td>
+          <td class="text-right gold-accent">$28.99–33.99</td>
+        </tr>
+        <tr style="background: #F0EDE4; font-weight:600;">
+          <td colspan="4"><strong>📦 汇总</strong></td>
+          <td class="text-right"><strong>100%</strong></td><td class="text-right"><strong>1000</strong></td>
+          <td colspan="2">黑色框系列 67% / 胡桃木框系列 33%</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Order mix visual -->
+  <div class="grid-2">
+    <div style="position:relative; height:300px;">
+      <canvas id="chartOrderMix"></canvas>
+    </div>
+    <div class="chart-legend" style="flex-direction:column; justify-content:center; gap:10px;">
+      <div class="legend-item"><span class="legend-swatch" style="background:#064338;"></span> 黑框+黑金 8.5×11 — 22%</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#1A6B5A;"></span> 黑框+蓝金 8.5×11 — 20%</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#2D8A6E;"></span> 黑框+黑金 11×14 — 13%</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#3FA882;"></span> 黑框+蓝金 11×14 — 12%</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#C49B2A;"></span> 胡桃木+蓝金 8.5×11 — 10%</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#D4AD3E;"></span> 胡桃木+黑金 8.5×11 — 8%</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#E3BF52;"></span> 胡桃木+蓝金 11×14 — 8%</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#F3C546;"></span> 胡桃木+黑金 11×14 — 7%</div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 6: Key Insights -->
+<div class="section">
+  <div class="section-title">🔑 关键策略建议</div>
+  <hr class="section-rule">
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">🎯 市场优先级</div>
+      <div class="card-body">
+        <p><strong>首批专注美国市场。</strong> 美国证书框市场成熟、需求量大、消费者付费意愿高。英国和德国作为第二阶段拓展市场。</p>
+        <div class="bar-item mt-12">
+          <div class="bar-label-row"><span>🇺🇸 美国（首批）</span><span>市场规模最大</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:100%; background:var(--brand-green);"></div></div>
+        </div>
+        <div class="bar-item">
+          <div class="bar-label-row"><span>🇬🇧 英国（二阶段）</span><span>中度竞争</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:60%; background:#5FA882;"></div></div>
+        </div>
+        <div class="bar-item">
+          <div class="bar-label-row"><span>🇩🇪 德国（二阶段）</span><span>价格敏感</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:40%; background:#8FC5A8;"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🪵 材质差异化</div>
+      <div class="card-body">
+        <p>美国市场 MDF/工程木产品泛滥（$6-12区间）。<strong>实木（Walnut / Oak）产品可有效溢价 $10-15。</strong> 胡桃木框+蓝金卡纸组合在竞品中极为稀缺，是最佳差异化切入点。</p>
+        <p class="mt-12">建议在标题和五点中明确标注 <span class="brand-accent">"Solid Walnut Wood"</span> 与 <span class="brand-accent">"HD Tempered Glass"</span>，与竞品的 "Engineered Wood / Plexiglass" 形成鲜明对比。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📸 视觉策略</div>
+      <div class="card-body">
+        <ul style="padding-left:18px;">
+          <li>竞品主图多为白底产品图 → <strong>采用实景场景图</strong>（书房/办公室/毕业典礼）</li>
+          <li>蓝金双色卡纸的视觉冲击力是核心卖点 → 主图突出卡纸层次</li>
+          <li>高清钢化玻璃反光效果 → A+页面重点展示</li>
+          <li>胡桃木纹理特写 → 体现实木质感</li>
+          <li>多场景适配展示 → 办公室/居家/毕业现场</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">💰 定价策略</div>
+      <div class="card-body">
+        <p>建议避开 $6-12 价格战区间，定位 <strong>$15-35 中高端</strong>：</p>
+        <div class="bar-item mt-12">
+          <div class="bar-label-row"><span>黑色框走量款</span><span>$15-25</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:70%; background:var(--brand-green);"></div></div>
+        </div>
+        <div class="bar-item">
+          <div class="bar-label-row"><span>胡桃木框利润款</span><span>$25-35</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:90%; background:#F3C546;"></div></div>
+        </div>
+        <p class="mt-12" style="font-size:12px; color:var(--text-secondary);">胡桃木框溢价空间更大，11×14" 可尝试 $30+ 定价。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🎁 包装与礼品化</div>
+      <div class="card-body">
+        <p>证书框送礼场景占比高（毕业/入职/获奖/纪念）。竞品中 <span class="brand-accent">"Gift-Ready Packed"</span> 是高频卖点关键词。</p>
+        <p class="mt-12">建议首批即采用礼品级包装：黑色礼盒 + 金色品牌丝带 + 内衬保护。这在竞品中是明显的加分项。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📦 后续拓展方向</div>
+      <div class="card-body">
+        <ul style="padding-left:18px;">
+          <li><strong>2件套组合：</strong>黑框+胡桃木框各一，差异化套装</li>
+          <li><strong>多包装：</strong>黑色框 2/4 pack 满足批量采购需求</li>
+          <li><strong>英国/德国站：</strong>美国站跑通后快速复制</li>
+          <li><strong>其他卡纸色：</strong>白色/奶油色/酒红色扩展配色线</li>
+          <li><strong>独立站同步：</strong>KovaScapeHomedecor 上架</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 7: Key Competitors Detail -->
+<div class="section">
+  <div class="section-title">🏆 美国站头部竞品速览</div>
+  <hr class="section-rule">
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>品牌</th><th>ASIN</th><th>产品</th>
+          <th style="text-align:right;">价格</th>
+          <th style="text-align:right;">评分</th>
+          <th style="text-align:right;">评论</th>
+          <th>材质/特点</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Golden State Art</strong></td>
+          <td style="font-size:11px;">B09Y78KZ6X</td>
+          <td>11×14 Diploma Frame Navy/Gold Mat</td>
+          <td class="text-right">$21.99</td>
+          <td class="text-right">4.8 ★</td>
+          <td class="text-right"><strong>4,600</strong></td>
+          <td>Real Glass · 双色卡纸 · 多包装选项</td>
+        </tr>
+        <tr>
+          <td><strong>upsimples</strong></td>
+          <td style="font-size:11px;">B07Z4PFKTQ</td>
+          <td>8.5×11 Certificate Frame HD Glass</td>
+          <td class="text-right">$23.99</td>
+          <td class="text-right">4.7 ★</td>
+          <td class="text-right"><strong>1,000+</strong></td>
+          <td>HD Glass · 多色可选 · 品类头部</td>
+        </tr>
+        <tr>
+          <td><strong>Americanflat</strong></td>
+          <td style="font-size:11px;">B00YCUD8CQ</td>
+          <td>8.5×11 Diploma Frame Shatter-Resistant</td>
+          <td class="text-right">$10.99</td>
+          <td class="text-right">4.7 ★</td>
+          <td class="text-right"><strong>1,000+</strong></td>
+          <td>Shatter-Resistant · 工程木 · 低价走量</td>
+        </tr>
+        <tr>
+          <td><strong>GraduationMall</strong></td>
+          <td style="font-size:11px;">B08QN175P2</td>
+          <td>8.5×11 Diploma Frame Navy/Gold Mat</td>
+          <td class="text-right">$29.99</td>
+          <td class="text-right">4.5 ★</td>
+          <td class="text-right">450</td>
+          <td>Solid Wood · UV Protection Acrylic</td>
+        </tr>
+        <tr>
+          <td><strong>Frametory</strong></td>
+          <td style="font-size:11px;">B0B2SL25VC</td>
+          <td>8.5×11 Diploma Frame Navy/Gold Mat</td>
+          <td class="text-right">$18.99</td>
+          <td class="text-right">4.7 ★</td>
+          <td class="text-right">65</td>
+          <td>Real Glass · Black Gold & Burgundy</td>
+        </tr>
+        <tr>
+          <td><strong>DOAI ART</strong></td>
+          <td style="font-size:11px;">B09F8TKD8Z</td>
+          <td>8.5×11 Diploma Frame Mahogany/Blue Mat</td>
+          <td class="text-right">$27.99</td>
+          <td class="text-right">4.5 ★</td>
+          <td class="text-right">130</td>
+          <td>Wide Molding · Gold Trim · Mahogany</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<!-- ========== FOOTER ========== -->
+<div class="footer">
+  <div class="footer-blob footer-blob-1"></div>
+  <div class="footer-blob footer-blob-2"></div>
+  <div class="footer-top">
+    <div>
+      <div class="footer-brand">KovaScape</div>
+      <div class="footer-brand-sub">证书框市场调研 · 2026年6月</div>
+    </div>
+    <div class="footer-col">
+      <h4>调研范围</h4>
+      <a href="https://www.amazon.com/s?k=certificate+frame+8.5x11" target="_blank">Amazon US — Certificate Frame</a>
+      <a href="https://www.amazon.co.uk/s?k=certificate+frame+8.5x11" target="_blank">Amazon UK — Certificate Frame</a>
+      <a href="https://www.amazon.de/s?k=Urkundenrahmen+A4" target="_blank">Amazon DE — Urkundenrahmen</a>
+    </div>
+    <div class="footer-col">
+      <h4>关键竞品</h4>
+      <a href="https://www.amazon.com/dp/B09Y78KZ6X" target="_blank">Golden State Art (4,600 Reviews)</a>
+      <a href="https://www.amazon.com/dp/B0B2SL25VC" target="_blank">Frametory Navy/Gold Mat</a>
+      <a href="https://www.amazon.com/dp/B08QN175P2" target="_blank">GraduationMall Cherry/Navy</a>
+    </div>
+  </div>
+  <hr class="footer-divider">
+  <div class="footer-bottom">
+    <span>数据采集日期：2026年6月10日 · 基于Amazon US/UK/DE 首页搜索结果</span>
+    <span>Generated by <a href="https://allyhub.com" target="_blank" style="color:var(--text-secondary);">AllyHub AI</a></span>
+  </div>
+</div>
+
+</div><!-- /page -->
+
+<!-- ========== CHARTS ========== -->
+<script>
+// Common colors
+const green1 = '#064338', green2 = '#1A6B5A', green3 = '#2D8A6E', green4 = '#3FA882', green5 = '#5FA882', green6 = '#8FC5A8';
+const gold1 = '#F3C546', gold2 = '#C49B2A', gold3 = '#D4AD3E', gold4 = '#E3BF52';
+const gray1 = '#C5C0BA', gray2 = '#E8E6E2';
+
+// Chart 1: US Price Distribution
+new Chart(document.getElementById('chartUsPrice'), {
+  type: 'bar',
+  data: {
+    labels: ['$5-10','$10-15','$15-20','$20-25','$25-30','$30-35','$35-40','$40-45','$45-50','$50+'],
+    datasets: [{
+      label: '8.5×11"',
+      data: [8, 5, 4, 3, 2, 2, 1, 0, 0, 0],
+      backgroundColor: green1,
+      borderRadius: 4
+    }, {
+      label: '11×14"',
+      data: [3, 4, 6, 5, 3, 3, 2, 1, 1, 0],
+      backgroundColor: gold1,
+      borderRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+      y: { grid: { color: gray2 }, ticks: { font: { size: 10 } }, title: { display: true, text: '竞品数量', font: { size: 10 } } }
+    }
+  }
+});
+
+// Chart 2: Market Price Comparison
+new Chart(document.getElementById('chartMarketPrice'), {
+  type: 'bar',
+  data: {
+    labels: ['美国', '英国*', '德国*'],
+    datasets: [{
+      label: '最低价',
+      data: [5.89, 6.81, 5.03],
+      backgroundColor: green6,
+      borderRadius: 4
+    }, {
+      label: '中位价',
+      data: [15.98, 9.99, 7.55],
+      backgroundColor: green3,
+      borderRadius: 4
+    }, {
+      label: '最高价',
+      data: [44.59, 39.47, 38.65],
+      backgroundColor: green1,
+      borderRadius: 4
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+      y: { grid: { color: gray2 }, ticks: { font: { size: 10 }, callback: v => '$' + v }, title: { display: true, text: 'USD (英国£/德国€按汇率折算)', font: { size: 9 } } }
+    }
+  }
+});
+
+// Chart 3: Competition Level
+new Chart(document.getElementById('chartCompetition'), {
+  type: 'bar',
+  data: {
+    labels: ['黑框/黑金', '黑框/蓝金', '胡桃木/黑金', '胡桃木/蓝金'],
+    datasets: [{
+      data: [20, 13, 9, 6],
+      backgroundColor: ['#C4433A','#E47700','#3E54CE','#3D4826'],
+      borderRadius: 6
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y',
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: gray2 }, ticks: { font: { size: 11 } }, title: { display: true, text: '首页直接竞品数', font: { size: 11 } } },
+      y: { grid: { display: false }, ticks: { font: { size: 12, weight: '600' } } }
+    }
+  }
+});
+
+// Chart 4: Size Mix Donut
+new Chart(document.getElementById('chartSizeMix'), {
+  type: 'doughnut',
+  data: {
+    labels: ['8.5×11"','11×14"'],
+    datasets: [{
+      data: [62.5, 37.5],
+      backgroundColor: [green1, green5],
+      borderWidth: 0
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '65%',
+    plugins: { legend: { display: false } }
+  }
+});
+
+// Chart 5: Order Mix Donut
+new Chart(document.getElementById('chartOrderMix'), {
+  type: 'doughnut',
+  data: {
+    labels: [
+      '黑框+黑金 8.5×11','黑框+蓝金 8.5×11','黑框+黑金 11×14','黑框+蓝金 11×14',
+      '胡桃木+蓝金 8.5×11','胡桃木+黑金 8.5×11','胡桃木+蓝金 11×14','胡桃木+黑金 11×14'
+    ],
+    datasets: [{
+      data: [22, 20, 13, 12, 10, 8, 8, 7],
+      backgroundColor: [green1, green2, green3, green4, gold2, gold3, gold4, gold1],
+      borderWidth: 0
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '55%',
+    plugins: { legend: { display: false } }
+  }
+});
+</script>
+
+</body>
+</html>

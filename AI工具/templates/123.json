@@ -1,0 +1,14 @@
+{
+  "name": "123",
+  "description": "",
+  "swch_auto_last": true,
+  "rules": [
+    {
+      "position": "PT06",
+      "keywords": [
+        "主图"
+      ],
+      "priority": "high"
+    }
+  ]
+}

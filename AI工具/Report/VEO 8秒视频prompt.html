@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KovaScape · 实木相框 VEO 提示词脚本</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --forest: #064338;
+    --deep-forest: #042E25;
+    --gold: #F3C546;
+    --warm-white: #FDFCF9;
+    --cream: #FDF9F2;
+    --light-green: #E8F2F0;
+    --light-gold: #FFF8DC;
+    --charcoal: #1D1B20;
+    --body-gray: #717171;
+    --border: #E8E4DE;
+    --outer-bg: #F0EDE8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--outer-bg);
+    font-family: 'Poppins', sans-serif;
+    color: var(--charcoal);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    background: var(--warm-white);
+    max-width: 1260px;
+    margin: 0 auto;
+    border-radius: 40px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.06);
+  }
+
+  /* ===== Hero ===== */
+  .hero {
+    background: var(--forest);
+    padding: 64px 0 0 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -120px;
+    right: -60px;
+    width: 380px;
+    height: 380px;
+    background: radial-gradient(circle, rgba(243,197,70,0.08) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -80px;
+    left: -40px;
+    width: 260px;
+    height: 260px;
+    background: radial-gradient(circle, rgba(243,197,70,0.05) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+
+  .hero-blob {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.12;
+  }
+
+  .hero-blob-1 {
+    top: 20px;
+    left: 30%;
+    width: 120px;
+    height: 120px;
+    background: var(--gold);
+    border-radius: 60% 40% 50% 50% / 40% 50% 50% 60%;
+  }
+
+  .hero-blob-2 {
+    bottom: 10px;
+    right: 25%;
+    width: 90px;
+    height: 90px;
+    background: rgba(243,197,70,0.6);
+    border-radius: 50% 60% 40% 50% / 50% 40% 60% 50%;
+  }
+
+  .hero-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 48px 0 48px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .hero-eyebrow-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--gold);
+    flex-shrink: 0;
+  }
+  .hero-eyebrow-text {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.7);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+
+  .hero-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 52px;
+    font-weight: 500;
+    color: #FFFFFF;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+    margin-bottom: 8px;
+  }
+  .hero-title em {
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .hero-subtitle {
+    font-size: 15px;
+    color: rgba(255,255,255,0.7);
+    max-width: 640px;
+    margin-bottom: 0;
+    line-height: 1.7;
+  }
+
+  .hero-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-top: 0.6px solid rgba(243,197,70,0.4);
+    margin-top: 36px;
+    padding: 24px 0;
+  }
+
+  .hero-metric {
+    text-align: left;
+  }
+  .hero-metric-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    font-weight: 500;
+    color: var(--gold);
+    line-height: 1.2;
+  }
+  .hero-metric-label {
+    font-size: 12px;
+    color: rgba(255,255,255,0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+
+  /* ===== Content ===== */
+  .content {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 48px 40px 56px;
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--charcoal);
+    margin-bottom: 4px;
+  }
+  .section-subtitle {
+    font-size: 14px;
+    color: var(--body-gray);
+    margin-bottom: 24px;
+  }
+  .section-divider {
+    width: 100%;
+    height: 0.5px;
+    background: var(--border);
+    margin-bottom: 32px;
+  }
+
+  /* ===== Info Alert ===== */
+  .alert {
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 32px;
+    border-left: 4px solid;
+  }
+  .alert-info {
+    background: var(--cream);
+    border-left-color: var(--forest);
+  }
+  .alert-info .alert-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--forest);
+    margin-bottom: 6px;
+  }
+  .alert-info .alert-body {
+    font-size: 13px;
+    color: var(--body-gray);
+    line-height: 1.7;
+  }
+
+  /* ===== Script Card ===== */
+  .script-card {
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    background: var(--warm-white);
+    margin-bottom: 40px;
+    transition: box-shadow 0.2s;
+  }
+  .script-card:hover {
+    box-shadow: 0 8px 30px rgba(0,0,0,0.04);
+  }
+
+  .script-card-header {
+    padding: 28px 32px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .script-number {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--forest);
+    color: var(--gold);
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .script-header-content {
+    flex: 1;
+  }
+  .script-type {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--forest);
+    background: var(--light-green);
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 6px;
+  }
+  .script-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--charcoal);
+    line-height: 1.3;
+  }
+  .script-name-en {
+    font-size: 13px;
+    color: var(--body-gray);
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  .script-card-body {
+    padding: 24px 32px 28px;
+  }
+
+  .script-section {
+    margin-bottom: 20px;
+  }
+  .script-section:last-child {
+    margin-bottom: 0;
+  }
+
+  .script-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--forest);
+    margin-bottom: 8px;
+  }
+
+  .script-concept {
+    font-size: 14px;
+    color: var(--body-gray);
+    line-height: 1.7;
+  }
+
+  .script-prompt-box {
+    background: #F8F6F2;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    font-size: 13.5px;
+    line-height: 1.75;
+    color: var(--charcoal);
+    white-space: pre-wrap;
+    font-family: 'Poppins', sans-serif;
+    position: relative;
+  }
+
+  .script-prompt-box .prompt-lang {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #999;
+    margin-bottom: 6px;
+  }
+
+  .script-prompt-box .cn-note {
+    color: var(--body-gray);
+    font-size: 12px;
+    font-style: italic;
+  }
+
+  .spec-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .spec-item {
+    background: var(--cream);
+    border-radius: 10px;
+    padding: 12px 16px;
+  }
+  .spec-item-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--body-gray);
+    margin-bottom: 2px;
+  }
+  .spec-item-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--charcoal);
+  }
+
+  .brand-note {
+    background: var(--light-green);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--forest);
+    line-height: 1.6;
+    border-left: 3px solid var(--gold);
+  }
+
+  /* ===== Footer ===== */
+  .footer {
+    background: var(--deep-forest);
+    padding: 40px 48px 32px;
+    color: rgba(255,255,255,0.6);
+    font-size: 13px;
+  }
+
+  .footer-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 24px;
+    margin-bottom: 20px;
+  }
+
+  .footer-brand {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    color: var(--gold);
+    font-weight: 500;
+  }
+  .footer-brand-sub {
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    font-family: 'Poppins', sans-serif;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+  .footer-links-col {
+    min-width: 120px;
+  }
+  .footer-links-col-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 6px;
+  }
+  .footer-links-col a {
+    display: block;
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+    text-decoration: none;
+    margin-bottom: 4px;
+    transition: color 0.2s;
+  }
+  .footer-links-col a:hover {
+    color: var(--gold);
+  }
+
+  .footer-divider {
+    border: none;
+    height: 0.5px;
+    background: rgba(243,197,70,0.25);
+    margin: 16px 0;
+  }
+
+  .footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 12px;
+  }
+  .footer-bottom a {
+    color: var(--gold);
+    text-decoration: none;
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 640px) {
+    .page { border-radius: 0; }
+    .hero-inner { padding: 0 24px; }
+    .hero-title { font-size: 32px; }
+    .hero-metrics { grid-template-columns: 1fr; gap: 12px; }
+    .content { padding: 32px 20px 40px; }
+    .script-card-header { flex-direction: column; padding: 20px 20px 16px; }
+    .script-card-body { padding: 16px 20px 24px; }
+    .script-prompt-box { padding: 16px; font-size: 13px; }
+    .footer { padding: 32px 24px; }
+    .footer-top { flex-direction: column; }
+  }
+
+  /* ===== Animations ===== */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .script-card {
+    animation: fadeUp 0.6s ease-out both;
+  }
+  .script-card:nth-child(2) { animation-delay: 0.1s; }
+  .script-card:nth-child(3) { animation-delay: 0.2s; }
+  .script-card:nth-child(4) { animation-delay: 0.3s; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ===== Hero ===== -->
+  <div class="hero">
+    <div class="hero-blob hero-blob-1"></div>
+    <div class="hero-blob hero-blob-2"></div>
+    <div class="hero-inner">
+      <div class="hero-eyebrow">
+        <div class="hero-eyebrow-dot"></div>
+        <span class="hero-eyebrow-text">KovaScape · Creative Direction</span>
+      </div>
+      <h1 class="hero-title">
+        实木相框<br><em>VEO 提示词脚本</em>
+      </h1>
+      <p class="hero-subtitle">
+        基于 Amazon Top 50 竞品视频策略深度分析，为 KovaScape 实木相框量身打造三条高质量 AI 视频生成提示词脚本 —— 覆盖改造对比、情感叙事、材质特写三大转化场景。
+      </p>
+      <div class="hero-metrics">
+        <div class="hero-metric">
+          <div class="hero-metric-value">3</div>
+          <div class="hero-metric-label">Video Scripts</div>
+        </div>
+        <div class="hero-metric">
+          <div class="hero-metric-value">15–30s</div>
+          <div class="hero-metric-label">Optimal Duration</div>
+        </div>
+        <div class="hero-metric">
+          <div class="hero-metric-value">16:9</div>
+          <div class="hero-metric-label">Aspect Ratio</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Content ===== -->
+  <div class="content">
+
+    <!-- Context -->
+    <div class="alert alert-info">
+      <div class="alert-title">📋 竞品洞察概要</div>
+      <div class="alert-body">
+        Top 50 相框品牌视频策略中，<strong>改造对比型</strong>（空间改造前后 / 搭配效果）、<strong>情感叙事型</strong>（家庭记忆 / 礼品场景）和<strong>材质特写型</strong>（木纹纹理 / 榫卯工艺 / 玻璃质感）是转化效果最突出的三类视频格式。首 10 秒内展示核心卖点、15–30 秒时长、1080p 16:9 横屏为最优规格。以下脚本严格遵循 KovaScape 品牌调性，墨绿/金色仅作点缀，实木质感始终为视觉主体。
+      </div>
+    </div>
+
+    <!-- ==================== Script 1 ==================== -->
+    <div class="script-card">
+      <div class="script-card-header">
+        <div class="script-number">1</div>
+        <div class="script-header-content">
+          <div class="script-type">改造对比型</div>
+          <div class="script-name">
+            一面墙的蜕变
+            <span class="script-name-en">— Transformation / Comparison</span>
+          </div>
+        </div>
+      </div>
+      <div class="script-card-body">
+
+        <div class="script-section">
+          <div class="script-label">创意概念</div>
+          <p class="script-concept">
+            一面空荡荡的白墙，通过 KovaScape 实木相框的搭配，逐步蜕变为充满艺术感的 Gallery Wall。前半段展示"改造前"的单调空间，随着相框逐一上墙，空间氛围发生质变。核心诉求：KovaScape 相框不仅是装照片的器具，更是空间美学的升级工具。采用橡木（Oak）与胡桃木（Walnut）两款交替出现，展示不同木材对空间调性的改变力。
+          </p>
+        </div>
+
+        <div class="script-section">
+          <div class="script-label">VEO Prompt</div>
+          <div class="script-prompt-box">
+            <div class="prompt-lang">EN · Primary Prompt</div>
+A cinematic 20-second product video showing a home makeover of a blank white wall. 
+
+Open on a slow pan across an empty, plain white wall in a sunlit minimalist living room — the space feels unfinished, lacking warmth. A hand enters the frame holding a light oak solid wood picture frame (KovaScape) containing a black-and-white botanical line drawing of monstera leaves. The frame is gently hung on the wall.
+
+Cut to a second frame — a walnut solid wood frame with a high-contrast black-and-white art photograph — being hung next to the first. The wall begins to feel curated.
+
+A third frame goes up, a fourth — a gallery wall takes shape. Each frame is solid wood with visible natural grain texture, warm wood tones. The room transforms: the same light now feels warmer and intentional.
+
+Final shot: a slow zoom out revealing a complete, beautifully curated gallery wall. Soft natural light from a large window on the left casts gentle shadows. The frames sit harmoniously — different sizes, two wood tones — elevating the entire room.
+
+Style: photorealistic, warm, editorial. Lighting: soft natural daylight, 3000K warmth. Camera: smooth gimbal-style movement, no shake. No text overlay in the main sequence, only a subtle KovaScape logo watermark in bottom-right corner in gold (#F3C546) appearing in the last 2 seconds.
+          </div>
+        </div>
+
+        <div class="script-section">
+          <div class="script-label">技术规格</div>
+          <div class="spec-grid">
+            <div class="spec-item">
+              <div class="spec-item-label">时长</div>
+              <div class="spec-item-value">20s</div>
+            </div>
+            <div class="spec-item">
+              <div class="spec-item-label">宽高比</div>
+              <div class="spec-item-value">16:9</div>
+            </div>
+            <div class="spec-item">
+              <div class="spec-item-label">分辨率</div>
+              <div class="spec-item-value">1080p</div>
+            </div>
+            <div class="spec-item">
+              <div class="spec-item-label">相机语言</div>
+              <div class="spec-item-value">Gimbal-style smooth</div>
+            </div>
+            <div class="spec-item">
+              <div class="spec-item-label">光照</div>
+              <div class="spec-item-value">Soft daylight, 3000K</div>
+            </div>
+            <div class="spec-item">
+              <div class="spec-item-label">首帧卖点</div>
+              <div class="spec-item-value">≤3s · 空墙→改变</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="brand-note">
+          <strong>🎯 品牌合规</strong> · 橡木配龟背竹线描图、胡桃木配黑白艺术照，严格遵循六大木材画芯对应原则。空间背景为北欧简约风格（白墙、原木家具、亚麻织物），无大面积墨绿/金色。品牌仅通过末帧金色 logo 水印点缀。视频聚焦产品本身，不出现劣质 AI 塑料感。
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== Script 2 ==================== -->
+    <div class="script-card">
+      <div class="script-card-header">
+        <div class="script-number">2</div>
+        <div class="script-header-content">
+          <div class="script-type">情感叙事型</div>
+          <div class="script-name">
+            框住时光
+            <span class="script-name-en">— Emotional Narrative</span>
+          </div>
+        </div>
+      </div>
+      <div class="script-card-body">
+
+        <div class="script-section">
+          <div class="script-label">创意概念</div>
+          <p class="script-concept">
+            以"家庭记忆"为核心叙事线索，通过连续的翻页/叠化镜头展示一组家庭照片在不同 KovaScape 相框中的呈现。从黑白老照片到彩色家庭合影，从婴儿到成长，从独居到团聚——相框始终是那个不变的守护者。核心情感诉求：KovaScape 实木相框不是消费品，是家族记忆的载体。全片无旁白，仅靠画面转场和轻柔配乐传递情绪。<br><br>
+            <strong>视觉节奏</strong>：慢 · 暖 · 静。每个画面停留 2–3 秒，光线温暖柔和（2800K），营造沉浸式怀旧氛围。木材选用樱桃木（Cherry）和橡木（Oak），暖色调木材更能承载情感叙事。
+          </p>
+        </div>
+
+        <div class="script-section">
+          <div class="script-label">VEO Prompt</div>
+          <div class="script-prompt-box">
+            <div class="prompt-lang">EN · Primary Prompt</div>
+An emotionally warm 25-second cinematic video about family memories preserved in solid wood picture frames.
+
+Open with a slow zoom into a cherry wood frame on a wooden desk in a cozy study. The frame holds a vintage sepia-toned family portrait — warm afternoon light from a window casts a soft glow across the glass. Gentle dust particles float in the light beam.
+
+A gentle hand reaches in to lift the frame, and as it moves, the scene behind it dissolves into a new setting: the same frame now sits on a bookshelf in a living room, holding a more recent color photograph of the same family. The wood grain of the cherry frame catches the warm light.
+
+Cut to an oak picture frame on a nightstand in a softly lit bedroom, holding a black-and-white botanical print. Morning light filters through sheer curtains.
+
+Cut to a walnut frame on a wall in a hallway, showing a child's drawing preserved with care. A person walks past, pausing briefly to look at it — a subtle smile.
+
+Final scene: a gallery of three frames (cherry, oak, walnut) on a wall in the golden hour — warm orange light from the right, gentle shadows stretching. The frames are filled with photographs from different eras of the same family. The camera slowly pushes in.
+
+Music: soft acoustic piano, slow tempo. No dialogue, no voiceover. Visual mood: nostalgic, tender, beautifully mundane. Texture: film grain subtle (16mm feel). Lighting: consistently warm (2800K), natural window light. Color grade: slightly desaturated with warm undertones. Camera: slow, deliberate movements — dolly, gentle pans, no quick cuts.
+          </div>
+        </div>
+
+        <div class="script-section">
+          <div class="script-label">技术规格</div>
+          <div class="spec-grid">
+            <div class="spec-item">
+              <div class="spec-item-label">时长</div>
+              <div class="spec-item-value">25s</div>
+            </div>
+            <div class="spec-item">
+              <div class="spec-item-label">宽高比</div>
+              <div class="spec-item-value">16:9</div>
+            </div>
+            <div class="spec-item">
+              <div class="spec-item-label">分辨率</div>
+              <div class="spec-item-value">1080p</div>
+            </div>
+            <div class="spec-item">
+              <div class="spec-item-label">叙事风格</div>
+              <div class="spec-item-value">No dialogue · Piano BG</div>
+            </div>
+            <div class="spec-item">
+              <div class="spec-item-label">光照</div>
+              <div class="spec-item-value">Warm 2800K, window</div>
+            </div>
+            <div class="spec-item">
+              <div class="spec-item-label">色彩调性</div>
+              <div class="spec-item-value">Desaturated warm</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="brand-note">
+          <strong>🎯 品牌合规</strong> · 樱桃木配油画风格/复古老照片、橡木配龟背竹线描、胡桃木配黑白艺术照，三种木材画芯严格对应。场景为暖调家居（樱桃木→古典书房、橡木→北欧卧室），不出现品牌色背景。品牌 logo 不出现在画面主体中，仅在片尾 2 秒以细线金色 logo 点缀。无旁白推动，情感由画面自然传递。
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== Script 3 ==================== -->
+    <div class="script-card">
+      <div class="script-card-header">
+        <div class="script-number">3</div>
+        <div class="script-header-content">
+          <div class="script-type">材质特写型</div>
+          <div class="script-name">
+            木之所及
+            <span class="script-name-en">— Material Close-Up & Craftsmanship</span>
+          </div>
+        </div>
+      </div>
+      <div class="script-card-body">
+
+        <div class="script-section">
+          <div class="script-label">创意概念</div>
+          <p class="script-concept">
+            纯产品视角，不依赖场景或人物，全片以微距和超近景镜头展示 KovaScape 实木相框的材质细节与工艺品质。从木纹纹理到榫卯咬合，从玻璃透光到框条截面造型——每一帧都在回答"为什么实木相框值这个价"。视觉语言对标高端家具品牌的产品电影（Product Film），节奏沉稳、满帧质感。核心武器：6 种框条截面造型依次特写，配合「选框条就像选家具」的隐性叙事。<br><br>
+            <strong>全片结构</strong>：木纹开场 → 框条截面巡礼 → 榫卯咬合微距 → 玻璃透光特写 → 最终全景收尾。木材选用胡桃木（Walnut）全程主导，其高对比木纹在微距下视觉效果最为震撼。
+          </p>
+        </div>
+
+        <div class="script-section">
+          <div class="script-label">VEO Prompt</div>
+          <div class="script-prompt-box">
+            <div class="prompt-lang">EN · Primary Prompt</div>
+A 20-second cinematic product-focused video showcasing the craftsmanship and material quality of solid walnut wood picture frames by KovaScape. No people, no lifestyle scenes — pure product beauty.
+
+Open with an ultra-close-up macro shot of walnut wood grain — the camera slowly tracks along the natural grain lines, revealing deep brown swirls and subtle open pores. Lighting is a dramatic side light at 45 degrees, emphasizing every organic curve in the wood.
+
+Cut to a tight shot of the frame corner — a precise mortise and tenon joint seamlessly fitted. The camera slowly orbits around the corner, showing the perfect 90-degree joinery, the wood fibers interlocking. No nails, no gaps. The craftsmanship is visible in every angle.
+
+Cut to a sequential reveal of frame profile cross-sections: flat profile, arched profile, double-arched profile, wide bevel — each shot shows a different frame molding style against a warm neutral background. The camera glides from left to right across 4 distinct profiles, each with visible walnut wood grain.
+
+Cut to a close-up of the 2mm tempered glass edge — a side light catches the glass, revealing brilliant clarity with a faint blue-green edge glow. The camera tilts to show the glass thickness.
+
+Cut to a full-frame shot of the completed walnut frame holding a black-and-white fine art photograph. The camera slowly pulls back, revealing the frame's perfect proportions against a soft linen-textured background (light beige, #F8F5F0). Natural light from above creates a gentle shadow beneath the frame.
+
+Final freeze frame: the complete frame, perfectly lit.
+
+Style: hyper-realistic, editorial luxury product film. Lighting: dramatic side light for macro, soft diffused overhead for full frame. Camera: micro-movements with shallow depth of field (f/2.8 macro), slow orbits. Color grade: neutral with warm undertones, wood tones true to walnut. No text overlay. No music — use studio ambiance (subtle room tone). The product speaks for itself.
+          </div>
+        </div>
+
+        <div class="script-section">
+          <div class="script-label">技术规格</div>
+          <div class="spec-grid">
+            <div class="spec-item">
+              <div class="spec-item-label">时长</div>
+              <div class="spec-item-value">20s</div>
+            </div>
+            <div class="spec-item">
+              <div class="spec-item-label">宽高比</div>
+              <div class="spec-item-value">16:9</div>
+            </div>
+            <div class="spec-item">
+              <div class="spec-item-label">分辨率</div>
+              <div class="spec-item-value">1080p · Macro</div>
+            </div>
+            <div class="spec-item">
+              <div class="spec-item-label">景深</div>
+              <div class="spec-item-value">Shallow (f/2.8 macro)</div>
+            </div>
+            <div class="spec-item">
+              <div class="spec-item-label">光照</div>
+              <div class="spec-item-value">Side light 45° · Macro</div>
+            </div>
+            <div class="spec-item">
+              <div class="spec-item-label">音频</div>
+              <div class="spec-item-value">Studio ambiance only</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-info" style="margin-top: 16px; margin-bottom: 0;">
+          <div class="alert-title">💡 多框条造型巡礼设计意图</div>
+          <div class="alert-body">
+            KovaScape 实木相框的一个核心差异化卖点是<strong>多种框条截面造型</strong>（平面框 / 弧面框 / 双弧面框 / 宽边框等）。在材质特写型视频中，通过一个横向运镜串联不同造型的框条截面，将"选框条就像选家具"的概念视觉化——这是竞品极少使用的高转化叙事手法。
+          </div>
+        </div>
+
+        <div class="brand-note">
+          <strong>🎯 品牌合规</strong> · 胡桃木全程主导（高对比木纹在微距下效果最佳），画芯使用黑白艺术照。全片无人物、无场景，纯产品质感输出。背景为浅米白（#F8F5F0）亚麻纹理，不出现墨绿色背景。无文字叠加，无品牌色大面积使用。榫卯咬合和玻璃特写均为真实工艺展示，避免 AI 可能产生的细节失真——若 Veo 输出存在质感问题，建议使用真实产品的微距拍摄素材替代。
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Usage Notes ===== -->
+    <div style="margin-top: 32px; border-top: 1px solid var(--border); padding-top: 28px;">
+      <h3 class="section-title" style="font-size: 18px; margin-bottom: 4px;">使用说明</h3>
+      <p class="section-subtitle" style="margin-bottom: 16px;">Veo 视频生成与后续处理指南</p>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div style="background: var(--cream); border-radius: 12px; padding: 20px; border-left: 3px solid var(--forest);">
+          <div style="font-weight: 600; font-size: 13px; color: var(--forest); margin-bottom: 6px;">✅ 此脚本可直接使用的情况</div>
+          <ul style="font-size: 13px; color: var(--body-gray); line-height: 1.7; padding-left: 16px; margin: 0;">
+            <li>Veo 生成画面质感真实、木纹细节可信</li>
+            <li>光线物理准确（逆光、玻璃反光自然）</li>
+            <li>榫卯结构细节清晰无变形</li>
+          </ul>
+        </div>
+
+        <div style="background: var(--cream); border-radius: 12px; padding: 20px; border-left: 3px solid var(--gold);">
+          <div style="font-weight: 600; font-size: 13px; color: var(--charcoal); margin-bottom: 6px;">⚠️ 需要人工介入的情况</div>
+          <ul style="font-size: 13px; color: var(--body-gray); line-height: 1.7; padding-left: 16px; margin: 0;">
+            <li>木纹出现"塑料感"或重复纹理→改用真实拍摄</li>
+            <li>榫卯细节变形或模糊→替换为真实微距素材</li>
+            <li>人物面部不真实→情感叙事型使用背景人物/不露脸</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; background: var(--light-green); border-radius: 12px; padding: 16px 20px; font-size: 13px; color: var(--forest);">
+        <strong>📐 亚马逊上传规格</strong> · MP4 (H.264)、1080p、16:9 横屏、15–30 秒、首 10 秒展示核心卖点、产品占画面至少 50%、无外部链接/促销文字/联系方式、有对话需加字幕。
+      </div>
+
+      <div style="margin-top: 16px; display: flex; gap: 12px; flex-wrap: wrap;">
+        <span style="font-size: 11px; font-weight: 500; background: var(--light-green); color: var(--forest); padding: 4px 12px; border-radius: 20px;">#实木相框</span>
+        <span style="font-size: 11px; font-weight: 500; background: var(--light-green); color: var(--forest); padding: 4px 12px; border-radius: 20px;">#VEO</span>
+        <span style="font-size: 11px; font-weight: 500; background: var(--light-green); color: var(--forest); padding: 4px 12px; border-radius: 20px;">#KovaScape</span>
+        <span style="font-size: 11px; font-weight: 500; background: var(--light-green); color: var(--forest); padding: 4px 12px; border-radius: 20px;">#AI视频生成</span>
+        <span style="font-size: 11px; font-weight: 500; background: var(--light-green); color: var(--forest); padding: 4px 12px; border-radius: 20px;">#视频脚本</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== Footer ===== -->
+  <div class="footer">
+    <div class="footer-top">
+      <div>
+        <div class="footer-brand">KovaScape</div>
+        <div class="footer-brand-sub">VE Video Scripts · June 2026</div>
+      </div>
+      <div class="footer-links">
+        <div class="footer-links-col">
+          <div class="footer-links-col-title">Resources</div>
+          <a href="https://deepmind.google/technologies/veo/" target="_blank">Veo by Google DeepMind</a>
+          <a href="https://sellercentral.amazon.com/help/hub/reference/G200516540" target="_blank">Amazon Video Specs</a>
+        </div>
+        <div class="footer-links-col">
+          <div class="footer-links-col-title">Brand</div>
+          <a href="https://kovascapehomedecor.com" target="_blank">KovaScape Wix Store</a>
+          <a href="https://amazon.com" target="_blank">Amazon Storefront</a>
+        </div>
+      </div>
+    </div>
+    <hr class="footer-divider">
+    <div class="footer-bottom">
+      <span>© 2026 KovaScape · All scripts are brand-compliant ready-to-use</span>
+      <span>Generated by <a href="https://allyhub.com" target="_blank">AllyHub AI</a></span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,59 @@
+{
+  "project_name": "KovaScape Tools",
+  "version": "1.0.0",
+  "last_updated": "2026-01-22T18:30:33+08:00",
+  
+  "paths": {
+    "global_skills": "C:\\Users\\china\\.agent\\skills",
+    "global_workflows": "C:\\Users\\china\\.agent\\workflows",
+    "project_root": "D:\\KovaScape Tools",
+    "scripts": "D:\\KovaScape Tools\\scripts",
+    "data": "D:\\KovaScape Tools\\data",
+    "assets": "D:\\KovaScape Tools\\assets",
+    "src": "D:\\KovaScape Tools\\src",
+    "docs": "D:\\KovaScape Tools\\docs"
+  },
+  
+  "environment": {
+    "current_location": "company",
+    "user": "china",
+    "os": "windows",
+    "shell": "powershell"
+  },
+  
+  "skills": {
+    "installed": [
+      "algorithmic-art",
+      "brand-guidelines",
+      "canvas-design",
+      "doc-coauthoring",
+      "docx",
+      "frontend-design",
+      "internal-comms",
+      "mcp-builder",
+      "pdf",
+      "pptx",
+      "skill-creator",
+      "slack-gif-creator",
+      "superpower",
+      "theme-factory",
+      "ui-ux-pro-max",
+      "web-artifacts-builder",
+      "webapp-testing",
+      "xlsx"
+    ],
+    "priority_for_kovascape": [
+      "ui-ux-pro-max",
+      "canvas-design",
+      "xlsx",
+      "pptx",
+      "frontend-design",
+      "theme-factory"
+    ]
+  },
+  
+  "notes": {
+    "zh": "此配置文件记录了 KovaScape Tools 项目的所有关键路径。如果更换电脑或环境，请更新 paths 和 environment 部分。",
+    "en": "This configuration file records all key paths for the KovaScape Tools project. If changing computers or environments, please update the paths and environment sections."
+  }
+}

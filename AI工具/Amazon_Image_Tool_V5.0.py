@@ -1,8 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-亚马逊批量图片重命名 + 打包工具 v5.0 (简化匹配版)
+亚马逊批量图片重命名 + 打包工具 v5.1 (Phase 1 升级版)
 KovaScape 内部工具
+
+v5.1 Phase 1 新增：
+- 增强关键词匹配（扩展60+关键词 + 从custom_dict加载自定义关键词）
+- SWCH自动末尾（智能检测色卡 + "最后一图自动=SWCH"开关）
+- 排序模板保存/加载（关键词→位置映射模板，跨文件夹复用）
+- 文件列表拖拽排序 + 「按列表顺序填充坑位」按钮
+- 关键词匹配增强：白底图/场景图/尺寸图/对比图/材质图/视频封面等
 
 v5.0 核心简化：
 - 移除复杂的品名/材质/颜色打分匹配机制
@@ -49,25 +56,214 @@ except ImportError:
 # ============================================================
 ALL_POSITIONS = ["MAIN", "PT01", "PT02", "PT03", "PT04",
                  "PT05", "PT06", "PT07", "PT08", "SWCH", "跳过"]
+PT_POSITIONS  = [p for p in ALL_POSITIONS if p not in ("SWCH", "跳过")]
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".gif"}
 THUMB_W, THUMB_H = 120, 120
 
-CUSTOM_DICT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "custom_dict.json")
+CUSTOM_DICT_PATH   = os.path.join(os.path.dirname(os.path.abspath(__file__)), "custom_dict.json")
+TEMPLATES_DIR      = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
 
 # ============================================================
-# 自定义字典加载/保存（保留编辑器功能）
+# Phase 1: 增强关键词匹配 — 大幅扩展
+# ============================================================
+FILENAME_POSITION_HINTS = [
+    # --- SWCH (色卡) ---
+    (["色卡","色板","色swatch","swatch","swch","swat","颜色卡","颜色参考",
+      "色标","配色","色样","colour card","color card","color ref",
+      "カラーチャート","色見本"], "SWCH"),
+
+    # --- MAIN (主图·白底正面) ---
+    (["主图1","main1","正面1","封面","首图","白底主图"], "MAIN"),
+    (["主图","main","正面","封面图","首图","白底","白底图",
+      "white background","front","hero","メイン"], "MAIN"),
+
+    # --- PT01 (侧面/左) ---
+    (["副图1","pt01","侧面1","侧视图","左侧","左视图","left side",
+      "side1","侧1","サイド1"], "PT01"),
+
+    # --- PT02 (背面/右侧) ---
+    (["副图2","pt02","背面","背视图","反面","右侧","右视图",
+      "back","rear","back view","背面図"], "PT02"),
+    (["副图3","pt03","侧面2","右侧面","right side","侧2","サイド2"], "PT02"),
+
+    # --- PT03 (细节/特写1) ---
+    (["副图3","pt03","细节1","特写1","局部","detail1","closeup1","詳細1"], "PT03"),
+    (["副图4","pt04","细节2","特写2","detail2","closeup2","詳細2"], "PT03"),
+
+    # --- PT04 (细节2/场景1) ---
+    (["副图4","pt04","细节2","特写2","detail2","closeup2","詳細2"], "PT04"),
+    (["副图5","pt05","场景1","实景1","生活场景","lifestyle1","シーン1"], "PT04"),
+
+    # --- PT05 (场景) ---
+    (["副图5","pt05","场景","实景","生活场景","lifestyle","摆拍",
+      "场景图","シーン","room","展示"], "PT05"),
+    (["副图6","pt06","场景2","lifestyle2","シーン2"], "PT05"),
+
+    # --- PT06 (尺寸/对比) ---
+    (["副图6","pt06","尺寸","尺寸图","尺寸对比","大小","对比",
+      "size","dimension","サイズ","寸法","comparison"], "PT06"),
+    (["副图7","pt07","尺寸2","对比2"], "PT06"),
+
+    # --- PT07 (材质/纹理) ---
+    (["副图7","pt07","材质","材料","纹理","质感","material","texture",
+      "素材","質感"], "PT07"),
+    (["副图8","pt08","材质2","包装1","package1","包装","盒子"], "PT07"),
+
+    # --- PT08 (包装/视频封面) ---
+    (["副图8","pt08","包装","盒子","开箱","package","box","unboxing",
+      "视频封面","video cover","サムネイル"], "PT08"),
+    (["副图9","pt09","包装2","赠品","accessory","付属品"], "PT08"),
+]
+
+def guess_position(filename, extra_hints=None):
+    """根据文件名关键词推测位置（支持自定义关键词）"""
+    name_no_ext = Path(filename).stem.lower()
+    for hints, pos in FILENAME_POSITION_HINTS:
+        for hint in hints:
+            if hint.lower() in name_no_ext:
+                return pos
+    if extra_hints:
+        for hint_entry in extra_hints:
+            for kw in hint_entry.get("keywords", []):
+                if kw.lower() in name_no_ext:
+                    return hint_entry.get("position", "跳过")
+    return None
+
+def smart_preassign(image_files, swch_auto_last=True, template_rules=None, extra_hints=None):
+    """Phase 1 增强版智能预分配"""
+    assignments = {}
+    used = set()
+
+    # 第一轮：关键词匹配
+    for f in image_files:
+        pos = guess_position(f, extra_hints)
+        if pos and pos not in used:
+            assignments[f] = pos
+            used.add(pos)
+
+    # 第二轮：模板规则匹配
+    if template_rules:
+        priority_order = {"exact": 0, "high": 1, "mid": 2, "low": 3}
+        sorted_rules = sorted(template_rules, key=lambda r: priority_order.get(r.get("priority","mid"), 2))
+        for rule in sorted_rules:
+            target_pos = rule.get("position", "")
+            if target_pos in used:
+                continue
+            keywords = rule.get("keywords", [])
+            for f in image_files:
+                if f in assignments:
+                    continue
+                name_no_ext = Path(f).stem.lower()
+                for kw in keywords:
+                    if kw.lower() in name_no_ext:
+                        assignments[f] = target_pos
+                        used.add(target_pos)
+                        break
+                if target_pos in used:
+                    break
+
+    # 第三轮：按顺序填充剩余PT坑位
+    pt_queue = [p for p in PT_POSITIONS if p not in used]
+    remaining = [f for f in image_files if f not in assignments]
+
+    # SWCH自动末尾（不分配给第一张图）
+    if swch_auto_last and "SWCH" not in used and len(remaining) >= 1:
+        # 从后往前找第一个不是第一张图的文件作为 SWCH
+        swch_candidate = None
+        for f in reversed(remaining):
+            if f != image_files[0]:
+                swch_candidate = f
+                break
+        if swch_candidate:
+            assignments[swch_candidate] = "SWCH"
+            used.add("SWCH")
+            remaining.remove(swch_candidate)
+        elif len(remaining) > 1:
+            # 只有一张图且是第一张，不设 SWCH（第一张不能是 SWCH）
+            pass
+
+    for f in remaining:
+        if pt_queue:
+            assignments[f] = pt_queue.pop(0)
+            used.add(assignments[f])
+        else:
+            assignments[f] = "跳过"
+
+    # 确保第一张图默认为 MAIN，不被关键词匹配抢走
+    if image_files:
+        first = image_files[0]
+        if assignments.get(first) not in ("MAIN", "SWCH"):
+            main_file = next((f for f, p in assignments.items() if p == "MAIN"), None)
+            if main_file:
+                assignments[first], assignments[main_file] = "MAIN", assignments[first]
+
+    return assignments
+
+# ============================================================
+# Phase 1: 排序模板管理
+# ============================================================
+
+def ensure_templates_dir():
+    if not os.path.exists(TEMPLATES_DIR):
+        os.makedirs(TEMPLATES_DIR)
+
+def list_templates():
+    ensure_templates_dir()
+    templates = []
+    for fname in os.listdir(TEMPLATES_DIR):
+        if fname.endswith(".json"):
+            tpath = os.path.join(TEMPLATES_DIR, fname)
+            try:
+                with open(tpath, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                templates.append({
+                    "filename": fname,
+                    "name": data.get("name", fname),
+                    "description": data.get("description", ""),
+                    "path": tpath,
+                    "data": data,
+                })
+            except Exception:
+                continue
+    return sorted(templates, key=lambda t: t["name"])
+
+def save_template(name, description, rules, swch_auto_last=True):
+    ensure_templates_dir()
+    safe_name = re.sub(r'[\\/*?:"<>|]', "_", name)
+    fname = safe_name + ".json"
+    tpath = os.path.join(TEMPLATES_DIR, fname)
+    data = {
+        "name": name,
+        "description": description,
+        "swch_auto_last": swch_auto_last,
+        "rules": rules,
+    }
+    with open(tpath, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    return tpath
+
+# ============================================================
+# 自定义字典
 # ============================================================
 
 def load_custom_dict():
-    default = {"colors": [], "shelf_sizes": [], "frame_sizes": []}
+    default = {
+        "colors": [],
+        "shelf_sizes": [],
+        "frame_sizes": [],
+        "position_hints": [],
+        "swch_auto_last": True,
+    }
     if not os.path.exists(CUSTOM_DICT_PATH):
         return default
     try:
         with open(CUSTOM_DICT_PATH, "r", encoding="utf-8") as f:
             data = json.load(f)
-        for k in ("colors", "shelf_sizes", "frame_sizes"):
+        for k in ("colors", "shelf_sizes", "frame_sizes", "position_hints"):
             if k not in data:
-                data[k] = []
+                data[k] = [] if k != "position_hints" else []
+        if "swch_auto_last" not in data:
+            data["swch_auto_last"] = True
         return data
     except Exception:
         return default
@@ -77,53 +273,7 @@ def save_custom_dict(data):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 # ============================================================
-# 文件名位置码预识别（保留）
-# ============================================================
-
-FILENAME_POSITION_HINTS = [
-    (["色卡","swatch","swch","swat","颜色卡","色板"], "SWCH"),
-    (["主图1","main1","正面1","封面"], "MAIN"),
-    (["主图","main","正面","封面图","首图"], "MAIN"),
-    (["主图2","副图1","pt01","图2","细节1"], "PT01"),
-    (["主图3","副图2","pt02","图3","细节2"], "PT02"),
-    (["主图4","副图3","pt03","图4","细节3"], "PT03"),
-    (["主图5","副图4","pt04","图5","细节4"], "PT04"),
-    (["主图6","副图5","pt05","图6","细节5"], "PT05"),
-    (["主图7","副图6","pt06","图7","细节6"], "PT06"),
-    (["主图8","副图7","pt07","图8","细节7"], "PT07"),
-    (["主图9","副图8","pt08","图9","细节8"], "PT08"),
-]
-
-def guess_position(filename):
-    name_no_ext = Path(filename).stem.lower()
-    for hints, pos in FILENAME_POSITION_HINTS:
-        for hint in hints:
-            if hint.lower() in name_no_ext:
-                return pos
-    return None
-
-def smart_preassign(image_files):
-    assignments = {}
-    used = set()
-    for f in image_files:
-        pos = guess_position(f)
-        if pos and pos not in used:
-            assignments[f] = pos
-            used.add(pos)
-    pt_queue = [p for p in ALL_POSITIONS if p not in ("SWCH", "跳过") and p not in used]
-    for f in image_files:
-        if f not in assignments:
-            if pt_queue:
-                pos = pt_queue.pop(0)
-                assignments[f] = pos
-                used.add(pos)
-            else:
-                assignments[f] = "跳过"
-    return assignments
-
-# ============================================================
-# SKU大表读取（支持 xlsx / xls / csv）
-# 修改：返回 (records列表, sku_to_asin字典)
+# SKU大表读取
 # ============================================================
 
 def _find_col(headers, candidates):
@@ -221,7 +371,7 @@ def load_records(path):
     else: return load_records_from_csv(path)
 
 # ============================================================
-# ZIP打包（保持不变）
+# ZIP打包
 # ============================================================
 
 def pack_to_zip(file_map, output_dir, base_name="amazon_images", max_files=1000):
@@ -238,20 +388,21 @@ def pack_to_zip(file_map, output_dir, base_name="amazon_images", max_files=1000)
     return zip_paths
 
 # ============================================================
-# 自定义字典编辑器（保留）
+# 自定义字典编辑器（含Phase 1关键词匹配标签页）
 # ============================================================
 
 class CustomDictEditor(tk.Toplevel):
     def __init__(self, parent, custom_data, on_save):
         super().__init__(parent)
         self.title("自定义字典编辑器")
-        self.geometry("700x540")
+        self.geometry("750x600")
         self.resizable(True, True)
         self.on_save = on_save
 
         self.colors      = [dict(c) for c in custom_data.get("colors", [])]
         self.shelf_sizes = [dict(s) for s in custom_data.get("shelf_sizes", [])]
         self.frame_sizes = [dict(s) for s in custom_data.get("frame_sizes", [])]
+        self.position_hints = [dict(h) for h in custom_data.get("position_hints", [])]
 
         nb = ttk.Notebook(self)
         nb.pack(fill="both", expand=True, padx=10, pady=8)
@@ -267,6 +418,10 @@ class CustomDictEditor(tk.Toplevel):
         frame_frame = tk.Frame(nb)
         nb.add(frame_frame, text="相框尺寸")
         self._build_frame_tab(frame_frame)
+
+        hint_frame = tk.Frame(nb)
+        nb.add(hint_frame, text="关键词匹配")
+        self._build_hint_tab(hint_frame)
 
         btn_frame = tk.Frame(self, pady=8)
         btn_frame.pack(fill="x", padx=10)
@@ -337,8 +492,7 @@ class CustomDictEditor(tk.Toplevel):
     def _build_frame_tab(self, parent):
         tk.Label(parent,
                  text="相框尺寸：中文描述（如：A5,148x210mm）→ SKU尺寸代码（如：148210）\n"
-                      "适用于内置没有的特殊相框尺寸（公制mm或英寸均可）。\n"
-                      "中文描述用于品名匹配，SKU代码用于与SKU比对。",
+                      "适用于内置没有的特殊相框尺寸（公制mm或英寸均可）。",
                  font=("Arial", 9), fg="#555", justify="left").pack(anchor="w", padx=8, pady=4)
         hdr = tk.Frame(parent)
         hdr.pack(fill="x", padx=8)
@@ -360,6 +514,39 @@ class CustomDictEditor(tk.Toplevel):
         self._frame_rows.append(entry_refs)
         tk.Button(row, text="删除", fg="red",
                   command=lambda r=row, e=entry_refs: self._del_row(r, e, self._frame_rows),
+                  width=4).pack(side="left", padx=2)
+
+    # Phase 1: 关键词匹配标签页
+    def _build_hint_tab(self, parent):
+        tk.Label(parent,
+                 text="自定义文件名关键词 --> 位置映射。\n"
+                      "当美工命名不在内置关键词范围内时，在此添加。\n"
+                      "例如：美工喜欢用【白底正视图】--> 添加关键词【白底正视图】映射到 MAIN。",
+                 font=("Arial", 9), fg="#555", justify="left").pack(anchor="w", padx=8, pady=4)
+        hdr = tk.Frame(parent)
+        hdr.pack(fill="x", padx=8)
+        for txt, w in [("目标位置",12),("关键词（逗号分隔多个）",40),("",6)]:
+            tk.Label(hdr, text=txt, font=("Arial",9,"bold"), width=w, anchor="w").pack(side="left")
+        self._hint_inner, self._hint_rows = self._make_scroll_area(parent)
+        for h in self.position_hints:
+            kws = h.get("keywords", [])
+            self._add_hint_row(h.get("position",""), ",".join(kws))
+        tk.Button(parent, text="+ 添加关键词规则", command=lambda: self._add_hint_row(),
+                  bg="#3498db", fg="white").pack(anchor="w", padx=8, pady=4)
+
+    def _add_hint_row(self, pos="", keywords_str=""):
+        row = tk.Frame(self._hint_inner)
+        row.pack(fill="x", pady=1)
+        v_pos = tk.StringVar(value=pos)
+        v_kws = tk.StringVar(value=keywords_str)
+        combo = ttk.Combobox(row, textvariable=v_pos, values=ALL_POSITIONS,
+                             width=11, state="readonly")
+        combo.pack(side="left", padx=2)
+        tk.Entry(row, textvariable=v_kws, width=40).pack(side="left", padx=2)
+        entry_refs = (v_pos, v_kws, row)
+        self._hint_rows.append(entry_refs)
+        tk.Button(row, text="删除", fg="red",
+                  command=lambda r=row, e=entry_refs: self._del_row(r, e, self._hint_rows),
                   width=4).pack(side="left", padx=2)
 
     def _make_scroll_area(self, parent):
@@ -400,7 +587,22 @@ class CustomDictEditor(tk.Toplevel):
             if cn and token:
                 frame_sizes.append({"cn": cn, "token": token})
 
-        data = {"colors": colors, "shelf_sizes": shelf_sizes, "frame_sizes": frame_sizes}
+        position_hints = []
+        for v_pos, v_kws, _ in self._hint_rows:
+            pos = v_pos.get().strip()
+            kws_str = v_kws.get().strip()
+            if pos and kws_str:
+                kws = [kw.strip() for kw in kws_str.replace("，",",").split(",") if kw.strip()]
+                if kws:
+                    position_hints.append({"position": pos, "keywords": kws})
+
+        data = {
+            "colors": colors,
+            "shelf_sizes": shelf_sizes,
+            "frame_sizes": frame_sizes,
+            "position_hints": position_hints,
+            "swch_auto_last": True,
+        }
         try:
             save_custom_dict(data)
             messagebox.showinfo("保存成功",
@@ -411,65 +613,226 @@ class CustomDictEditor(tk.Toplevel):
             messagebox.showerror("保存失败", "保存出错：%s" % e, parent=self)
 
 # ============================================================
-# 文件夹弹窗（FolderDialog）—— 简化版，只传 ASIN
+# Phase 1: 排序模板管理器弹窗
+# ============================================================
+
+class TemplateManager(tk.Toplevel):
+    """排序模板浏览/加载/删除"""
+    def __init__(self, parent, on_load):
+        super().__init__(parent)
+        self.title("排序模板管理")
+        self.geometry("550x420")
+        self.resizable(True, True)
+        self.on_load = on_load
+
+        tk.Label(self, text="已保存的排序模板",
+                 font=("Arial", 13, "bold")).pack(anchor="w", padx=14, pady=(12,4))
+        tk.Label(self, text="选择一个模板后点击「加载模板」应用到当前文件夹",
+                 font=("Arial", 9), fg="#888").pack(anchor="w", padx=14)
+
+        list_frame = tk.Frame(self)
+        list_frame.pack(fill="both", expand=True, padx=14, pady=8)
+        sb = ttk.Scrollbar(list_frame, orient="vertical")
+        self.listbox = tk.Listbox(list_frame, yscrollcommand=sb.set,
+                                   font=("Arial", 10), selectmode="single")
+        sb.config(command=self.listbox.yview)
+        sb.pack(side="right", fill="y")
+        self.listbox.pack(side="left", fill="both", expand=True)
+
+        self._templates = list_templates()
+        for t in self._templates:
+            label = t["name"]
+            if t["description"]:
+                label += "  —  " + t["description"]
+            self.listbox.insert("end", label)
+
+        if not self._templates:
+            self.listbox.insert("end", "（暂无模板，请先在文件夹对话框中保存）")
+            self.listbox.config(fg="#aaa")
+
+        btn_frame = tk.Frame(self, pady=8)
+        btn_frame.pack(fill="x", padx=14)
+        tk.Button(btn_frame, text="加载模板", command=self._load,
+                  bg="#064338", fg="#F3C546", font=("Arial", 11, "bold"),
+                  width=12).pack(side="left", padx=4)
+        tk.Button(btn_frame, text="删除模板", command=self._delete,
+                  bg="#e74c3c", fg="white", width=10).pack(side="left", padx=4)
+        tk.Button(btn_frame, text="关闭", command=self.destroy,
+                  width=8).pack(side="right", padx=4)
+
+        self.grab_set()
+
+    def _load(self):
+        sel = self.listbox.curselection()
+        if not sel or not self._templates:
+            messagebox.showwarning("提示", "请先选择一个模板")
+            return
+        idx = sel[0]
+        if idx >= len(self._templates):
+            return
+        template = self._templates[idx]
+        self.on_load(template)
+        self.destroy()
+
+    def _delete(self):
+        sel = self.listbox.curselection()
+        if not sel or not self._templates:
+            return
+        idx = sel[0]
+        if idx >= len(self._templates):
+            return
+        t = self._templates[idx]
+        if messagebox.askyesno("确认删除", "确定要删除模板「%s」吗？\n此操作不可恢复。" % t["name"]):
+            try:
+                os.remove(t["path"])
+            except Exception as e:
+                messagebox.showerror("删除失败", str(e))
+            self._refresh()
+
+    def _refresh(self):
+        self.listbox.delete(0, "end")
+        self._templates = list_templates()
+        if self._templates:
+            for t in self._templates:
+                label = t["name"]
+                if t["description"]:
+                    label += "  —  " + t["description"]
+                self.listbox.insert("end", label)
+            self.listbox.config(fg="black")
+        else:
+            self.listbox.insert("end", "（暂无模板）")
+            self.listbox.config(fg="#aaa")
+
+
+# ============================================================
+# 文件夹弹窗（FolderDialog）—— Phase 1 增强版
 # ============================================================
 
 _last_dialog_geometry = None
 
 class FolderDialog(tk.Toplevel):
-    def __init__(self, parent, folder_path, image_files, asin):
+    def __init__(self, parent, folder_path, image_files, asin, custom_data=None):
         super().__init__(parent)
-        self.folder_path = folder_path
-        self.image_files = image_files
-        self.asin = asin
-        self._result = None
+        self.folder_path   = folder_path
+        self.image_files   = list(image_files)
+        self.asin          = asin
+        self.custom_data   = custom_data or {}
+        self._result       = None
+        self._drag_data    = {"index": None, "y": 0}
+        self._last_template = None  # 记住上次应用的模板，支持一键复用
 
-        self.title("确认图片分配 — %s" % os.path.basename(folder_path))
+        self.swch_auto_last = self.custom_data.get("swch_auto_last", True)
+        self.extra_hints    = self.custom_data.get("position_hints", [])
+
+        self.title("图片分配 — %s" % os.path.basename(folder_path))
         self.resizable(True, True)
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
         global _last_dialog_geometry
         try:
-            self.geometry(_last_dialog_geometry if _last_dialog_geometry else "920x660")
+            self.geometry(_last_dialog_geometry if _last_dialog_geometry else "1020x720")
         except Exception:
-            self.geometry("920x660")
+            self.geometry("1020x720")
 
-        preassign = smart_preassign(image_files)
+        preassign = smart_preassign(self.image_files,
+                                     swch_auto_last=self.swch_auto_last,
+                                     extra_hints=self.extra_hints)
 
         # 信息栏
         info_frame = tk.Frame(self, bg="#f0f4f0", pady=6)
         info_frame.pack(fill="x", padx=10, pady=(8,0))
-        tk.Label(info_frame, text="文件夹：%s" % os.path.basename(folder_path),
+        tk.Label(info_frame, text="文件夹：%s   |   图片：%d 张" % (
+            os.path.basename(folder_path), len(self.image_files)),
                  font=("Arial", 11, "bold"), bg="#f0f4f0").pack(anchor="w")
 
         asin_row = tk.Frame(info_frame, bg="#f0f4f0")
         asin_row.pack(anchor="w", pady=2)
-        tk.Label(asin_row, text="ASIN：", bg="#f0f4f0", width=8, anchor="e").pack(side="left")
+        tk.Label(asin_row, text="ASIN：", bg="#f0f4f0", width=6, anchor="e").pack(side="left")
         self.asin_var = tk.StringVar(value=asin)
         tk.Entry(asin_row, textvariable=self.asin_var, width=22,
                  font=("Courier", 11)).pack(side="left")
 
-        # 画布区域
-        canvas_frame = tk.Frame(self)
-        canvas_frame.pack(fill="both", expand=True, padx=10, pady=6)
-        canvas = tk.Canvas(canvas_frame, bg="#fafafa")
-        scrollbar = ttk.Scrollbar(canvas_frame, orient="vertical", command=canvas.yview)
-        canvas.configure(yscrollcommand=scrollbar.set)
-        scrollbar.pack(side="right", fill="y")
-        canvas.pack(side="left", fill="both", expand=True)
-        inner = tk.Frame(canvas, bg="#fafafa")
-        canvas_win = canvas.create_window((0, 0), window=inner, anchor="nw")
-        inner.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        canvas.bind("<Configure>", lambda e: canvas.itemconfig(canvas_win, width=e.width))
+        swch_count = sum(1 for v in preassign.values() if v == "SWCH")
+        auto_label = ("✓ 色卡已自动设为 SWCH" if swch_count else
+                      "• 未检测到色卡（最后一张将自动设为SWCH）" if self.swch_auto_last else
+                      "• SWCH自动末尾：关")
+        tk.Label(info_frame, text=auto_label, font=("Arial", 8),
+                 fg="#27ae60" if swch_count else "#888",
+                 bg="#f0f4f0").pack(anchor="w")
 
-        self._thumb_refs = []
-        self._pos_vars = {}
+        # 左右分栏
+        main_pw = tk.PanedWindow(self, orient="horizontal", sashwidth=4, bg="#e0e0e0")
+        main_pw.pack(fill="both", expand=True, padx=10, pady=6)
+
+        # === 左侧：拖拽排序列表 ===
+        left_frame = tk.Frame(main_pw, bg="#fafafa", width=280)
+        main_pw.add(left_frame, minsize=220)
+
+        tk.Label(left_frame, text="▼ 文件列表（可拖拽排序）",
+                 font=("Arial", 10, "bold"), bg="#fafafa",
+                 fg="#064338").pack(anchor="w", padx=8, pady=(6,2))
+        tk.Label(left_frame, text="拖拽调整顺序后点击「按列表顺序填充」",
+                 font=("Arial", 8), bg="#fafafa", fg="#888").pack(anchor="w", padx=8)
+
+        list_f = tk.Frame(left_frame, bg="#fafafa")
+        list_f.pack(fill="both", expand=True, padx=8, pady=4)
+        self._list_sb = ttk.Scrollbar(list_f, orient="vertical")
+        self._file_listbox = tk.Listbox(list_f, yscrollcommand=self._list_sb.set,
+                                         font=("Arial", 9), selectmode="extended",
+                                         exportselection=False)
+        self._list_sb.config(command=self._file_listbox.yview)
+        self._list_sb.pack(side="right", fill="y")
+        self._file_listbox.pack(side="left", fill="both", expand=True)
+
+        for fname in self.image_files:
+            pos = preassign.get(fname, "")
+            display = "%s  [→ %s]" % (fname, pos)
+            self._file_listbox.insert("end", display)
+
+        # 拖拽绑定
+        self._file_listbox.bind("<Button-1>", self._on_drag_start)
+        self._file_listbox.bind("<B1-Motion>", self._on_drag_motion)
+        self._file_listbox.bind("<ButtonRelease-1>", self._on_drag_stop)
+
+        list_btns = tk.Frame(left_frame, bg="#fafafa")
+        list_btns.pack(fill="x", padx=8, pady=4)
+        tk.Button(list_btns, text="▲ 上移", command=lambda: self._move_item(-1),
+                  font=("Arial", 9), width=8).pack(side="left", padx=2)
+        tk.Button(list_btns, text="▼ 下移", command=lambda: self._move_item(1),
+                  font=("Arial", 9), width=8).pack(side="left", padx=2)
+        tk.Button(list_btns, text="按列表填充 ▶",
+                  command=self._fill_by_list_order,
+                  bg="#064338", fg="#F3C546",
+                  font=("Arial", 10, "bold")).pack(side="right", padx=2)
+        tk.Label(left_frame, text="提示：Ctrl+点击多选后可用上移/下移",
+                 font=("Arial", 7), bg="#fafafa", fg="#aaa").pack(anchor="w", padx=8)
+
+        # === 右侧：缩略图网格 ===
+        right_frame = tk.Frame(main_pw, bg="#fafafa")
+        main_pw.add(right_frame)
+
+        canvas_frame = tk.Frame(right_frame)
+        canvas_frame.pack(fill="both", expand=True, padx=4, pady=4)
+        self._canvas = tk.Canvas(canvas_frame, bg="#fafafa")
+        right_sb = ttk.Scrollbar(canvas_frame, orient="vertical", command=self._canvas.yview)
+        self._canvas.configure(yscrollcommand=right_sb.set)
+        right_sb.pack(side="right", fill="y")
+        self._canvas.pack(side="left", fill="both", expand=True)
+        self._inner = tk.Frame(self._canvas, bg="#fafafa")
+        self._canvas_win = self._canvas.create_window((0, 0), window=self._inner, anchor="nw")
+        self._inner.bind("<Configure>",
+                          lambda e: self._canvas.configure(scrollregion=self._canvas.bbox("all")))
+        self._canvas.bind("<Configure>",
+                           lambda e: self._canvas.itemconfig(self._canvas_win, width=e.width))
+
+        self._thumb_refs      = []
+        self._pos_vars        = {}
         self._conflict_labels = {}
 
         COLS = 4
-        for idx, fname in enumerate(image_files):
+        for idx, fname in enumerate(self.image_files):
             row_i, col_i = divmod(idx, COLS)
-            cell = tk.Frame(inner, bd=1, relief="groove", padx=4, pady=4, bg="#fafafa")
+            cell = tk.Frame(self._inner, bd=1, relief="groove", padx=4, pady=4, bg="#fafafa")
             cell.grid(row=row_i, column=col_i, padx=4, pady=4, sticky="n")
 
             img_path = os.path.join(folder_path, fname)
@@ -503,19 +866,279 @@ class FolderDialog(tk.Toplevel):
 
         self._check_conflicts()
 
+        # 底部按钮栏
         btn_frame = tk.Frame(self, pady=6, bg="#f0f4f0")
         btn_frame.pack(fill="x", padx=10)
-        tk.Button(btn_frame, text="一键重排", command=self._reorder,
-                  bg="#3498db", fg="white", width=10).pack(side="left", padx=4)
-        tk.Button(btn_frame, text="跳过此文件夹", command=self._skip,
-                  bg="#95a5a6", fg="white", width=12).pack(side="left", padx=4)
-        tk.Button(btn_frame, text="✓ 确认", command=self._confirm,
+
+        left_btns = tk.Frame(btn_frame, bg="#f0f4f0")
+        left_btns.pack(side="left")
+        tk.Button(left_btns, text="一键重排", command=self._reorder,
+                  bg="#3498db", fg="white", width=10).pack(side="left", padx=2)
+        tk.Button(left_btns, text="保存模板", command=self._save_template,
+                  bg="#27ae60", fg="white", font=("Arial", 9),
+                  width=10).pack(side="left", padx=2)
+        tk.Button(left_btns, text="加载模板", command=self._load_template,
+                  bg="#8e44ad", fg="white", font=("Arial", 9),
+                  width=10).pack(side="left", padx=2)
+        tk.Button(left_btns, text="⚡快速应用上次", command=self._quick_apply_template,
+                  bg="#e67e22", fg="white", font=("Arial", 9),
+                  width=12).pack(side="left", padx=2)
+
+        right_btns = tk.Frame(btn_frame, bg="#f0f4f0")
+        right_btns.pack(side="right")
+        tk.Button(right_btns, text="跳过此文件夹", command=self._skip,
+                  bg="#95a5a6", fg="white", width=12).pack(side="left", padx=2)
+        tk.Button(right_btns, text="🚀 应用到全部", command=self._apply_to_all,
+                  bg="#e74c3c", fg="white", font=("Arial", 10, "bold"),
+                  width=14).pack(side="left", padx=3)
+        tk.Button(right_btns, text="✓ 确认", command=self._confirm,
                   bg="#064338", fg="#F3C546", font=("Arial", 11, "bold"),
-                  width=10).pack(side="right", padx=4)
+                  width=10).pack(side="left", padx=2)
 
         self.grab_set()
         self.focus_set()
         self.wait_window()
+
+    # ── 拖拽 ──
+    def _on_drag_start(self, event):
+        idx = self._file_listbox.nearest(event.y)
+        if idx >= 0:
+            self._drag_data["index"] = idx
+            self._drag_data["y"] = event.y
+
+    def _on_drag_motion(self, event):
+        if self._drag_data["index"] is None:
+            return
+        new_idx = self._file_listbox.nearest(event.y)
+        if new_idx != self._drag_data["index"] and new_idx >= 0:
+            old_idx = self._drag_data["index"]
+            old_text = self._file_listbox.get(old_idx)
+            self._file_listbox.delete(old_idx)
+            self._file_listbox.insert(new_idx, old_text)
+            item = self.image_files.pop(old_idx)
+            self.image_files.insert(new_idx, item)
+            self._drag_data["index"] = new_idx
+        self._drag_data["y"] = event.y
+
+    def _on_drag_stop(self, event):
+        self._drag_data["index"] = None
+        self._sync_listbox_display()
+
+    def _move_item(self, direction):
+        sel = self._file_listbox.curselection()
+        if not sel:
+            return
+        # 先记住选中了哪些文件名（避免按钮点击导致选择丢失）
+        sel_fnames = set()
+        for idx in sel:
+            if 0 <= idx < len(self.image_files):
+                sel_fnames.add(self.image_files[idx])
+        # 按方向排序处理
+        indices = sorted(list(sel), reverse=(direction > 0))
+        for idx in indices:
+            new_idx = idx + direction
+            if 0 <= new_idx < len(self.image_files):
+                self.image_files[idx], self.image_files[new_idx] = \
+                    self.image_files[new_idx], self.image_files[idx]
+        self._sync_listbox_display()
+        # 恢复选中状态
+        for i, fname in enumerate(self.image_files):
+            if fname in sel_fnames:
+                self._file_listbox.selection_set(i)
+
+    def _sync_listbox_display(self):
+        self._file_listbox.delete(0, "end")
+        for fname in self.image_files:
+            pos = self._pos_vars[fname].get() if fname in self._pos_vars else ""
+            display = "%s  [→ %s]" % (fname, pos)
+            self._file_listbox.insert("end", display)
+
+    def _fill_by_list_order(self):
+        swch_found = any(guess_position(f, self.extra_hints) == "SWCH" for f in self.image_files)
+        pt_idx = 0
+        pt_list = PT_POSITIONS[:]
+        for fname in self.image_files:
+            p = guess_position(fname, self.extra_hints)
+            if p == "SWCH":
+                self._pos_vars[fname].set("SWCH")
+            elif pt_idx < len(pt_list):
+                self._pos_vars[fname].set(pt_list[pt_idx])
+                pt_idx += 1
+            else:
+                self._pos_vars[fname].set("SWCH" if not swch_found and fname == self.image_files[-1] else "跳过")
+        swch_files = [f for f in self.image_files if self._pos_vars[f].get() == "SWCH"]
+        if not swch_files and self.swch_auto_last and self.image_files:
+            for fname in reversed(self.image_files):
+                if self._pos_vars[fname].get() != "MAIN":
+                    self._pos_vars[fname].set("SWCH")
+                    break
+        self._sync_listbox_display()
+        self._check_conflicts()
+        messagebox.showinfo("填充完成", "已按列表顺序填充位置。\n色卡已自动放在 SWCH 位置。", parent=self)
+
+    # ── 模板 ──
+    def _save_template(self):
+        rules = []
+        for fname in self.image_files:
+            pos = self._pos_vars[fname].get()
+            if pos in ("跳过",):
+                continue
+            name_no_ext = Path(fname).stem.lower()
+            kws = self._extract_keywords(name_no_ext)
+            if kws:
+                rules.append({"position": pos, "keywords": kws, "priority": "high"})
+        if not rules:
+            messagebox.showwarning("提示", "未找到可用于模板的关键词。\n请确保文件名包含有意义的关键词。", parent=self)
+            return
+        dlg = tk.Toplevel(self)
+        dlg.title("保存排序模板")
+        dlg.geometry("420x260")
+        dlg.resizable(False, False)
+        tk.Label(dlg, text="模板名称：", font=("Arial", 10, "bold")).pack(anchor="w", padx=16, pady=(14,2))
+        name_var = tk.StringVar(value=os.path.basename(self.folder_path))
+        tk.Entry(dlg, textvariable=name_var, width=40, font=("Arial", 11)).pack(padx=16)
+        tk.Label(dlg, text="描述（可选）：", font=("Arial", 10, "bold")).pack(anchor="w", padx=16, pady=(10,2))
+        desc_var = tk.StringVar(value="")
+        tk.Entry(dlg, textvariable=desc_var, width=40).pack(padx=16)
+        swch_var = tk.BooleanVar(value=self.swch_auto_last)
+        tk.Checkbutton(dlg, text="SWCH自动放末尾", variable=swch_var).pack(anchor="w", padx=16, pady=8)
+        btn_row = tk.Frame(dlg)
+        btn_row.pack(pady=10)
+        tk.Button(btn_row, text="取消", width=8, command=dlg.destroy).pack(side="left", padx=4)
+        tk.Button(btn_row, text="保存", width=10, bg="#064338", fg="#F3C546",
+                  font=("Arial", 10, "bold"),
+                  command=lambda: self._do_save_template(
+                      dlg, name_var.get().strip(), desc_var.get().strip(), rules, swch_var.get()
+                  )).pack(side="left", padx=4)
+        dlg.grab_set()
+        dlg.focus_set()
+        self.wait_window(dlg)
+
+    def _do_save_template(self, dlg, name, desc, rules, swch):
+        if not name:
+            messagebox.showwarning("提示", "请输入模板名称", parent=dlg)
+            return
+        tpath = save_template(name, desc, rules, swch)
+        dlg.destroy()
+        messagebox.showinfo("保存成功",
+            "模板「%s」已保存\n规则数：%d 条\n路径：%s" % (name, len(rules), tpath), parent=self)
+
+    def _extract_keywords(self, name_lower):
+        parts = re.split(r'[_\-\s\d]+', name_lower)
+        parts = [p for p in parts if len(p) >= 2]
+        if len(parts) >= 2:
+            return parts[:4] + ["".join(parts[:2])]
+        return parts[:4] if parts else []
+
+    def _load_template(self):
+        def on_load(template):
+            self._last_template = template  # 记住，支持一键复用
+            rules = template.get("data", {}).get("rules", [])
+            swch  = template.get("data", {}).get("swch_auto_last", True)
+            if not rules:
+                messagebox.showwarning("提示", "模板中没有规则", parent=self)
+                return
+            assignments = {}
+            used = set()
+            priority_order = {"exact": 0, "high": 1, "mid": 2, "low": 3}
+            sorted_rules = sorted(rules, key=lambda r: priority_order.get(r.get("priority","mid"), 2))
+            for rule in sorted_rules:
+                target = rule.get("position", "")
+                if target in used:
+                    continue
+                for fname in self.image_files:
+                    if fname in assignments:
+                        continue
+                    name_lower = Path(fname).stem.lower()
+                    for kw in rule.get("keywords", []):
+                        if kw.lower() in name_lower:
+                            assignments[fname] = target
+                            used.add(target)
+                            break
+                    if target in used:
+                        break
+            for fname in self.image_files:
+                if fname in assignments:
+                    continue
+                p = guess_position(fname, self.extra_hints)
+                if p and p not in used:
+                    assignments[fname] = p
+                    used.add(p)
+            pt_queue = [p for p in PT_POSITIONS if p not in used]
+            remaining = [f for f in self.image_files if f not in assignments]
+            if swch and "SWCH" not in used and remaining:
+                last = remaining.pop()
+                assignments[last] = "SWCH"
+            for fname in remaining:
+                assignments[fname] = pt_queue.pop(0) if pt_queue else "跳过"
+            for fname, pos in assignments.items():
+                self._pos_vars[fname].set(pos)
+            self._sync_listbox_display()
+            self._check_conflicts()
+            count = len([a for a in assignments.values() if a != "跳过"])
+            messagebox.showinfo("模板已应用",
+                "模板「%s」已应用。\n自动匹配 %d / %d 张图片。" % (
+                    template["name"], count, len(self.image_files)), parent=self)
+        TemplateManager(self, on_load)
+
+    def _quick_apply_template(self):
+        """一键应用上次加载的模板，无需再次选择和确认"""
+        if not self._last_template:
+            # 尝试从文件系统加载最近的一个模板
+            all_t = list_templates()
+            if all_t:
+                self._last_template = all_t[0]
+            else:
+                messagebox.showwarning("提示", "没有可用的模板。\n请先通过「加载模板」选择并应用一次模板。", parent=self)
+                return
+        # 直接应用 _last_template
+        template = self._last_template
+        rules = template.get("data", {}).get("rules", [])
+        swch  = template.get("data", {}).get("swch_auto_last", True)
+        if not rules:
+            messagebox.showwarning("提示", "模板中没有规则", parent=self)
+            return
+        assignments = {}
+        used = set()
+        priority_order = {"exact": 0, "high": 1, "mid": 2, "low": 3}
+        sorted_rules = sorted(rules, key=lambda r: priority_order.get(r.get("priority","mid"), 2))
+        for rule in sorted_rules:
+            target = rule.get("position", "")
+            if target in used:
+                continue
+            for fname in self.image_files:
+                if fname in assignments:
+                    continue
+                name_lower = Path(fname).stem.lower()
+                for kw in rule.get("keywords", []):
+                    if kw.lower() in name_lower:
+                        assignments[fname] = target
+                        used.add(target)
+                        break
+                if target in used:
+                    break
+        for fname in self.image_files:
+            if fname in assignments:
+                continue
+            p = guess_position(fname, self.extra_hints)
+            if p and p not in used:
+                assignments[fname] = p
+                used.add(p)
+        pt_queue = [p for p in PT_POSITIONS if p not in used]
+        remaining = [f for f in self.image_files if f not in assignments]
+        if swch and "SWCH" not in used and remaining:
+            last = remaining.pop()
+            assignments[last] = "SWCH"
+        for fname in remaining:
+            assignments[fname] = pt_queue.pop(0) if pt_queue else "跳过"
+        for fname, pos in assignments.items():
+            self._pos_vars[fname].set(pos)
+        self._sync_listbox_display()
+        self._check_conflicts()
+        count = len([a for a in assignments.values() if a != "跳过"])
+        messagebox.showinfo("快速应用完成",
+            "模板「%s」已应用。\n自动匹配 %d / %d 张图片。" % (
+                template["name"], count, len(self.image_files)), parent=self)
 
     def _save_geometry(self):
         global _last_dialog_geometry
@@ -539,11 +1162,11 @@ class FolderDialog(tk.Toplevel):
                 swch_file = fname
             else:
                 others.append(fname)
-        pt_list = [p for p in ALL_POSITIONS if p not in ("SWCH", "跳过")]
         for i, fname in enumerate(others):
-            self._pos_vars[fname].set(pt_list[i] if i < len(pt_list) else "跳过")
+            self._pos_vars[fname].set(PT_POSITIONS[i] if i < len(PT_POSITIONS) else "跳过")
         if swch_file:
             self._pos_vars[swch_file].set("SWCH")
+        self._sync_listbox_display()
         self._check_conflicts()
 
     def _confirm(self):
@@ -554,6 +1177,21 @@ class FolderDialog(tk.Toplevel):
         assignments = {fname: self._pos_vars[fname].get() for fname in self.image_files}
         self._save_geometry()
         self._result = ("confirm", asin, assignments)
+        self.destroy()
+
+    def _apply_to_all(self):
+        """一键应用当前排序方案到全部剩余文件夹"""
+        asin = self.asin_var.get().strip()
+        if not asin:
+            messagebox.showwarning("提示", "请填写ASIN", parent=self)
+            return
+        if not messagebox.askyesno("确认批量应用",
+                                    "将当前排序方案自动应用到后续所有文件夹，不再逐一弹窗确认。\n\n"
+                                    "确定吗？", parent=self):
+            return
+        assignments = {fname: self._pos_vars[fname].get() for fname in self.image_files}
+        self._save_geometry()
+        self._result = ("apply_all", asin, assignments)
         self.destroy()
 
     def _skip(self):
@@ -577,26 +1215,26 @@ class FolderDialog(tk.Toplevel):
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("亚马逊批量图片重命名工具 v5.0 — KovaScape")
-        self.geometry("740x520")
+        self.title("亚马逊批量图片重命名工具 v5.1 — KovaScape")
+        self.geometry("760x560")
         self.resizable(True, True)
 
-        self.records = []              # 保留原列表（可能无用，但保留）
-        self.sku_to_asin = {}          # 新增：SKU->ASIN 映射
-        self.sku_file = tk.StringVar()
+        self.records       = []
+        self.sku_to_asin   = {}
+        self.sku_file      = tk.StringVar()
         self.parent_folder = tk.StringVar()
         self.output_folder = tk.StringVar()
 
-        self.custom_data = load_custom_dict()
+        self.custom_data   = load_custom_dict()
         self._build_ui()
 
     def _build_ui(self):
         title_frame = tk.Frame(self, bg="#064338", pady=10)
         title_frame.pack(fill="x")
-        tk.Label(title_frame, text="亚马逊批量图片重命名工具 v5.0",
+        tk.Label(title_frame, text="亚马逊批量图片重命名工具 v5.1",
                  font=("Arial", 15, "bold"), fg="#F3C546", bg="#064338").pack()
-        tk.Label(title_frame, text="KovaScape 内部工具",
-                 font=("Arial", 9), fg="#aed6c4", bg="#064338").pack()
+        tk.Label(title_frame, text="KovaScape 内部工具 · Phase 1: 模板+拖拽+SWCH自动末尾",
+                 font=("Arial", 8), fg="#aed6c4", bg="#064338").pack()
 
         body = tk.Frame(self, padx=20, pady=12)
         body.pack(fill="both", expand=True)
@@ -607,20 +1245,30 @@ class App(tk.Tk):
         self._row(body, "输出文件夹：",   self.output_folder,
                   lambda: self._browse_dir(self.output_folder), 2)
 
+        opt_row = tk.Frame(body)
+        opt_row.grid(row=3, column=0, columnspan=3, sticky="w", pady=(2,0))
+        self.swch_var = tk.BooleanVar(value=self.custom_data.get("swch_auto_last", True))
+        tk.Checkbutton(opt_row, text="色卡(SWCH)自动放末尾",
+                       variable=self.swch_var, font=("Arial", 9),
+                       command=self._on_swch_toggle).pack(side="left")
+
         self.status_lbl = tk.Label(body, text="请先选择SKU大表文件",
                                    fg="#888", wraplength=640, justify="left")
-        self.status_lbl.grid(row=3, column=0, columnspan=3, sticky="w", pady=4)
+        self.status_lbl.grid(row=4, column=0, columnspan=3, sticky="w", pady=4)
 
         self.mode_lbl = tk.Label(body, text="匹配模式：文件夹名 = SKU (精确匹配，忽略大小写)", fg="#aaa")
-        self.mode_lbl.grid(row=4, column=0, columnspan=3, sticky="w")
+        self.mode_lbl.grid(row=5, column=0, columnspan=3, sticky="w")
 
         btn_row = tk.Frame(body)
-        btn_row.grid(row=5, column=0, columnspan=3, pady=14)
+        btn_row.grid(row=6, column=0, columnspan=3, pady=14)
         tk.Button(btn_row, text="▶  开始处理", command=self._start,
                   bg="#064338", fg="#F3C546", font=("Arial", 13, "bold"),
                   padx=20, pady=8).pack(side="left", padx=8)
         tk.Button(btn_row, text="⚙ 自定义字典", command=self._open_dict_editor,
                   bg="#7f8c8d", fg="white", font=("Arial", 10),
+                  padx=10, pady=8).pack(side="left", padx=8)
+        tk.Button(btn_row, text="📋 管理模板", command=self._manage_templates,
+                  bg="#8e44ad", fg="white", font=("Arial", 10),
                   padx=10, pady=8).pack(side="left", padx=8)
 
         dep_lines = []
@@ -630,22 +1278,30 @@ class App(tk.Tk):
         if dep_lines:
             tk.Label(body, text="\n".join(dep_lines), fg="#e67e22",
                      font=("Arial", 9), justify="left").grid(
-                row=6, column=0, columnspan=3, sticky="w")
+                row=7, column=0, columnspan=3, sticky="w")
 
         n_c = len(self.custom_data.get("colors", []))
         n_s = len(self.custom_data.get("shelf_sizes", []))
         n_f = len(self.custom_data.get("frame_sizes", []))
-        if n_c or n_s or n_f:
+        n_h = len(self.custom_data.get("position_hints", []))
+        parts = []
+        if n_c: parts.append("%d个颜色" % n_c)
+        if n_s: parts.append("%d个层板尺寸" % n_s)
+        if n_f: parts.append("%d个相框尺寸" % n_f)
+        if n_h: parts.append("%d条关键词" % n_h)
+        if parts:
             tk.Label(body,
-                     text="已加载自定义字典：%d个颜色，%d个层板尺寸，%d个相框尺寸" % (n_c, n_s, n_f),
+                     text="已加载自定义字典：%s" % "，".join(parts),
                      fg="#27ae60", font=("Arial", 9)).grid(
-                row=7, column=0, columnspan=3, sticky="w")
+                row=8, column=0, columnspan=3, sticky="w")
+
+    def _on_swch_toggle(self):
+        self.custom_data["swch_auto_last"] = self.swch_var.get()
+        save_custom_dict(self.custom_data)
 
     def _row(self, parent, label, var, cmd, row):
-        tk.Label(parent, text=label, anchor="e", width=14).grid(
-            row=row, column=0, sticky="e", pady=5)
-        tk.Entry(parent, textvariable=var, width=46).grid(
-            row=row, column=1, sticky="ew", padx=6)
+        tk.Label(parent, text=label, anchor="e", width=14).grid(row=row, column=0, sticky="e", pady=5)
+        tk.Entry(parent, textvariable=var, width=46).grid(row=row, column=1, sticky="ew", padx=6)
         tk.Button(parent, text="浏览", command=cmd, width=6).grid(row=row, column=2)
         parent.columnconfigure(1, weight=1)
 
@@ -664,7 +1320,7 @@ class App(tk.Tk):
         try:
             self.records, self.sku_to_asin = load_records(path)
             count = len(self.sku_to_asin)
-            self.status_lbl.config(text=f"✓ 已加载 {count} 条SKU-ASIN映射", fg="#27ae60")
+            self.status_lbl.config(text="✓ 已加载 %d 条SKU-ASIN映射" % count, fg="#27ae60")
             self.mode_lbl.config(text="匹配模式：文件夹名 = SKU (精确匹配，忽略大小写)", fg="#2980b9")
         except ImportError as e:
             messagebox.showerror("缺少依赖库", str(e))
@@ -679,10 +1335,22 @@ class App(tk.Tk):
             n_c = len(new_data.get("colors", []))
             n_s = len(new_data.get("shelf_sizes", []))
             n_f = len(new_data.get("frame_sizes", []))
+            n_h = len(new_data.get("position_hints", []))
+            parts = []
+            if n_c: parts.append("%d个颜色" % n_c)
+            if n_s: parts.append("%d个层板尺寸" % n_s)
+            if n_f: parts.append("%d个相框尺寸" % n_f)
+            if n_h: parts.append("%d条关键词" % n_h)
             self.status_lbl.config(
-                text="✓ 自定义字典已更新：%d个颜色，%d个层板尺寸，%d个相框尺寸" % (n_c, n_s, n_f),
+                text="✓ 自定义字典已更新：%s" % "，".join(parts) if parts else "✓ 已保存",
                 fg="#27ae60")
+            self.swch_var.set(new_data.get("swch_auto_last", True))
         CustomDictEditor(self, self.custom_data, on_save)
+
+    def _manage_templates(self):
+        TemplateManager(self, on_load=lambda t: messagebox.showinfo(
+            "模板信息", "模板「%s」\n规则数：%d\n\n在文件夹对话框中加载模板。"
+            % (t["name"], len(t.get("data",{}).get("rules",[]))), parent=self))
 
     def _start(self):
         parent = self.parent_folder.get().strip()
@@ -703,7 +1371,10 @@ class App(tk.Tk):
             messagebox.showinfo("提示", "父文件夹下没有子文件夹")
             return
 
+        self.custom_data["swch_auto_last"] = self.swch_var.get()
         file_map, warnings = {}, []
+        auto_pattern = None  # None=手动弹窗模式；list=自动套用排序方案
+        auto_count = 0
 
         for folder_name in sub_folders:
             folder_path = os.path.join(parent, folder_name)
@@ -712,39 +1383,74 @@ class App(tk.Tk):
             if not image_files:
                 continue
 
-            # ---------- 简单匹配：文件夹名作为SKU查找 ----------
             folder_key = folder_name.strip().upper()
             matched_asin = self.sku_to_asin.get(folder_key)
 
             if not matched_asin:
-                # 未匹配到，询问是否跳过
+                if auto_pattern is not None:
+                    continue  # 自动模式下跳过未匹配的文件夹
                 if not messagebox.askyesno("未匹配",
-                                           f"文件夹名“{folder_name}”未在SKU大表中找到对应SKU，是否跳过？\n\n"
-                                           "点击“是”跳过此文件夹继续处理其他文件夹；点击“否”退出处理。"):
+                                           "文件夹名\"%s\"未在SKU大表中找到对应SKU，是否跳过？\n\n"
+                                           "点击\"是\"跳过此文件夹继续处理其他文件夹；点击\"否\"退出处理。" % folder_name):
                     self.status_lbl.config(text="已退出处理", fg="#e74c3c")
                     return
                 continue
 
-            # 弹出对话框，用户确认/调整位置
-            dlg = FolderDialog(self, folder_path=folder_path, image_files=image_files,
-                               asin=matched_asin)
-            result = dlg.get_result()
+            if auto_pattern is None:
+                # ── 手动模式：弹窗确认 ──
+                dlg = FolderDialog(self, folder_path=folder_path,
+                                   image_files=image_files,
+                                   asin=matched_asin,
+                                   custom_data=self.custom_data)
+                result = dlg.get_result()
 
-            if result is None or result[0] == "quit":
-                self.status_lbl.config(text="已退出处理", fg="#e74c3c")
-                return
-            if result[0] == "skip":
-                continue
+                if result is None or result[0] == "quit":
+                    self.status_lbl.config(text="已退出处理", fg="#e74c3c")
+                    return
+                if result[0] == "skip":
+                    continue
 
-            action, asin, assignments = result
+                action, asin, assignments = result
+
+                if action == "apply_all":
+                    # 记录排序方案，后续文件夹自动套用
+                    auto_pattern = [assignments.get(f, "跳过") for f in image_files]
+                    auto_count = 1
+                    self.status_lbl.config(
+                        text="🚀 已启动批量自动模式，正在处理...", fg="#e74c3c")
+                    self.update()
+            else:
+                # ── 自动模式：套用排序方案 ──
+                asin = matched_asin
+                assignments = {}
+                for i, fname in enumerate(image_files):
+                    if i < len(auto_pattern):
+                        assignments[fname] = auto_pattern[i]
+                    else:
+                        assignments[fname] = "跳过"
+                # 如果方案里没有 SWCH 且开关打开，末尾自动设 SWCH
+                has_swch = any(p == "SWCH" for p in assignments.values())
+                if not has_swch and self.swch_var.get() and image_files:
+                    for fname in reversed(image_files):
+                        if assignments.get(fname) != "MAIN":
+                            assignments[fname] = "SWCH"
+                            break
+                auto_count += 1
+                self.status_lbl.config(
+                    text="🚀 自动处理 [%d/%d]：%s（%d张）" % (
+                        auto_count, len(sub_folders), folder_name, len(image_files)),
+                    fg="#2980b9")
+                self.update()
+
+            # ── 公共：写入 file_map ──
             for fname, pos in assignments.items():
                 if pos == "跳过":
                     continue
                 src = os.path.join(folder_path, fname)
                 ext = Path(fname).suffix.lower()
-                dest = f"{asin}.{pos}{ext}"
+                dest = "%s.%s%s" % (asin, pos, ext)
                 if dest in file_map.values():
-                    warnings.append(f"重复文件名：{dest}（来自 {folder_name}）")
+                    warnings.append("重复文件名：%s（来自 %s）" % (dest, folder_name))
                 file_map[src] = dest
 
         if not file_map:
@@ -753,13 +1459,13 @@ class App(tk.Tk):
 
         try:
             zip_paths = pack_to_zip(file_map, output)
-            msg = f"✓ 完成！共处理 {len(file_map)} 张图片\nZIP文件：\n" + "\n".join(zip_paths)
+            msg = "✓ 完成！共处理 %d 张图片\nZIP文件：\n" % len(file_map) + "\n".join(zip_paths)
             if warnings:
-                msg += f"\n\n⚠ 警告（{len(warnings)}条）：\n" + "\n".join(warnings[:10])
+                msg += "\n\n⚠ 警告（%d条）：\n" % len(warnings) + "\n".join(warnings[:10])
             messagebox.showinfo("处理完成", msg)
-            self.status_lbl.config(text=f"✓ 完成！{len(file_map)} 张图片已打包", fg="#27ae60")
+            self.status_lbl.config(text="✓ 完成！%d 张图片已打包" % len(file_map), fg="#27ae60")
         except Exception as e:
-            messagebox.showerror("打包失败", f"ZIP打包出错：\n{e}\n\n{traceback.format_exc()}")
+            messagebox.showerror("打包失败", "ZIP打包出错：\n%s\n\n%s" % (e, traceback.format_exc()))
 
 # ============================================================
 # 入口
@@ -772,9 +1478,9 @@ def main():
     except Exception as e:
         try:
             messagebox.showerror("程序错误",
-                f"发生未预期错误：\n{e}\n\n{traceback.format_exc()}")
+                "发生未预期错误：\n%s\n\n%s" % (e, traceback.format_exc()))
         except Exception:
-            print(f"FATAL ERROR: {e}")
+            print("FATAL ERROR: %s" % e)
             traceback.print_exc()
         sys.exit(1)
 

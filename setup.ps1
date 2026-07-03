@@ -15,7 +15,8 @@ if (Get-Command python -ErrorAction SilentlyContinue) {
 
 # 2. 创建目录结构
 Write-Host "正在创建项目配置目录结构..." -ForegroundColor Yellow
-$AgentDir = Join-Path $PSScriptRoot ".agents"
+$ScriptRoot = if ($PSScriptRoot) { $PSScriptRoot } else { $PWD.Path }
+$AgentDir = Join-Path $ScriptRoot ".agents"
 $SkillsDir = Join-Path $AgentDir "skills"
 if (!(Test-Path $AgentDir)) { New-Item -ItemType Directory -Path $AgentDir | Out-Null }
 if (!(Test-Path $SkillsDir)) { New-Item -ItemType Directory -Path $SkillsDir | Out-Null }

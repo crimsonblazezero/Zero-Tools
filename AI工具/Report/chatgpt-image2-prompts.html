@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChatGPT Image 2 提示词手册 · KovaScape</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #F0EDE8;
+    font-family: 'Poppins', sans-serif;
+    color: #1D1B20;
+    line-height: 1.7;
+  }
+
+  .page {
+    background: #FDFCF9;
+    border-radius: 40px;
+    max-width: 1100px;
+    margin: 32px auto;
+    overflow: hidden;
+    box-shadow: 0 8px 48px rgba(6,67,56,0.10);
+  }
+
+  /* ── HERO ── */
+  .hero {
+    background: #064338;
+    padding: 64px 64px 0 64px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 320px; height: 320px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(243,197,70,0.18);
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: 20px; right: 80px;
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    border: 1px solid rgba(243,197,70,0.10);
+  }
+  .hero-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .hero-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #F3C546;
+    flex-shrink: 0;
+  }
+  .hero-eyebrow span {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.65);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+  .hero-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 48px;
+    font-weight: 500;
+    color: #FFFFFF;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    margin-bottom: 12px;
+  }
+  .hero-title em {
+    color: #F3C546;
+    font-style: normal;
+  }
+  .hero-subtitle {
+    font-size: 14px;
+    color: rgba(255,255,255,0.65);
+    max-width: 600px;
+    margin-bottom: 40px;
+  }
+  .hero-metrics {
+    display: flex;
+    gap: 0;
+    border-top: 0.6px solid rgba(243,197,70,0.35);
+    margin: 0 -64px;
+    padding: 0 64px;
+  }
+  .hero-metric {
+    padding: 20px 32px 20px 0;
+    margin-right: 32px;
+    border-right: 0.6px solid rgba(255,255,255,0.1);
+  }
+  .hero-metric:last-child { border-right: none; }
+  .hero-metric-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 600;
+    color: #F3C546;
+    display: block;
+  }
+  .hero-metric-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.55);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+
+  /* ── BODY ── */
+  .body { padding: 56px 64px; }
+
+  /* ── ALERT ── */
+  .alert-info {
+    background: #E8F2F0;
+    border-left: 4px solid #064338;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 48px;
+  }
+  .alert-info .alert-title {
+    font-size: 13px; font-weight: 600; color: #064338;
+    margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .alert-info p { font-size: 13px; color: #3a6b62; line-height: 1.6; }
+
+  .alert-warning {
+    background: #FFF8DC;
+    border-left: 4px solid #F3C546;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-top: 16px;
+  }
+  .alert-warning .alert-title {
+    font-size: 12px; font-weight: 600; color: #B8860B;
+    margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .alert-warning p { font-size: 12px; color: #8a6a00; line-height: 1.6; }
+
+  .alert-danger {
+    background: #FDECEA;
+    border-left: 4px solid #C4433A;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-top: 16px;
+  }
+  .alert-danger .alert-title {
+    font-size: 12px; font-weight: 600; color: #C4433A;
+    margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .alert-danger p { font-size: 12px; color: #8a2a24; line-height: 1.6; }
+
+  /* ── SECTION ── */
+  .section { margin-bottom: 56px; }
+  .section-header {
+    display: flex; align-items: flex-start; gap: 16px;
+    margin-bottom: 28px; padding-bottom: 20px;
+    border-bottom: 1px solid #F0EDE8;
+  }
+  .section-number {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: #064338; color: #F3C546;
+    font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 2px;
+  }
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px; font-weight: 500; color: #1D1B20; line-height: 1.3;
+  }
+  .section-subtitle { font-size: 13px; color: #717171; margin-top: 4px; }
+
+  /* ── CONCEPT CARD ── */
+  .concept-card {
+    background: #FDF9F2; border: 1px solid #E8E4DE;
+    border-radius: 16px; padding: 24px 28px; margin-bottom: 20px;
+  }
+  .concept-card h4 {
+    font-size: 13px; font-weight: 600; color: #064338;
+    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .concept-card h4::before {
+    content: ''; display: inline-block;
+    width: 4px; height: 14px; background: #F3C546; border-radius: 2px;
+  }
+  .concept-card p { font-size: 13px; color: #717171; line-height: 1.65; }
+
+  /* ── PROBLEM DIAGNOSIS ── */
+  .diagnosis-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;
+  }
+  .diagnosis-item {
+    background: #FDECEA; border: 1px solid #f5c6c3;
+    border-radius: 12px; padding: 16px 18px;
+  }
+  .diagnosis-item .d-label {
+    font-size: 11px; font-weight: 600; color: #C4433A;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+  }
+  .diagnosis-item .d-cause {
+    font-size: 12px; color: #7a2a24; line-height: 1.55;
+  }
+  .fix-item {
+    background: #E8F2F0; border: 1px solid #b8d9d4;
+    border-radius: 12px; padding: 16px 18px;
+  }
+  .fix-item .d-label {
+    font-size: 11px; font-weight: 600; color: #064338;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+  }
+  .fix-item .d-cause { font-size: 12px; color: #2a5a52; line-height: 1.55; }
+
+  /* ── PROMPT BLOCK ── */
+  .prompt-block {
+    background: #1D1B20; border-radius: 14px;
+    overflow: hidden; margin-bottom: 20px;
+  }
+  .prompt-label {
+    background: #064338; padding: 10px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .prompt-label span {
+    font-size: 11px; font-weight: 500; color: #F3C546;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .prompt-tag {
+    font-size: 10px; background: rgba(243,197,70,0.15); color: #F3C546;
+    padding: 2px 8px; border-radius: 20px; border: 1px solid rgba(243,197,70,0.3);
+  }
+  .prompt-tag-red {
+    font-size: 10px; background: rgba(196,67,58,0.2); color: #ff8a82;
+    padding: 2px 8px; border-radius: 20px; border: 1px solid rgba(196,67,58,0.3);
+  }
+  .prompt-text {
+    padding: 20px 24px; font-size: 13px; color: #E8E4DE;
+    line-height: 1.8; font-family: 'Poppins', sans-serif;
+  }
+  .prompt-text .var { color: #F3C546; font-weight: 500; }
+  .prompt-text .key { color: #7dd3c8; }
+  .prompt-text .lock { color: #ff9f7f; font-weight: 600; }
+  .prompt-text .comment { color: #888; font-style: italic; font-size: 12px; }
+
+  /* ── ATTRIBUTE CHECKLIST ── */
+  .attr-checklist {
+    background: #1D1B20; border-radius: 14px; overflow: hidden; margin-bottom: 20px;
+  }
+  .attr-checklist-header {
+    background: #2a2a2a; padding: 12px 20px;
+    font-size: 11px; font-weight: 600; color: #F3C546;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .attr-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 0; padding: 16px 20px;
+  }
+  .attr-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 0; font-size: 12px; color: #E8E4DE;
+  }
+  .attr-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #F3C546; flex-shrink: 0;
+  }
+
+  /* ── TIPS GRID ── */
+  .tips-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px;
+  }
+  .tip-card {
+    background: #FDFCF9; border: 1px solid #E8E4DE;
+    border-radius: 14px; padding: 20px 22px;
+  }
+  .tip-card .tip-icon { font-size: 20px; margin-bottom: 10px; display: block; }
+  .tip-card h5 { font-size: 13px; font-weight: 600; color: #1D1B20; margin-bottom: 6px; }
+  .tip-card p { font-size: 12px; color: #717171; line-height: 1.6; }
+
+  /* ── FORMULA BAR ── */
+  .formula-bar {
+    display: flex; align-items: center;
+    background: #F0EDE8; border-radius: 12px;
+    padding: 16px 20px; margin: 20px 0; flex-wrap: wrap; gap: 6px;
+  }
+  .formula-item {
+    background: #064338; color: #FDFCF9;
+    font-size: 11px; font-weight: 500;
+    padding: 6px 12px; border-radius: 20px; white-space: nowrap;
+  }
+  .formula-arrow { color: #F3C546; font-size: 14px; font-weight: 600; padding: 0 2px; }
+
+  /* ── WORKFLOW STEPS ── */
+  .workflow {
+    background: #FDFCF9; border: 1px solid #E8E4DE;
+    border-radius: 16px; overflow: hidden; margin-bottom: 20px;
+  }
+  .workflow-header {
+    background: #064338; padding: 14px 24px;
+    font-size: 12px; font-weight: 600; color: #F3C546;
+    text-transform: uppercase; letter-spacing: 0.8px;
+  }
+  .workflow-steps { padding: 8px 0; }
+  .workflow-step {
+    display: flex; gap: 16px; align-items: flex-start;
+    padding: 14px 24px; border-bottom: 1px solid #F0EDE8;
+  }
+  .workflow-step:last-child { border-bottom: none; }
+  .ws-num {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: #064338; color: #F3C546;
+    font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .ws-content { flex: 1; }
+  .ws-title { font-size: 13px; font-weight: 600; color: #1D1B20; margin-bottom: 3px; }
+  .ws-desc { font-size: 12px; color: #717171; line-height: 1.55; }
+  .ws-tag {
+    display: inline-block; font-size: 10px; font-weight: 500;
+    padding: 2px 8px; border-radius: 20px; margin-left: 8px; vertical-align: middle;
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, #F3C546, transparent);
+    margin: 48px 0; opacity: 0.4;
+  }
+
+  /* ── QUICK REF TABLE ── */
+  .ref-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 16px; }
+  .ref-table thead tr { background: #064338; }
+  .ref-table th {
+    color: #F3C546; font-size: 11px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    padding: 12px 16px; text-align: left;
+  }
+  .ref-table td {
+    padding: 12px 16px; border-bottom: 1px solid #F0EDE8;
+    color: #3a3a3a; vertical-align: top; line-height: 1.55;
+  }
+  .ref-table tr:hover td { background: #F8F5F0; }
+  .badge {
+    display: inline-block; font-size: 10px; font-weight: 500;
+    padding: 2px 8px; border-radius: 20px;
+  }
+  .badge-green { background: #E8F2F0; color: #064338; }
+  .badge-yellow { background: #FFF8DC; color: #B8860B; }
+  .badge-red { background: #FDECEA; color: #C4433A; }
+
+  /* ── FOOTER ── */
+  .footer {
+    background: #042E25; padding: 32px 64px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .footer-brand { font-family: 'Playfair Display', serif; font-size: 18px; color: #F3C546; font-weight: 500; }
+  .footer-meta { font-size: 12px; color: rgba(255,255,255,0.45); }
+  .footer-divider { width: 1px; height: 32px; background: rgba(243,197,70,0.25); margin: 0 24px; }
+
+  @media (max-width: 768px) {
+    .hero, .body { padding: 40px 28px; }
+    .hero-title { font-size: 32px; }
+    .tips-grid, .diagnosis-grid, .attr-grid { grid-template-columns: 1fr; }
+    .hero-metrics { flex-wrap: wrap; }
+    .footer { flex-direction: column; gap: 12px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-eyebrow">
+      <div class="hero-dot"></div>
+      <span>KovaScape · AI 工具手册</span>
+    </div>
+    <h1 class="hero-title">ChatGPT <em>Image 2</em><br>提示词实战手册</h1>
+    <p class="hero-subtitle">覆盖电商产品图最高频5大场景：替换产品 · 局部修改 · 溶图合成 · 人物互动 · 多图一致性。<br>重点解决：替换后相框颜色/纹理/比例/框条细节丢失问题。</p>
+    <div class="hero-metrics">
+      <div class="hero-metric">
+        <span class="hero-metric-value">5</span>
+        <span class="hero-metric-label">核心场景</span>
+      </div>
+      <div class="hero-metric">
+        <span class="hero-metric-value">25+</span>
+        <span class="hero-metric-label">提示词公式</span>
+      </div>
+      <div class="hero-metric">
+        <span class="hero-metric-value">6</span>
+        <span class="hero-metric-label">细节丢失解法</span>
+      </div>
+      <div class="hero-metric">
+        <span class="hero-metric-value">v2</span>
+        <span class="hero-metric-label">更新版本</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div class="body">
+
+    <!-- INTRO -->
+    <div class="alert-info">
+      <div class="alert-title">📌 使用前必读</div>
+      <p>本手册基于 ChatGPT Image 2（GPT-4o 图像生成）整理，<strong style="color:#064338;">方括号 [ ] 内为需替换的变量</strong>，花括号 { } 内为可选补充。v2 版本重点新增「替换产品细节丢失」专项解决方案，适用于从 Instagram / Pinterest 找图后替换相框的场景。</p>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- SECTION 0: 细节丢失诊断（新增核心章节） -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-number" style="background:#C4433A;color:#fff;">!</div>
+        <div>
+          <div class="section-title">替换产品后细节丢失 — 根因诊断与解法</div>
+          <div class="section-subtitle">专为「从 INS/Pinterest 找图 → 替换成自家相框」场景设计</div>
+        </div>
+      </div>
+
+      <!-- 问题诊断 -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:12px;font-weight:600;color:#C4433A;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">🔴 常见失败症状 → 根本原因</div>
+        <div class="diagnosis-grid">
+          <div class="diagnosis-item">
+            <div class="d-label">颜色偏移</div>
+            <div class="d-cause">AI 受场景光线影响，将相框颜色「融合」进环境色温，导致橡木变黄、胡桃木变灰</div>
+          </div>
+          <div class="diagnosis-item">
+            <div class="d-label">框条变细/变粗</div>
+            <div class="d-cause">AI 根据场景中原有相框的比例「猜测」新相框，而非严格参照上传图</div>
+          </div>
+          <div class="diagnosis-item">
+            <div class="d-label">木纹纹理消失</div>
+            <div class="d-cause">AI 将纹理视为「噪点」进行平滑处理，尤其在低分辨率参考图时更严重</div>
+          </div>
+          <div class="diagnosis-item">
+            <div class="d-label">宽高比变形</div>
+            <div class="d-cause">AI 自动适配场景中原相框的透视角度，导致比例被重新计算</div>
+          </div>
+          <div class="diagnosis-item">
+            <div class="d-label">榫卯/五金细节丢失</div>
+            <div class="d-cause">细节特征在低分辨率或复杂背景下被 AI 忽略，生成「通用相框」而非你的产品</div>
+          </div>
+          <div class="diagnosis-item">
+            <div class="d-label">玻璃反光消失</div>
+            <div class="d-cause">AI 未收到明确指令保留玻璃材质，默认生成无反光的哑光表面</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 解法矩阵 -->
+      <div style="margin-bottom:20px;">
+        <div style="font-size:12px;font-weight:600;color:#064338;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">✅ 对应解法</div>
+        <div class="diagnosis-grid">
+          <div class="fix-item">
+            <div class="d-label">解法1：属性清单锁定法</div>
+            <div class="d-cause">在提示词中逐条列出需要保留的属性，不能只说「保持产品不变」，要具体到每一个维度</div>
+          </div>
+          <div class="fix-item">
+            <div class="d-label">解法2：上传高清产品图</div>
+            <div class="d-cause">参考图必须是白底正面高清图，分辨率越高细节保留越好。模糊图 = 细节丢失的起点</div>
+          </div>
+          <div class="fix-item">
+            <div class="d-label">解法3：颜色精确描述</div>
+            <div class="d-cause">不要说「木色」，要说「warm medium-brown walnut with visible straight grain lines」，越具体越准</div>
+          </div>
+          <div class="fix-item">
+            <div class="d-label">解法4：抗融合指令</div>
+            <div class="d-cause">加「do not adapt the frame color to the scene lighting」防止 AI 把颜色「融进」环境</div>
+          </div>
+          <div class="fix-item">
+            <div class="d-label">解法5：两步法（先抠图再合成）</div>
+            <div class="d-cause">先让 AI 生成白底产品图，再做溶图合成，比直接替换细节保留率高 60%+</div>
+          </div>
+          <div class="fix-item">
+            <div class="d-label">解法6：迭代追加修正</div>
+            <div class="d-cause">第一次生成后，不重新写提示词，直接追加「the frame color is too dark, restore it to [描述]」</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 相框专属属性清单 -->
+      <div class="attr-checklist">
+        <div class="attr-checklist-header">📋 相框替换专属属性锁定清单（每次替换都要覆盖这些维度）</div>
+        <div class="attr-grid">
+          <div class="attr-item"><div class="attr-dot"></div>框条宽度（frame width）</div>
+          <div class="attr-item"><div class="attr-dot"></div>框条截面形状（profile shape）</div>
+          <div class="attr-item"><div class="attr-dot"></div>木材颜色（wood color tone）</div>
+          <div class="attr-item"><div class="attr-dot"></div>木纹方向与密度（grain pattern）</div>
+          <div class="attr-item"><div class="attr-dot"></div>表面光泽度（matte / satin / gloss）</div>
+          <div class="attr-item"><div class="attr-dot"></div>玻璃反光（glass reflection）</div>
+          <div class="attr-item"><div class="attr-dot"></div>画芯内容（mat / artwork inside）</div>
+          <div class="attr-item"><div class="attr-dot"></div>整体宽高比（aspect ratio）</div>
+          <div class="attr-item"><div class="attr-dot"></div>角部榫卯细节（corner joints）</div>
+          <div class="attr-item"><div class="attr-dot"></div>背板五金（hardware / hanging）</div>
+          <div class="attr-item"><div class="attr-dot"></div>框条厚度/立体感（depth / 3D profile）</div>
+          <div class="attr-item"><div class="attr-dot"></div>整体尺寸比例（size proportions）</div>
+        </div>
+      </div>
+
+      <!-- 核心提示词：终极替换公式 -->
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <span>🔑 终极公式 · 从 INS/Pinterest 图替换相框（细节全保留版）</span>
+          <span class="prompt-tag">上传2张图</span>
+        </div>
+        <div class="prompt-text">
+          <span class="comment">// Image 1 = 从INS/Pinterest找到的场景图；Image 2 = 你的相框白底产品图</span><br><br>
+
+          Use <span class="key">[Image 1]</span> as the background scene. Replace the picture frame in the scene with the frame shown in <span class="key">[Image 2]</span>.<br><br>
+
+          <span class="lock">CRITICAL — Preserve ALL of the following product attributes EXACTLY as shown in Image 2:</span><br>
+          — Frame width: <span class="var">[e.g. wide frame, approximately 2-inch molding]</span><br>
+          — Wood color: <span class="var">[e.g. warm medium-brown walnut with reddish undertones]</span><br>
+          — Wood grain: <span class="var">[e.g. straight, fine grain lines running horizontally]</span><br>
+          — Surface finish: <span class="var">[e.g. satin, low-sheen, not glossy]</span><br>
+          — Glass: <span class="var">[e.g. clear tempered glass with subtle specular reflection]</span><br>
+          — Corner joints: <span class="var">[e.g. clean mitered corners with visible wood grain continuity]</span><br>
+          — Aspect ratio: <span class="var">[e.g. portrait orientation, 5:7 ratio]</span><br><br>
+
+          <span class="lock">DO NOT:</span><br>
+          — Do not adapt the frame color to match the scene's ambient lighting<br>
+          — Do not smooth or remove the wood grain texture<br>
+          — Do not alter the frame's width or proportions to match the original frame in the scene<br>
+          — Do not change the glass reflection properties<br><br>
+
+          Keep the background, wall, furniture, and all other scene elements <span class="key">exactly as in Image 1</span>. The replaced frame should sit in the same position, angle, and scale as the original frame. Add a realistic shadow consistent with the scene lighting. Photorealistic result.
+        </div>
+      </div>
+
+      <!-- 两步法 -->
+      <div class="workflow">
+        <div class="workflow-header">⚡ 两步法（细节保留率最高，推荐用于重要图片）</div>
+        <div class="workflow-steps">
+          <div class="workflow-step">
+            <div class="ws-num">1</div>
+            <div class="ws-content">
+              <div class="ws-title">第一步：生成场景适配版产品图 <span class="ws-tag badge-yellow badge">先做这步</span></div>
+              <div class="ws-desc">上传你的相框白底图，提示词：「Relight this product to match the lighting of [场景描述, e.g. a warm-toned living room with soft left-side window light]. Keep ALL product details identical — frame color, wood grain, proportions, glass. Only adjust the lighting and shadow direction. Output on transparent/white background.」</div>
+            </div>
+          </div>
+          <div class="workflow-step">
+            <div class="ws-num">2</div>
+            <div class="ws-content">
+              <div class="ws-title">第二步：将重新打光的产品图合成进场景 <span class="ws-tag badge-green badge">再做这步</span></div>
+              <div class="ws-desc">上传场景图 + 第一步生成的产品图，提示词：「Place [Image 2 - the product] into [Image 1 - the scene], replacing the existing frame. The product lighting already matches the scene. Blend seamlessly — add contact shadow, match perspective and scale. Do not alter the product in any way.」</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 颜色精确描述模板 -->
+      <div style="margin-top:24px;">
+        <div style="font-size:12px;font-weight:600;color:#064338;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px;">🎨 KovaScape 相框颜色精确描述模板（直接复制使用）</div>
+        <div class="prompt-block">
+          <div class="prompt-label">
+            <span>胡桃木（Walnut）颜色描述</span>
+            <span class="prompt-tag">复制使用</span>
+          </div>
+          <div class="prompt-text">
+            Wood color: <span class="key">deep warm brown with dark chocolate undertones, medium-dark value, not black</span>. Grain: <span class="key">straight to slightly wavy fine grain lines, subtle figuring</span>. Surface: <span class="key">satin finish, low sheen, natural wood luster</span>. The color should read as <span class="key">rich walnut brown (#4A2C17 range)</span>, not gray-brown or black.
+          </div>
+        </div>
+        <div class="prompt-block">
+          <div class="prompt-label">
+            <span>橡木（Oak）颜色描述</span>
+            <span class="prompt-tag">复制使用</span>
+          </div>
+          <div class="prompt-text">
+            Wood color: <span class="key">light to medium warm honey-blonde, golden undertones, natural oak tone</span>. Grain: <span class="key">prominent straight grain with occasional ray fleck pattern, medium-coarse texture</span>. Surface: <span class="key">satin finish, natural wood warmth</span>. The color should read as <span class="key">light natural oak (#C8A96E range)</span>, not yellow or orange.
+          </div>
+        </div>
+      </div>
+
+      <!-- 迭代修正公式 -->
+      <div class="prompt-block" style="margin-top:20px;">
+        <div class="prompt-label">
+          <span>迭代修正公式（生成后细节不对时追加）</span>
+          <span class="prompt-tag-red">追加指令</span>
+        </div>
+        <div class="prompt-text">
+          <span class="comment">// 颜色偏了</span><br>
+          The frame color in the result is too <span class="var">[dark/light/gray/yellow]</span>. Restore it to <span class="var">[颜色描述]</span>. Do not change anything else in the image.<br><br>
+
+          <span class="comment">// 木纹消失了</span><br>
+          The wood grain texture on the frame is missing. Add back the <span class="var">[straight/wavy]</span> grain lines characteristic of <span class="var">[walnut/oak]</span>. Keep all other elements unchanged.<br><br>
+
+          <span class="comment">// 框条变细了</span><br>
+          The frame molding is too narrow. The frame width should be <span class="var">[wider — approximately X inches wide]</span>. Regenerate with the correct frame proportions while keeping the scene identical.<br><br>
+
+          <span class="comment">// 宽高比变了</span><br>
+          The frame aspect ratio is wrong. It should be <span class="var">[portrait/landscape, X:Y ratio]</span>. Correct the proportions without changing the scene or other product details.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- SECTION 1: 替换产品（标准场景） -->
+    <!-- ═══════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-number">1</div>
+        <div>
+          <div class="section-title">替换产品</div>
+          <div class="section-subtitle">在已有场景图中换掉产品，保留背景、光线、构图不变</div>
+        </div>
+      </div>
+
+      <div class="concept-card">
+        <h4>核心逻辑</h4>
+        <p>上传「原始场景图」+ 「新产品图」，明确告诉 AI 哪个是背景锚点、哪个是要替换进去的主体。关键词：<strong>keep the background exactly as is</strong>、<strong>replace only the [产品]</strong>、<strong>match the original lighting and perspective</strong>。细节保留见上方专项章节。</p>
+      </div>
+
+      <div class="formula-bar">
+        <span class="formula-item">上传原场景图</span>
+        <span class="formula-arrow">+</span>
+        <span class="formula-item">上传新产品图</span>
+        <span class="formula-arrow">→</span>
+        <span class="formula-item">指定替换对象</span>
+        <span class="formula-arrow">→</span>
+        <span class="formula-item">属性清单锁定</span>
+        <span class="formula-arrow">→</span>
+        <span class="formula-item">锁定背景/光线</span>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <span>公式 1-A · 场景内换产品（标准版）</span>
+          <span class="prompt-tag">上传2张图</span>
+        </div>
+        <div class="prompt-text">
+          Use <span class="var">[Image 1]</span> as the background scene anchor. Replace the <span class="var">[原产品描述, e.g. picture frame on the wall]</span> with the product shown in <span class="var">[Image 2]</span>.<br><br>
+          <span class="key">Preserve from Image 2:</span> exact shape, proportions, color, texture, material finish, and all surface details.<br>
+          <span class="key">Keep from Image 1:</span> background, wall, furniture, lighting direction, shadows, and overall composition — exactly as is.<br><br>
+          The new product should sit naturally in the same position with matching perspective and scale. Blend seamlessly — photorealistic, no visible compositing artifacts.
+        </div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <span>公式 1-B · 纯白底换颜色/款式</span>
+          <span class="prompt-tag">上传1张图</span>
+        </div>
+        <div class="prompt-text">
+          Take the uploaded product image. <span class="key">Keep the exact shape, proportions, frame profile, corner joints, and overall design</span>. Change only the <span class="var">[color / finish, e.g. frame color from oak to walnut]</span> to <span class="var">[颜色精确描述]</span>.<br><br>
+          Output on a <span class="key">pure white background</span>, soft studio lighting, subtle drop shadow beneath the product. E-commerce packshot style. No props, no extra objects.
+        </div>
+      </div>
+
+      <div class="tips-grid">
+        <div class="tip-card">
+          <span class="tip-icon">🎯</span>
+          <h5>锁定背景的关键词</h5>
+          <p>「keep the background exactly as is」「do not alter the scene」「preserve the original environment」</p>
+        </div>
+        <div class="tip-card">
+          <span class="tip-icon">⚡</span>
+          <h5>防止颜色被「融合」</h5>
+          <p>「do not adapt the frame color to the scene's ambient lighting」— 这句话是防止颜色偏移的核心</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- SECTION 2: 局部修改 -->
+    <!-- ═══════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-number">2</div>
+        <div>
+          <div class="section-title">局部修改</div>
+          <div class="section-subtitle">只改图片中的某一个元素，其余部分完全保留</div>
+        </div>
+      </div>
+
+      <div class="concept-card">
+        <h4>核心逻辑</h4>
+        <p>局部修改的成败在于「<strong>保留指令</strong>」的精确度。不仅要说清楚改什么，更要明确说「不要动什么」。使用 <strong>Edit only…</strong> + <strong>Do not change…</strong> 双重锁定结构，成功率大幅提升。</p>
+      </div>
+
+      <div class="formula-bar">
+        <span class="formula-item">上传原图</span>
+        <span class="formula-arrow">→</span>
+        <span class="formula-item">Edit only [目标元素]</span>
+        <span class="formula-arrow">→</span>
+        <span class="formula-item">描述修改内容</span>
+        <span class="formula-arrow">→</span>
+        <span class="formula-item">Do not change [保留内容]</span>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <span>公式 2-A · 换背景，保留产品</span>
+          <span class="prompt-tag">上传1张图</span>
+        </div>
+        <div class="prompt-text">
+          Edit the uploaded image. <span class="key">Change only the background</span> to <span class="var">[新背景描述, e.g. a bright Scandinavian living room with white walls and natural wood furniture]</span>.<br><br>
+          <span class="key">Do not change</span> the product — preserve its exact shape, proportions, material texture, color, and position. Maintain consistent lighting direction. The product should look naturally placed in the new environment.
+        </div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <span>公式 2-B · 修改画芯内容（换相框内的图片）</span>
+          <span class="prompt-tag">上传1张图</span>
+        </div>
+        <div class="prompt-text">
+          Edit the uploaded image. <span class="key">Edit only</span> the artwork/photo displayed inside the frame — replace it with <span class="var">[新画芯描述, e.g. a black and white fine art portrait photograph / a monstera leaf botanical line drawing]</span>.<br><br>
+          <span class="key">Keep everything else identical</span>: the frame itself (color, texture, width, profile), background, lighting, shadows, and overall composition must remain exactly as in the original image. The new artwork should appear naturally behind the glass, with the same glass reflection.
+        </div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <span>公式 2-C · 移除/添加元素</span>
+          <span class="prompt-tag">上传1张图</span>
+        </div>
+        <div class="prompt-text">
+          Edit the uploaded image. <span class="key">Remove</span> the <span class="var">[要移除的元素, e.g. price tag / watermark / prop on the left]</span> from the scene. Fill the area naturally to match the surrounding background — no visible artifacts or blurring.<br><br>
+          <span class="key">Do not alter</span> any other part of the image.
+        </div>
+      </div>
+
+      <div class="alert-warning">
+        <div class="alert-title">⚠️ 常见失败原因</div>
+        <p>只说「改背景」而不说「保留产品」，AI 会同时重绘产品。务必用「Do not change the product」明确锁定。如果产品细节被改动，追加：「The frame in the result must match the original upload exactly — same color, same wood grain, same width.」</p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- SECTION 3: 溶图合成 -->
+    <!-- ═══════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-number">3</div>
+        <div>
+          <div class="section-title">溶图合成</div>
+          <div class="section-subtitle">将多张图片融合为一张，光线、色调、风格统一自然</div>
+        </div>
+      </div>
+
+      <div class="concept-card">
+        <h4>核心逻辑</h4>
+        <p>溶图最大的挑战是「割裂感」——产品像贴上去的。解决方案：① 明确指定主体图和背景图的层级关系；② 使用 <strong>harmonize</strong> 指令统一光线色温；③ 要求生成「realistic contact shadow」让产品「落地」；④ 相框溶图时额外声明「preserve frame color and texture」防止颜色被融合。</p>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <span>公式 3-A · 相框融入场景（防细节丢失版）</span>
+          <span class="prompt-tag">上传2张图</span>
+        </div>
+        <div class="prompt-text">
+          Composite the frame from <span class="var">[Image 2]</span> into the scene from <span class="var">[Image 1]</span>.<br><br>
+          Place the frame at <span class="var">[位置, e.g. the center of the wall / above the console table]</span>. <span class="key">Harmonize</span> the global illumination and shadow direction so the frame appears to exist in the same physical space — but <span class="lock">do NOT change the frame's intrinsic color or wood grain texture</span> during harmonization. Only adjust the lighting highlights and shadows, not the base material color.<br><br>
+          Add a <span class="key">realistic cast shadow</span> on the wall behind the frame. Maintain the frame's original proportions and all surface details. Photorealistic, magazine-quality result.
+        </div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <span>公式 3-B · 多框组合展示（gallery wall）</span>
+          <span class="prompt-tag">上传多张图</span>
+        </div>
+        <div class="prompt-text">
+          Create a gallery wall arrangement using the frames from the uploaded images. Place them on <span class="var">[背景, e.g. a white plaster wall]</span> in a <span class="var">[排列方式, e.g. asymmetric salon-style arrangement / grid layout]</span>.<br><br>
+          <span class="key">Consistent lighting</span> across all frames — single light source from <span class="var">[方向, e.g. upper left]</span>. Each frame casts a natural shadow on the wall. <span class="lock">Preserve each frame's individual color, texture, and proportions exactly</span> — do not blend or unify the frame colors. The overall composition should feel <span class="var">[风格, e.g. curated, editorial, Japandi-inspired]</span>.
+        </div>
+      </div>
+
+      <div class="tips-grid">
+        <div class="tip-card">
+          <span class="tip-icon">🌟</span>
+          <h5>消除割裂感</h5>
+          <p>「harmonize global illumination」但同时加「do NOT change the frame's intrinsic color during harmonization」</p>
+        </div>
+        <div class="tip-card">
+          <span class="tip-icon">🪄</span>
+          <h5>让相框「落地」</h5>
+          <p>「realistic cast shadow on the wall behind the frame」— 相框挂墙时用 cast shadow，不是 contact shadow</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- SECTION 4: 人物和商品互动 -->
+    <!-- ═══════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-number">4</div>
+        <div>
+          <div class="section-title">人物与商品互动</div>
+          <div class="section-subtitle">生成真实感的生活场景，人物自然使用/展示产品</div>
+        </div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <span>公式 4-A · 手部互动（高端感首选）</span>
+          <span class="prompt-tag">上传产品图</span>
+        </div>
+        <div class="prompt-text">
+          Lifestyle product photo. Show <span class="key">hands only</span> — <span class="var">[e.g. a woman's hands with natural nails]</span> <span class="var">[e.g. gently holding the wooden picture frame, adjusting it on a shelf]</span>.<br><br>
+          Setting: <span class="var">[e.g. a bright Scandinavian living room, soft morning light]</span>. The product should be the <span class="key">visual hero</span>. Shallow depth of field, background softly blurred. <span class="lock">The frame color, wood grain, and proportions must match the uploaded reference exactly.</span> Photorealistic, editorial quality.
+        </div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <span>公式 4-B · 全身/半身生活场景</span>
+          <span class="prompt-tag">上传产品图</span>
+        </div>
+        <div class="prompt-text">
+          Create a photorealistic lifestyle image. A <span class="var">[e.g. young woman in her 30s, casual linen outfit]</span> is <span class="var">[e.g. hanging a wooden picture frame on a white wall, stepping back to admire it]</span>.<br><br>
+          Setting: <span class="var">[e.g. a cozy minimalist home interior with warm afternoon light]</span>. The frame from the uploaded image must appear <span class="key">exactly as uploaded</span> — same design, color, wood grain, and proportions. The interaction should feel <span class="key">organic and authentic</span>, not posed. Shot on 35mm lens, slight film grain.
+        </div>
+      </div>
+
+      <div class="tips-grid">
+        <div class="tip-card">
+          <span class="tip-icon">👐</span>
+          <h5>Hands-Only 技巧</h5>
+          <p>「show hands only」避免人脸生成失真，同时让产品保持视觉主角，适合高端电商图</p>
+        </div>
+        <div class="tip-card">
+          <span class="tip-icon">🎬</span>
+          <h5>增加真实感</h5>
+          <p>「candid moment」「organic interaction」「not posed」「shot on 35mm lens」「slight film grain」</p>
+        </div>
+        <div class="tip-card">
+          <span class="tip-icon">🏠</span>
+          <h5>场景描述模板</h5>
+          <p>「bright Scandinavian living room」「cozy minimalist home」「modern Japandi interior」「warm afternoon light」</p>
+        </div>
+        <div class="tip-card">
+          <span class="tip-icon">⚠️</span>
+          <h5>避免人脸失真</h5>
+          <p>如需全脸，加「realistic facial features, natural expression, no AI artifacts」；或直接用背影/侧脸规避</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- SECTION 5: 保持产品一致性 -->
+    <!-- ═══════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-number">5</div>
+        <div>
+          <div class="section-title">保持产品一致性</div>
+          <div class="section-subtitle">跨多张图生成时，确保产品外观、细节、比例完全统一</div>
+        </div>
+      </div>
+
+      <div class="concept-card">
+        <h4>核心逻辑</h4>
+        <p>一致性是电商套图最难的挑战。核心策略：① <strong>每次都上传同一张产品参考图</strong>作为锚点；② 用「<strong>reference image</strong>」明确声明参考关系；③ 列出需要保持一致的具体属性清单；④ 生成变体时只允许改变「一个变量」。</p>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <span>公式 5-A · 多场景套图（核心公式）</span>
+          <span class="prompt-tag">每次上传同一产品图</span>
+        </div>
+        <div class="prompt-text">
+          <span class="key">Use the uploaded image as the product reference.</span> The product in all generated images must match this reference exactly in: <span class="var">[frame width, wood grain texture, corner joint details, proportions, color tone, glass reflection]</span>.<br><br>
+          Generate a lifestyle image of this product in the following scene: <span class="var">[场景描述]</span>. <span class="key">Do not alter the product design in any way.</span> Only the background, lighting, and context should change. Photorealistic.
+        </div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <span>公式 5-B · 颜色变体系列（橡木/胡桃木多色展示）</span>
+          <span class="prompt-tag">上传1张图</span>
+        </div>
+        <div class="prompt-text">
+          Using the uploaded product as the base design, generate <span class="var">[数量]</span> color variants. For each variant, <span class="key">change only the wood color/finish</span> to: <span class="var">[e.g. (1) natural oak — light honey-blonde, (2) walnut — deep warm brown, (3) matte black]</span>.<br><br>
+          <span class="key">Keep identical across all variants:</span> frame width, profile shape, corner joints, glass reflection, aspect ratio, and overall design. Same studio lighting, same camera angle, same white background. Output all variants in a consistent, comparable style.
+        </div>
+      </div>
+
+      <div class="prompt-block">
+        <div class="prompt-label">
+          <span>公式 5-C · 追加生成（与已有图保持一致）</span>
+          <span class="prompt-tag">上传已有图 + 产品图</span>
+        </div>
+        <div class="prompt-text">
+          I have an existing product image series. <span class="var">[Image 1]</span> is an example from the series — use it as the <span class="key">style and lighting reference</span>. <span class="var">[Image 2]</span> is the product reference.<br><br>
+          Generate a new image in the <span class="key">exact same visual style</span> as Image 1: same lighting setup, same color grading, same background treatment, same camera angle. The product must match Image 2 exactly — <span class="lock">same frame color, wood grain, width, and proportions</span>. New scene: <span class="var">[新场景描述]</span>.
+        </div>
+      </div>
+
+      <div class="tips-grid">
+        <div class="tip-card">
+          <span class="tip-icon">📌</span>
+          <h5>锚点图策略</h5>
+          <p>建立一张「主参考图」（白底正面图），每次生成新场景时都上传它，并声明「use as product reference」</p>
+        </div>
+        <div class="tip-card">
+          <span class="tip-icon">🔒</span>
+          <h5>相框锁定属性清单</h5>
+          <p>frame width · wood grain · corner joints · glass reflection · color tone · frame profile · aspect ratio</p>
+        </div>
+        <div class="tip-card">
+          <span class="tip-icon">🔄</span>
+          <h5>一次只改一个变量</h5>
+          <p>每次生成只允许改变「场景」或「颜色」或「角度」中的一个，多变量同时改会导致产品细节漂移</p>
+        </div>
+        <div class="tip-card">
+          <span class="tip-icon">✅</span>
+          <h5>一致性检查关键词</h5>
+          <p>「identical design language」「do not reinterpret the product design」「pixel-accurate product details」</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ═══════════════════════════════════════ -->
+    <!-- QUICK REFERENCE TABLE -->
+    <!-- ═══════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-number" style="background:#F3C546;color:#064338;">★</div>
+        <div>
+          <div class="section-title">快速参考：万能关键词速查表</div>
+          <div class="section-subtitle">按功能分类，直接复制加入提示词</div>
+        </div>
+      </div>
+
+      <table class="ref-table">
+        <thead>
+          <tr>
+            <th>功能目标</th>
+            <th>关键词 / 短语</th>
+            <th>适用场景</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>防止颜色被融合</strong> ⭐</td>
+            <td>「do not adapt the frame color to the scene's ambient lighting」「preserve the intrinsic material color」</td>
+            <td><span class="badge badge-red">替换产品</span></td>
+          </tr>
+          <tr>
+            <td><strong>防止木纹被平滑</strong> ⭐</td>
+            <td>「preserve the wood grain texture」「do not smooth or remove grain lines」「maintain surface texture fidelity」</td>
+            <td><span class="badge badge-red">替换产品</span></td>
+          </tr>
+          <tr>
+            <td><strong>锁定框条宽度</strong> ⭐</td>
+            <td>「do not alter the frame width or proportions to match the original frame in the scene」</td>
+            <td><span class="badge badge-red">替换产品</span></td>
+          </tr>
+          <tr>
+            <td><strong>锁定产品不变</strong></td>
+            <td>「keep the product exactly as uploaded」「do not alter the product design」「preserve shape, proportions, and texture」</td>
+            <td><span class="badge badge-green">局部修改</span> <span class="badge badge-green">一致性</span></td>
+          </tr>
+          <tr>
+            <td><strong>锁定背景不变</strong></td>
+            <td>「keep the background exactly as is」「do not alter the scene」「preserve the original environment」</td>
+            <td><span class="badge badge-green">替换产品</span></td>
+          </tr>
+          <tr>
+            <td><strong>消除割裂感</strong></td>
+            <td>「harmonize global illumination」「match color temperature」「seamlessly integrated」「no compositing artifacts」</td>
+            <td><span class="badge badge-green">溶图合成</span></td>
+          </tr>
+          <tr>
+            <td><strong>相框落地感</strong></td>
+            <td>挂墙：「realistic cast shadow on the wall」；桌面：「realistic contact shadow beneath the frame」</td>
+            <td><span class="badge badge-green">溶图合成</span></td>
+          </tr>
+          <tr>
+            <td><strong>真实感/自然感</strong></td>
+            <td>「candid moment」「organic interaction」「not posed」「shot on 35mm lens」「slight film grain」</td>
+            <td><span class="badge badge-green">人物互动</span></td>
+          </tr>
+          <tr>
+            <td><strong>高端电商风格</strong></td>
+            <td>「editorial quality」「magazine-style」「e-commerce packshot」「soft studio lighting」「shallow depth of field」</td>
+            <td><span class="badge badge-yellow">通用</span></td>
+          </tr>
+          <tr>
+            <td><strong>北欧/日式风格</strong></td>
+            <td>「Scandinavian minimalist」「Japandi aesthetic」「warm earthy tones」「natural wood textures」「airy and bright」</td>
+            <td><span class="badge badge-yellow">通用</span></td>
+          </tr>
+          <tr>
+            <td><strong>多变体一致性</strong></td>
+            <td>「identical design language」「same lighting setup」「same camera angle」「do not reinterpret the product」</td>
+            <td><span class="badge badge-green">一致性</span></td>
+          </tr>
+          <tr>
+            <td><strong>避免AI感</strong></td>
+            <td>「photorealistic」「no AI artifacts」「no distortion」「realistic proportions」「no smoothing of textures」</td>
+            <td><span class="badge badge-yellow">通用</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- FINAL TIP -->
+    <div class="alert-info" style="margin-top: 40px;">
+      <div class="alert-title">💡 进阶技巧：迭代优化流程</div>
+      <p>第一次生成后，不要重新写提示词——直接在对话中追加修改指令效率更高。例如：「The frame color is slightly too dark, make it 20% lighter while keeping everything else the same.」或「The wood grain is missing, add back the straight grain lines.」ChatGPT Image 2 支持在同一对话中持续迭代，充分利用上下文记忆。<strong style="color:#064338;">每次迭代都要上传原始产品参考图</strong>，防止 AI 在多轮对话中「遗忘」产品细节。</p>
+    </div>
+
+  </div><!-- /body -->
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div style="display:flex;align-items:center;gap:16px;">
+      <div class="footer-brand">KovaScape</div>
+      <div class="footer-divider"></div>
+      <div class="footer-meta">ChatGPT Image 2 提示词手册 v2 · 2026</div>
+    </div>
+    <div class="footer-meta">5 场景 · 25+ 公式 · 细节丢失专项解法</div>
+  </div>
+
+</div><!-- /page -->
+
+</body>
+</html>
