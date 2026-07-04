@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FBA 货件合规校验助手 · KovaScape</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#064338;--green-deep:#042E25;--green-light:#E8F2F0;
+  --gold:#F3C546;--gold-light:#FFF8DC;
+  --warm-white:#FDFCF9;--body-gray:#717171;--title-dark:#1D1B20;--border:#E8E4DE;
+}
+body{font-family:'Poppins',sans-serif;background:#F0EDE8;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:40px 20px}
+.page-wrap{width:100%;max-width:680px}
+
+/* HEADER */
+.tool-header{background:var(--green);border-radius:20px;padding:36px 40px;margin-bottom:24px;position:relative;overflow:hidden}
+.tool-header::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;border-radius:50%;background:rgba(243,197,70,.07)}
+.tool-header::after{content:'';position:absolute;bottom:-70px;left:30%;width:260px;height:260px;border-radius:50%;background:rgba(243,197,70,.04)}
+.brand-row{display:flex;align-items:center;gap:8px;margin-bottom:16px;position:relative;z-index:1}
+.brand-logo{width:26px;height:26px;background:var(--gold);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-weight:700;font-size:13px;color:var(--green-deep)}
+.brand-name{font-family:'Playfair Display',serif;font-size:12px;font-weight:600;color:var(--gold)}
+.brand-sep,.brand-cat{font-size:11px;color:rgba(255,255,255,.35)}
+.tool-icon-wrap{width:64px;height:64px;background:rgba(243,197,70,.15);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:14px;position:relative;z-index:1}
+.tool-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:500;color:#fff;margin-bottom:6px;position:relative;z-index:1}
+.tool-subtitle{font-size:12.5px;color:rgba(255,255,255,.55);position:relative;z-index:1;line-height:1.6}
+.tool-meta{display:flex;gap:16px;margin-top:18px;padding-top:16px;border-top:1px solid rgba(243,197,70,.25);position:relative;z-index:1;flex-wrap:wrap}
+.meta-item{display:flex;align-items:center;gap:5px}
+.meta-dot{width:5px;height:5px;border-radius:50%;background:var(--gold)}
+.meta-text{font-size:10.5px;color:rgba(255,255,255,.45)}
+
+/* CARDS */
+.launch-card{background:#fff;border-radius:16px;padding:28px 32px;margin-bottom:20px;border:1px solid var(--border)}
+.card-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:500;color:var(--title-dark);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.card-title-icon{width:28px;height:28px;background:var(--green-light);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px}
+
+/* FORM ELEMENTS */
+.fg{margin-bottom:14px}
+.fl{font-size:11px;font-weight:600;color:var(--title-dark);margin-bottom:6px;display:block}
+.fi{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-family:'Poppins',sans-serif;font-size:12.5px;color:var(--title-dark);outline:none;transition:border-color .13s;background:#fff}
+.fi:focus{border-color:var(--green)}
+
+/* LAUNCH BUTTON */
+.launch-btn{width:100%;padding:16px 24px;background:var(--green);color:#fff;border:none;border-radius:12px;font-family:'Poppins',sans-serif;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .2s;letter-spacing:.3px}
+.launch-btn:hover{background:var(--green-deep);transform:translateY(-1px);box-shadow:0 8px 24px rgba(6,67,56,.28)}
+.launch-btn:active{transform:translateY(0)}
+.launch-btn:disabled{background:#aaa;cursor:not-allowed;transform:none;box-shadow:none}
+.launch-btn .btn-icon{font-size:20px}
+.launch-btn .btn-spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* STATUS */
+.status-bar{margin-top:12px;padding:10px 14px;border-radius:9px;font-size:12px;font-weight:500;display:none;align-items:center;gap:8px}
+.status-bar.success{background:#E8F2F0;color:var(--green);display:flex}
+.status-bar.error{background:#FDECEA;color:#C4433A;display:flex}
+
+/* SERVICE INDICATOR */
+.service-indicator{display:flex;align-items:center;gap:7px;margin-bottom:16px;padding:9px 13px;background:#F5F4F2;border-radius:9px;border:1px solid var(--border)}
+.svc-dot{width:8px;height:8px;border-radius:50%;background:#ccc;flex-shrink:0;transition:background .3s}
+.svc-dot.online{background:#22C55E}
+.svc-dot.offline{background:#EF4444}
+.svc-dot.checking{background:var(--gold);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.svc-text{font-size:11.5px;color:var(--body-gray);flex:1}
+.svc-text strong{color:var(--title-dark)}
+
+/* FALLBACK */
+.fallback-section{margin-top:16px;padding-top:16px;border-top:1px dashed var(--border)}
+.fallback-title{font-size:11px;font-weight:500;color:var(--body-gray);margin-bottom:8px}
+.cmd-block{background:#F5F4F2;border:1px solid var(--border);border-radius:9px;padding:11px 14px;font-family:'Courier New',monospace;font-size:12px;color:var(--title-dark);word-break:break-all;position:relative}
+.copy-btn{position:absolute;top:8px;right:8px;padding:4px 10px;background:#fff;border:1px solid var(--border);border-radius:6px;font-family:'Poppins',sans-serif;font-size:10.5px;font-weight:500;color:var(--body-gray);cursor:pointer;transition:all .13s}
+.copy-btn:hover{border-color:var(--green);color:var(--green)}
+.copy-btn.copied{background:var(--green-light);border-color:var(--green);color:var(--green)}
+
+/* RESULTS */
+.result-card{background:#FDFCF9;border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:12px;transition:all .2s}
+.result-card:hover{border-color:var(--green);box-shadow:0 4px 12px rgba(6,67,56,.05)}
+.result-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.result-zip-name{font-size:13px;font-weight:600;color:var(--title-dark);word-break:break-all;flex:1;min-width:200px}
+.status-pill{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;text-transform:uppercase}
+.status-pill.pass{background:#E8F2F0;color:var(--green)}
+.status-pill.fail{background:#FDECEA;color:#C4433A}
+.status-pill.error{background:#FFF0E6;color:#E65C00}
+
+.result-info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;background:#F5F4F2;border-radius:8px;padding:10px 12px}
+.info-item{display:flex;flex-direction:column}
+.info-lbl{font-size:9.5px;color:var(--body-gray);text-transform:uppercase}
+.info-val{font-size:11.5px;font-weight:600;color:var(--title-dark);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.result-details{font-size:11.5px;color:var(--title-dark);line-height:1.6;margin-bottom:14px}
+.detail-sec{margin-bottom:8px}
+.detail-title{font-weight:600;display:flex;align-items:center;gap:4px;margin-bottom:3px}
+.warn-list{list-style:none;padding-left:12px}
+.warn-list li{position:relative;margin-bottom:2px}
+.warn-list li::before{content:'•';position:absolute;left:-10px;color:var(--gold)}
+.err-list{list-style:none;padding-left:12px}
+.err-list li{position:relative;color:#C4433A;margin-bottom:2px}
+.err-list li::before{content:'•';position:absolute;left:-10px;color:#C4433A}
+
+.result-actions{display:flex;gap:8px}
+.btn-act{padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:#fff;font-family:'Poppins',sans-serif;font-size:11px;font-weight:500;color:var(--title-dark);cursor:pointer;transition:all .13s;display:flex;align-items:center;gap:4px}
+.btn-act:hover{border-color:var(--green);color:var(--green);background:var(--green-light)}
+.btn-act.pri{background:var(--green);color:#fff;border-color:var(--green)}
+.btn-act.pri:hover{background:var(--green-deep)}
+
+/* STEPS */
+.steps{list-style:none}
+.step-item{display:flex;gap:14px;padding:13px 0;border-bottom:1px solid var(--border)}
+.step-item:last-child{border-bottom:none}
+.step-num{width:26px;height:26px;min-width:26px;border-radius:50%;background:var(--green);color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.step-title{font-size:13px;font-weight:600;color:var(--title-dark);margin-bottom:3px}
+.step-desc{font-size:11.5px;color:var(--body-gray);line-height:1.65}
+.step-tag{display:inline-block;padding:2px 8px;background:var(--green-light);color:var(--green);border-radius:5px;font-size:10.5px;font-weight:600;margin-top:4px}
+
+/* FEATURES */
+.features-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.feat-item{background:#FDFCF9;border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.feat-icon{font-size:20px;margin-bottom:7px}
+.feat-title{font-size:12px;font-weight:600;color:var(--title-dark);margin-bottom:3px}
+.feat-desc{font-size:11px;color:var(--body-gray);line-height:1.55}
+
+/* FILE DETAILS */
+.excel-demo{background:#F5F4F2;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-top:10px}
+.excel-header{background:var(--green);color:#fff;display:grid;grid-template-columns:1.5fr 1fr;font-size:11px;font-weight:600;padding:8px 14px;gap:10px}
+.excel-row{display:grid;grid-template-columns:1.5fr 1fr;font-size:11px;color:var(--title-dark);padding:7px 14px;gap:10px;border-top:1px solid var(--border)}
+.excel-row:nth-child(even){background:#FDFCF9}
+
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(29,27,32,.92);color:#fff;padding:10px 20px;border-radius:9px;font-size:12px;font-weight:500;box-shadow:0 8px 30px rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:all .25s cubic-bezier(0.4, 0, 0.2, 1);z-index:9999}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+
+  <!-- HEADER -->
+  <div class="tool-header">
+    <div class="brand-row">
+      <div class="brand-logo">K</div>
+      <div class="brand-name">KovaScape</div>
+      <div class="brand-sep">/</div>
+      <div class="brand-cat">运营分析</div>
+    </div>
+    <div class="tool-icon-wrap">📋</div>
+    <h1 class="tool-title">FBA 货件合规校验助手</h1>
+    <p class="tool-subtitle">自动对齐采购装箱单 Excel、亚马逊后台 CSV 与外箱贴标 PDF，校验 FNSKU、说明书、GPSR 欧洲合规性以及单箱毛重超 15KG 的超重标齐备性。</p>
+    <div class="tool-meta">
+      <div class="meta-item"><div class="meta-dot"></div><div class="meta-text">本地运行</div></div>
+      <div class="meta-item"><div class="meta-dot"></div><div class="meta-text">网页直显</div></div>
+      <div class="meta-item"><div class="meta-dot"></div><div class="meta-text">合规防呆</div></div>
+    </div>
+  </div>
+
+  <!-- RUN ENGINE -->
+  <div class="launch-card">
+    <div class="card-title"><div class="card-title-icon">🚀</div>校验控制中枢</div>
+    
+    <!-- SERVICE IND -->
+    <div class="service-indicator">
+      <div class="svc-dot" id="svc-dot"></div>
+      <div class="svc-text" id="svc-text">正在检测本地 Launcher 服务状态…</div>
+    </div>
+
+    <!-- FOLDER INPUT -->
+    <div class="fg">
+      <label class="fl">监测文件夹路径 (Monitored Folder Path)</label>
+      <div style="display:flex;gap:10px;">
+        <input class="fi" id="inp-folder" value="D:/Zero Tools/data/FBA货件检验" placeholder="输入或选择存放 FBA 货件 ZIP 压缩包的本地文件夹" style="flex:1;">
+        <button class="btn-act" onclick="chooseLocalFolder()" style="height:40px;padding:0 16px;white-space:nowrap;flex-shrink:0;">选择文件夹</button>
+      </div>
+    </div>
+
+    <button class="launch-btn" id="launch-btn" onclick="runFbaCheck()">
+      <span class="btn-spinner" id="btn-spinner"></span>
+      <span class="btn-icon" id="btn-icon">▶</span>
+      <span id="btn-text">开始扫描并校验</span>
+    </button>
+
+    <div class="status-bar" id="status-bar">
+      <span id="status-icon"></span>
+      <span id="status-msg"></span>
+    </div>
+
+    <!-- FALLBACK -->
+    <div class="fallback-section" id="fallback-sec" style="display:none;">
+      <div class="fallback-title">备用：手动在 CMD 运行命令</div>
+      <div class="cmd-block" id="cmd-block">python check_shipment.py<div class="copy-btn" id="copy-btn" onclick="copyCmd()">复制</div></div>
+    </div>
+  </div>
+
+  <!-- RESULTS CONTAINER -->
+  <div class="launch-card" id="results-container" style="display:none;">
+    <div class="card-title"><div class="card-title-icon">📂</div>货件校验结果明细</div>
+    <div id="results-grid"></div>
+  </div>
+
+  <!-- FEATURES -->
+  <div class="launch-card">
+    <div class="card-title"><div class="card-title-icon">⚡</div>核心校验机制</div>
+    <div class="features-grid">
+      <div class="feat-item">
+        <div class="feat-icon">📊</div>
+        <div class="feat-title">三向总量对齐</div>
+        <div class="feat-desc">一键对比 Excel 采购单、CSV 箱装单和 PDF 箱标页数，确认总箱数和总件数无差异。</div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-icon">🏷️</div>
+        <div class="feat-title">FNSKU/产品标审计</div>
+        <div class="feat-desc">检查 Excel 与 CSV 中的 FNSKU 映射是否正确，校验“产品标/”目录下各 SKU 标签是否存在。</div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-icon">⚠️</div>
+        <div class="feat-title">超重标安全规则</div>
+        <div class="feat-desc">针对 CA/JP/UK/DE 站点，单箱重量超过 15KG 必须包含超重标 PDF，防止亚马逊拒收。</div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-icon">🇪🇺</div>
+        <div class="feat-title">GPSR 安全合规</div>
+        <div class="feat-desc">针对欧洲站点（DE/UK等），强行校验压缩包内是否包含了符合规定的 GPSR 安全标签 PDF。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEPS -->
+  <div class="launch-card">
+    <div class="card-title"><div class="card-title-icon">⚙️</div>操作流程说明</div>
+    <ul class="steps">
+      <li class="step-item">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-title">下载货件包</div>
+          <div class="step-desc">从后台或货代处下载出货压缩包（包含采购 Excel、亚马逊 CSV、外箱标、产品标及说明书等文件）。</div>
+        </div>
+      </li>
+      <li class="step-item">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title">保存至指定目录</div>
+          <div class="step-desc">在上方选择本地监测目录。默认路径为 `D:/Zero Tools/data/FBA货件检验`。</div>
+        </div>
+      </li>
+      <li class="step-item">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title">一键网页校验</div>
+          <div class="step-desc">点击「开始扫描并校验」按钮。页面会调用本地 Launcher 静默执行，并将结果<b>实时呈现在网页上</b>，无需查看 CMD 窗口。</div>
+        </div>
+      </li>
+      <li class="step-item">
+        <div class="step-num">4</div>
+        <div>
+          <div class="step-title">一键查看报告</div>
+          <div class="step-desc">校验完成后，您可以点击货件卡片上的「打开报告」在本地直接编辑查看 Markdown 格式报告，或者「打开目录」进行文件修改。</div>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const LAUNCHER_URL = 'http://127.0.0.1:8766';
+let serviceOnline = false;
+
+async function checkService() {
+  const dot = document.getElementById('svc-dot');
+  const txt = document.getElementById('svc-text');
+  const fb = document.getElementById('fallback-sec');
+  try {
+    const res = await fetch(LAUNCHER_URL + '/ping', { signal: AbortSignal.timeout(2000) });
+    if (res.ok) {
+      serviceOnline = true;
+      dot.className = 'svc-dot online';
+      txt.innerHTML = '<strong>Launcher 服务运行中</strong> · 网页直显校验结果，支持路径自定义选择';
+      fb.style.display = 'none';
+    } else { throw new Error(); }
+  } catch {
+    serviceOnline = false;
+    dot.className = 'svc-dot offline';
+    txt.innerHTML = '<strong>Launcher 服务未运行</strong> · 将退回备用 CMD 模式启动（需要打开命令行查看）';
+    fb.style.display = 'block';
+  }
+}
+
+async function chooseLocalFolder() {
+  if (!serviceOnline) {
+    showToast('⚠️ Launcher 服务未运行，无法打开选择文件夹窗口');
+    return;
+  }
+  try {
+    const res = await fetch(LAUNCHER_URL + '/api/choose-folder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+      signal: AbortSignal.timeout(60000), // askdirectory waits for user, can be long
+    });
+    const data = await res.json();
+    if (res.ok && data.folder_path) {
+      document.getElementById('inp-folder').value = data.folder_path;
+      showToast('已成功选择文件夹 ✓');
+    }
+  } catch (err) {
+    showToast('打开文件夹选择窗失败，请重试');
+  }
+}
+
+async function runFbaCheck() {
+  const folderPath = document.getElementById('inp-folder').value.trim();
+  
+  if (!serviceOnline) {
+    copyText(`python check_shipment.py "${folderPath}"`, null);
+    showStatus('error', '⚠️', 'Launcher 服务未运行，已复制启动指令，请双击 启动Hub.bat 后在 CMD 粘贴运行。');
+    return;
+  }
+  
+  setLoading(true);
+  showStatus('success', '⏳', '正在扫描目录，解析压缩包并执行深度对齐校验...');
+  document.getElementById('results-container').style.display = 'none';
+
+  try {
+    const res = await fetch(LAUNCHER_URL + '/api/scan-fba', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder_path: folderPath }),
+      signal: AbortSignal.timeout(30000),
+    });
+    
+    const data = await res.json();
+    
+    if (res.ok) {
+      showStatus('success', '✅', `校验完成！共扫描到 ${data.results.length} 个压缩包文件`);
+      renderResults(data.results);
+    } else {
+      showStatus('error', '❌', data.error || '扫描校验失败，请检查路径是否正确或服务日志');
+    }
+  } catch (err) {
+    showStatus('error', '⚠️', '请求本地 Launcher 服务超时或连接断开，请检查服务是否运行');
+  } finally {
+    setLoading(false);
+  }
+}
+
+function renderResults(results) {
+  const container = document.getElementById('results-container');
+  const grid = document.getElementById('results-grid');
+  grid.innerHTML = '';
+  
+  if (!results || results.length === 0) {
+    grid.innerHTML = '<div style="font-size:12px;color:var(--body-gray);text-align:center;padding:20px;">未在该目录下找到任何 .zip 货件压缩包文件。</div>';
+    container.style.display = 'block';
+    return;
+  }
+  
+  results.forEach(res => {
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    
+    let statusClass = 'pass';
+    let statusText = '✅ 一致';
+    if (res.status === 'Fail') {
+      statusClass = 'fail';
+      statusText = '❌ 异常';
+    } else if (res.status === 'Error') {
+      statusClass = 'error';
+      statusText = '⚠️ 运行错误';
+    }
+    
+    let html = `
+      <div class="result-header">
+        <span class="result-zip-name">${res.zip_name}</span>
+        <span class="status-pill ${statusClass}">${statusText}</span>
+      </div>
+    `;
+    
+    if (res.status === 'Error') {
+      html += `
+        <div class="result-details" style="color:#C4433A;background:#FDECEA;padding:8px 12px;border-radius:6px;font-family:monospace;">
+          Error during run: ${res.error}
+        </div>
+      `;
+    } else {
+      const s = res.summary;
+      
+      let overweightText = '无需校验 (无超重箱)';
+      if (s.total_boxes > 0) {
+        if (s.weight_warnings && s.weight_warnings.length > 0) {
+          if (s.missing_overweight_label) {
+            overweightText = '❌ 缺失超重标PDF';
+          } else {
+            overweightText = '✅ 已包含超重标';
+          }
+        }
+      }
+      
+      let gpsrText = s.is_europe ? (s.has_gpsr ? '✅ 已包含GPSR' : '❌ 缺失GPSR标') : '无需校验';
+      
+      // Clean paths by replacing backslashes with forward slashes for safer JS evaluation
+      const cleanReportPath = s.report_path.replace(/\\/g, '/');
+      const cleanFolderPath = cleanReportPath.substring(0, cleanReportPath.lastIndexOf('/'));
+      
+      html += `
+        <div class="result-info-grid">
+          <div class="info-item">
+            <span class="info-lbl">货件 ID</span>
+            <span class="info-val" title="${s.shipment_id || '-'}">${s.shipment_id || '-'}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-lbl">目的地仓库</span>
+            <span class="info-val" title="${s.destination || '-'}">${s.destination || '-'}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-lbl">总箱数</span>
+            <span class="info-val">${s.total_boxes} 箱</span>
+          </div>
+          <div class="info-item">
+            <span class="info-lbl">总商品数量</span>
+            <span class="info-val">${s.total_units} Pcs</span>
+          </div>
+        </div>
+        <div class="result-details">
+          <div class="detail-sec">
+            <strong>GPSR 安全标签:</strong> ${gpsrText}
+          </div>
+          <div class="detail-sec">
+            <strong>超重标签要求:</strong> ${overweightText}
+          </div>
+      `;
+      
+      if (s.weight_warnings && s.weight_warnings.length > 0) {
+        html += `
+          <div class="detail-sec" style="margin-top: 6px;">
+            <div class="detail-title" style="color:var(--gold);">⚠️ 超重箱明细 (>15KG):</div>
+            <ul class="warn-list">
+              ${s.weight_warnings.map(w => `<li>${w}</li>`).join('')}
+            </ul>
+          </div>
+        `;
+      }
+      
+      if (s.product_label_errors && s.product_label_errors.length > 0) {
+        html += `
+          <div class="detail-sec" style="margin-top: 6px;">
+            <div class="detail-title" style="color:#C4433A;">❌ 缺失产品标 FNSKU:</div>
+            <ul class="err-list">
+              ${s.product_label_errors.map(e => `<li>\`${e}.pdf\` 条码标签不存在</li>`).join('')}
+            </ul>
+          </div>
+        `;
+      }
+      
+      html += `
+        </div>
+        <div class="result-actions">
+          <button class="btn-act pri" onclick="openFile('${cleanReportPath}')">📝 打开报告</button>
+          <button class="btn-act" onclick="openFile('${cleanFolderPath}')">📂 打开所在文件夹</button>
+        </div>
+      `;
+    }
+    
+    card.innerHTML = html;
+    grid.appendChild(card);
+  });
+  
+  container.style.display = 'block';
+}
+
+function openFile(path) {
+  fetch(LAUNCHER_URL + '/open-file?path=' + encodeURIComponent(path))
+    .then(res => {
+      if (res.ok) {
+        showToast('已成功在本地打开！');
+      } else {
+        res.json().then(d => showToast('打开失败: ' + (d.error || '未知错误')));
+      }
+    })
+    .catch(() => showToast('无法连接 Launcher 服务'));
+}
+
+function setLoading(on) {
+  const btn = document.getElementById('launch-btn');
+  document.getElementById('btn-icon').style.display = on ? 'none' : '';
+  document.getElementById('btn-spinner').style.display = on ? 'block' : 'none';
+  document.getElementById('btn-text').textContent = on ? '正在扫描校验中…' : '开始扫描并校验';
+  btn.disabled = on;
+}
+
+function showStatus(type, icon, msg) {
+  const bar = document.getElementById('status-bar');
+  bar.className = 'status-bar ' + type;
+  document.getElementById('status-icon').textContent = icon;
+  document.getElementById('status-msg').textContent = msg;
+}
+
+function copyCmd() {
+  const folderPath = document.getElementById('inp-folder').value.trim();
+  copyText(`python check_shipment.py "${folderPath}"`, document.getElementById('copy-btn'));
+}
+
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).catch(() => {
+    const ta = Object.assign(document.createElement('textarea'), { value: text });
+    ta.style.cssText = 'position:fixed;opacity:0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+  }).finally(() => {
+    if (btn) { btn.textContent = '已复制 ✓'; btn.classList.add('copied'); setTimeout(() => { btn.textContent = '复制'; btn.classList.remove('copied'); }, 2000); }
+    showToast('已复制到剪贴板');
+  });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+checkService();
+setInterval(checkService, 10000);
+</script>
+</body>
+</html>

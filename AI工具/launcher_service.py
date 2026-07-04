@@ -26,6 +26,7 @@ import tempfile
 
 PORT = 8766
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(BASE_DIR)
 
 # 用 launcher 自身的 Python，避免多版本混用
 PYTHON = sys.executable
@@ -63,6 +64,11 @@ TOOLS = {
         "arg":  "2",
         "label": "Amazon Image Extractor Mode2",
     },
+    "fba-checker": {
+        "type": "py",
+        "path": "check_shipment.py",
+        "label": "FBA Shipment Checker",
+    },
 }
 
 
@@ -80,25 +86,73 @@ class LauncherHandler(http.server.BaseHTTPRequestHandler):
         elif self.path.startswith("/open-file"):
             from urllib.parse import urlparse, parse_qs, unquote
             qs = parse_qs(urlparse(self.path).query)
-            rel = unquote(qs.get("path", [""])[0]).replace("/", os.sep)
-            full = os.path.normpath(os.path.join(BASE_DIR, rel))
-            if not full.startswith(BASE_DIR):
-                self._json(403, {"error": "路径不合法"})
+            path_arg = unquote(qs.get("path", [""])[0])
+            if os.path.isabs(path_arg):
+                full = os.path.normpath(path_arg)
+            else:
+                full = os.path.normpath(os.path.join(PROJECT_ROOT, path_arg))
+                
+            if not full.lower().startswith(PROJECT_ROOT.lower()):
+                self._json(403, {"error": f"路径不合法，只允许打开项目目录下的文件: {path_arg}"})
                 return
             if not os.path.exists(full):
-                self._json(404, {"error": f"文件不存在: {rel}"})
+                self._json(404, {"error": f"文件不存在: {full}"})
                 return
             if sys.platform == "win32":
                 os.startfile(full)
             else:
                 subprocess.Popen(["open", full])
-            self._json(200, {"status": "opened", "file": rel})
+            self._json(200, {"status": "opened", "file": full})
 
         else:
             self.send_response(404)
             self.end_headers()
 
     def do_POST(self):
+        if self.path == "/api/scan-fba":
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length)
+            try:
+                data = json.loads(body)
+                folder_path = data.get("folder_path", "").strip()
+                if not folder_path:
+                    folder_path = r"D:\Zero Tools\data\FBA货件检验"
+                
+                if not os.path.exists(folder_path):
+                    self._json(400, {"error": f"文件夹路径不存在: {folder_path}"})
+                    return
+                
+                if BASE_DIR not in sys.path:
+                    sys.path.insert(0, BASE_DIR)
+                import check_shipment
+                
+                results = check_shipment.run_batch_check(folder_path)
+                self._json(200, {"results": results, "folder_path": folder_path})
+            except Exception as e:
+                self._json(500, {"error": str(e)})
+            return
+
+        elif self.path == "/api/choose-folder":
+            try:
+                import tkinter as tk
+                from tkinter import filedialog
+                
+                root = tk.Tk()
+                root.withdraw()
+                root.attributes('-topmost', True)
+                
+                folder_selected = filedialog.askdirectory(title="选择 FBA 货件监测文件夹")
+                root.destroy()
+                
+                if folder_selected:
+                    folder_path = folder_selected.replace("\\", "/")
+                    self._json(200, {"folder_path": folder_path})
+                else:
+                    self._json(200, {"folder_path": ""})
+            except Exception as e:
+                self._json(500, {"error": str(e)})
+            return
+
         if self.path != "/launch":
             self.send_response(404)
             self.end_headers()

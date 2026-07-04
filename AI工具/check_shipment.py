@@ -698,7 +698,7 @@ def perform_check(zip_path):
         # 9. 格式化并输出 Markdown 检查报告至控制台并保存文件
         zip_dir = os.path.dirname(os.path.abspath(zip_path))
         base_name = os.path.splitext(os.path.basename(zip_path))[0]
-        report_file_path = os.path.join(zip_dir, f"{base_name}_检查报告.md")
+        report_file_path = os.path.join(zip_dir, f"{base_name}_检查报告.md").replace("\\", "/")
         
         class Tee(object):
             def __init__(self, terminal, file_path):
@@ -804,6 +804,21 @@ def perform_check(zip_path):
             for mis_sku in product_label_errors:
                 print(f"> - `{mis_sku}.pdf`")
                 
+        # Return summary for programmatic use (FastAPI/HTTP API)
+        return {
+            "shipment_id": shipment_id_from_zip,
+            "has_errors": has_errors,
+            "destination": csv_warehouse if csv_warehouse else "未知",
+            "total_boxes": csv_total_boxes,
+            "total_units": csv_total_qty,
+            "weight_warnings": weight_warnings,
+            "product_label_errors": product_label_errors,
+            "missing_overweight_label": missing_overweight_label,
+            "is_europe": is_europe,
+            "has_gpsr": len(gpsr_files) > 0,
+            "report_path": report_file_path.replace("\\", "/")
+        }
+                
     finally:
         # Restore stdout and display save message
         # 恢复 stdout 并提示报告保存路径
@@ -811,13 +826,76 @@ def perform_check(zip_path):
             sys.stdout = old_stdout
             tee.close()
             print(f"\n[INFO] 报告已保存至 / Report saved to:\n  {report_file_path}")
-        # Clean up decompression files
+         # Clean up decompression files
         # 清理临时解压出来的文件
         if os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
 
+def run_batch_check(folder_path):
+    """Scan and validate all shipment zip archives inside a folder.
+    扫描并校验文件夹下所有的货件 ZIP 压缩包，返回结构化 JSON 数据。"""
+    import glob
+    if not os.path.exists(folder_path):
+        return []
+    zip_files = glob.glob(os.path.join(folder_path, "*.zip"))
+    results = []
+    for zip_path in sorted(zip_files):
+        zip_name = os.path.basename(zip_path)
+        try:
+            summary = perform_check(zip_path)
+            results.append({
+                "zip_name": zip_name,
+                "status": "Pass" if not summary["has_errors"] else "Fail",
+                "summary": summary
+            })
+        except Exception as e:
+            results.append({
+                "zip_name": zip_name,
+                "status": "Error",
+                "error": str(e)
+            })
+    return results
+
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print("Usage: python check_shipment.py <path_to_zip>")
-        sys.exit(1)
-    perform_check(sys.argv[1])
+    import glob
+    try:
+        # Set console encoding to avoid Unicode encoding errors on Windows when printing emojis
+        try:
+            if hasattr(sys.stdout, 'reconfigure'):
+                sys.stdout.reconfigure(errors='replace')
+        except Exception:
+            pass
+
+        if len(sys.argv) >= 2:
+            perform_check(sys.argv[1])
+        else:
+            default_dir = r"D:\Zero Tools\data\FBA货件检验"
+            print(f"[*] 未指定具体货件包，启动批量扫描模式...")
+            print(f"[*] 扫描目录: {default_dir}")
+            
+            if not os.path.exists(default_dir):
+                os.makedirs(default_dir, exist_ok=True)
+                print(f"[!] 目录不存在，已自动创建。请将 FBA 货件压缩包放入该目录后重新运行。")
+            
+            zip_files = glob.glob(os.path.join(default_dir, "*.zip"))
+            
+            if not zip_files:
+                print(f"[-] 未找到任何 .zip 货件压缩包。")
+            else:
+                print(f"[+] 找到 {len(zip_files)} 个货件压缩包，开始校验...\n")
+                for idx, zip_path in enumerate(sorted(zip_files), 1):
+                    zip_name = os.path.basename(zip_path)
+                    print("=" * 60)
+                    print(f"[{idx}/{len(zip_files)}] 正在处理: {zip_name}")
+                    print("=" * 60)
+                    try:
+                        perform_check(zip_path)
+                    except Exception as e:
+                        print(f"❌ 处理失败: {zip_name}, 错误: {str(e)}")
+                    print("\n")
+                print("==================================================")
+                print("[+] 所有货件校验完成！详细报告已保存在同目录下。")
+    except Exception as e:
+        print(f"❌ 运行发生致命错误: {str(e)}")
+    finally:
+        input("\n按下回车键退出... (Press Enter to exit...)")
