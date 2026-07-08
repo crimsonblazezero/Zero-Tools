@@ -124,6 +124,13 @@ def merge_throttle(raw: dict[str, Any]) -> dict[str, float]:
 
 
 def main() -> int:
+    # 强制 stdout/stderr 用 UTF-8，避免 Windows GBK 控制台打印含零宽字符(如 \u200b)的
+    # 微信文章标题/内容时抛 UnicodeEncodeError（曾导致收尾 print 崩溃，但下载已完成）。
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8")
+
     args = parse_args()
     quiet = bool(args.json)
 
@@ -795,7 +802,9 @@ def launch_browser_context(playwright: Any, *, headless: bool, user_data_dir: Pa
         "viewport": {"width": 1440, "height": 960},
         "args": [
             "--disable-blink-features=AutomationControlled",
+            "--no-sandbox",
             "--disable-dev-shm-usage",
+            "--disable-gpu",
             "--no-default-browser-check",
         ],
     }
@@ -1217,7 +1226,7 @@ def resolve_account(
 
     # 只预览前 3 个候选以匹配 seed，减少无谓的 API 调用（限流友好）
     for account in ranked[:3]:
-        preview = fetch_account_articles(
+        preview, _ = fetch_account_articles(
             client=client, token=token, fakeid=account["fakeid"],
             limit=min(max(limit, 10), 20), seen_links=set(),
             limiter=limiter, max_retries=int(thr["max_retries"]), backoff_base=thr["backoff_base"],
