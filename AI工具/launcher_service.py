@@ -92,11 +92,17 @@ class LauncherHandler(http.server.BaseHTTPRequestHandler):
             else:
                 full = os.path.normpath(os.path.join(PROJECT_ROOT, path_arg))
                 
-            if not full.lower().startswith(PROJECT_ROOT.lower()):
-                self._json(403, {"error": f"路径不合法，只允许打开项目目录下的文件: {path_arg}"})
-                return
             if not os.path.exists(full):
                 self._json(404, {"error": f"文件不存在: {full}"})
+                return
+
+            # 安全检查：只允许打开目录或安全的文件类型，防范越权执行恶意可执行程序
+            is_dir = os.path.isdir(full)
+            safe_extensions = {".xlsx", ".csv", ".pdf", ".html", ".txt", ".zip", ".log", ".md"}
+            _, ext = os.path.splitext(full.lower())
+            
+            if not is_dir and ext not in safe_extensions:
+                self._json(403, {"error": f"安全拦截：仅允许打开目录或安全文档类型 (xlsx/csv/pdf/html/txt/zip/log/md)，不支持打开: {ext}"})
                 return
             if sys.platform == "win32":
                 os.startfile(full)
