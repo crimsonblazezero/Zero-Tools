@@ -15,6 +15,7 @@ import sys
 import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
@@ -42,7 +43,7 @@ USER_AGENT = (
 MP_HOME_URL = "https://mp.weixin.qq.com/cgi-bin/home?t=home/index&lang=zh_CN"
 MP_LOGIN_URL = "https://mp.weixin.qq.com/"
 ARTICLE_LIST_PAGE_SIZE = 20
-KNOWN_COMMANDS = {"fetch", "ensure-login", "login-status", "clear-login"}
+KNOWN_COMMANDS = {"fetch", "increment", "ensure-login", "login-status", "clear-login"}
 ACTIVE_QR_VIEWER: Any | None = None
 
 # 微信接口 create_time 为 UTC 秒级时间戳；中国公众号展示时间 = UTC+8，且中国不实行夏令时。
@@ -132,6 +133,7 @@ def main() -> int:
         sys.stderr.reconfigure(encoding="utf-8")
 
     args = parse_args()
+    resolved_article_url = getattr(args, "url", None) or args.article_url
     quiet = bool(args.json)
 
     try:
@@ -139,7 +141,7 @@ def main() -> int:
             config = load_or_create_config(noninteractive=quiet or is_headless_environment())
             display_mode = args.display or config.display_mode
             payload = command_fetch(
-                article_url=args.article_url,
+                article_url=resolved_article_url,
                 config=config,
                 display_mode=display_mode,
                 quiet=quiet,
@@ -170,6 +172,26 @@ def main() -> int:
             payload = command_login_status()
         elif args.command == "clear-login":
             payload = command_clear_login()
+        elif args.command == "increment":
+            config = load_or_create_config(noninteractive=quiet or is_headless_environment())
+            display_mode = args.display or config.display_mode
+            payload = command_increment(
+                article_url=resolved_article_url,
+                config=config,
+                display_mode=display_mode,
+                quiet=quiet,
+                since=args.since,
+                dry_run=args.dry_run,
+                force_qr=args.force_qr,
+                tz=args.tz or config.tz,
+                login_timeout=args.login_timeout,
+                qr_refresh=args.qr_refresh,
+                safe_mode=args.safe,
+                fast_mode=args.fast,
+                min_delay=args.min_delay,
+                max_jitter=args.max_jitter,
+                last_dir=args.last_dir,
+            )
         else:
             raise RuntimeError(f"不支持的命令：{args.command}")
     except Exception as exc:  # noqa: BLE001
@@ -251,6 +273,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--qr-refresh", type=int, default=90, help="二维码自动刷新间隔（秒），默认 90",
     )
+    parser.add_argument(
+        "--url",
+        metavar="ARTICLE_URL",
+        default=None,
+        help="种子文章链接（用于定位公众号）。可作为 fetch / increment 的替代写法，等价于位置参数中的链接",
+    )
+    parser.add_argument(
+        "--last-dir",
+        metavar="OUTPUT_DIR",
+        default=None,
+        help="increment 专用：显式指定上次的 output 目录（含 articles.json）。省略时自动在 output_root 下寻找最新的 run",
+    )
     args = parser.parse_args()
 
     if args.primary in KNOWN_COMMANDS:
@@ -299,6 +333,153 @@ def ts_to_cn_str(ts: Any) -> str | None:
     except (ValueError, OverflowError, OSError):
         return None
     return dt.strftime("%Y-%m-%d %H:%M:%S")
+
+
+# --------------------------------------------------------------------------- #
+# 命令：increment（增量续抓）
+# --------------------------------------------------------------------------- #
+def find_latest_run(output_root: Path) -> Path | None:
+    """在 output_root 下找出最新的、含 articles.json 的抓取目录（按 articles.json 的 mtime 排序）。"""
+    if not output_root.exists():
+        return None
+    candidates: list[tuple[float, Path]] = []
+    for d in output_root.iterdir():
+        if not d.is_dir():
+            continue
+        aj = d / "articles.json"
+        md = d / "markdown"
+        if aj.exists() and md.exists():
+            try:
+                candidates.append((aj.stat().st_mtime, d))
+            except OSError:
+                continue
+    if not candidates:
+        return None
+    candidates.sort(key=lambda x: x[0], reverse=True)
+    return candidates[0][1]
+
+
+def latest_publish_date_from_articles(articles_json: Path, tz: str = "Asia/Shanghai") -> str | None:
+    """从 articles.json 推断增量起点的 since 日期（YYYY-MM-DD）。
+
+    优先取已抓文章中最大的 create_time（发布时间）；若该字段缺失（旧数据），
+    回退到目录名中的抓取时间戳（如 ..._20260708_214608 -> 2026-07-08），保证兼容。
+    """
+    try:
+        data = json.loads(articles_json.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        data = None
+    if isinstance(data, list):
+        max_ts: int | float | None = None
+        for item in data:
+            if not isinstance(item, dict):
+                continue
+            ct = item.get("create_time")
+            if isinstance(ct, (int, float)) and (max_ts is None or ct > max_ts):
+                max_ts = ct
+        if max_ts is not None:
+            try:
+                dt = datetime.fromtimestamp(max_ts, tz=ZoneInfo(tz))
+            except Exception:  # noqa: BLE001
+                dt = datetime.fromtimestamp(max_ts)
+            return dt.strftime("%Y-%m-%d")
+    # 回退1：目录名时间戳（如 ..._20260708_214608）
+    m = re.search(r"_(\d{8})(?:_\d{6})?$", articles_json.parent.name)
+    if m:
+        try:
+            return datetime.strptime(m.group(1), "%Y%m%d").strftime("%Y-%m-%d")
+        except Exception:  # noqa: BLE001
+            pass
+    # 回退2：索引文件最后修改时间的本地日期（≈ 上次抓取日）
+    try:
+        ts = articles_json.stat().st_mtime
+        try:
+            dt = datetime.fromtimestamp(ts, tz=ZoneInfo(tz))
+        except Exception:  # noqa: BLE001  # 环境缺时区数据则退回系统时区
+            dt = datetime.fromtimestamp(ts)
+        return dt.strftime("%Y-%m-%d")
+    except Exception:  # noqa: BLE001
+        pass
+    return None
+
+
+def command_increment(
+    *,
+    article_url: str | None,
+    config: AppConfig,
+    display_mode: str,
+    quiet: bool,
+    since: str | None = None,
+    dry_run: bool = False,
+    force_qr: bool = False,
+    tz: str = "Asia/Shanghai",
+    login_timeout: int = 1800,
+    qr_refresh: int = 90,
+    safe_mode: bool = False,
+    fast_mode: bool = False,
+    min_delay: float | None = None,
+    max_jitter: float | None = None,
+    last_dir: str | None = None,
+) -> dict[str, Any]:
+    """增量续抓：复用上次 output 目录，自动推断 since（上次最新文章日期），只抓更新的文章。
+
+    等价于手动 `fetch --resume <上次>/articles.json --since <日期>`，但省去记忆路径与日期。
+    若上次之后无新文章，返回 status=up_to_date 而非抛错。
+    """
+    if not article_url:
+        raise RuntimeError(
+            "increment 需要种子文章链接来定位公众号，请在命令后附加链接，或用 --url 指定。"
+        )
+    tz = tz or config.tz
+    run_dir = Path(last_dir).expanduser().resolve() if last_dir else find_latest_run(config.output_root)
+    if run_dir is None or not (run_dir / "articles.json").exists():
+        raise RuntimeError(
+            "找不到历史抓取记录（output_root 下无含 articles.json 的目录）。"
+            "请先完整抓取一次，或用 --last-dir 显式指定上次的 output 目录。"
+        )
+    articles_json = run_dir / "articles.json"
+    # 默认不早停（since=None）：仅靠 resume 的 seen_links 去重，翻页时跳过全部已抓文章，
+    # 新文章必然不在 seen 中而被抓取 —— 最稳，绝不漏抓，也不依赖 articles.json 是否含 create_time。
+    # 用户可显式 --since 做早停提速（需保证不晚于已抓最新文章发布日，否则可能早停漏抓）。
+    last_update = latest_publish_date_from_articles(articles_json, tz)
+    mode_note = (
+        f"时间窗 since={since}({tz}) 早停" if since
+        else "不早停，全量扫描 + seen 去重（最稳，绝不漏抓）"
+    )
+    log(
+        f"增量模式：基于上次目录 {run_dir.name}"
+        + (f"，上次索引更新于 {last_update}" if last_update else "")
+        + f"，{mode_note}，并复用同一目录。",
+        quiet=quiet,
+    )
+    try:
+        return command_fetch(
+            article_url=article_url,
+            config=config,
+            display_mode=display_mode,
+            quiet=quiet,
+            resume=str(articles_json),
+            since=since,
+            until=None,
+            dry_run=dry_run,
+            force_qr=force_qr,
+            tz=tz,
+            login_timeout=login_timeout,
+            qr_refresh=qr_refresh,
+            safe_mode=safe_mode,
+            fast_mode=fast_mode,
+            min_delay=min_delay,
+            max_jitter=max_jitter,
+        )
+    except RuntimeError as exc:
+        if "没有可下载的新文章" in str(exc):
+            return {
+                "status": "up_to_date",
+                "message": "没有比上次更新的文章，无需抓取。",
+                "since": since,
+                "last_dir": str(run_dir),
+            }
+        raise
 
 
 # --------------------------------------------------------------------------- #
@@ -464,6 +645,15 @@ def command_fetch(
             backoff_base=thr["backoff_base"],
         )
     )
+
+    # 把文章发布时间注入本轮索引，便于未来 increment 精确推断 since
+    ct_map = {
+        normalize_article_url(a.get("link", "")): a.get("create_time")
+        for a in articles
+    }
+    for item in results:
+        if item.get("create_time") is None:
+            item["create_time"] = ct_map.get(normalize_article_url(item.get("url", "")))
 
     # 合并索引 + 更新去重清单（仅把成功的链接写进 manifest，失败的留待下次重试）
     all_results = existing_results + results
