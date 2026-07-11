@@ -1470,7 +1470,13 @@ def fetch_account_articles(
         past_window = False
         for item in publish_list:
             publish_info = item.get("publish_info")
-            publish_data = json.loads(publish_info) if isinstance(publish_info, str) else publish_info
+            if isinstance(publish_info, str) and publish_info.strip():
+                try:
+                    publish_data = json.loads(publish_info)
+                except json.JSONDecodeError:
+                    publish_data = {}
+            else:
+                publish_data = publish_info if isinstance(publish_info, dict) else {}
             for appmsg in (publish_data or {}).get("appmsgex", []):
                 link = normalize_article_url(appmsg.get("link") or "")
                 if not link:
