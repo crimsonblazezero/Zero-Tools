@@ -108,6 +108,7 @@ class AppConfig:
     concurrency: int = 3
     display_mode: str = "auto"
     tz: str = "Asia/Shanghai"
+    write_html: bool = True
     throttle: dict[str, float] = field(default_factory=lambda: dict(DEFAULT_THROTTLE))
 
     @property
@@ -157,6 +158,7 @@ def main() -> int:
                 fast_mode=args.fast,
                 min_delay=args.min_delay,
                 max_jitter=args.max_jitter,
+                md_only=args.md_only,
             )
         elif args.command == "ensure-login":
             config = load_or_create_config(noninteractive=quiet or is_headless_environment())
@@ -191,6 +193,7 @@ def main() -> int:
                 min_delay=args.min_delay,
                 max_jitter=args.max_jitter,
                 last_dir=args.last_dir,
+                md_only=args.md_only,
             )
         else:
             raise RuntimeError(f"不支持的命令：{args.command}")
@@ -260,6 +263,11 @@ def parse_args() -> argparse.Namespace:
         "--fast",
         action="store_true",
         help="激进预设：减小请求间隔、提高并发，速度最快但更易触发限流（风险自担）",
+    )
+    parser.add_argument(
+        "--md-only",
+        action="store_true",
+        help="只输出 Markdown，不生成 HTML 文件（也可在 config.json 设 write_html:false 作为默认）",
     )
     parser.add_argument(
         "--min-delay", type=float, default=None, help="覆盖下载最小间隔（秒）",
@@ -420,6 +428,7 @@ def command_increment(
     min_delay: float | None = None,
     max_jitter: float | None = None,
     last_dir: str | None = None,
+    md_only: bool = False,
 ) -> dict[str, Any]:
     """增量续抓：复用上次 output 目录，自动推断 since（上次最新文章日期），只抓更新的文章。
 
@@ -470,6 +479,7 @@ def command_increment(
             fast_mode=fast_mode,
             min_delay=min_delay,
             max_jitter=max_jitter,
+            md_only=md_only,
         )
     except RuntimeError as exc:
         if "没有可下载的新文章" in str(exc):
@@ -503,6 +513,7 @@ def command_fetch(
     fast_mode: bool = False,
     min_delay: float | None = None,
     max_jitter: float | None = None,
+    md_only: bool = False,
 ) -> dict[str, Any]:
     article_url = get_article_url(article_url)
 
@@ -614,7 +625,10 @@ def command_fetch(
             "note": "仅预览，未下载任何文件。去掉 --dry-run 才会真正抓取到本地。",
         }
 
-    output_dir = prepare_output_dir(config, articles[0]["account_name"], resume_dir=resume_dir)
+    # 是否生成 HTML：默认跟随 config.write_html，--md-only 可强制只出 Markdown
+    want_html = bool(config.write_html) and (not md_only)
+
+    output_dir = prepare_output_dir(config, articles[0]["account_name"], resume_dir=resume_dir, want_html=want_html)
     start_index = 1
     existing_results: list[dict[str, Any]] = []
     if resume_dir is not None:
@@ -639,7 +653,7 @@ def command_fetch(
             account=articles[0]["account"],
             concurrency=concurrency,
             start_index=start_index,
-            write_html=(resume_dir is None),
+            write_html=(resume_dir is None) and want_html,
             limiter=dl_limiter,
             max_retries=int(thr["max_retries"]),
             backoff_base=thr["backoff_base"],
@@ -1595,7 +1609,7 @@ def write_manifest(path: Path, links: list[str]) -> None:
 # --------------------------------------------------------------------------- #
 # 输出目录
 # --------------------------------------------------------------------------- #
-def prepare_output_dir(config: AppConfig, account_name: str, resume_dir: Path | None = None) -> Path:
+def prepare_output_dir(config: AppConfig, account_name: str, resume_dir: Path | None = None, want_html: bool = True) -> Path:
     if resume_dir is not None:
         output_dir = Path(resume_dir).resolve()
         (output_dir / "markdown").mkdir(parents=True, exist_ok=True)
@@ -1604,7 +1618,8 @@ def prepare_output_dir(config: AppConfig, account_name: str, resume_dir: Path | 
     run_name = f"{safe_name(account_name)}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     output_dir = config.output_root / run_name
     (output_dir / "markdown").mkdir(parents=True, exist_ok=True)
-    (output_dir / "html").mkdir(parents=True, exist_ok=True)
+    if want_html:
+        (output_dir / "html").mkdir(parents=True, exist_ok=True)
     return output_dir
 
 

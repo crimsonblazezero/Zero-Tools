@@ -40,11 +40,12 @@ description: 用本地微信公众号抓取器批量识别并拉取某个公众�
 - 支持 `fetch --dry-run`（只返回将要抓取的清单，不落盘——配合时间窗做"先预览后决定"）
 - 支持 `fetch --force-qr` / `--login-timeout` / `--qr-refresh`（登录增强）
 - 支持 `fetch --safe` / `--fast`（限流预设：保守 / 激进）
+- 支持 `fetch --md-only`（只输出 Markdown，不生成 HTML；也可在 `config.json` 设 `write_html:false` 作为永久默认）
 - 去重增强：每轮在输出目录生成 `seen_urls.json` 清单，跨轮 / 跨次运行自动跳过已抓文章；**失败的会重试**，已下载的 Markdown 幂等复用
 - 限流保护：后台 API 调用与文章下载均插入「固定间隔 + 随机抖动」，遇 `429` / `5xx` / "操作频繁" 自动指数退避
 - 支持 `clear-login`
 - 支持 `increment`（增量续抓：自动定位上次 output 目录、复用登录态、跳过已抓文章，公众号未来更新时一行命令搞定，绝不重复）
-- 输出 `Markdown`、`HTML`、`articles.json`
+- 输出 `Markdown`、`HTML`、`articles.json`（用 `--md-only` 或 `config.json` 的 `write_html:false` 可只出 Markdown）
 
 这个 skill 默认调用当前目录内自带的抓取器副本，不要回头依赖桌面上的原项目路径，除非用户明确要求你同步或升级那份原始项目。
 
@@ -90,6 +91,7 @@ description: 用本地微信公众号抓取器批量识别并拉取某个公众�
 - `article_limit`
 - `concurrency`
 - `display_mode`
+- `write_html`（是否同时生成 HTML 文件，`true` 默认；设为 `false` 则只出 Markdown）
 
 处理原则：
 
@@ -269,6 +271,7 @@ cd "内容生产龙虾/公众号作者文章抓取"
 - 若想提速，可显式加 `--since YYYY-MM-DD` 做早停；但 `--since` 不能晚于“已抓最新文章的发布日”，否则翻页会提前停、漏掉中间的新文章。不确定就别加。
 - 可加 `--dry-run` 先预览“将新增哪几篇”（不落盘），确认后再真抓。
 - 可加 `--last-dir "<指定output目录>"` 强制指定上次目录（多号混抓、想精确控制时用）。
+- `increment` 同样遵循 `config.json` 的 `write_html`（及临时 `--md-only`）：若已设为只出 Markdown，增量续抓也只写 Markdown，不会补生成 HTML。
 - 若上次之后公众号**没更新**，不会报错，而是返回 `status = up_to_date`（“没有比上次更新的文章，无需抓取”）。
 - 仍支持 `--safe` / `--fast` / `--force-qr` / `--login-timeout` / `--qr-refresh` 等全部选项。
 
@@ -304,14 +307,14 @@ cd "内容生产龙虾/公众号作者文章抓取"
 ```text
 <output_parent>/输出文章/<公众号名_时间戳>/
   markdown/
-  html/
+  html/            # 仅当开启 HTML 输出时存在（默认开启；--md-only 或 write_html:false 时不生成）
   articles.json
 ```
 
 每篇文章通常会有：
 
 - 一份 Markdown
-- 一份原始 HTML
+- 一份原始 HTML（开启 HTML 输出时）
 
 索引文件 `articles.json` 适合：
 

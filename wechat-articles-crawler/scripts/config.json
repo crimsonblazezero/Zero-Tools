@@ -4,6 +4,7 @@
   "article_limit": 200,
   "concurrency": 3,
   "display_mode": "silent",
+  "write_html": false,
   "tz": "Asia/Shanghai",
   "throttle": {
     "api_min_delay": 2.0,
