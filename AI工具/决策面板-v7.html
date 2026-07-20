@@ -625,6 +625,7 @@ input[type=checkbox]#select-all{width:15px;height:15px;cursor:pointer;accent-col
         <div class="filter-group"><label>负责人</label><select id="ps-f-owner" onchange="applyPrescreenFilters()"><option value="">全部</option></select></div>
         <div class="filter-group"><label>产品状态</label><select id="ps-f-status" onchange="applyPrescreenFilters()"><option value="">全部</option><option value="常规品">常规品</option><option value="核心品">核心品</option><option value="清仓">清仓</option><option value="停运">停运</option></select></div>
         <div class="filter-group"><label>产品等级</label><select id="ps-f-grade" onchange="applyPrescreenFilters()"><option value="">全部</option></select></div>
+        <div class="filter-group"><label>生命周期</label><select id="ps-f-lifecycle" onchange="applyPrescreenFilters()"><option value="">全部</option></select></div>
         <div class="filter-group"><label>绝对值偏差大于</label><input type="number" id="ps-f-abs-dev" step="0.1" min="0" placeholder="例如: 1.0" oninput="applyPrescreenFilters()"></div>
         <div class="filter-group"><label>比例偏差大于 (%)</label><input type="number" id="ps-f-pct-dev" step="1" min="0" placeholder="例如: 30" oninput="applyPrescreenFilters()"></div>
         <div class="filter-group"><label>关键词</label><input type="text" id="ps-f-keyword" placeholder="MSKU / 品名..." oninput="applyPrescreenFilters()"></div>
@@ -3526,10 +3527,12 @@ function populatePrescreenFilters() {
   const spus = new Set();
   const owners = new Set();
   const grades = new Set();
+  const lifecycles = new Set();
   PRESCREEN_DATA.forEach(r => {
     if (r.spu) spus.add(r.spu);
     if (r.owner) owners.add(r.owner);
     if (r.grade) grades.add(r.grade);
+    if (r.lifecycle) lifecycles.add(r.lifecycle);
   });
   
   const spuSel = document.getElementById('ps-f-spu');
@@ -3561,6 +3564,16 @@ function populatePrescreenFilters() {
       gradeSel.appendChild(o);
     });
   }
+
+  const lifecycleSel = document.getElementById('ps-f-lifecycle');
+  if (lifecycleSel) {
+    while (lifecycleSel.options.length > 1) lifecycleSel.remove(1);
+    [...lifecycles].sort().forEach(lc => {
+      const o = document.createElement('option');
+      o.value = lc; o.textContent = lc;
+      lifecycleSel.appendChild(o);
+    });
+  }
 }
 
 function applyPrescreenFilters() {
@@ -3569,6 +3582,7 @@ function applyPrescreenFilters() {
   const owner = document.getElementById('ps-f-owner').value;
   const status = document.getElementById('ps-f-status').value;
   const grade = document.getElementById('ps-f-grade').value;
+  const lifecycle = document.getElementById('ps-f-lifecycle').value;
   const absDev = parseFloat(document.getElementById('ps-f-abs-dev').value) || null;
   const pctDev = parseFloat(document.getElementById('ps-f-pct-dev').value) || null;
   const keyword = document.getElementById('ps-f-keyword').value.trim().toLowerCase();
@@ -3579,6 +3593,7 @@ function applyPrescreenFilters() {
     
     if (owner && r.owner !== owner) return false;
     if (grade && r.grade !== grade) return false;
+    if (lifecycle && r.lifecycle !== lifecycle) return false;
     
     const edit = editMap[r.msku] || {};
     const effectiveStatus = edit.prod_status !== undefined ? edit.prod_status : r.prod_status;
@@ -3617,6 +3632,7 @@ function resetPrescreenFilters() {
   document.getElementById('ps-f-owner').value = '';
   document.getElementById('ps-f-status').value = '';
   document.getElementById('ps-f-grade').value = '';
+  document.getElementById('ps-f-lifecycle').value = '';
   document.getElementById('ps-f-abs-dev').value = '';
   document.getElementById('ps-f-pct-dev').value = '';
   document.getElementById('ps-f-keyword').value = '';
