@@ -611,11 +611,8 @@ input[type=checkbox]#select-all{width:15px;height:15px;cursor:pointer;accent-col
   <div id="prescreen-empty" class="empty-state">
     <div class="empty-state-icon">🔍</div>
     <div class="empty-state-title">暂无初筛数据</div>
-    <div class="empty-state-desc">请上传 msku_status 表格文件（例如：msku_status_*.xlsx）以开始分析对比</div>
-    <div class="upload-dropzone" id="prescreen-dropzone" style="margin: 20px auto; max-width: 400px; padding: 30px; border: 2px dashed #E8E4DE; border-radius: 12px; cursor: pointer; background: #FFFDF9;" onclick="document.getElementById('prescreen-file-input').click()">
-      <p style="font-size: 13px; color: #717171;">拖拽文件到此处，或 <strong style="color: #064338;">点击浏览文件</strong></p>
-      <input type="file" id="prescreen-file-input" accept=".xlsx,.xls,.csv" style="display:none">
-    </div>
+    <div class="empty-state-desc">请前往「上传数据」页面上传 <strong>DMS初筛表 (msku_status)</strong> 即可在此查看对比</div>
+    <br><button class="btn btn-primary" onclick="switchTab('tab-upload')" style="margin-top:8px">前往上传 →</button>
   </div>
 
   <div id="prescreen-content" style="display:none">
@@ -643,6 +640,32 @@ input[type=checkbox]#select-all{width:15px;height:15px;cursor:pointer;accent-col
       </div>
     </div>
 
+    <!-- 批量操作工具栏 -->
+    <div class="bulk-bar" id="ps-bulk-bar" style="margin-top:16px">
+      <span class="bulk-bar-count">已选 <span id="ps-bulk-count">0</span> 条</span>
+      <div class="bulk-bar-sep"></div>
+      <label>DMS 调整</label>
+      <select class="bulk-select" id="ps-bulk-dms-op" style="width:90px">
+        <option value="set">设为固定值</option>
+        <option value="add">+固定值</option>
+        <option value="sub">-固定值</option>
+        <option value="pct_add">+百分比%</option>
+        <option value="pct_sub">-百分比%</option>
+      </select>
+      <input type="number" class="bulk-input" id="ps-bulk-dms" placeholder="数值" step="0.1" min="0" style="width:70px">
+      <div class="bulk-bar-sep"></div>
+      <label>产品状态</label>
+      <select class="bulk-select" id="ps-bulk-status">
+        <option value="">— 不修改 —</option>
+        <option value="常规品">常规品</option>
+        <option value="核心品">核心品</option>
+        <option value="清仓">清仓</option>
+        <option value="停运">停运</option>
+      </select>
+      <button class="bulk-apply-btn" onclick="applyPrescreenBulkEdit()">批量应用</button>
+      <button class="bulk-clear-btn" onclick="clearPrescreenSelection()">取消选择</button>
+    </div>
+
     <!-- grid table -->
     <div class="table-wrap-frozen">
       <table id="prescreen-table" class="table-frozen">
@@ -651,6 +674,8 @@ input[type=checkbox]#select-all{width:15px;height:15px;cursor:pointer;accent-col
             <th style="width:40px"><input type="checkbox" id="ps-select-all" onchange="toggleSelectAllPrescreen(this)"></th>
             <th style="width:40px">#</th>
             <th style="min-width:180px">MSKU</th>
+            <th>SPU品名</th>
+            <th style="min-width:150px">商品名称</th>
             <th>站点</th>
             <th>负责人</th>
             <th>运营预估DMS ✏️</th>
@@ -945,10 +970,16 @@ input[type=checkbox]#select-all{width:15px;height:15px;cursor:pointer;accent-col
     </div>
   </div>
 
-  <!-- 上次决策总表对比上传（独立一行） -->
-  <div id="prev-dec-status-bar" class="sku-map-status empty" style="margin-top:4px">
-    <div class="sku-map-dot gray" id="prev-dec-dot"></div>
-    <span id="prev-dec-status-text">上次决策总表未加载 · 上传后可在「版本对比」Tab查看变化</span>
+  <!-- 上次决策总表对比上传与DMS初筛表上传 -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:8px">
+    <div id="prev-dec-status-bar" class="sku-map-status empty" style="margin-top:4px;margin-bottom:0">
+      <div class="sku-map-dot gray" id="prev-dec-dot"></div>
+      <span id="prev-dec-status-text">上次决策总表未加载 · 上传后可在「版本对比」Tab查看变化</span>
+    </div>
+    <div id="prescreen-status-bar" class="sku-map-status empty" style="margin-top:4px;margin-bottom:0">
+      <div class="sku-map-dot gray" id="prescreen-dot"></div>
+      <span id="prescreen-status-text">DMS初筛表未加载 · 上传后可切换至「DMS初筛」进行初筛修改</span>
+    </div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px">
     <div>
@@ -966,17 +997,20 @@ input[type=checkbox]#select-all{width:15px;height:15px;cursor:pointer;accent-col
       </div>
       <div class="upload-status" id="upload-status-prev-dec"></div>
     </div>
-    <div style="display:flex;align-items:center;padding:20px 24px;background:#F8F5F0;border-radius:16px;border:1px solid #E8E4DE">
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:600;color:#064338;margin-bottom:8px">📌 版本对比说明</div>
-        <div style="font-size:12px;color:#717171;line-height:1.8">
-          <div>• 上传上次决策总表作为对比基准</div>
-          <div>• 系统自动对比 SKU 增减、翻单量变化、紧急度变化</div>
-          <div>• 支持按站点、负责人、变化类型筛选</div>
-          <div>• 对比结果可导出 Excel（含站点汇总、工厂汇总）</div>
-          <div style="margin-top:6px;color:#064338;font-size:11px">✅ 上传本次决策总表后自动触发对比</div>
-        </div>
+    <div>
+      <div class="upload-card optional" id="upload-card-prescreen"
+           onclick="document.getElementById('file-input-prescreen').click()"
+           ondragover="event.preventDefault();this.classList.add('drag-over')"
+           ondragleave="this.classList.remove('drag-over')"
+           ondrop="handleDropPrescreen(event)">
+        <div class="upload-card-badge badge-optional" id="badge-prescreen">可选上传</div>
+        <div class="upload-icon">🔍</div>
+        <div class="upload-title">DMS初筛表 (msku_status)</div>
+        <div class="upload-desc">支持 .xlsx 格式<br>上传后可切换至「DMS初筛」Tab进行偏差过滤与快速修改</div>
+        <div class="upload-hint">上传后将自动关联已加载的SKU大表匹配SPU品名</div>
+        <input type="file" id="file-input-prescreen" accept=".xlsx,.xls,.csv" onchange="handleFileUploadPrescreen(event)" style="display:none">
       </div>
+      <div class="upload-status" id="upload-status-prescreen"></div>
     </div>
   </div>
 
@@ -2480,7 +2514,7 @@ function exportReturnTemplate() {
     rows.push([
       r.sys_id||'',r.msku,r.erp_sku||r.msku,r.asin||'',r.parent_asin||'',r.shop_id||'',r.site,
       prodStatus,dmsOverride!==''?dmsOverride:'',r.owner,
-      r.erp_sku?`ERP_sku:${r.erp_sku}`:'',r.owner
+      r.remark||'',r.owner
     ]);
   });
   const wb=XLSX.utils.book_new();
@@ -2491,12 +2525,15 @@ function exportReturnTemplate() {
 }
 
 function exportDmsChangeLog() {
-  const dmsModified = ALL_DATA.filter(r => {
+  const isPrescreenActive = document.getElementById('tab-prescreen').classList.contains('active') || (ALL_DATA.length === 0 && PRESCREEN_DATA.length > 0);
+  const dataSrc = isPrescreenActive ? PRESCREEN_DATA : ALL_DATA;
+  
+  const dmsModified = dataSrc.filter(r => {
     const e = editMap[r.msku];
     return e && e.dms_override !== undefined && e.dms_override !== null;
   });
   if (!dmsModified.length) {
-    alert('当前没有修改过DMS的SKU');
+    alert('当前数据源没有修改过DMS的SKU');
     return;
   }
   const now = new Date();
@@ -2509,11 +2546,20 @@ function exportDmsChangeLog() {
 
   dmsModified.forEach(r => {
     const edit = editMap[r.msku] || {};
-    const origDms = r.dms;
+    const origDms = isPrescreenActive ? r.dms_sys : r.dms;
     const newDms = edit.dms_override;
-    const rc = recalcRow(r);
     const diff = (newDms - origDms).toFixed(2);
     const dmsChange = newDms > origDms ? `↑ +${diff}` : `↓ ${diff}`;
+    
+    let origReorder = '—', newReorder = '—', origShip = '—', newShip = '—';
+    if (!isPrescreenActive) {
+      const rc = recalcRow(r);
+      origReorder = r.suggest_reorder || 0;
+      newReorder = rc.suggest_reorder || 0;
+      origShip = r.suggest_ship || 0;
+      newShip = rc.suggest_ship || 0;
+    }
+    
     rows.push([
       r.msku,
       r.spu || '',
@@ -2523,10 +2569,10 @@ function exportDmsChangeLog() {
       origDms,
       newDms,
       dmsChange,
-      r.suggest_reorder || 0,
-      rc.suggest_reorder || 0,
-      r.suggest_ship || 0,
-      rc.suggest_ship || 0,
+      origReorder,
+      newReorder,
+      origShip,
+      newShip,
       nowStr
     ]);
   });
@@ -2580,6 +2626,7 @@ function processSkuFile(file) {
       status.textContent=`✅ SKU大表解析成功：${cnt} 条映射记录（Sheet: ${sheetName}）`;
       if(ALL_DATA.length>0){applySkuMapping(ALL_DATA);filteredData=[...ALL_DATA];const stats=calcStats(ALL_DATA);renderHeroMetrics(stats);renderCharts(stats,ALL_DATA);renderUrgentTable(ALL_DATA);renderFilterTable();populateSpuFilter(ALL_DATA);updateInsights(stats);renderGantt();}
       if(pendingData)applySkuMapping(pendingData);
+      if(PRESCREEN_DATA.length>0){applySkuMappingPrescreen(); populatePrescreenFilters(); applyPrescreenFilters();}
     }catch(err){status.className='upload-status error';status.textContent='解析失败：'+err.message;}
   };
   reader.readAsArrayBuffer(file);
@@ -2825,6 +2872,7 @@ function handleFileUploadDec(e){const f=e.target.files[0];if(f)processDecFile(f)
         target_days:parseInt(r['目标覆盖天数_提前期加备货']||135)||135,
         target_demand:parseFloat(r['目标需求_件']||0)||0,
         prod_status:String(r['产品状态']||'常规品').trim()||'常规品',
+        remark:String(r['备注']||'').trim(),
         sys_id:String(r['ID']||'').trim(),
       }));
       if(skuMapLoaded)applySkuMapping(pendingData);
@@ -3253,32 +3301,39 @@ document.querySelectorAll('input[name="export-scope"]').forEach(radio=>{
 });
 
 // ══════════════════════════════════════════
+// ══════════════════════════════════════════
 // DMS初筛 Tab JS Logic
 // ══════════════════════════════════════════
 let PRESCREEN_DATA = [];
 let filteredPrescreenData = [];
 let selectedPrescreenMskus = new Set();
 
-document.getElementById('prescreen-file-input').addEventListener('change', handlePrescreenUpload);
-
-const psDropzone = document.getElementById('prescreen-dropzone');
-if (psDropzone) {
-  psDropzone.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); });
-  psDropzone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      document.getElementById('prescreen-file-input').files = files;
-      handlePrescreenUpload({ target: { files } });
-    }
-  });
+function handleFileUploadPrescreen(e) {
+  const file = e.target.files[0];
+  if (file) processPrescreenFile(file);
+  e.target.value = '';
 }
 
-function handlePrescreenUpload(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  
+function handleDropPrescreen(e) {
+  e.preventDefault();
+  document.getElementById('upload-card-prescreen').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processPrescreenFile(file);
+}
+
+const prescreenCard = document.getElementById('upload-card-prescreen');
+if (prescreenCard) {
+  prescreenCard.addEventListener('dragover', (e) => { e.preventDefault(); prescreenCard.classList.add('drag-over'); });
+  prescreenCard.addEventListener('dragleave', () => prescreenCard.classList.remove('drag-over'));
+  prescreenCard.addEventListener('drop', handleDropPrescreen);
+}
+
+function processPrescreenFile(file) {
+  const status = document.getElementById('upload-status-prescreen');
+  status.className = 'upload-status info';
+  status.textContent = '正在解析 DMS 初筛表...';
+  status.style.display = 'block';
+
   const reader = new FileReader();
   reader.onload = function(evt) {
     try {
@@ -3288,8 +3343,6 @@ function handlePrescreenUpload(e) {
       if (allRows.length < 2) throw new Error('文件内容为空');
       
       const headers = allRows[0];
-      const dataRows = allRows.slice(1);
-      
       let headerIdx = 0;
       if (!headers.includes('MSKU')) {
         for (let idx = 0; idx < Math.min(10, allRows.length); idx++) {
@@ -3339,9 +3392,13 @@ function handlePrescreenUpload(e) {
         return {
           sys_id, msku, erp_sku, asin, parent_asin, shop_id, site,
           owner, prod_status, dms_est, dms_sys, fba_stock, fba_transit,
-          days_transit, risk, remark, updater, update_time, grade
+          days_transit, risk, remark, updater, update_time, grade,
+          spu: '', name: ''
         };
       });
+
+      // Apply SKU mapping from SKU table
+      applySkuMappingPrescreen();
       
       populatePrescreenFilters();
       
@@ -3353,31 +3410,77 @@ function handlePrescreenUpload(e) {
       const allSelectCheck = document.getElementById('ps-select-all');
       if (allSelectCheck) allSelectCheck.checked = true;
       
+      status.className = 'upload-status success';
+      status.textContent = `✅ DMS初筛表解析成功：${PRESCREEN_DATA.length} 条记录`;
+      
+      updatePrescreenStatusBar();
       applyPrescreenFilters();
       
     } catch (err) {
+      status.className = 'upload-status error';
+      status.textContent = '解析失败：' + err.message;
       alert('解析失败: ' + err.message);
     }
   };
   reader.readAsArrayBuffer(file);
 }
 
+function applySkuMappingPrescreen() {
+  if (!PRESCREEN_DATA.length) return;
+  PRESCREEN_DATA.forEach(r => {
+    const m = skuMap[r.msku];
+    if (m) {
+      r.spu = m.spu || '';
+      r.name = m.name || '';
+    } else {
+      if (!r.spu && r.msku) {
+        const parts = r.msku.split('-');
+        if (parts.length > 2) r.spu = parts.slice(0, 3).join('-');
+      }
+    }
+  });
+}
+
+function updatePrescreenStatusBar() {
+  const bar = document.getElementById('prescreen-status-bar');
+  const dot = document.getElementById('prescreen-dot');
+  const text = document.getElementById('prescreen-status-text');
+  const badge = document.getElementById('badge-prescreen');
+  if (PRESCREEN_DATA.length > 0) {
+    bar.className = 'sku-map-status loaded';
+    dot.className = 'sku-map-dot green';
+    text.textContent = `DMS初筛表已加载 · 共 ${PRESCREEN_DATA.length} 条记录 · 请切往「DMS初筛」Tab查看`;
+    if (badge) {
+      badge.className = 'upload-card-badge badge-loaded';
+      badge.textContent = '已加载';
+    }
+  } else {
+    bar.className = 'sku-map-status empty';
+    dot.className = 'sku-map-dot gray';
+    text.textContent = 'DMS初筛表未加载 · 上传后可切换至「DMS初筛」进行初筛修改';
+    if (badge) {
+      badge.className = 'upload-card-badge badge-optional';
+      badge.textContent = '可选上传';
+    }
+  }
+}
+
 function reuploadPrescreen() {
-  if (!confirm('确认重新上传？当前未导出的初筛修改不会自动保存到外部文件。')) return;
-  document.getElementById('prescreen-file-input').value = '';
+  if (!confirm('确认清除当前初筛数据？当前未导出的初筛修改不会自动保存。')) return;
   document.getElementById('prescreen-empty').style.display = 'block';
   document.getElementById('prescreen-content').style.display = 'none';
   PRESCREEN_DATA = [];
   filteredPrescreenData = [];
   selectedPrescreenMskus.clear();
+  updatePrescreenStatusBar();
+  document.getElementById('upload-status-prescreen').style.display = 'none';
 }
 
 function populatePrescreenFilters() {
   const spus = new Set();
   const owners = new Set();
   PRESCREEN_DATA.forEach(r => {
-    const parts = r.msku.split('-');
-    if (parts.length > 1) spus.add(parts.slice(0, 3).join('-'));
+    if (r.spu) spus.add(r.spu);
     if (r.owner) owners.add(r.owner);
   });
   
@@ -3412,7 +3515,7 @@ function applyPrescreenFilters() {
   const keyword = document.getElementById('ps-f-keyword').value.trim().toLowerCase();
   
   filteredPrescreenData = PRESCREEN_DATA.filter(r => {
-    if (spu && !r.msku.includes(spu)) return false;
+    if (spu && r.spu !== spu) return false;
     if (site && r.site !== site) return false;
     if (owner && r.owner !== owner) return false;
     
@@ -3427,7 +3530,7 @@ function applyPrescreenFilters() {
     if (absDev !== null && absDiff <= absDev) return false;
     if (pctDev !== null && pctDiff <= pctDev) return false;
     
-    if (keyword && !r.msku.toLowerCase().includes(keyword)) return false;
+    if (keyword && !r.msku.toLowerCase().includes(keyword) && !r.name.toLowerCase().includes(keyword) && !r.spu.toLowerCase().includes(keyword)) return false;
     
     return true;
   });
@@ -3475,7 +3578,8 @@ function renderPrescreenTable() {
   
   const tbody = document.getElementById('prescreen-tbody');
   if (!filteredPrescreenData.length) {
-    tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;color:#717171;padding:24px">无匹配数据</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="16" style="text-align:center;color:#717171;padding:24px">无匹配数据</td></tr>';
+    updatePrescreenBulkBar();
     return;
   }
   
@@ -3494,6 +3598,8 @@ function renderPrescreenTable() {
       <td><input type="checkbox" class="ps-row-check" ${selected ? 'checked' : ''} onchange="toggleRowSelectPrescreen('${r.msku}',this.checked)"></td>
       <td>${i + 1}</td>
       <td style="font-family:monospace;font-size:11px">${r.msku}</td>
+      <td style="font-size:11px">${r.spu}</td>
+      <td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.name}">${r.name}</td>
       <td><span class="tag tag-${siteClass(r.site)}">${r.site}</span></td>
       <td>${r.owner}</td>
       <td>
@@ -3522,6 +3628,8 @@ function renderPrescreenTable() {
       </td>
     </tr>`;
   }).join('');
+
+  updatePrescreenBulkBar();
 }
 
 function onPrescreenDmsChange(msku, val) {
@@ -3590,13 +3698,11 @@ function toggleRowSelectPrescreen(msku, checked) {
     selectedPrescreenMskus.delete(msku);
     if (tr) tr.classList.remove('selected');
   }
+  updatePrescreenBulkBar();
 }
 
 function toggleSelectAllPrescreen(chk) {
   const checked = chk.checked;
-  const checks = document.querySelectorAll('.ps-row-check');
-  checks.forEach(c => c.checked = checked);
-  
   filteredPrescreenData.forEach(r => {
     const tr = document.querySelector(`#prescreen-tbody tr[data-msku="${r.msku}"]`);
     if (checked) {
@@ -3607,6 +3713,92 @@ function toggleSelectAllPrescreen(chk) {
       if (tr) tr.classList.remove('selected');
     }
   });
+  
+  const checks = document.querySelectorAll('.ps-row-check');
+  checks.forEach(c => c.checked = checked);
+  updatePrescreenBulkBar();
+}
+
+function updatePrescreenBulkBar() {
+  const bar = document.getElementById('ps-bulk-bar');
+  const countEl = document.getElementById('ps-bulk-count');
+  if (bar && countEl) {
+    const cnt = selectedPrescreenMskus.size;
+    if (cnt > 0) {
+      bar.classList.add('visible');
+      countEl.textContent = cnt;
+    } else {
+      bar.classList.remove('visible');
+    }
+  }
+}
+
+function clearPrescreenSelection() {
+  selectedPrescreenMskus.clear();
+  updatePrescreenBulkBar();
+  
+  const checks = document.querySelectorAll('.ps-row-check');
+  checks.forEach(c => c.checked = false);
+  
+  const trs = document.querySelectorAll('#prescreen-tbody tr');
+  trs.forEach(tr => tr.classList.remove('selected'));
+  
+  const allSelectCheck = document.getElementById('ps-select-all');
+  if (allSelectCheck) allSelectCheck.checked = false;
+}
+
+function applyPrescreenBulkEdit() {
+  if (selectedPrescreenMskus.size === 0) { alert('请先勾选要修改的行'); return; }
+  const dmsVal = document.getElementById('ps-bulk-dms').value.trim();
+  const dmsOp = document.getElementById('ps-bulk-dms-op').value;
+  const statusVal = document.getElementById('ps-bulk-status').value;
+
+  if (dmsVal === '' && statusVal === '') {
+    alert('请选择修改内容（输入DMS或选择产品状态）');
+    return;
+  }
+
+  let count = 0;
+  selectedPrescreenMskus.forEach(msku => {
+    if (!editMap[msku]) editMap[msku] = {};
+    if (dmsVal !== '') {
+      const num = parseFloat(dmsVal);
+      if (!isNaN(num)) {
+        const r = PRESCREEN_DATA.find(x => x.msku === msku);
+        const baseDms = (editMap[msku].dms_override !== undefined && editMap[msku].dms_override !== null)
+          ? editMap[msku].dms_override
+          : (r ? r.dms_est : 0);
+        let newDms = baseDms;
+        if (dmsOp === 'set') {
+          newDms = num;
+        } else if (dmsOp === 'add') {
+          newDms = baseDms + num;
+        } else if (dmsOp === 'sub') {
+          newDms = baseDms - num;
+        } else if (dmsOp === 'pct_add') {
+          newDms = baseDms * (1 + num / 100);
+        } else if (dmsOp === 'pct_sub') {
+          newDms = baseDms * (1 - num / 100);
+        }
+        editMap[msku].dms_override = Math.max(0, Math.round(newDms * 100) / 100);
+      }
+    }
+    if (statusVal !== '') {
+      editMap[msku].prod_status = statusVal;
+    }
+    count++;
+  });
+
+  document.getElementById('ps-bulk-dms').value = '';
+  document.getElementById('ps-bulk-status').value = '';
+
+  updateEditSummary();
+  updateHeroModified();
+  if (ALL_DATA.length > 0) renderFilterTable();
+  
+  clearPrescreenSelection();
+  applyPrescreenFilters();
+  alert(`✅ 已批量修改 ${count} 条记录`);
 }
 
 function exportPrescreenTemplate() {
@@ -3633,7 +3825,7 @@ function exportPrescreenTemplate() {
       statusVal,
       dmsVal !== '' ? dmsVal : '',
       r.owner,
-      r.remark || (r.erp_sku ? `ERP_sku:${r.erp_sku}` : ''),
+      r.remark || '',
       r.owner
     ]);
   });
