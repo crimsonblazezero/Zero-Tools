@@ -3605,6 +3605,9 @@ function applyPrescreenFilters() {
     return true;
   });
   
+  const visibleMskus = new Set(filteredPrescreenData.map(r => r.msku));
+  selectedPrescreenMskus = new Set([...selectedPrescreenMskus].filter(m => visibleMskus.has(m)));
+  
   renderPrescreenTable();
 }
 
