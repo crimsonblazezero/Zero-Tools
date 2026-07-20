@@ -434,6 +434,7 @@ input[type=checkbox]#select-all{width:15px;height:15px;cursor:pointer;accent-col
 <div class="tabs">
   <div class="tab active" onclick="switchTab('tab-overview')">📊 总览看板</div>
   <div class="tab" onclick="switchTab('tab-filter')">✏️ 数据筛选 &amp; DMS 编辑</div>
+  <div class="tab" onclick="switchTab('tab-prescreen')">🔍 DMS 初筛</div>
   <div class="tab" onclick="switchTab('tab-gantt')">📅 在途甘特图</div>
   <div class="tab" onclick="switchTab('tab-export')">📤 导出 &amp; 回传</div>
   <div class="tab" onclick="switchTab('tab-compare')">🔄 版本对比</div>
@@ -534,13 +535,7 @@ input[type=checkbox]#select-all{width:15px;height:15px;cursor:pointer;accent-col
         <option value="常规品">常规品</option>
         <option value="核心品">核心品</option>
         <option value="清仓">清仓</option>
-      </select>
-      <div class="bulk-bar-sep"></div>
-      <label>允许出运</label>
-      <select class="bulk-select" id="bulk-allow-ship">
-        <option value="">— 不修改 —</option>
-        <option value="1">✅ 允许出运</option>
-        <option value="0">🚫 禁止出运</option>
+        <option value="停运">停运</option>
       </select>
       <button class="bulk-apply-btn" onclick="applyBulkEdit()">批量应用</button>
       <button class="bulk-clear-btn" onclick="clearSelection()">取消选择</button>
@@ -573,10 +568,8 @@ input[type=checkbox]#select-all{width:15px;height:15px;cursor:pointer;accent-col
     <div style="margin-bottom:12px;display:flex;align-items:center;gap:8px;font-size:12px;color:#717171;flex-wrap:wrap">
       <span>💡 直接在表格中编辑</span>
       <span style="background:#FFFBEC;border:1px solid #F3C546;padding:2px 8px;border-radius:4px;color:#B8860B">DMS</span>
-      <span>、</span>
+      <span>与</span>
       <span style="background:#E8F2F0;border:1px solid #064338;padding:2px 8px;border-radius:4px;color:#064338">产品状态</span>
-      <span>、</span>
-      <span style="background:#E8F2F0;border:1px solid #064338;padding:2px 8px;border-radius:4px;color:#064338">允许出运</span>
       <span>实时重算批量操作</span>
     </div>
 
@@ -601,7 +594,7 @@ input[type=checkbox]#select-all{width:15px;height:15px;cursor:pointer;accent-col
           <th title="国内仓发运量（件），匹配建议国内仓发运量_件">国内仓发运量</th>
           <th title="前置仓发运量（件），匹配前置仓发运量_件">前置仓发运量</th>
           <th>前置仓发运日</th><th>建议发运时间</th>
-          <th>产品状态 ✏️</th><th>允许出运 ✏️</th>
+          <th>产品状态 ✏️</th>
         </tr>
         <tr id="filter-tfoot"></tr>
         </thead>
@@ -609,6 +602,71 @@ input[type=checkbox]#select-all{width:15px;height:15px;cursor:pointer;accent-col
       </table>
     </div>
     <div class="pagination" id="pagination"></div>
+  </div>
+</div>
+
+<!-- TAB: DMS初筛 -->
+<div id="tab-prescreen" class="tab-content">
+  <!-- 空状态 -->
+  <div id="prescreen-empty" class="empty-state">
+    <div class="empty-state-icon">🔍</div>
+    <div class="empty-state-title">暂无初筛数据</div>
+    <div class="empty-state-desc">请上传 msku_status 表格文件（例如：msku_status_*.xlsx）以开始分析对比</div>
+    <div class="upload-dropzone" id="prescreen-dropzone" style="margin: 20px auto; max-width: 400px; padding: 30px; border: 2px dashed #E8E4DE; border-radius: 12px; cursor: pointer; background: #FFFDF9;" onclick="document.getElementById('prescreen-file-input').click()">
+      <p style="font-size: 13px; color: #717171;">拖拽文件到此处，或 <strong style="color: #064338;">点击浏览文件</strong></p>
+      <input type="file" id="prescreen-file-input" accept=".xlsx,.xls,.csv" style="display:none">
+    </div>
+  </div>
+
+  <div id="prescreen-content" style="display:none">
+    <!-- control bar -->
+    <div class="filter-bar">
+      <div class="filter-bar-title">初筛条件 &amp; 阈值设置</div>
+      <div class="filter-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+        <div class="filter-group"><label>SPU 品名</label><select id="ps-f-spu" onchange="applyPrescreenFilters()"><option value="">全部</option></select></div>
+        <div class="filter-group"><label>站点</label><select id="ps-f-site" onchange="applyPrescreenFilters()"><option value="">全部</option><option value="美国">🇺🇸 美国</option><option value="英国">🇬🇧 英国</option><option value="德国">🇩🇪 德国</option><option value="加拿大">🇨🇦 加拿大</option><option value="日本">🇯🇵 日本</option></select></div>
+        <div class="filter-group"><label>负责人</label><select id="ps-f-owner" onchange="applyPrescreenFilters()"><option value="">全部</option></select></div>
+        <div class="filter-group"><label>产品状态</label><select id="ps-f-status" onchange="applyPrescreenFilters()"><option value="">全部</option><option value="常规品">常规品</option><option value="核心品">核心品</option><option value="清仓">清仓</option><option value="停运">停运</option></select></div>
+        <div class="filter-group"><label>绝对值偏差大于</label><input type="number" id="ps-f-abs-dev" step="0.1" min="0" placeholder="例如: 1.0" oninput="applyPrescreenFilters()"></div>
+        <div class="filter-group"><label>比例偏差大于 (%)</label><input type="number" id="ps-f-pct-dev" step="1" min="0" placeholder="例如: 30" oninput="applyPrescreenFilters()"></div>
+        <div class="filter-group"><label>关键词</label><input type="text" id="ps-f-keyword" placeholder="MSKU / 品名..." oninput="applyPrescreenFilters()"></div>
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-primary" onclick="applyPrescreenFilters()">过滤</button>
+        <button class="btn btn-secondary" onclick="resetPrescreenFilters()">重置</button>
+        <button class="btn btn-sm" style="background:#E8F2F0;color:#064338;border:1px solid #064338" onclick="quickFilterPrescreen('suggested')">💡 建议修改</button>
+        <button class="btn btn-sm" style="background:#E8F2F0;color:#064338;border:1px solid #064338" onclick="quickFilterPrescreen('larger')">📈 预估偏大</button>
+        <button class="btn btn-sm" style="background:#E8F2F0;color:#064338;border:1px solid #064338" onclick="quickFilterPrescreen('smaller')">📉 预估偏小</button>
+        <button class="btn btn-gold" style="margin-left:auto" onclick="exportPrescreenTemplate()">🔄 导出初筛回传表</button>
+        <button class="btn btn-secondary" onclick="reuploadPrescreen()">📤 重新上传</button>
+        <div class="result-count">显示 <span id="ps-result-count">0</span> / <span id="ps-total-count">0</span> 条</div>
+      </div>
+    </div>
+
+    <!-- grid table -->
+    <div class="table-wrap-frozen">
+      <table id="prescreen-table" class="table-frozen">
+        <thead>
+          <tr>
+            <th style="width:40px"><input type="checkbox" id="ps-select-all" onchange="toggleSelectAllPrescreen(this)"></th>
+            <th style="width:40px">#</th>
+            <th style="min-width:180px">MSKU</th>
+            <th>站点</th>
+            <th>负责人</th>
+            <th>运营预估DMS ✏️</th>
+            <th>系统DMS (日均销量_DMS)</th>
+            <th>绝对值偏差</th>
+            <th>比例偏差</th>
+            <th>FBA在库</th>
+            <th>FBA在途</th>
+            <th>在库+在途可售天数</th>
+            <th>断货风险</th>
+            <th>产品状态 ✏️</th>
+          </tr>
+        </thead>
+        <tbody id="prescreen-tbody"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -691,22 +749,18 @@ input[type=checkbox]#select-all{width:15px;height:15px;cursor:pointer;accent-col
     <div style="background:#FDF9F2;border:1px solid #E8E4DE;border-radius:12px;padding:20px 24px;margin-bottom:24px">
       <p style="font-size:13px;color:#1D1B20;margin-bottom:12px">回传模板包含以下字段，其中 <strong style="color:#064338">绿色字段</strong> 为可修改项：</p>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">
-        <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">ID（系统ID，只读）</div>
+        <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">ID（只读）</div>
         <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">MSKU（只读）</div>
         <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">ERP SKU（只读）</div>
         <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">ASIN（只读）</div>
         <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">父ASIN（只读）</div>
         <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">店铺ID（只读）</div>
         <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">站点（只读）</div>
-        <div style="padding:8px 12px;border-radius:8px;background:#E8F2F0;font-size:12px;color:#064338;font-weight:600">✏️ 产品状态（常规品/核心品/清仓）</div>
+        <div style="padding:8px 12px;border-radius:8px;background:#E8F2F0;font-size:12px;color:#064338;font-weight:600">✏️ 产品状态（常规/核心/清仓/停运）</div>
         <div style="padding:8px 12px;border-radius:8px;background:#E8F2F0;font-size:12px;color:#064338;font-weight:600">✏️ 运营预估DMS</div>
-        <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">等级（自动计算）</div>
-        <div style="padding:8px 12px;border-radius:8px;background:#E8F2F0;font-size:12px;color:#064338;font-weight:600">✏️ 是否允许出运（1=允许/0=禁止）</div>
-        <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">运营负责人（只读）</div>
-        <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">来源（固定为 excel）</div>
+        <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">负责人（只读）</div>
         <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">备注（只读）</div>
         <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">更新人（只读）</div>
-        <div style="padding:8px 12px;border-radius:8px;background:#F0EDE8;font-size:12px;color:#717171">更新时间（自动填写）</div>
       </div>
     </div>
 
@@ -1298,7 +1352,7 @@ function isModified(msku) {
   const e = editMap[msku];
   if (!e) return false;
   return (e.dms_override !== undefined && e.dms_override !== null) ||
-         e.prod_status !== undefined || e.allow_ship !== undefined;
+         e.prod_status !== undefined;
 }
 
 function getModifiedCount() {
@@ -1368,9 +1422,8 @@ function applyBulkEdit() {
   const dmsVal = document.getElementById('bulk-dms').value.trim();
   const dmsOp = document.getElementById('bulk-dms-op').value;
   const statusVal = document.getElementById('bulk-status').value;
-  const allowShipVal = document.getElementById('bulk-allow-ship').value;
 
-  if (!dmsVal && !statusVal && !allowShipVal) {
+  if (!dmsVal && !statusVal) {
     alert('请至少填写一项要批量修改的内容');
     return;
   }
@@ -1405,16 +1458,12 @@ function applyBulkEdit() {
     if (statusVal !== '') {
       editMap[msku].prod_status = statusVal;
     }
-    if (allowShipVal !== '') {
-      editMap[msku].allow_ship = parseInt(allowShipVal);
-    }
     count++;
   });
 
   // 清空批量输入
   document.getElementById('bulk-dms').value = '';
   document.getElementById('bulk-status').value = '';
-  document.getElementById('bulk-allow-ship').value = '';
 
   updateEditSummary();
   updateHeroModified();
@@ -1863,7 +1912,6 @@ function renderFilterTable() {
     const selected=selectedMskus.has(r.msku);
     const dmsOverridden=edit.dms_override!==undefined&&edit.dms_override!==null;
     const prodStatus=edit.prod_status!==undefined?edit.prod_status:(r.prod_status||'常规品');
-    const allowShip=edit.allow_ship!==undefined?edit.allow_ship:(r.allow_ship!==undefined?r.allow_ship:1);
 
     // 断货日期显示：未改DMS时直接读取原始值，改了DMS才重算
     const so1 = dmsOverridden ? (rc.stockout1||'—') : ((r.stockout1&&r.stockout1!=='nan'&&r.stockout1!=='')?r.stockout1:'—');
@@ -1936,13 +1984,8 @@ function renderFilterTable() {
               <option value="常规品"${prodStatus==='常规品'?' selected':''}>常规品</option>
               <option value="核心品"${prodStatus==='核心品'?' selected':''}>核心品</option>
               <option value="清仓"${prodStatus==='清仓'?' selected':''}>清仓</option>
+              <option value="停运"${prodStatus==='停运'?' selected':''}>停运</option>
             </select>
-          </td>
-          <td>
-            <button class="ship-btn ${allowShip?'allow':'deny'}"
-              onclick="onAllowShipChange('${r.msku}',${allowShip?0:1})">
-              ${allowShip?'✅ 允许':'🚫 禁止'}
-            </button>
           </td>
         </tr>`;
   }).join('');
@@ -1979,7 +2022,7 @@ function renderFilterTable() {
       <td><span class="sum-val">${fmt(sumShip)}</span><span class="sum-label">发运量</span></td>
       <td><span class="sum-val">${fmt(sumDomShip)}</span><span class="sum-label">国内仓发运</span></td>
       <td><span class="sum-val">${fmt(sumFwdShip)}</span><span class="sum-label">前置仓发运</span></td>
-      <td></td><td></td><td></td>
+      <td></td><td></td>
     `;
   }
 
@@ -2381,12 +2424,11 @@ function updateExportPreview() {
     return;
   }
   wrap.innerHTML=`<div class="table-wrap"><table>
-    <thead><tr><th>#</th><th>MSKU</th><th>商品名称</th><th>站点</th><th>系统DMS</th><th>运营DMS</th><th>产品状态</th><th>允许出运</th><th>原翻单量</th><th>重算翻单量</th></tr></thead>
+    <thead><tr><th>#</th><th>MSKU</th><th>商品名称</th><th>站点</th><th>系统DMS</th><th>运营DMS</th><th>产品状态</th><th>原翻单量</th><th>重算翻单量</th></tr></thead>
     <tbody>${modifiedData.map((r,i)=>{
       const edit=editMap[r.msku]||{};
       const rc=recalcRow(r);
       const prodStatus=edit.prod_status!==undefined?edit.prod_status:(r.prod_status||'常规品');
-      const allowShip=edit.allow_ship!==undefined?edit.allow_ship:(r.allow_ship!==undefined?r.allow_ship:1);
       return `<tr class="modified">
         <td>${i+1}</td>
         <td style="font-family:monospace;font-size:10px">${r.msku}</td>
@@ -2395,7 +2437,6 @@ function updateExportPreview() {
         <td style="color:#B0ABA5">${r.dms}</td>
         <td style="font-weight:600;color:#B8860B">${edit.dms_override!==undefined&&edit.dms_override!==null?edit.dms_override:'—'}</td>
         <td>${prodStatus}</td>
-        <td>${allowShip?'✅ 允许':'🚫 禁止'}</td>
         <td style="color:#B0ABA5">${r.suggest_reorder||0}</td>
         <td style="font-weight:600;color:#064338">${rc.suggest_reorder||0}</td>
       </tr>`;
@@ -2409,7 +2450,7 @@ function exportAnalysis() {
   const headers=['MSKU','SPU品名','商品名称','站点','负责人','紧急度','风险等级','ABC×XYZ',
     '系统DMS','运营DMS','有效DMS','FBA在库','FBA在途','在库天数','在库+在途天数',
     'FBA起始断货日','在途接力断货日','已计划出运断货日','已计划出运批次','建议发运时间','前置仓发运日期',
-    '建议发运量','建议翻单量','翻单工厂','产品状态','允许出运'];
+    '建议发运量','建议翻单量','翻单工厂','产品状态'];
   const rows=[headers];
   data.forEach(r=>{
     const rc=recalcRow(r);
@@ -2419,8 +2460,7 @@ function exportAnalysis() {
       r.fba_stock,r.fba_transit,rc.days_stock,rc.days_transit,
       rc.stockout1,r.stockout2||'',r.stockout3||'',r.planned_batches||'',r.ship_time||'',r.fwd_ship_date||'',
       rc.suggest_ship,rc.suggest_reorder,r.reorder_factory,
-      edit.prod_status||r.prod_status||'常规品',
-      edit.allow_ship!==undefined?edit.allow_ship:(r.allow_ship!==undefined?r.allow_ship:1)]);
+      edit.prod_status||r.prod_status||'常规品']);
   });
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'决策分析');
@@ -2431,30 +2471,21 @@ function exportReturnTemplate() {
   const data=getExportData();
   if(!data.length){alert('无数据可导出');return;}
   const now=new Date();
-  const nowStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0')+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-  const headers=['ID','MSKU','ERP SKU','ASIN','父ASIN','店铺ID','站点','产品状态','运营预估DMS','等级','是否允许出运','运营负责人','来源','备注','更新人','更新时间'];
+  const headers=['ID','MSKU','ERP SKU','ASIN','父ASIN','店铺ID','站点','产品状态','运营预估DMS','负责人','备注','更新人'];
   const rows=[headers];
   data.forEach(r=>{
     const edit=editMap[r.msku]||{};
     const dmsOverride=edit.dms_override!==undefined&&edit.dms_override!==null?edit.dms_override:'';
-    const effectiveDms=dmsOverride!==''?parseFloat(dmsOverride):r.dms;
-    let grade=6;
-    if(effectiveDms>=10)grade=1;
-    else if(effectiveDms>=7)grade=2;
-    else if(effectiveDms>=5)grade=3;
-    else if(effectiveDms>=3)grade=4;
-    else if(effectiveDms>=1)grade=5;
     const prodStatus=edit.prod_status!==undefined?edit.prod_status:(r.prod_status||'常规品');
-    const allowShip=edit.allow_ship!==undefined?edit.allow_ship:(r.allow_ship!==undefined?r.allow_ship:1);
     rows.push([
       r.sys_id||'',r.msku,r.erp_sku||r.msku,r.asin||'',r.parent_asin||'',r.shop_id||'',r.site,
-      prodStatus,dmsOverride!==''?dmsOverride:'',grade,allowShip,r.owner,'excel',
-      r.erp_sku?`ERP_sku:${r.erp_sku}`:'',r.owner,nowStr
+      prodStatus,dmsOverride!==''?dmsOverride:'',r.owner,
+      r.erp_sku?`ERP_sku:${r.erp_sku}`:'',r.owner
     ]);
   });
   const wb=XLSX.utils.book_new();
   const ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[{wch:10},{wch:30},{wch:30},{wch:14},{wch:14},{wch:8},{wch:8},{wch:10},{wch:12},{wch:6},{wch:12},{wch:10},{wch:8},{wch:30},{wch:10},{wch:18}];
+  ws['!cols']=[{wch:10},{wch:30},{wch:30},{wch:14},{wch:14},{wch:8},{wch:8},{wch:10},{wch:12},{wch:10},{wch:30},{wch:10}];
   XLSX.utils.book_append_sheet(wb,ws,'商品状态');
   XLSX.writeFile(wb,`msku_status_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}.xlsx`);
 }
@@ -2794,7 +2825,6 @@ function handleFileUploadDec(e){const f=e.target.files[0];if(f)processDecFile(f)
         target_days:parseInt(r['目标覆盖天数_提前期加备货']||135)||135,
         target_demand:parseFloat(r['目标需求_件']||0)||0,
         prod_status:String(r['产品状态']||'常规品').trim()||'常规品',
-        allow_ship:parseInt(r['是否允许出运']!==undefined?r['是否允许出运']:1)||1,
         sys_id:String(r['ID']||'').trim(),
       }));
       if(skuMapLoaded)applySkuMapping(pendingData);
@@ -3206,7 +3236,7 @@ function switchTab(id){
   document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  const tabs=['tab-overview','tab-filter','tab-gantt','tab-export','tab-compare','tab-upload'];
+  const tabs=['tab-overview','tab-filter','tab-prescreen','tab-gantt','tab-export','tab-compare','tab-upload'];
   const idx=tabs.indexOf(id);
   if(idx>=0)document.querySelectorAll('.tab')[idx].classList.add('active');
   if(id==='tab-export')updateExportPreview();
@@ -3221,6 +3251,400 @@ document.querySelectorAll('input[name="export-scope"]').forEach(radio=>{
     updateExportPreview();
   });
 });
+
+// ══════════════════════════════════════════
+// DMS初筛 Tab JS Logic
+// ══════════════════════════════════════════
+let PRESCREEN_DATA = [];
+let filteredPrescreenData = [];
+let selectedPrescreenMskus = new Set();
+
+document.getElementById('prescreen-file-input').addEventListener('change', handlePrescreenUpload);
+
+const psDropzone = document.getElementById('prescreen-dropzone');
+if (psDropzone) {
+  psDropzone.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); });
+  psDropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      document.getElementById('prescreen-file-input').files = files;
+      handlePrescreenUpload({ target: { files } });
+    }
+  });
+}
+
+function handlePrescreenUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    try {
+      const wb = XLSX.read(evt.target.result, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const allRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      if (allRows.length < 2) throw new Error('文件内容为空');
+      
+      const headers = allRows[0];
+      const dataRows = allRows.slice(1);
+      
+      let headerIdx = 0;
+      if (!headers.includes('MSKU')) {
+        for (let idx = 0; idx < Math.min(10, allRows.length); idx++) {
+          if (allRows[idx].includes('MSKU')) {
+            headerIdx = idx;
+            break;
+          }
+        }
+      }
+      
+      const finalHeaders = allRows[headerIdx];
+      const finalDataRows = allRows.slice(headerIdx + 1);
+      
+      const rawRecords = finalDataRows.filter(row => row && row.some(c => c !== undefined && c !== '')).map(row => {
+        const obj = {};
+        finalHeaders.forEach((h, i) => {
+          if (h) obj[h] = row[i] !== undefined ? String(row[i]) : '';
+        });
+        return obj;
+      });
+      
+      if (rawRecords.length > 0 && !('MSKU' in rawRecords[0])) {
+        throw new Error("未找到 'MSKU' 列，请确认是否为正确的 msku_status 表。");
+      }
+      
+      PRESCREEN_DATA = rawRecords.map(r => {
+        const msku = String(r['MSKU'] || '').trim();
+        const dms_sys = parseFloat(r['日均销量_DMS'] || 0) || 0;
+        const dms_est = parseFloat(r['运营预估DMS'] || 0) || 0;
+        const fba_stock = parseInt(r['FBA在库_件'] || 0) || 0;
+        const fba_transit = parseInt(r['FBA在途_件'] || 0) || 0;
+        const days_transit = parseFloat(r['FBA在库+在途可售天数'] || 0) || 0;
+        const risk = String(r['断货风险'] || '').trim();
+        const owner = String(r['负责人'] || r['运营负责人'] || '').trim();
+        const site = String(r['站点'] || '').trim();
+        const prod_status = String(r['产品状态'] || '常规品').trim() || '常规品';
+        const erp_sku = String(r['ERP SKU'] || '').trim();
+        const asin = String(r['ASIN'] || '').trim();
+        const parent_asin = String(r['父ASIN'] || '').trim();
+        const shop_id = String(r['店铺ID'] || '').trim();
+        const sys_id = String(r['ID'] || '').trim();
+        const remark = String(r['备注'] || '').trim();
+        const updater = String(r['更新人'] || '').trim();
+        const update_time = String(r['更新时间'] || '').trim();
+        const grade = String(r['等级'] || '').trim();
+        
+        return {
+          sys_id, msku, erp_sku, asin, parent_asin, shop_id, site,
+          owner, prod_status, dms_est, dms_sys, fba_stock, fba_transit,
+          days_transit, risk, remark, updater, update_time, grade
+        };
+      });
+      
+      populatePrescreenFilters();
+      
+      document.getElementById('prescreen-empty').style.display = 'none';
+      document.getElementById('prescreen-content').style.display = 'block';
+      
+      selectedPrescreenMskus.clear();
+      PRESCREEN_DATA.forEach(r => selectedPrescreenMskus.add(r.msku));
+      const allSelectCheck = document.getElementById('ps-select-all');
+      if (allSelectCheck) allSelectCheck.checked = true;
+      
+      applyPrescreenFilters();
+      
+    } catch (err) {
+      alert('解析失败: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function reuploadPrescreen() {
+  if (!confirm('确认重新上传？当前未导出的初筛修改不会自动保存到外部文件。')) return;
+  document.getElementById('prescreen-file-input').value = '';
+  document.getElementById('prescreen-empty').style.display = 'block';
+  document.getElementById('prescreen-content').style.display = 'none';
+  PRESCREEN_DATA = [];
+  filteredPrescreenData = [];
+  selectedPrescreenMskus.clear();
+}
+
+function populatePrescreenFilters() {
+  const spus = new Set();
+  const owners = new Set();
+  PRESCREEN_DATA.forEach(r => {
+    const parts = r.msku.split('-');
+    if (parts.length > 1) spus.add(parts.slice(0, 3).join('-'));
+    if (r.owner) owners.add(r.owner);
+  });
+  
+  const spuSel = document.getElementById('ps-f-spu');
+  if (spuSel) {
+    while (spuSel.options.length > 1) spuSel.remove(1);
+    [...spus].sort().forEach(spu => {
+      const o = document.createElement('option');
+      o.value = spu; o.textContent = spu;
+      spuSel.appendChild(o);
+    });
+  }
+  
+  const ownerSel = document.getElementById('ps-f-owner');
+  if (ownerSel) {
+    while (ownerSel.options.length > 1) ownerSel.remove(1);
+    [...owners].sort().forEach(owner => {
+      const o = document.createElement('option');
+      o.value = owner; o.textContent = owner;
+      ownerSel.appendChild(o);
+    });
+  }
+}
+
+function applyPrescreenFilters() {
+  const spu = document.getElementById('ps-f-spu').value;
+  const site = document.getElementById('ps-f-site').value;
+  const owner = document.getElementById('ps-f-owner').value;
+  const status = document.getElementById('ps-f-status').value;
+  const absDev = parseFloat(document.getElementById('ps-f-abs-dev').value) || null;
+  const pctDev = parseFloat(document.getElementById('ps-f-pct-dev').value) || null;
+  const keyword = document.getElementById('ps-f-keyword').value.trim().toLowerCase();
+  
+  filteredPrescreenData = PRESCREEN_DATA.filter(r => {
+    if (spu && !r.msku.includes(spu)) return false;
+    if (site && r.site !== site) return false;
+    if (owner && r.owner !== owner) return false;
+    
+    const edit = editMap[r.msku] || {};
+    const effectiveStatus = edit.prod_status !== undefined ? edit.prod_status : r.prod_status;
+    if (status && effectiveStatus !== status) return false;
+    
+    const effectiveDmsEst = edit.dms_override !== undefined && edit.dms_override !== null ? parseFloat(edit.dms_override) : r.dms_est;
+    const absDiff = Math.abs(effectiveDmsEst - r.dms_sys);
+    const pctDiff = r.dms_sys > 0 ? (absDiff / r.dms_sys) * 100 : 0;
+    
+    if (absDev !== null && absDiff <= absDev) return false;
+    if (pctDev !== null && pctDiff <= pctDev) return false;
+    
+    if (keyword && !r.msku.toLowerCase().includes(keyword)) return false;
+    
+    return true;
+  });
+  
+  renderPrescreenTable();
+}
+
+function resetPrescreenFilters() {
+  document.getElementById('ps-f-spu').value = '';
+  document.getElementById('ps-f-site').value = '';
+  document.getElementById('ps-f-owner').value = '';
+  document.getElementById('ps-f-status').value = '';
+  document.getElementById('ps-f-abs-dev').value = '';
+  document.getElementById('ps-f-pct-dev').value = '';
+  document.getElementById('ps-f-keyword').value = '';
+  applyPrescreenFilters();
+}
+
+function quickFilterPrescreen(mode) {
+  resetPrescreenFilters();
+  
+  filteredPrescreenData = PRESCREEN_DATA.filter(r => {
+    const edit = editMap[r.msku] || {};
+    const effectiveDmsEst = edit.dms_override !== undefined && edit.dms_override !== null ? parseFloat(edit.dms_override) : r.dms_est;
+    const diff = effectiveDmsEst - r.dms_sys;
+    const absDiff = Math.abs(diff);
+    const pctDiff = r.dms_sys > 0 ? (absDiff / r.dms_sys) * 100 : 0;
+    
+    if (mode === 'suggested') {
+      return absDiff > 1.0 || pctDiff > 30;
+    } else if (mode === 'larger') {
+      return diff > 0.05;
+    } else if (mode === 'smaller') {
+      return diff < -0.05;
+    }
+    return true;
+  });
+  
+  renderPrescreenTable();
+}
+
+function renderPrescreenTable() {
+  document.getElementById('ps-result-count').textContent = filteredPrescreenData.length;
+  document.getElementById('ps-total-count').textContent = PRESCREEN_DATA.length;
+  
+  const tbody = document.getElementById('prescreen-tbody');
+  if (!filteredPrescreenData.length) {
+    tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;color:#717171;padding:24px">无匹配数据</td></tr>';
+    return;
+  }
+  
+  tbody.innerHTML = filteredPrescreenData.map((r, i) => {
+    const edit = editMap[r.msku] || {};
+    const isMskuModified = edit.dms_override !== undefined && edit.dms_override !== null;
+    const effectiveDmsEst = isMskuModified ? edit.dms_override : r.dms_est;
+    const effectiveStatus = edit.prod_status !== undefined ? edit.prod_status : r.prod_status;
+    const absDiff = Math.abs(effectiveDmsEst - r.dms_sys);
+    const pctDiff = r.dms_sys > 0 ? (absDiff / r.dms_sys) * 100 : 0;
+    
+    const diffClass = absDiff > 1.0 || pctDiff > 30 ? 'style="color:#C4433A;font-weight:bold"' : '';
+    const selected = selectedPrescreenMskus.has(r.msku);
+    
+    return `<tr data-msku="${r.msku}" class="${selected ? 'selected' : ''}">
+      <td><input type="checkbox" class="ps-row-check" ${selected ? 'checked' : ''} onchange="toggleRowSelectPrescreen('${r.msku}',this.checked)"></td>
+      <td>${i + 1}</td>
+      <td style="font-family:monospace;font-size:11px">${r.msku}</td>
+      <td><span class="tag tag-${siteClass(r.site)}">${r.site}</span></td>
+      <td>${r.owner}</td>
+      <td>
+        <div class="dms-cell">
+          <input class="dms-input${isMskuModified ? ' overridden' : ''}" type="number" step="0.1" min="0"
+            value="${isMskuModified ? edit.dms_override : ''}"
+            placeholder="${r.dms_est}"
+            onchange="onPrescreenDmsChange('${r.msku}',this.value)">
+          ${isMskuModified ? `<button class="dms-reset" onclick="resetPrescreenDms('${r.msku}')">✕</button>` : ''}
+        </div>
+      </td>
+      <td style="color:#717171">${r.dms_sys}</td>
+      <td ${diffClass}>${absDiff.toFixed(2)}</td>
+      <td ${diffClass}>${pctDiff.toFixed(1)}%</td>
+      <td>${r.fba_stock}</td>
+      <td>${r.fba_transit}</td>
+      <td class="${r.days_transit < 30 ? 'anom-red' : r.days_transit < 60 ? 'anom-yellow' : ''}">${r.days_transit}</td>
+      <td>${r.risk}</td>
+      <td>
+        <select class="status-select" onchange="onPrescreenStatusChange('${r.msku}',this.value)">
+          <option value="常规品"${effectiveStatus === '常规品' ? ' selected' : ''}>常规品</option>
+          <option value="核心品"${effectiveStatus === '核心品' ? ' selected' : ''}>核心品</option>
+          <option value="清仓"${effectiveStatus === '清仓' ? ' selected' : ''}>清仓</option>
+          <option value="停运"${effectiveStatus === '停运' ? ' selected' : ''}>停运</option>
+        </select>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function onPrescreenDmsChange(msku, val) {
+  if (!editMap[msku]) editMap[msku] = {};
+  if (val === '') {
+    delete editMap[msku].dms_override;
+    if (Object.keys(editMap[msku]).length === 0) delete editMap[msku];
+  } else {
+    editMap[msku].dms_override = Math.round(parseFloat(val) * 100) / 100;
+  }
+  
+  updateEditSummary();
+  updateHeroModified();
+  
+  if (ALL_DATA.length > 0) renderFilterTable();
+  
+  const tr = document.querySelector(`#prescreen-tbody tr[data-msku="${msku}"]`);
+  if (tr) {
+    const input = tr.querySelector('.dms-input');
+    if (val === '') {
+      input.classList.remove('overridden');
+      const resetBtn = tr.querySelector('.dms-reset');
+      if (resetBtn) resetBtn.remove();
+    } else {
+      input.classList.add('overridden');
+      if (!tr.querySelector('.dms-reset')) {
+        const dmsCell = tr.querySelector('.dms-cell');
+        const btn = document.createElement('button');
+        btn.className = 'dms-reset';
+        btn.textContent = '✕';
+        btn.onclick = () => resetPrescreenDms(msku);
+        dmsCell.appendChild(btn);
+      }
+    }
+  }
+  
+  applyPrescreenFilters();
+}
+
+function resetPrescreenDms(msku) {
+  if (editMap[msku]) {
+    delete editMap[msku].dms_override;
+    if (Object.keys(editMap[msku]).length === 0) delete editMap[msku];
+  }
+  updateEditSummary();
+  updateHeroModified();
+  if (ALL_DATA.length > 0) renderFilterTable();
+  applyPrescreenFilters();
+}
+
+function onPrescreenStatusChange(msku, val) {
+  if (!editMap[msku]) editMap[msku] = {};
+  editMap[msku].prod_status = val;
+  updateEditSummary();
+  updateHeroModified();
+  if (ALL_DATA.length > 0) renderFilterTable();
+  applyPrescreenFilters();
+}
+
+function toggleRowSelectPrescreen(msku, checked) {
+  const tr = document.querySelector(`#prescreen-tbody tr[data-msku="${msku}"]`);
+  if (checked) {
+    selectedPrescreenMskus.add(msku);
+    if (tr) tr.classList.add('selected');
+  } else {
+    selectedPrescreenMskus.delete(msku);
+    if (tr) tr.classList.remove('selected');
+  }
+}
+
+function toggleSelectAllPrescreen(chk) {
+  const checked = chk.checked;
+  const checks = document.querySelectorAll('.ps-row-check');
+  checks.forEach(c => c.checked = checked);
+  
+  filteredPrescreenData.forEach(r => {
+    const tr = document.querySelector(`#prescreen-tbody tr[data-msku="${r.msku}"]`);
+    if (checked) {
+      selectedPrescreenMskus.add(r.msku);
+      if (tr) tr.classList.add('selected');
+    } else {
+      selectedPrescreenMskus.delete(r.msku);
+      if (tr) tr.classList.remove('selected');
+    }
+  });
+}
+
+function exportPrescreenTemplate() {
+  const exportRows = filteredPrescreenData.filter(r => selectedPrescreenMskus.has(r.msku));
+  if (!exportRows.length) { alert('没有勾选任何需要导出的 SKU 行'); return; }
+  
+  const headers = ['ID', 'MSKU', 'ERP SKU', 'ASIN', '父ASIN', '店铺ID', '站点', '产品状态', '运营预估DMS', '负责人', '备注', '更新人'];
+  const rows = [headers];
+  const now = new Date();
+  
+  exportRows.forEach(r => {
+    const edit = editMap[r.msku] || {};
+    const dmsVal = edit.dms_override !== undefined && edit.dms_override !== null ? edit.dms_override : '';
+    const statusVal = edit.prod_status !== undefined ? edit.prod_status : r.prod_status;
+    
+    rows.push([
+      r.sys_id || '',
+      r.msku,
+      r.erp_sku || r.msku,
+      r.asin || '',
+      r.parent_asin || '',
+      r.shop_id || '',
+      r.site,
+      statusVal,
+      dmsVal !== '' ? dmsVal : '',
+      r.owner,
+      r.remark || (r.erp_sku ? `ERP_sku:${r.erp_sku}` : ''),
+      r.owner
+    ]);
+  });
+  
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{ wch: 10 }, { wch: 30 }, { wch: 30 }, { wch: 14 }, { wch: 14 }, { wch: 8 }, { wch: 8 }, { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 30 }, { wch: 10 }];
+  XLSX.utils.book_append_sheet(wb, ws, '商品状态');
+  
+  XLSX.writeFile(wb, `msku_status_prescreen_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}.xlsx`);
+}
 
     function populateOwnerFilter() {
       ['f-owner','g-owner'].forEach(id=>{
