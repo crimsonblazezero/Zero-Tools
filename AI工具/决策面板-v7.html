@@ -624,6 +624,7 @@ input[type=checkbox]#select-all{width:15px;height:15px;cursor:pointer;accent-col
         <div class="filter-group"><label>站点</label><select id="ps-f-site" onchange="applyPrescreenFilters()"><option value="">全部</option><option value="美国">🇺🇸 美国</option><option value="英国">🇬🇧 英国</option><option value="德国">🇩🇪 德国</option><option value="加拿大">🇨🇦 加拿大</option><option value="日本">🇯🇵 日本</option></select></div>
         <div class="filter-group"><label>负责人</label><select id="ps-f-owner" onchange="applyPrescreenFilters()"><option value="">全部</option></select></div>
         <div class="filter-group"><label>产品状态</label><select id="ps-f-status" onchange="applyPrescreenFilters()"><option value="">全部</option><option value="常规品">常规品</option><option value="核心品">核心品</option><option value="清仓">清仓</option><option value="停运">停运</option></select></div>
+        <div class="filter-group"><label>产品等级</label><select id="ps-f-grade" onchange="applyPrescreenFilters()"><option value="">全部</option></select></div>
         <div class="filter-group"><label>绝对值偏差大于</label><input type="number" id="ps-f-abs-dev" step="0.1" min="0" placeholder="例如: 1.0" oninput="applyPrescreenFilters()"></div>
         <div class="filter-group"><label>比例偏差大于 (%)</label><input type="number" id="ps-f-pct-dev" step="1" min="0" placeholder="例如: 30" oninput="applyPrescreenFilters()"></div>
         <div class="filter-group"><label>关键词</label><input type="text" id="ps-f-keyword" placeholder="MSKU / 品名..." oninput="applyPrescreenFilters()"></div>
@@ -634,6 +635,8 @@ input[type=checkbox]#select-all{width:15px;height:15px;cursor:pointer;accent-col
         <button class="btn btn-sm" style="background:#E8F2F0;color:#064338;border:1px solid #064338" onclick="quickFilterPrescreen('suggested')">💡 建议修改</button>
         <button class="btn btn-sm" style="background:#E8F2F0;color:#064338;border:1px solid #064338" onclick="quickFilterPrescreen('larger')">📈 预估偏大</button>
         <button class="btn btn-sm" style="background:#E8F2F0;color:#064338;border:1px solid #064338" onclick="quickFilterPrescreen('smaller')">📉 预估偏小</button>
+        <button class="btn btn-sm" style="background:#FFF3E0;color:#E65100;border:1px solid #E65100" onclick="applySystemDmsToFiltered()">🎯 一键应用系统 DMS</button>
+        <button class="btn btn-sm" style="background:#FFF3E0;color:#E65100;border:1px solid #E65100" onclick="applyOperatorDmsToFiltered()">🎯 一键应用原预估 DMS</button>
         <button class="btn btn-gold" style="margin-left:auto" onclick="exportPrescreenTemplate()">🔄 导出初筛回传表</button>
         <button class="btn btn-secondary" onclick="reuploadPrescreen()">📤 重新上传</button>
         <div class="result-count">显示 <span id="ps-result-count">0</span> / <span id="ps-total-count">0</span> 条</div>
@@ -675,11 +678,12 @@ input[type=checkbox]#select-all{width:15px;height:15px;cursor:pointer;accent-col
             <th style="width:40px">#</th>
             <th style="min-width:180px">MSKU</th>
             <th>SPU品名</th>
-            <th style="min-width:150px">商品名称</th>
             <th>站点</th>
             <th>负责人</th>
+            <th>生命周期</th>
+            <th>等级</th>
             <th>运营预估DMS ✏️</th>
-            <th>系统DMS (日均销量_DMS)</th>
+            <th>系统DMS</th>
             <th>绝对值偏差</th>
             <th>比例偏差</th>
             <th>FBA在库</th>
@@ -3307,6 +3311,7 @@ document.querySelectorAll('input[name="export-scope"]').forEach(radio=>{
 let PRESCREEN_DATA = [];
 let filteredPrescreenData = [];
 let selectedPrescreenMskus = new Set();
+let activePsQuickMode = '';
 
 function handleFileUploadPrescreen(e) {
   const file = e.target.files[0];
@@ -3388,11 +3393,12 @@ function processPrescreenFile(file) {
         const updater = String(r['更新人'] || '').trim();
         const update_time = String(r['更新时间'] || '').trim();
         const grade = String(r['等级'] || '').trim();
+        const lifecycle = String(r['生命周期'] || '').trim();
         
         return {
           sys_id, msku, erp_sku, asin, parent_asin, shop_id, site,
           owner, prod_status, dms_est, dms_sys, fba_stock, fba_transit,
-          days_transit, risk, remark, updater, update_time, grade,
+          days_transit, risk, remark, updater, update_time, grade, lifecycle,
           spu: '', name: ''
         };
       });
@@ -3479,9 +3485,11 @@ function reuploadPrescreen() {
 function populatePrescreenFilters() {
   const spus = new Set();
   const owners = new Set();
+  const grades = new Set();
   PRESCREEN_DATA.forEach(r => {
     if (r.spu) spus.add(r.spu);
     if (r.owner) owners.add(r.owner);
+    if (r.grade) grades.add(r.grade);
   });
   
   const spuSel = document.getElementById('ps-f-spu');
@@ -3503,6 +3511,16 @@ function populatePrescreenFilters() {
       ownerSel.appendChild(o);
     });
   }
+
+  const gradeSel = document.getElementById('ps-f-grade');
+  if (gradeSel) {
+    while (gradeSel.options.length > 1) gradeSel.remove(1);
+    [...grades].sort().forEach(grade => {
+      const o = document.createElement('option');
+      o.value = grade; o.textContent = grade;
+      gradeSel.appendChild(o);
+    });
+  }
 }
 
 function applyPrescreenFilters() {
@@ -3510,27 +3528,42 @@ function applyPrescreenFilters() {
   const site = document.getElementById('ps-f-site').value;
   const owner = document.getElementById('ps-f-owner').value;
   const status = document.getElementById('ps-f-status').value;
+  const grade = document.getElementById('ps-f-grade').value;
   const absDev = parseFloat(document.getElementById('ps-f-abs-dev').value) || null;
   const pctDev = parseFloat(document.getElementById('ps-f-pct-dev').value) || null;
   const keyword = document.getElementById('ps-f-keyword').value.trim().toLowerCase();
   
   filteredPrescreenData = PRESCREEN_DATA.filter(r => {
+    // 1. 先筛 SPU 和站点
     if (spu && r.spu !== spu) return false;
     if (site && r.site !== site) return false;
+    
+    // 2. 再过滤其余基本条件
     if (owner && r.owner !== owner) return false;
+    if (grade && r.grade !== grade) return false;
     
     const edit = editMap[r.msku] || {};
     const effectiveStatus = edit.prod_status !== undefined ? edit.prod_status : r.prod_status;
     if (status && effectiveStatus !== status) return false;
     
     const effectiveDmsEst = edit.dms_override !== undefined && edit.dms_override !== null ? parseFloat(edit.dms_override) : r.dms_est;
-    const absDiff = Math.abs(effectiveDmsEst - r.dms_sys);
+    const diff = effectiveDmsEst - r.dms_sys;
+    const absDiff = Math.abs(diff);
     const pctDiff = r.dms_sys > 0 ? (absDiff / r.dms_sys) * 100 : 0;
     
     if (absDev !== null && absDiff <= absDev) return false;
     if (pctDev !== null && pctDiff <= pctDev) return false;
     
     if (keyword && !r.msku.toLowerCase().includes(keyword) && !r.name.toLowerCase().includes(keyword) && !r.spu.toLowerCase().includes(keyword)) return false;
+    
+    // 3. 在筛选后的数据基础上，应用偏大、偏小、建议修改快捷按钮
+    if (activePsQuickMode === 'suggested') {
+      if (absDiff <= 1.0 && pctDiff <= 30) return false;
+    } else if (activePsQuickMode === 'larger') {
+      if (diff <= 0.05) return false;
+    } else if (activePsQuickMode === 'smaller') {
+      if (diff >= -0.05) return false;
+    }
     
     return true;
   });
@@ -3543,33 +3576,17 @@ function resetPrescreenFilters() {
   document.getElementById('ps-f-site').value = '';
   document.getElementById('ps-f-owner').value = '';
   document.getElementById('ps-f-status').value = '';
+  document.getElementById('ps-f-grade').value = '';
   document.getElementById('ps-f-abs-dev').value = '';
   document.getElementById('ps-f-pct-dev').value = '';
   document.getElementById('ps-f-keyword').value = '';
+  activePsQuickMode = '';
   applyPrescreenFilters();
 }
 
 function quickFilterPrescreen(mode) {
-  resetPrescreenFilters();
-  
-  filteredPrescreenData = PRESCREEN_DATA.filter(r => {
-    const edit = editMap[r.msku] || {};
-    const effectiveDmsEst = edit.dms_override !== undefined && edit.dms_override !== null ? parseFloat(edit.dms_override) : r.dms_est;
-    const diff = effectiveDmsEst - r.dms_sys;
-    const absDiff = Math.abs(diff);
-    const pctDiff = r.dms_sys > 0 ? (absDiff / r.dms_sys) * 100 : 0;
-    
-    if (mode === 'suggested') {
-      return absDiff > 1.0 || pctDiff > 30;
-    } else if (mode === 'larger') {
-      return diff > 0.05;
-    } else if (mode === 'smaller') {
-      return diff < -0.05;
-    }
-    return true;
-  });
-  
-  renderPrescreenTable();
+  activePsQuickMode = mode;
+  applyPrescreenFilters();
 }
 
 function renderPrescreenTable() {
@@ -3578,7 +3595,7 @@ function renderPrescreenTable() {
   
   const tbody = document.getElementById('prescreen-tbody');
   if (!filteredPrescreenData.length) {
-    tbody.innerHTML = '<tr><td colspan="16" style="text-align:center;color:#717171;padding:24px">无匹配数据</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="17" style="text-align:center;color:#717171;padding:24px">无匹配数据</td></tr>';
     updatePrescreenBulkBar();
     return;
   }
@@ -3599,9 +3616,10 @@ function renderPrescreenTable() {
       <td>${i + 1}</td>
       <td style="font-family:monospace;font-size:11px">${r.msku}</td>
       <td style="font-size:11px">${r.spu}</td>
-      <td style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.name}">${r.name}</td>
       <td><span class="tag tag-${siteClass(r.site)}">${r.site}</span></td>
       <td>${r.owner}</td>
+      <td><span style="font-size:11px;color:#717171">${r.lifecycle}</span></td>
+      <td><span class="tag tag-blue">${r.grade}</span></td>
       <td>
         <div class="dms-cell">
           <input class="dms-input${isMskuModified ? ' overridden' : ''}" type="number" step="0.1" min="0"
@@ -3799,6 +3817,40 @@ function applyPrescreenBulkEdit() {
   clearPrescreenSelection();
   applyPrescreenFilters();
   alert(`✅ 已批量修改 ${count} 条记录`);
+}
+
+function applySystemDmsToFiltered() {
+  if (!filteredPrescreenData.length) { alert('当前筛选列表无数据'); return; }
+  if (!confirm(`确认将当前筛选出的 ${filteredPrescreenData.length} 个 SKU 的 DMS 全部设置为系统 DMS？`)) return;
+  let count = 0;
+  filteredPrescreenData.forEach(r => {
+    if (!editMap[r.msku]) editMap[r.msku] = {};
+    editMap[r.msku].dms_override = r.dms_sys;
+    count++;
+  });
+  updateEditSummary();
+  updateHeroModified();
+  if (ALL_DATA.length > 0) renderFilterTable();
+  applyPrescreenFilters();
+  alert(`✅ 已将 ${count} 个 SKU 设置为系统 DMS`);
+}
+
+function applyOperatorDmsToFiltered() {
+  if (!filteredPrescreenData.length) { alert('当前筛选列表无数据'); return; }
+  if (!confirm(`确认将当前筛选出的 ${filteredPrescreenData.length} 个 SKU 的 DMS 全部还原为原预估 DMS（清除修改）？`)) return;
+  let count = 0;
+  filteredPrescreenData.forEach(r => {
+    if (editMap[r.msku]) {
+      delete editMap[r.msku].dms_override;
+      if (Object.keys(editMap[r.msku]).length === 0) delete editMap[r.msku];
+    }
+    count++;
+  });
+  updateEditSummary();
+  updateHeroModified();
+  if (ALL_DATA.length > 0) renderFilterTable();
+  applyPrescreenFilters();
+  alert(`✅ 已将 ${count} 个 SKU 还原为原运营预估 DMS`);
 }
 
 function exportPrescreenTemplate() {
