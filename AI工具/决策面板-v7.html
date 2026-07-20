@@ -3904,8 +3904,21 @@ function applyOperatorDmsToSelected() {
 }
 
 function exportPrescreenTemplate() {
-  const exportRows = filteredPrescreenData.filter(r => selectedPrescreenMskus.has(r.msku));
-  if (!exportRows.length) { alert('没有勾选任何需要导出的 SKU 行'); return; }
+  let exportRows = [];
+  if (selectedPrescreenMskus.size > 0) {
+    exportRows = filteredPrescreenData.filter(r => selectedPrescreenMskus.has(r.msku));
+  } else {
+    // 自动导出所有有修改（DMS或产品状态）的数据
+    exportRows = PRESCREEN_DATA.filter(r => {
+      const edit = editMap[r.msku];
+      return edit && (edit.dms_override !== undefined || edit.prod_status !== undefined);
+    });
+  }
+  
+  if (!exportRows.length) {
+    alert('当前既没有勾选 SKU，也没有任何被修改过的 SKU，无数据可导出。');
+    return;
+  }
   
   const headers = ['ID', 'MSKU', 'ERP SKU', 'ASIN', '父ASIN', '店铺ID', '站点', '产品状态', '运营预估DMS', '负责人', '备注', '更新人'];
   const rows = [headers];
