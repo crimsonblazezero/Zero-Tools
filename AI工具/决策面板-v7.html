@@ -635,8 +635,6 @@ input[type=checkbox]#select-all{width:15px;height:15px;cursor:pointer;accent-col
         <button class="btn btn-sm" style="background:#E8F2F0;color:#064338;border:1px solid #064338" onclick="quickFilterPrescreen('suggested')">💡 建议修改</button>
         <button class="btn btn-sm" style="background:#E8F2F0;color:#064338;border:1px solid #064338" onclick="quickFilterPrescreen('larger')">📈 预估偏大</button>
         <button class="btn btn-sm" style="background:#E8F2F0;color:#064338;border:1px solid #064338" onclick="quickFilterPrescreen('smaller')">📉 预估偏小</button>
-        <button class="btn btn-sm" style="background:#FFF3E0;color:#E65100;border:1px solid #E65100" onclick="applySystemDmsToFiltered()">🎯 一键应用系统 DMS</button>
-        <button class="btn btn-sm" style="background:#FFF3E0;color:#E65100;border:1px solid #E65100" onclick="applyOperatorDmsToFiltered()">🎯 一键应用原预估 DMS</button>
         <button class="btn btn-gold" style="margin-left:auto" onclick="exportPrescreenTemplate()">🔄 导出初筛回传表</button>
         <button class="btn btn-secondary" onclick="reuploadPrescreen()">📤 重新上传</button>
         <div class="result-count">显示 <span id="ps-result-count">0</span> / <span id="ps-total-count">0</span> 条</div>
@@ -666,6 +664,9 @@ input[type=checkbox]#select-all{width:15px;height:15px;cursor:pointer;accent-col
         <option value="停运">停运</option>
       </select>
       <button class="bulk-apply-btn" onclick="applyPrescreenBulkEdit()">批量应用</button>
+      <button class="bulk-apply-btn" style="background:#FFF3E0;color:#E65100;border:1px solid #E65100" onclick="applySystemDmsToSelected()">🎯 一键应用系统 DMS</button>
+      <button class="bulk-apply-btn" style="background:#FFF3E0;color:#E65100;border:1px solid #E65100" onclick="applyOperatorDmsToSelected()">🎯 一键应用原预估 DMS</button>
+      <button class="bulk-clear-btn" id="ps-undo-btn" onclick="undoPrescreenEdit()" style="background:#ECEFF1;color:#37474F;margin-left:8px;opacity:0.5;" disabled>↩️ 撤销</button>
       <button class="bulk-clear-btn" onclick="clearPrescreenSelection()">取消选择</button>
     </div>
 
@@ -3312,6 +3313,41 @@ let PRESCREEN_DATA = [];
 let filteredPrescreenData = [];
 let selectedPrescreenMskus = new Set();
 let activePsQuickMode = '';
+let prescreenUndoStack = [];
+
+function saveUndoState() {
+  prescreenUndoStack.push(JSON.stringify(editMap));
+  if (prescreenUndoStack.length > 50) {
+    prescreenUndoStack.shift();
+  }
+  updateUndoButtonState();
+}
+
+function undoPrescreenEdit() {
+  if (prescreenUndoStack.length === 0) return;
+  const prevStateStr = prescreenUndoStack.pop();
+  editMap = JSON.parse(prevStateStr);
+  
+  updateEditSummary();
+  updateHeroModified();
+  if (ALL_DATA.length > 0) renderFilterTable();
+  applyPrescreenFilters();
+  updateUndoButtonState();
+  alert('↩️ 已撤销上一次修改');
+}
+
+function updateUndoButtonState() {
+  const btn = document.getElementById('ps-undo-btn');
+  if (btn) {
+    if (prescreenUndoStack.length > 0) {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+    } else {
+      btn.disabled = true;
+      btn.style.opacity = '0.5';
+    }
+  }
+}
 
 function handleFileUploadPrescreen(e) {
   const file = e.target.files[0];
@@ -3420,6 +3456,8 @@ function processPrescreenFile(file) {
       status.textContent = `✅ DMS初筛表解析成功：${PRESCREEN_DATA.length} 条记录`;
       
       updatePrescreenStatusBar();
+      prescreenUndoStack = [];
+      updateUndoButtonState();
       applyPrescreenFilters();
       
     } catch (err) {
@@ -3478,6 +3516,8 @@ function reuploadPrescreen() {
   PRESCREEN_DATA = [];
   filteredPrescreenData = [];
   selectedPrescreenMskus.clear();
+  prescreenUndoStack = [];
+  updateUndoButtonState();
   updatePrescreenStatusBar();
   document.getElementById('upload-status-prescreen').style.display = 'none';
 }
@@ -3534,11 +3574,9 @@ function applyPrescreenFilters() {
   const keyword = document.getElementById('ps-f-keyword').value.trim().toLowerCase();
   
   filteredPrescreenData = PRESCREEN_DATA.filter(r => {
-    // 1. 先筛 SPU 和站点
     if (spu && r.spu !== spu) return false;
     if (site && r.site !== site) return false;
     
-    // 2. 再过滤其余基本条件
     if (owner && r.owner !== owner) return false;
     if (grade && r.grade !== grade) return false;
     
@@ -3556,7 +3594,6 @@ function applyPrescreenFilters() {
     
     if (keyword && !r.msku.toLowerCase().includes(keyword) && !r.name.toLowerCase().includes(keyword) && !r.spu.toLowerCase().includes(keyword)) return false;
     
-    // 3. 在筛选后的数据基础上，应用偏大、偏小、建议修改快捷按钮
     if (activePsQuickMode === 'suggested') {
       if (absDiff <= 1.0 && pctDiff <= 30) return false;
     } else if (activePsQuickMode === 'larger') {
@@ -3651,6 +3688,7 @@ function renderPrescreenTable() {
 }
 
 function onPrescreenDmsChange(msku, val) {
+  saveUndoState();
   if (!editMap[msku]) editMap[msku] = {};
   if (val === '') {
     delete editMap[msku].dms_override;
@@ -3688,6 +3726,7 @@ function onPrescreenDmsChange(msku, val) {
 }
 
 function resetPrescreenDms(msku) {
+  saveUndoState();
   if (editMap[msku]) {
     delete editMap[msku].dms_override;
     if (Object.keys(editMap[msku]).length === 0) delete editMap[msku];
@@ -3699,6 +3738,7 @@ function resetPrescreenDms(msku) {
 }
 
 function onPrescreenStatusChange(msku, val) {
+  saveUndoState();
   if (!editMap[msku]) editMap[msku] = {};
   editMap[msku].prod_status = val;
   updateEditSummary();
@@ -3776,6 +3816,7 @@ function applyPrescreenBulkEdit() {
     return;
   }
 
+  saveUndoState();
   let count = 0;
   selectedPrescreenMskus.forEach(msku => {
     if (!editMap[msku]) editMap[msku] = {};
@@ -3819,38 +3860,47 @@ function applyPrescreenBulkEdit() {
   alert(`✅ 已批量修改 ${count} 条记录`);
 }
 
-function applySystemDmsToFiltered() {
-  if (!filteredPrescreenData.length) { alert('当前筛选列表无数据'); return; }
-  if (!confirm(`确认将当前筛选出的 ${filteredPrescreenData.length} 个 SKU 的 DMS 全部设置为系统 DMS？`)) return;
+function applySystemDmsToSelected() {
+  if (selectedPrescreenMskus.size === 0) { alert('请先勾选要修改的行'); return; }
+  if (!confirm(`确认将选中的 ${selectedPrescreenMskus.size} 个 SKU 的 DMS 全部设置为系统 DMS？`)) return;
+  
+  saveUndoState();
   let count = 0;
-  filteredPrescreenData.forEach(r => {
-    if (!editMap[r.msku]) editMap[r.msku] = {};
-    editMap[r.msku].dms_override = r.dms_sys;
+  selectedPrescreenMskus.forEach(msku => {
+    if (!editMap[msku]) editMap[msku] = {};
+    const r = PRESCREEN_DATA.find(x => x.msku === msku);
+    editMap[msku].dms_override = r ? r.dms_sys : 0;
     count++;
   });
+  
   updateEditSummary();
   updateHeroModified();
   if (ALL_DATA.length > 0) renderFilterTable();
   applyPrescreenFilters();
-  alert(`✅ 已将 ${count} 个 SKU 设置为系统 DMS`);
+  clearPrescreenSelection();
+  alert(`✅ 已将选中的 ${count} 个 SKU 设置为系统 DMS`);
 }
 
-function applyOperatorDmsToFiltered() {
-  if (!filteredPrescreenData.length) { alert('当前筛选列表无数据'); return; }
-  if (!confirm(`确认将当前筛选出的 ${filteredPrescreenData.length} 个 SKU 的 DMS 全部还原为原预估 DMS（清除修改）？`)) return;
+function applyOperatorDmsToSelected() {
+  if (selectedPrescreenMskus.size === 0) { alert('请先勾选要修改的行'); return; }
+  if (!confirm(`确认将选中的 ${selectedPrescreenMskus.size} 个 SKU 的 DMS 全部还原为运营预估 DMS（清除修改）？`)) return;
+  
+  saveUndoState();
   let count = 0;
-  filteredPrescreenData.forEach(r => {
-    if (editMap[r.msku]) {
-      delete editMap[r.msku].dms_override;
-      if (Object.keys(editMap[r.msku]).length === 0) delete editMap[r.msku];
+  selectedPrescreenMskus.forEach(msku => {
+    if (editMap[msku]) {
+      delete editMap[msku].dms_override;
+      if (Object.keys(editMap[msku]).length === 0) delete editMap[msku];
     }
     count++;
   });
+  
   updateEditSummary();
   updateHeroModified();
   if (ALL_DATA.length > 0) renderFilterTable();
   applyPrescreenFilters();
-  alert(`✅ 已将 ${count} 个 SKU 还原为原运营预估 DMS`);
+  clearPrescreenSelection();
+  alert(`✅ 已将选中的 ${count} 个 SKU 还原为运营预估 DMS`);
 }
 
 function exportPrescreenTemplate() {
