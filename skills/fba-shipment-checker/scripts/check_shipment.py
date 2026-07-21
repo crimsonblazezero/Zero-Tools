@@ -541,6 +541,19 @@ def perform_check(zip_path):
                     any(re.search(r'\b' + k + r'\b', zip_name_clean) for k in ['de', 'fr', 'it', 'es', 'uk']) or \
                     any(k in zip_name_clean for k in ['(de站)', '(fr站)', '(it站)', '(es站)', '(uk站)'])
         
+        
+        # Determine overweight threshold based on marketplace (US: 22.5kg, CA: 22kg, Europe/JP: 15kg)
+        # 根据不同站点决定超重阈值（美国站 22.5kg，加拿大站 22kg，欧洲及日本站 15kg）
+        is_canada = any(k in zip_name_clean for k in ['ca', 'canada', '加拿大'])
+        is_japan = any(k in zip_name_clean for k in ['jp', 'japan', '日本'])
+        is_us = any(k in zip_name_clean for k in ['us', 'usa', '美国', 'america']) or (not is_europe and not is_canada and not is_japan)
+        
+        overweight_threshold = 15.0
+        if is_us:
+            overweight_threshold = 22.5
+        elif is_canada:
+            overweight_threshold = 22.0
+            
         gpsr_status = "Pass / 通过"
         if is_europe:
             if not gpsr_files:
@@ -656,9 +669,9 @@ def perform_check(zip_path):
                         err_msg.append(wt_err)
                     sku_check['details'].append("; ".join(err_msg))
                     
-                # Check for overweight warning (>15kg)
-                # 检查箱子是否超重 (>15kg)
-                if csv_row['weight'] > 15.0:
+                # Check for overweight warning
+                # 检查箱子是否超重 (根据对应站点的起贴线)
+                if csv_row['weight'] > overweight_threshold:
                     weight_warnings.append(f"SKU: `{sku}` (Weight: {csv_row['weight']} KG)")
                     
             elif excel_row and not csv_row:
@@ -675,9 +688,7 @@ def perform_check(zip_path):
             detail_results.append(sku_check)
 
         # 8.1 Overweight label verification
-        # 8.1 超重标签核对 (欧洲、英国、日本、加拿大站点，单箱超过 15KG 强制校验)
-        is_canada = any(k in zip_name_clean for k in ['ca', 'canada', '加拿大'])
-        is_japan = any(k in zip_name_clean for k in ['jp', 'japan', '日本'])
+        # 8.1 超重标签核对 (欧洲、英国、日本、加拿大站点，单箱超过对应阈值时强制校验)
         is_heavy_required_market = is_europe or is_canada or is_japan
         
         overweight_status = "Not Required / 无需校验 (无超重箱)"
