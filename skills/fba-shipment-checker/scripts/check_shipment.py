@@ -791,8 +791,10 @@ def perform_check(zip_path):
             print("> **超重贴标警告 / Overweight Sticker Alert:**")
             if missing_overweight_label:
                 print("> ⚠️ **警告：本货件有超重箱（>15KG），但压缩包内缺少超重标签PDF！请务必补齐！**")
-            else:
+            elif overweight_files:
                 print(f"> **已包含超重标签PDF ({overweight_files[0]})，请确认贴标时使用该文件。**")
+            else:
+                print("> ⚠️ **提示：本货件有超重箱（>15KG），虽该站点非超重强制贴标市场（如美站），但仍建议外箱张贴超重标识以防工伤搬运纠纷。**")
             print("> 以下箱子重量超过 15KG，根据亚马逊政策，**每箱必须在5个面上张贴超重标签**（包含正上方）！")
             for warning in weight_warnings:
                 print(f"> - {warning}")
