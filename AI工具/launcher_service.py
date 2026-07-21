@@ -130,7 +130,12 @@ class LauncherHandler(http.server.BaseHTTPRequestHandler):
                 
                 if BASE_DIR not in sys.path:
                     sys.path.insert(0, BASE_DIR)
-                import check_shipment
+                import importlib
+                if "check_shipment" in sys.modules:
+                    import check_shipment
+                    importlib.reload(check_shipment)
+                else:
+                    import check_shipment
                 
                 results = check_shipment.run_batch_check(folder_path)
                 self._json(200, {"results": results, "folder_path": folder_path})

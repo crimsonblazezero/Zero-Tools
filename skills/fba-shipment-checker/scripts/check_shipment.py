@@ -829,6 +829,129 @@ def perform_check(zip_path):
         if os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
 
+def run_batch_check(folder_path):
+    """Scan directory for FBA shipment zips, check each, and return structured results for Launcher Hub.
+    扫描目录下的 FBA 货件 zip 并执行校验，返回供 HTML 启动器面板展示的结构化结果。"""
+    results = []
+    if not os.path.exists(folder_path):
+        return results
+        
+    # Find all zip files in directory
+    zip_files = [f for f in os.listdir(folder_path) if f.endswith('.zip')]
+    
+    for zf in zip_files:
+        zip_path = os.path.join(folder_path, zf)
+        try:
+            # Run check
+            perform_check(zip_path)
+            
+            # Locate report file
+            base_name = os.path.splitext(zf)[0]
+            report_name = f"{base_name}_检查报告.md"
+            report_path = os.path.join(folder_path, report_name)
+            
+            if not os.path.exists(report_path):
+                results.append({
+                    'zip_name': zf,
+                    'status': 'Error',
+                    'error': 'Failed to generate markdown report / 未能生成核对报告'
+                })
+                continue
+                
+            # Parse markdown report to extract structured metadata
+            # 解析报告以提取结构化属性
+            with open(report_path, 'r', encoding='utf-8', errors='ignore') as f:
+                report_content = f.read()
+                
+            # Extract status: if the report says "结论：出货资料核对无误" -> Pass, otherwise -> Fail
+            status = 'Fail'
+            if '结论：出货资料核对无误' in report_content or '结论：出货资料核对无误' in report_content.replace(' ', ''):
+                status = 'Pass'
+                
+            # Extract Shipment ID
+            shipment_id = None
+            m_ship = re.search(r'CSV Box Content / CSV .*?:\s*`([^`]+)`', report_content)
+            if m_ship:
+                shipment_id = m_ship.group(1).strip()
+            else:
+                m_ship2 = re.search(r'FBA[A-Z0-9]{8,12}', report_content)
+                if m_ship2:
+                    shipment_id = m_ship2.group(0)
+                    
+            # Extract Destination Warehouse
+            destination = None
+            m_dest = re.search(r'CSV 目的地:\s*`([^`]+)`', report_content)
+            if m_dest:
+                destination = m_dest.group(1).strip()
+            else:
+                m_dest2 = re.search(r'Excel 送达仓库:\s*`([^`]+)`', report_content)
+                if m_dest2:
+                    destination = m_dest2.group(1).strip()
+                    if ' - ' in destination:
+                        destination = destination.split(' - ')[0]
+                        
+            # Extract Total Boxes
+            total_boxes = 0
+            m_box = re.search(r'CSV .*?:\s*`(\d+)`.*?箱', report_content)
+            if m_box:
+                total_boxes = int(m_box.group(1))
+            else:
+                m_box2 = re.search(r'Excel 实发.*?:\s*`(\d+)`', report_content)
+                if m_box2:
+                    total_boxes = int(m_box2.group(1))
+                    
+            # Extract Total Units
+            total_units = 0
+            m_units = re.search(r'CSV 商品总数:\s*`(\d+)`', report_content)
+            if m_units:
+                total_units = int(m_units.group(1))
+                
+            # Extract Europe Site
+            is_europe = 'GPSR' in report_content and 'Not Required' not in report_content
+            
+            # Extract GPSR
+            has_gpsr = 'GPSR安全标签 / GPSR Security Label: Pass' in report_content
+            
+            # Extract weight warnings & missing_overweight_label
+            weight_warnings = []
+            if 'Overweight Sticker Alert' in report_content:
+                lines = report_content.splitlines()
+                in_block = False
+                for line in lines:
+                    if 'Overweight Sticker Alert' in line:
+                        in_block = True
+                    elif in_block and line.strip().startswith('> - SKU:'):
+                        weight_warnings.append(line.replace('> - ', '').strip())
+                    elif in_block and (line.strip() == '' or line.strip().startswith('##')):
+                        in_block = False
+                        
+            missing_overweight_label = '缺少超重标签PDF' in report_content
+            
+            results.append({
+                'zip_name': zf,
+                'status': status,
+                'summary': {
+                    'shipment_id': shipment_id,
+                    'destination': destination,
+                    'total_boxes': total_boxes,
+                    'total_units': total_units,
+                    'is_europe': is_europe,
+                    'has_gpsr': has_gpsr,
+                    'weight_warnings': weight_warnings,
+                    'missing_overweight_label': missing_overweight_label,
+                    'report_path': report_path
+                }
+            })
+            
+        except Exception as e:
+            results.append({
+                'zip_name': zf,
+                'status': 'Error',
+                'error': str(e)
+            })
+            
+    return results
+
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         print("Usage: python check_shipment.py <path_to_zip>")

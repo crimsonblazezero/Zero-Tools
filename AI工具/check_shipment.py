@@ -541,6 +541,19 @@ def perform_check(zip_path):
                     any(re.search(r'\b' + k + r'\b', zip_name_clean) for k in ['de', 'fr', 'it', 'es', 'uk']) or \
                     any(k in zip_name_clean for k in ['(de站)', '(fr站)', '(it站)', '(es站)', '(uk站)'])
         
+        
+        # Determine overweight threshold based on marketplace (US: 22.5kg, CA: 22kg, Europe/JP: 15kg)
+        # 根据不同站点决定超重阈值（美国站 22.5kg，加拿大站 22kg，欧洲及日本站 15kg）
+        is_canada = any(k in zip_name_clean for k in ['ca', 'canada', '加拿大'])
+        is_japan = any(k in zip_name_clean for k in ['jp', 'japan', '日本'])
+        is_us = any(k in zip_name_clean for k in ['us', 'usa', '美国', 'america']) or (not is_europe and not is_canada and not is_japan)
+        
+        overweight_threshold = 15.0
+        if is_us:
+            overweight_threshold = 22.5
+        elif is_canada:
+            overweight_threshold = 22.0
+            
         gpsr_status = "Pass / 通过"
         if is_europe:
             if not gpsr_files:
@@ -656,9 +669,9 @@ def perform_check(zip_path):
                         err_msg.append(wt_err)
                     sku_check['details'].append("; ".join(err_msg))
                     
-                # Check for overweight warning (>15kg)
-                # 检查箱子是否超重 (>15kg)
-                if csv_row['weight'] > 15.0:
+                # Check for overweight warning
+                # 检查箱子是否超重 (根据对应站点的起贴线)
+                if csv_row['weight'] > overweight_threshold:
                     weight_warnings.append(f"SKU: `{sku}` (Weight: {csv_row['weight']} KG)")
                     
             elif excel_row and not csv_row:
@@ -675,9 +688,7 @@ def perform_check(zip_path):
             detail_results.append(sku_check)
 
         # 8.1 Overweight label verification
-        # 8.1 超重标签核对 (欧洲、英国、日本、加拿大站点，单箱超过 15KG 强制校验)
-        is_canada = any(k in zip_name_clean for k in ['ca', 'canada', '加拿大'])
-        is_japan = any(k in zip_name_clean for k in ['jp', 'japan', '日本'])
+        # 8.1 超重标签核对 (欧洲、英国、日本、加拿大站点，单箱超过对应阈值时强制校验)
         is_heavy_required_market = is_europe or is_canada or is_japan
         
         overweight_status = "Not Required / 无需校验 (无超重箱)"
@@ -698,7 +709,7 @@ def perform_check(zip_path):
         # 9. 格式化并输出 Markdown 检查报告至控制台并保存文件
         zip_dir = os.path.dirname(os.path.abspath(zip_path))
         base_name = os.path.splitext(os.path.basename(zip_path))[0]
-        report_file_path = os.path.join(zip_dir, f"{base_name}_检查报告.md").replace("\\", "/")
+        report_file_path = os.path.join(zip_dir, f"{base_name}_检查报告.md")
         
         class Tee(object):
             def __init__(self, terminal, file_path):
@@ -791,8 +802,10 @@ def perform_check(zip_path):
             print("> **超重贴标警告 / Overweight Sticker Alert:**")
             if missing_overweight_label:
                 print("> ⚠️ **警告：本货件有超重箱（>15KG），但压缩包内缺少超重标签PDF！请务必补齐！**")
-            else:
+            elif overweight_files:
                 print(f"> **已包含超重标签PDF ({overweight_files[0]})，请确认贴标时使用该文件。**")
+            else:
+                print("> ⚠️ **提示：本货件有超重箱（>15KG），虽该站点非超重强制贴标市场（如美站），但仍建议外箱张贴超重标识以防工伤搬运纠纷。**")
             print("> 以下箱子重量超过 15KG，根据亚马逊政策，**每箱必须在5个面上张贴超重标签**（包含正上方）！")
             for warning in weight_warnings:
                 print(f"> - {warning}")
@@ -804,21 +817,6 @@ def perform_check(zip_path):
             for mis_sku in product_label_errors:
                 print(f"> - `{mis_sku}.pdf`")
                 
-        # Return summary for programmatic use (FastAPI/HTTP API)
-        return {
-            "shipment_id": shipment_id_from_zip,
-            "has_errors": has_errors,
-            "destination": csv_warehouse if csv_warehouse else "未知",
-            "total_boxes": csv_total_boxes,
-            "total_units": csv_total_qty,
-            "weight_warnings": weight_warnings,
-            "product_label_errors": product_label_errors,
-            "missing_overweight_label": missing_overweight_label,
-            "is_europe": is_europe,
-            "has_gpsr": len(gpsr_files) > 0,
-            "report_path": report_file_path.replace("\\", "/")
-        }
-                
     finally:
         # Restore stdout and display save message
         # 恢复 stdout 并提示报告保存路径
@@ -826,76 +824,136 @@ def perform_check(zip_path):
             sys.stdout = old_stdout
             tee.close()
             print(f"\n[INFO] 报告已保存至 / Report saved to:\n  {report_file_path}")
-         # Clean up decompression files
+        # Clean up decompression files
         # 清理临时解压出来的文件
         if os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
 
 def run_batch_check(folder_path):
-    """Scan and validate all shipment zip archives inside a folder.
-    扫描并校验文件夹下所有的货件 ZIP 压缩包，返回结构化 JSON 数据。"""
-    import glob
-    if not os.path.exists(folder_path):
-        return []
-    zip_files = glob.glob(os.path.join(folder_path, "*.zip"))
+    """Scan directory for FBA shipment zips, check each, and return structured results for Launcher Hub.
+    扫描目录下的 FBA 货件 zip 并执行校验，返回供 HTML 启动器面板展示的结构化结果。"""
     results = []
-    for zip_path in sorted(zip_files):
-        zip_name = os.path.basename(zip_path)
+    if not os.path.exists(folder_path):
+        return results
+        
+    # Find all zip files in directory
+    zip_files = [f for f in os.listdir(folder_path) if f.endswith('.zip')]
+    
+    for zf in zip_files:
+        zip_path = os.path.join(folder_path, zf)
         try:
-            summary = perform_check(zip_path)
+            # Run check
+            perform_check(zip_path)
+            
+            # Locate report file
+            base_name = os.path.splitext(zf)[0]
+            report_name = f"{base_name}_检查报告.md"
+            report_path = os.path.join(folder_path, report_name)
+            
+            if not os.path.exists(report_path):
+                results.append({
+                    'zip_name': zf,
+                    'status': 'Error',
+                    'error': 'Failed to generate markdown report / 未能生成核对报告'
+                })
+                continue
+                
+            # Parse markdown report to extract structured metadata
+            # 解析报告以提取结构化属性
+            with open(report_path, 'r', encoding='utf-8', errors='ignore') as f:
+                report_content = f.read()
+                
+            # Extract status: if the report says "结论：出货资料核对无误" -> Pass, otherwise -> Fail
+            status = 'Fail'
+            if '结论：出货资料核对无误' in report_content or '结论：出货资料核对无误' in report_content.replace(' ', ''):
+                status = 'Pass'
+                
+            # Extract Shipment ID
+            shipment_id = None
+            m_ship = re.search(r'CSV Box Content / CSV .*?:\s*`([^`]+)`', report_content)
+            if m_ship:
+                shipment_id = m_ship.group(1).strip()
+            else:
+                m_ship2 = re.search(r'FBA[A-Z0-9]{8,12}', report_content)
+                if m_ship2:
+                    shipment_id = m_ship2.group(0)
+                    
+            # Extract Destination Warehouse
+            destination = None
+            m_dest = re.search(r'CSV 目的地:\s*`([^`]+)`', report_content)
+            if m_dest:
+                destination = m_dest.group(1).strip()
+            else:
+                m_dest2 = re.search(r'Excel 送达仓库:\s*`([^`]+)`', report_content)
+                if m_dest2:
+                    destination = m_dest2.group(1).strip()
+                    if ' - ' in destination:
+                        destination = destination.split(' - ')[0]
+                        
+            # Extract Total Boxes
+            total_boxes = 0
+            m_box = re.search(r'CSV .*?:\s*`(\d+)`.*?箱', report_content)
+            if m_box:
+                total_boxes = int(m_box.group(1))
+            else:
+                m_box2 = re.search(r'Excel 实发.*?:\s*`(\d+)`', report_content)
+                if m_box2:
+                    total_boxes = int(m_box2.group(1))
+                    
+            # Extract Total Units
+            total_units = 0
+            m_units = re.search(r'CSV 商品总数:\s*`(\d+)`', report_content)
+            if m_units:
+                total_units = int(m_units.group(1))
+                
+            # Extract Europe Site
+            is_europe = 'GPSR' in report_content and 'Not Required' not in report_content
+            
+            # Extract GPSR
+            has_gpsr = 'GPSR安全标签 / GPSR Security Label: Pass' in report_content
+            
+            # Extract weight warnings & missing_overweight_label
+            weight_warnings = []
+            if 'Overweight Sticker Alert' in report_content:
+                lines = report_content.splitlines()
+                in_block = False
+                for line in lines:
+                    if 'Overweight Sticker Alert' in line:
+                        in_block = True
+                    elif in_block and line.strip().startswith('> - SKU:'):
+                        weight_warnings.append(line.replace('> - ', '').strip())
+                    elif in_block and (line.strip() == '' or line.strip().startswith('##')):
+                        in_block = False
+                        
+            missing_overweight_label = '缺少超重标签PDF' in report_content
+            
             results.append({
-                "zip_name": zip_name,
-                "status": "Pass" if not summary["has_errors"] else "Fail",
-                "summary": summary
+                'zip_name': zf,
+                'status': status,
+                'summary': {
+                    'shipment_id': shipment_id,
+                    'destination': destination,
+                    'total_boxes': total_boxes,
+                    'total_units': total_units,
+                    'is_europe': is_europe,
+                    'has_gpsr': has_gpsr,
+                    'weight_warnings': weight_warnings,
+                    'missing_overweight_label': missing_overweight_label,
+                    'report_path': report_path
+                }
             })
+            
         except Exception as e:
             results.append({
-                "zip_name": zip_name,
-                "status": "Error",
-                "error": str(e)
+                'zip_name': zf,
+                'status': 'Error',
+                'error': str(e)
             })
+            
     return results
 
 if __name__ == '__main__':
-    import glob
-    try:
-        # Set console encoding to avoid Unicode encoding errors on Windows when printing emojis
-        try:
-            if hasattr(sys.stdout, 'reconfigure'):
-                sys.stdout.reconfigure(errors='replace')
-        except Exception:
-            pass
-
-        if len(sys.argv) >= 2:
-            perform_check(sys.argv[1])
-        else:
-            default_dir = r"D:\Zero Tools\data\FBA货件检验"
-            print(f"[*] 未指定具体货件包，启动批量扫描模式...")
-            print(f"[*] 扫描目录: {default_dir}")
-            
-            if not os.path.exists(default_dir):
-                os.makedirs(default_dir, exist_ok=True)
-                print(f"[!] 目录不存在，已自动创建。请将 FBA 货件压缩包放入该目录后重新运行。")
-            
-            zip_files = glob.glob(os.path.join(default_dir, "*.zip"))
-            
-            if not zip_files:
-                print(f"[-] 未找到任何 .zip 货件压缩包。")
-            else:
-                print(f"[+] 找到 {len(zip_files)} 个货件压缩包，开始校验...\n")
-                for idx, zip_path in enumerate(sorted(zip_files), 1):
-                    zip_name = os.path.basename(zip_path)
-                    print("=" * 60)
-                    print(f"[{idx}/{len(zip_files)}] 正在处理: {zip_name}")
-                    print("=" * 60)
-                    try:
-                        perform_check(zip_path)
-                    except Exception as e:
-                        print(f"❌ 处理失败: {zip_name}, 错误: {str(e)}")
-                    print("\n")
-                print("==================================================")
-                print("[+] 所有货件校验完成！详细报告已保存在同目录下。")
-    except Exception as e:
-        print(f"❌ 运行发生致命错误: {str(e)}")
-    finally:
-        input("\n按下回车键退出... (Press Enter to exit...)")
+    if len(sys.argv) < 2:
+        print("Usage: python check_shipment.py <path_to_zip>")
+        sys.exit(1)
+    perform_check(sys.argv[1])
