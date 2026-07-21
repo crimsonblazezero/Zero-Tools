@@ -257,6 +257,7 @@ def parse_excel(excel_path):
         if sku in data:
             data[sku]['plan_qty'] += plan_qty
             data[sku]['boxes'] += boxes
+            data[sku]['po_runs'].append((plan_qty, boxes))
         else:
             data[sku] = {
                 'sku': sku,
@@ -264,7 +265,8 @@ def parse_excel(excel_path):
                 'plan_qty': plan_qty,
                 'boxes': boxes,
                 'dimensions': (length, width, height),
-                'weight': weight
+                'weight': weight,
+                'po_runs': [(plan_qty, boxes)]
             }
         
     return data, total_boxes, total_qty, shipment_id_from_excel, warehouse_from_excel
@@ -636,6 +638,10 @@ def perform_check(zip_path):
                     sku_check['label_found'] = "❌ Missing"
                     product_label_errors.append(sku)
             
+            if excel_row and len(excel_row.get('po_runs', [])) > 1:
+                po_runs_desc = ", ".join([f"{qty}个/{boxes}箱" for qty, boxes in excel_row['po_runs']])
+                sku_check['details'].append(f"⚠️ 多PO合单 (Excel各单: {po_runs_desc})")
+
             if excel_row and csv_row:
                 # FNSKU Check
                 if excel_row['fnsku'] != csv_row['fnsku']:
