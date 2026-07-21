@@ -254,14 +254,18 @@ def parse_excel(excel_path):
         total_boxes += boxes
         total_qty += plan_qty
         
-        data[sku] = {
-            'sku': sku,
-            'fnsku': fnsku,
-            'plan_qty': plan_qty,
-            'boxes': boxes,
-            'dimensions': (length, width, height),
-            'weight': weight
-        }
+        if sku in data:
+            data[sku]['plan_qty'] += plan_qty
+            data[sku]['boxes'] += boxes
+        else:
+            data[sku] = {
+                'sku': sku,
+                'fnsku': fnsku,
+                'plan_qty': plan_qty,
+                'boxes': boxes,
+                'dimensions': (length, width, height),
+                'weight': weight
+            }
         
     return data, total_boxes, total_qty, shipment_id_from_excel, warehouse_from_excel
 
