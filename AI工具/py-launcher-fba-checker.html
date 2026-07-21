@@ -451,6 +451,17 @@ function renderResults(results) {
         `;
       }
       
+      if (s.multi_po_skus && s.multi_po_skus.length > 0) {
+        html += `
+          <div class="detail-sec" style="margin-top: 6px; background: #FFFDF0; padding: 6px 10px; border-radius: 4px; border-left: 3px solid #E6A23C;">
+            <div class="detail-title" style="color:#D9822B; font-weight: bold;">📦 包含多 PO 合单 SKU:</div>
+            <ul class="warn-list" style="margin: 4px 0 0 0; padding-left: 16px; font-size: 11px; color: #555;">
+              ${s.multi_po_skus.map(w => `<li>${w}</li>`).join('')}
+            </ul>
+          </div>
+        `;
+      }
+      
       html += `
         </div>
         <div class="result-actions">

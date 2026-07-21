@@ -937,6 +937,17 @@ def run_batch_check(folder_path):
                         
             missing_overweight_label = '缺少超重标签PDF' in report_content
             
+            # Extract multi-PO consolidations
+            multi_po_skus = []
+            for line in report_content.splitlines():
+                if '多PO合单' in line and '|' in line:
+                    parts = line.split('|')
+                    if len(parts) >= 2:
+                        sku_part = parts[1].replace('`', '').strip()
+                        m_po = re.search(r'多PO合单 \((.*?)\)', line)
+                        po_desc = m_po.group(1) if m_po else "合单汇总"
+                        multi_po_skus.append(f"{sku_part} ({po_desc})")
+            
             results.append({
                 'zip_name': zf,
                 'status': status,
@@ -949,6 +960,7 @@ def run_batch_check(folder_path):
                     'has_gpsr': has_gpsr,
                     'weight_warnings': weight_warnings,
                     'missing_overweight_label': missing_overweight_label,
+                    'multi_po_skus': multi_po_skus,
                     'report_path': report_path
                 }
             })
