@@ -589,11 +589,12 @@ input[type=checkbox]#select-all{width:15px;height:15px;cursor:pointer;accent-col
           <th title="仅凭FBA在库维持销售的断货日">FBA起始断货日</th>
           <th title="FBA在库+在途接力后的断货日（随DMS重算）">在途接力后断货日 🔄</th>
           <th title="FBA在库+在途+已计划出运接力后的断货日（随DMS重算）">已计划出运断货日 🔄</th>
+          <th title="已计划出运量_件">已计划出运量</th>
           <th>已计划出运批次</th>
           <th title="建议发运量（运营关心）= 目标需求 - 当前FBA在库/在途/已计划出运，随DMS重算">建议发运量 🔄</th>
           <th title="国内仓发运量（件），匹配建议国内仓发运量_件">国内仓发运量</th>
           <th title="前置仓发运量（件），匹配前置仓发运量_件">前置仓发运量</th>
-          <th>前置仓发运日</th><th>建议发运时间</th>
+          <th>前置仓发运日</th>
           <th>产品状态 ✏️</th>
         </tr>
         <tr id="filter-tfoot"></tr>
@@ -2013,12 +2014,12 @@ function renderFilterTable() {
           <td class="${stockoutClass(so1)}">${so1}</td>
           <td class="${stockoutClass(so2)}">${so2}</td>
           <td class="${stockoutClass(so3)}">${so3}</td>
+          <td class="small-text">${r.planned_ship||0}</td>
           <td class="small-text">${plannedBatches}</td>
           <td>${dmsOverridden?`<span class="dms-changed">${rc.suggest_ship||0} <span class="dms-old" title="未改DMS时以公司系统原始值为准">⚠️估算</span></span>`:String(r.suggest_ship||0)}</td>
           <td class="small-text">${r.dom_ship_qty||0}</td>
           <td class="small-text">${r.fwd_ship_qty||0}</td>
           <td class="small-text">${fwdShip}</td>
-          <td class="small-text">${shipTime}</td>
           <td>
             <select class="status-select" onchange="onStatusChange('${r.msku}',this.value)">
               <option value="常规品"${prodStatus==='常规品'?' selected':''}>常规品</option>
@@ -2033,7 +2034,7 @@ function renderFilterTable() {
   // 渲染合计行（基于全部筛选结果，不限当前页）
   const tfoot = document.getElementById('filter-tfoot');
   if (tfoot) {
-    let sumFbaStock=0, sumFbaTransit=0, sumDomestic=0, sumFwd=0, sumShip=0, sumDomShip=0, sumFwdShip=0;
+    let sumFbaStock=0, sumFbaTransit=0, sumDomestic=0, sumFwd=0, sumPlannedShip=0, sumShip=0, sumDomShip=0, sumFwdShip=0;
     filteredData.forEach(r => {
       const rc = recalcRow(r);
       const edit = editMap[r.msku] || {};
@@ -2042,6 +2043,7 @@ function renderFilterTable() {
       sumFbaTransit += r.fba_transit || 0;
       sumDomestic += r.domestic || 0;
       sumFwd += r.fwd_stock || 0;
+      sumPlannedShip += r.planned_ship || 0;
       sumShip += dmsOverridden ? (rc.suggest_ship || 0) : (r.suggest_ship || 0);
       sumDomShip += r.dom_ship_qty || 0;
       sumFwdShip += r.fwd_ship_qty || 0;
@@ -2058,7 +2060,9 @@ function renderFilterTable() {
       <td><span class="sum-val">${fmt(sumFbaTransit)}</span><span class="sum-label">FBA在途</span></td>
       <td><span class="sum-val">${fmt(sumDomestic)}</span><span class="sum-label">国内仓</span></td>
       <td><span class="sum-val">${fmt(sumFwd)}</span><span class="sum-label">前置仓</span></td>
-      <td></td><td></td><td></td><td></td><td></td><td></td>
+      <td></td><td></td><td></td><td></td><td></td>
+      <td><span class="sum-val">${fmt(sumPlannedShip)}</span><span class="sum-label">已计划出运</span></td>
+      <td></td>
       <td><span class="sum-val">${fmt(sumShip)}</span><span class="sum-label">发运量</span></td>
       <td><span class="sum-val">${fmt(sumDomShip)}</span><span class="sum-label">国内仓发运</span></td>
       <td><span class="sum-val">${fmt(sumFwdShip)}</span><span class="sum-label">前置仓发运</span></td>
@@ -2489,7 +2493,7 @@ function exportAnalysis() {
   if(!data.length){alert('无数据可导出');return;}
   const headers=['MSKU','SPU品名','商品名称','站点','负责人','紧急度','风险等级','ABC×XYZ',
     '系统DMS','运营DMS','有效DMS','FBA在库','FBA在途','在库天数','在库+在途天数',
-    'FBA起始断货日','在途接力断货日','已计划出运断货日','已计划出运批次','建议发运时间','前置仓发运日期',
+    'FBA起始断货日','在途接力断货日','已计划出运断货日','已计划出运量','已计划出运批次','前置仓发运日期',
     '建议发运量','建议翻单量','翻单工厂','产品状态'];
   const rows=[headers];
   data.forEach(r=>{
@@ -2498,7 +2502,7 @@ function exportAnalysis() {
     rows.push([r.msku,r.spu||'',r.name,r.site,r.owner,r.urgency,r.risk,r.abc_xyz,
       r.dms,edit.dms_override!==undefined&&edit.dms_override!==null?edit.dms_override:'',getEffectiveDMS(r),
       r.fba_stock,r.fba_transit,rc.days_stock,rc.days_transit,
-      rc.stockout1,r.stockout2||'',r.stockout3||'',r.planned_batches||'',r.ship_time||'',r.fwd_ship_date||'',
+      rc.stockout1,r.stockout2||'',r.stockout3||'',r.planned_ship||0,r.planned_batches||'',r.fwd_ship_date||'',
       rc.suggest_ship,rc.suggest_reorder,r.reorder_factory,
       edit.prod_status||r.prod_status||'常规品']);
   });
