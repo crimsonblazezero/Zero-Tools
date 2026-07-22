@@ -538,6 +538,7 @@ input[type=checkbox]#select-all{width:15px;height:15px;cursor:pointer;accent-col
         <option value="停运">停运</option>
       </select>
       <button class="bulk-apply-btn" onclick="applyBulkEdit()">批量应用</button>
+      <button class="bulk-clear-btn" id="main-undo-btn" onclick="undoPrescreenEdit()" style="background:#ECEFF1;color:#37474F;margin-left:8px;opacity:0.5;" disabled>↩️ 撤销</button>
       <button class="bulk-clear-btn" onclick="clearSelection()">取消选择</button>
           <div class="bulk-bar-sep"></div>
           <button class="bulk-apply-btn" style="background:#3F6BA6;color:#fff" onclick="openSimModal()">🧮 试算DMS</button>
@@ -1254,6 +1255,7 @@ function recalcRow(r, _dmsOverrideForSim) {
 // 编辑操作
 // ══════════════════════════════════════════
 function onDmsChange(msku, val) {
+  saveUndoState();
   if (!editMap[msku]) editMap[msku] = {};
   editMap[msku].dms_override = val === '' ? null : parseFloat(val);
   updateEditSummary();
@@ -1307,11 +1309,6 @@ function patchRowCalc(msku) {
 
   // 更新各计算列（按列索引定位）
   const tds = tr.querySelectorAll('td');
-  // 列顺序：0=checkbox,1=序号,2=msku,3=spu,4=name(hidden),5=site,6=owner,7=urgency,8=risk,
-  //         9=dms_sys,10=dms_input,11=fba_stock,12=fba_transit,13=domestic,14=fwd_stock,
-  //         15=days_stock,16=days_transit,17=so1,18=so2,19=so3,
-  //         20=planned_batches,21=suggest_ship,22=dom_ship_qty,23=fwd_ship_qty,
-  //         24=fwd_ship,25=ship_time,...
   if (tds.length < 25) { renderFilterTable(); return; }
 
   // days_stock (col 15)
@@ -1337,26 +1334,20 @@ function patchRowCalc(msku) {
   tds[19].textContent = so3_new;
   tds[19].className = stockoutClass(so3_new);
 
-  // suggest_ship (col 21) - 建议发运量
-  // 未改DMS：显示原始值（公司AI算好的）；改了DMS：显示估算值并标注
+  // planned_ship (col 20)
+  tds[20].textContent = r.planned_ship || 0;
+
+  // suggest_ship (col 22) - 建议发运量
   if (dmsOverridden) {
     const newShip = rc.suggest_ship || 0;
-    tds[21].innerHTML = `<span class="dms-changed">${newShip} <span class="dms-old" title="未改DMS时以公司系统原始值为准">⚠️估算</span></span>`;
+    tds[22].innerHTML = `<span class="dms-changed">${newShip} <span class="dms-old" title="未改DMS时以公司系统原始值为准">⚠️估算</span></span>`;
   } else {
-    tds[21].textContent = r.suggest_ship || 0;
-  }
-
-  // suggest_reorder (col 22) - 建议翻单量
-  // 未改DMS：显示原始值（公司AI算好的）；改了DMS：显示估算值并标注
-  if (dmsOverridden) {
-    const newReorder = rc.suggest_reorder || 0;
-    tds[22].innerHTML = `<strong class="dms-changed">${newReorder} <span class="dms-old" title="未改DMS时以公司系统原始值为准">⚠️估算</span></strong>`;
-  } else {
-    tds[22].innerHTML = `<strong>${r.suggest_reorder || 0}</strong>`;
+    tds[22].textContent = r.suggest_ship || 0;
   }
 }
 
 function onStatusChange(msku, val) {
+  saveUndoState();
   if (!editMap[msku]) editMap[msku] = {};
   editMap[msku].prod_status = val;
   updateEditSummary();
@@ -1364,6 +1355,7 @@ function onStatusChange(msku, val) {
 }
 
 function onAllowShipChange(msku, val) {
+  saveUndoState();
   if (!editMap[msku]) editMap[msku] = {};
   editMap[msku].allow_ship = val ? 1 : 0;
   updateEditSummary();
@@ -1372,6 +1364,7 @@ function onAllowShipChange(msku, val) {
 }
 
 function resetDms(msku) {
+  saveUndoState();
   if (editMap[msku]) {
     delete editMap[msku].dms_override;
     if (Object.keys(editMap[msku]).length === 0) delete editMap[msku];
@@ -1383,9 +1376,11 @@ function resetDms(msku) {
 
 function resetAllEdits() {
   if (!confirm('确认重置所有修改？')) return;
+  saveUndoState();
   editMap = {};
   updateEditSummary();
   renderFilterTable();
+  if (PRESCREEN_DATA.length > 0) applyPrescreenFilters();
   updateHeroModified();
 }
 
@@ -1469,6 +1464,7 @@ function applyBulkEdit() {
     return;
   }
 
+  saveUndoState();
   let count = 0;
   selectedMskus.forEach(msku => {
     if (!editMap[msku]) editMap[msku] = {};
@@ -3336,22 +3332,24 @@ function undoPrescreenEdit() {
   updateEditSummary();
   updateHeroModified();
   if (ALL_DATA.length > 0) renderFilterTable();
-  applyPrescreenFilters();
+  if (PRESCREEN_DATA.length > 0) applyPrescreenFilters();
   updateUndoButtonState();
   alert('↩️ 已撤销上一次修改');
 }
 
 function updateUndoButtonState() {
-  const btn = document.getElementById('ps-undo-btn');
-  if (btn) {
-    if (prescreenUndoStack.length > 0) {
-      btn.disabled = false;
-      btn.style.opacity = '1';
-    } else {
-      btn.disabled = true;
-      btn.style.opacity = '0.5';
+  ['ps-undo-btn', 'main-undo-btn'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      if (prescreenUndoStack.length > 0) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      } else {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+      }
     }
-  }
+  });
 }
 
 function handleFileUploadPrescreen(e) {
