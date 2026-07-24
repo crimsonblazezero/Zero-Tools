@@ -2780,16 +2780,58 @@ function updateProdShipStatusBar(){
 function handleDropDec(e){e.preventDefault();document.getElementById('upload-card-dec').classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f)processDecFile(f);}
 function handleFileUploadDec(e){const f=e.target.files[0];if(f)processDecFile(f);e.target.value='';}
 
-// 日期格式标准化：将 2026/6/3 或 2026/06/03 转为 2026-06-03
-    function normalizeDate(str) {
-      if (!str || str === 'nan' || str === '') return '';
-      // 已经是 YYYY-MM-DD 格式
-      if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
-      // YYYY/M/D 或 YYYY/MM/DD 格式
-      const m = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
-      if (m) {
-        return m[1] + '-' + m[2].padStart(2,'0') + '-' + m[3].padStart(2,'0');
+// 日期格式标准化：处理 Excel 序列号 (如 46274)、Date 对象、YYYY/MM/DD、ISO 日期等
+    function normalizeDate(val) {
+      if (val === null || val === undefined || val === '' || val === 'nan') return '';
+
+      if (val instanceof Date) {
+        if (isNaN(val.getTime())) return '';
+        const y = val.getFullYear();
+        const m = String(val.getMonth() + 1).padStart(2, '0');
+        const d = String(val.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
       }
+
+      let str = String(val).trim();
+      if (!str || str === 'nan') return '';
+
+      // 1. 如果是 Excel 序列号数字（例如 46274 或 "46274"），对应年份 ~1982 到 ~2064 (30000 ~ 60000)
+      const num = Number(str);
+      if (!isNaN(num) && num > 30000 && num < 60000) {
+        const utcDays = Math.floor(num - 25569);
+        const date = new Date(utcDays * 86400 * 1000);
+        const y = date.getUTCFullYear();
+        const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+        const d = String(date.getUTCDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      }
+
+      // 2. 已经是 YYYY-MM-DD 格式
+      if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+
+      // 3. 处理带 T 的 ISO 日期字符串 (如 2026-09-09T00:00:00.000Z)
+      if (str.includes('T')) {
+        const isoDate = new Date(str);
+        if (!isNaN(isoDate.getTime())) {
+          const y = isoDate.getFullYear();
+          const m = String(isoDate.getMonth() + 1).padStart(2, '0');
+          const d = String(isoDate.getDate()).padStart(2, '0');
+          return `${y}-${m}-${d}`;
+        }
+      }
+
+      // 4. YYYY/M/D, YYYY-M-D, YYYY.M.D
+      const m1 = str.match(/^(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})/);
+      if (m1) {
+        return m1[1] + '-' + m1[2].padStart(2, '0') + '-' + m1[3].padStart(2, '0');
+      }
+
+      // 5. M/D/YYYY, MM/DD/YYYY
+      const m2 = str.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/);
+      if (m2) {
+        return m2[3] + '-' + m2[1].padStart(2, '0') + '-' + m2[2].padStart(2, '0');
+      }
+
       return str;
     }
 
@@ -2809,14 +2851,14 @@ function handleFileUploadDec(e){const f=e.target.files[0];if(f)processDecFile(f)
         }
         rawRecords=parseCSV(text);
       }else{
-        const wb=XLSX.read(e.target.result,{type:'array'});
+        const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
         const ws=wb.Sheets[wb.SheetNames[0]];
         const allRows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
         if(allRows.length<2)throw new Error('文件内容为空');
         const headers=allRows[0];
         const dataRows=allRows.slice(3);
         rawRecords=dataRows.filter(row=>row&&row.some(c=>c!==undefined&&c!=='')).map(row=>{
-          const obj={};headers.forEach((h,i)=>{if(h)obj[h]=row[i]!==undefined?String(row[i]):'';});return obj;
+          const obj={};headers.forEach((h,i)=>{if(h)obj[h]=row[i]!==undefined?row[i]:'';});return obj;
         });
       }
       if (rawRecords.length > 0 && !('负责人' in rawRecords[0])) {
@@ -2859,13 +2901,13 @@ function handleFileUploadDec(e){const f=e.target.files[0];if(f)processDecFile(f)
         days_stock:parseFloat(r['FBA在库可售天数']||0)||0,
         days_transit:parseFloat(r['FBA在库+在途可售天数']||0)||0,
         days_planned:parseFloat(r['FBA在库+在途+已计划出运可售天数']||0)||0,
-        stockout1:normalizeDate(String(r['FBA起始断货日']||'').trim()),
-        stockout2:normalizeDate(String(r['在途接力后断货日']||'').trim()),
+        stockout1:normalizeDate(r['FBA起始断货日']),
+        stockout2:normalizeDate(r['在途接力后断货日']),
         // v5 新增字段
-        stockout3:normalizeDate(String(r['已计划出运断货日']||'').trim()),
+        stockout3:normalizeDate(r['已计划出运断货日']),
         planned_batches:String(r['已计划出运批次']||'').trim(),
-        fwd_ship_date:String(r['前置仓发运日期']||'').trim(),
-        fwd_arrival_date:String(r['前置仓入库日期']||'').trim(),
+        fwd_ship_date:normalizeDate(r['前置仓发运日期']),
+        fwd_arrival_date:normalizeDate(r['前置仓入库日期']),
         suggest_ship:parseInt(r['建议发运量_件']||0)||0,
         suggest_reorder:parseInt(r['建议翻单数量_件']||0)||0,
         ship_time:String(r['建议发运时间']||'').trim(),
