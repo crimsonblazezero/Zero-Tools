@@ -1,0 +1,230 @@
+# KovaScape Daily Report Configuration
+# 项目：亚马逊运营 SOP + 自动化整合 / 日报系统
+# 文档：KovaScape-预警模板配置手册-v1.md + KovaScape-日报设计-v1.md
+
+# ============================================
+# 1. 领星 MCP 数据源
+# ============================================
+lingxing:
+  # KovaScape 主营站点（南京欧洲组 KS-）15 个 sid
+  sids:
+    - { id: 5018, country: "美国", code: "US" }
+    - { id: 5019, country: "加拿大", code: "CA" }
+    - { id: 5020, country: "墨西哥", code: "MX" }
+    - { id: 5021, country: "日本", code: "JP" }
+    - { id: 5022, country: "英国", code: "UK" }
+    - { id: 5023, country: "意大利", code: "IT" }
+    - { id: 5024, country: "德国", code: "DE" }
+    - { id: 5025, country: "法国", code: "FR" }
+    - { id: 5026, country: "西班牙", code: "ES" }
+    - { id: 5027, country: "荷兰", code: "NL" }
+    - { id: 5028, country: "瑞典", code: "SE" }
+    - { id: 5029, country: "波兰", code: "PL" }
+    - { id: 5030, country: "比利时", code: "BE" }
+    - { id: 5031, country: "爱尔兰", code: "IE" }
+    - { id: 5751, country: "巴西", code: "BR" }
+  # 主营分组（其他品牌/团队的 sid 不纳入 KovaScape 日报）
+
+  # 数据拉取并行数（避免触发领星限流）
+  max_parallel: 3
+  # 单次重试次数
+  retry: 2
+
+  # ⚠️ MSKU/ASIN → Listing 归属人映射（待办分发的核心）
+  #   来源：领星 Listing 列表的"负责人"字段（get_product_list / query_listing_responsible）
+  #   默认全部归王祎（你），如有例外再覆盖
+  #   结构：{ sid: { msku_or_asin: owner_key } }，owner_key ∈ wang_yi | hua_yibo
+  listing_owner_source: "lingxing_field:负责人"
+  listing_owner_default: "wang_yi"  # 默认归属
+  # TODO: 接入领星 Listing 列表后，从 Excel/领星导出真实的归属映射表
+  listing_owner_overrides: {}
+  #  示例：
+  #  5022:  # UK
+  #    "KF-PHOTO-30-WALNUT": "wang_yi"
+  #    "KF-PHOTO-40-WALNUT": "hua_yibo"
+
+# ============================================
+# 2. 硬约束基线（与预警模板手册一致）
+# ============================================
+thresholds:
+  acos_breakeven: 50        # ACoS 盈亏线（硬线）
+  tacos_current: 25         # TACoS 当前目标（%）
+  tacos_future: 15          # TACoS 未来目标（%）
+  gross_margin_redline: 18  # 毛利率红线（%）
+  stockout_days: 7          # 缺货阈值（天）
+  new_product_period: 30    # 新品排除期（天）
+
+# ============================================
+# 3. 规则引擎（Python 重写领星模板）
+# ============================================
+rules:
+  # R01 缺货风险
+  r01_stockout:
+    level: "P0"
+    priority: 40
+    due_hours: 8  # 当日 18:00 = 8 小时内
+    title_template: "[日报 {date}] R01 缺货 {msku} 可售{available}件/{sales_rate}件·天={days:.1f}天"
+    action: "立即提价 5% / 暂停广告 / 紧急补货评估"
+
+  # R02 毛利润 < 0
+  r02_negative_profit:
+    level: "P0"
+    priority: 40
+    due_hours: 8
+    title_template: "[日报 {date}] R02 毛利润<0 {msku} (7日毛利 {profit:.0f})"
+    action: "立即止损：检查定价 / 广告占比 / 退货成本"
+
+  # R03 大类排名下滑
+  r03_rank_drop:
+    level: "P0"
+    priority: 40
+    due_hours: 24
+    threshold_pct: 20  # 3 日下滑 > 20%
+    title_template: "[日报 {date}] R03 大类排名↓ {parent_asin} ({drop_pct:.0f}%)"
+    action: "检查 Listing / Buybox / 竞品 / 加广告"
+
+  # R04 Buybox 实时
+  r04_buybox:
+    level: "P0"
+    priority: 40
+    due_hours: 4
+    title_template: "[日报 {date}] R04 Buybox丢失 {asin} (站点{country})"
+    action: "查价格 / 查跟卖 / 品牌投诉 / 夺回 Buybox"
+
+  # R05 销量骤降
+  r05_sales_drop:
+    level: "P0"
+    priority: 40
+    due_hours: 24
+    threshold_pct: 40
+    title_template: "[日报 {date}] R05 销量骤降 {msku} (↓{drop_pct:.0f}%)"
+    action: "查竞品 / 查关键词排名 / 查跟卖 / 查断货"
+
+  # R06 退款率异常
+  r06_refund:
+    level: "P0"
+    priority: 40
+    due_hours: 8
+    threshold_rate: 5
+    threshold_growth: 50
+    title_template: "[日报 {date}] R06 退款率异常 {msku} ({rate:.1f}%↑{growth:.0f}%)"
+    action: "查退货原因 / 检查 Listing 描述 / 准备客服模板"
+
+  # R07 退货率异常
+  r07_return:
+    level: "P0"
+    priority: 40
+    due_hours: 8
+    threshold_rate: 5
+    threshold_growth: 50
+    title_template: "[日报 {date}] R07 退货率异常 {msku} ({rate:.1f}%↑{growth:.0f}%)"
+    action: "同 R06 + 评估改款"
+
+  # R08 流量异常下滑
+  r08_traffic_drop:
+    level: "P0"
+    priority: 40
+    due_hours: 8
+    threshold_pct: 30
+    title_template: "[日报 {date}] R08 流量下滑 {msku} (Sessions↓{drop_pct:.0f}%)"
+    action: "查关键词排名 / 检查广告结构 / 加预算抢流量"
+
+  # 留扩展位给批次 2/3 规则
+  r09_ad_burn:
+    level: "P1"
+    priority: 30
+    status: "todo_w2"
+
+# ============================================
+# 4. 钉钉集成
+# ============================================
+dingtalk:
+  # 群机器人 webhook（钉钉群 → 群设置 → 智能群助手 → 自定义机器人）
+  webhook_url: "https://oapi.dingtalk.com/robot/send?access_token=ba74877458660cee8526c367981821c5493aa0ae0493d205574bc82e8fe620d7"
+  # 群机器人加签密钥（启用加签时填）
+  secret: ""
+  # 机器人关键词（Zero 确认为 "广告"；当前探测 30+ 候选均失败——机器人可能同时启用了【加签】模式，待二次验证）
+  keyword: "广告"
+
+  # dws 接收人映射（已通过 dws contact user search 解析）
+  # 团队结构（2026-07-25 二次澄清）：
+  #   - 王祎 = Zero = 部门负责人-中级主管（你自己），同时是 Listing 负责人
+  #   - 化一博 = 亚马逊运营（唯一执行人），同时是部分 Listing 负责人
+  #   - 团队只有 2 人，**没有第三方组长**
+  executors:
+    wang_yi:  "17566881508928543"   # 王祎 / Zero - 部门负责人 + Listing 负责人
+    hua_yibo: "17597998065506150"   # 化一博 - 亚马逊运营 + 部分 Listing 负责人
+
+  # 待办分发策略：按 Listing 归属人分发
+  #   - 每条 R0X 待办都归属一个 MSKU/ASIN → 根据 lingxing.listing_owner_overrides 查到归属人
+  #   - 归属人就是该待办的 executors（dws todo 创建）
+  #   - 摘要（Action Card）仍推送到群里，2 人都能看到
+  todo_distribution:
+    mode: "by_listing_owner"   # 按归属人分发（不是按角色）
+    fallback: "wang_yi"        # 查不到归属人时 fallback
+    manager_digest_only: false # 王祎（你）也收 actionable 待办，因为你是 Listing 负责人
+
+  # 推送时间（夏令时 PDT / 冬令时 PST 自动判断）
+  push_hour_beijing: 15    # 夏令时（3-11 月）：15:00 北京 = 美西 00:00
+  push_hour_beijing_winter: 16  # 冬令时（11-3 月）：16:00 北京
+
+# ============================================
+# 5. 钉钉 AI 表格（KovaScape 工作大表 → 9.0_日报行动项）
+# ============================================
+aitable:
+  # KovaScape 工作大表 baseId
+  base_id: "Qnp9zOoBVBAKbBadF5R7yA9LW1DK0g6l"
+  # daily_actions 表 tableId
+  table_id: "d99taD5"
+  # 字段 ID 映射（从 +table-get 拿）
+  field_ids:
+    date:    "EZwJUfQ"   # 日期
+    rule:    "U4vyfOb"   # 规则
+    level:   "mLdqfm4"   # 等级
+    msku:    "k5dL536"   # MSKU
+    asin:    "Bz1fDqU"   # ASIN
+    site:    "Z30l1Kl"   # 站点
+    owner:   "nLRy0Bz"   # 归属 (user)
+    status:  "vbH9aI8"   # 状态 (singleSelect)
+    action:  "nP8LZMG"   # 动作建议 (richText)
+    evidence: "dqKs4C7"   # 触发证据 (richText)
+    due:      "IojouLS"   # 截止时间
+    fired_at: "IeQY4yI"   # 触发时间
+    report:   "8VQqQQj"   # 日报链接 (url)
+
+  # 表格写入前是否去重（基于 日期+规则+MSKU/ASIN）
+  dedup: true
+
+  # ⚠️ dws CLI 实际调用方式（绕过 .cmd wrapper，避免 shell 转义损坏 JSON）
+  # 直接调 node + dws.js，不用 dws.cmd
+  invoker:
+    node_path: "C:/Users/Administrator/.workbuddy/binaries/node/versions/22.22.2/node.exe"
+    dws_js:    "C:/Users/Administrator/.workbuddy/binaries/node/cli-connector-packages/node_modules/dingtalk-workspace-cli/bin/dws.js"
+
+# ============================================
+# 5.5 旧版 dingtalk 群机器人（保留兼容）
+# ============================================
+dingtalk_robot:
+  webhook_url: "https://oapi.dingtalk.com/robot/send?access_token=ba74877458660cee8526c367981821c5493aa0ae0493d205574bc82e8fe620d7"
+  secret: ""
+  keyword: "广告"  # Action Card 关键词（title 和 text 都必须含）
+
+# ============================================
+# 6. 报告输出
+# ============================================
+output:
+  # HTML 输出目录（同时支持本地预览 + 部署）
+  html_dir: "./output/"
+  # 部署 URL（CloudStudio 部署后填）
+  deploy_url: "https://d70f70b3d5174e90a35cc59ddab837cc.app.codebuddy.work/{date}.html"
+  # 历史报告保留天数
+  retain_days: 30
+
+# ============================================
+# 7. 日志与监控
+# ============================================
+logging:
+  level: "INFO"
+  file: "./logs/daily_report.log"
+  # 异常时通知（钉钉群告警）
+  alert_on_error: true

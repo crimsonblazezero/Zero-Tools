@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KovaScape 日报 · 2026-07-26</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f6f8; color: #1f2329; line-height: 1.5; padding: 16px; max-width: 1100px; margin: 0 auto; }
+header { background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%); color: #fff; padding: 20px 24px; border-radius: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+header h1 { font-size: 22px; font-weight: 600; }
+header .meta { font-size: 13px; opacity: 0.85; }
+section { background: #fff; border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+section h2 { font-size: 17px; font-weight: 600; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.kpi { background: #f9fafb; border-radius: 8px; padding: 14px 16px; }
+.kpi .label { font-size: 12px; color: #6b7280; margin-bottom: 4px; }
+.kpi .value { font-size: 22px; font-weight: 700; color: #1f2329; }
+.kpi .delta { font-size: 12px; margin-top: 2px; }
+.kpi .delta.up { color: #10b981; }
+.kpi .delta.down { color: #ef4444; }
+.kpi .delta.warn { color: #f59e0b; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+th { background: #f9fafb; font-weight: 600; color: #4b5563; }
+.alert-list { display: grid; gap: 10px; }
+.alert { border-left: 4px solid #e5e7eb; background: #f9fafb; padding: 12px 16px; border-radius: 6px; }
+.alert.p0 { border-left-color: #ef4444; background: #fef2f2; }
+.alert.p1 { border-left-color: #f59e0b; background: #fffbeb; }
+.alert.p2 { border-left-color: #3b82f6; background: #eff6ff; }
+.alert .rule { font-weight: 600; color: #1f2329; font-size: 14px; margin-bottom: 4px; }
+.alert .title { color: #4b5563; font-size: 13px; margin-bottom: 4px; }
+.alert .action { color: #6b7280; font-size: 12px; }
+.alert .owner { display: inline-block; background: #e5e7eb; color: #374151; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; }
+.empty { color: #9ca3af; font-size: 13px; padding: 24px; text-align: center; }
+footer { text-align: center; font-size: 12px; color: #9ca3af; padding: 20px 0; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.badge.p0 { background: #fee2e2; color: #b91c1c; }
+.badge.p1 { background: #fef3c7; color: #92400e; }
+.badge.p2 { background: #dbeafe; color: #1e40af; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>📊 KovaScape 运营日报</h1>
+    <div class="meta">报告日期：2026-07-26（美西） · 生成于 2026-07-25T22:11:06+08:00（北京）</div>
+  </div>
+  <div class="meta">店铺范围：15 个 KS- 站点（US/UK/DE/CA/JP/MX/BR + BE/ES/FR/IE/IT/NL/PL/SE）</div>
+</header>
+
+<!-- ============ ① 业绩 ============ -->
+<section>
+  <h2>① 业绩摘要</h2>
+  <div class="kpi-grid">
+    <div class="kpi"><div class="label">总销售额</div><div class="value">$1770</div><div class="delta down">-3.0% vs 昨日</div></div>
+    <div class="kpi"><div class="label">总订单</div><div class="value">179</div></div>
+    <div class="kpi"><div class="label">毛利润</div><div class="value">$295</div></div>
+    <div class="kpi"><div class="label">毛利率</div><div class="value">16.7%</div></div>
+    <div class="kpi"><div class="label">TACoS</div><div class="value">30.5%</div><div class="delta warn">⚠ 超过目标线 25%</div></div>
+    <div class="kpi"><div class="label">ACoS（加权）</div><div class="value">30.5%</div></div>
+  </div>
+
+  <h2 style="margin-top: 20px;">分站点表现</h2>
+  <table>
+    <thead><tr><th>站点</th><th>销售额</th><th>订单</th><th>毛利润</th><th>毛利率</th><th>ACoS</th></tr></thead>
+    <tbody>
+    
+      <tr>
+        <td>美国 <small>(5018)</small></td>
+        <td>$1570</td>
+        <td>137</td>
+        <td>$215</td>
+        <td>13.7%</td>
+        <td>31.8%</td>
+      </tr>
+    
+      <tr>
+        <td>德国 <small>(5024)</small></td>
+        <td>$200</td>
+        <td>42</td>
+        <td>$80</td>
+        <td>40.0%</td>
+        <td>20.0%</td>
+      </tr>
+    
+    </tbody>
+  </table>
+</section>
+
+<!-- ============ ② 异常 ============ -->
+<section>
+  <h2>② 异常清单 · 6 条</h2>
+  
+  <div class="alert-list">
+    
+    <div class="alert p0" id="alert-R01-KF-2024-09-BLACK-30">
+      <div class="rule">
+        <span class="badge p0">P0</span>
+        R01 · KF-2024-09-BLACK-30 (美国)
+        <span class="owner">归属：wang_yi (175668…)</span>
+      </div>
+      <div class="title">[日报 2026-07-26] R01 缺货 KF-2024-09-BLACK-30(美国) 可售8件/12.0件·天=0.7天</div>
+      <div class="action">⚡ 立即提价 5-10% / 暂停广告 / 紧急补货评估 · 截止：8h 内</div>
+    </div>
+    
+    <div class="alert p0" id="alert-R01-KF-2024-11-WALNUT-50">
+      <div class="rule">
+        <span class="badge p0">P0</span>
+        R01 · KF-2024-11-WALNUT-50 (美国)
+        <span class="owner">归属：wang_yi (175668…)</span>
+      </div>
+      <div class="title">[日报 2026-07-26] R01 缺货 KF-2024-11-WALNUT-50(美国) 可售15件/5.0件·天=3.0天</div>
+      <div class="action">⚡ 立即提价 5-10% / 暂停广告 / 紧急补货评估 · 截止：8h 内</div>
+    </div>
+    
+    <div class="alert p0" id="alert-R01-KF-2024-09-BLACK-40">
+      <div class="rule">
+        <span class="badge p0">P0</span>
+        R01 · KF-2024-09-BLACK-40 (德国)
+        <span class="owner">归属：wang_yi (175668…)</span>
+      </div>
+      <div class="title">[日报 2026-07-26] R01 缺货 KF-2024-09-BLACK-40(德国) 可售18件/6.0件·天=3.0天</div>
+      <div class="action">⚡ 立即提价 5-10% / 暂停广告 / 紧急补货评估 · 截止：8h 内</div>
+    </div>
+    
+    <div class="alert p0" id="alert-R02-KF-2024-09-BLACK-30">
+      <div class="rule">
+        <span class="badge p0">P0</span>
+        R02 · KF-2024-09-BLACK-30 (美国)
+        <span class="owner">归属：wang_yi (175668…)</span>
+      </div>
+      <div class="title">[日报 2026-07-26] R02 毛利润<0 KF-2024-09-BLACK-30(美国) 7日毛利$-15</div>
+      <div class="action">⚡ 立即止损：检查定价 / 广告占比 / 退货成本 · 截止：8h 内</div>
+    </div>
+    
+    <div class="alert p0" id="alert-R04-KF-2024-09-BLACK-30">
+      <div class="rule">
+        <span class="badge p0">P0</span>
+        R04 · KF-2024-09-BLACK-30 (美国)
+        <span class="owner">归属：wang_yi (175668…)</span>
+      </div>
+      <div class="title">[日报 2026-07-26] R04 Buybox丢失 B0ABCD1240(美国) 持有人:无人</div>
+      <div class="action">⚡ 查价格 / 查跟卖 / 品牌投诉 / 夺回 Buybox · 截止：4h 内</div>
+    </div>
+    
+    <div class="alert p0" id="alert-R06-KF-2024-11-WALNUT-50">
+      <div class="rule">
+        <span class="badge p0">P0</span>
+        R06 · KF-2024-11-WALNUT-50 (美国)
+        <span class="owner">归属：wang_yi (175668…)</span>
+      </div>
+      <div class="title">[日报 2026-07-26] R06 退款率异常 KF-2024-11-WALNUT-50(美国) 6.5%</div>
+      <div class="action">⚡ 查退货原因 / 检查 Listing 描述 / 准备客服模板 · 截止：8h 内</div>
+    </div>
+    
+  </div>
+  
+</section>
+
+<!-- ============ ③ 展望 ============ -->
+<section>
+  <h2>③ 今日展望</h2>
+  <ul style="padding-left: 20px; color: #4b5563; font-size: 14px; line-height: 1.8;">
+    <li>📦 补货：R01 触发 3 条 MSKU 需在 8h 内补货或提价</li>
+    <li>💰 利润：R02 触发 1 条 MSKU 毛利润&lt;0，需立即止损</li>
+    <li>🛒 Buybox：R04 触发 1 条 ASIN 丢失 Buybox，需立即夺回</li>
+    <li>📈 退款：R06 触发 1 条 MSKU 退款率 6.5%，检查 Listing 描述</li>
+    <li>📅 本周关键节点：周末前完成所有 P0 处置（按 dws 待办 SLA）</li>
+  </ul>
+</section>
+
+<!-- ============ ④ 行动清单 ============ -->
+<section>
+  <h2>④ 行动清单（按归属人）</h2>
+  
+  
+  
+    
+    <h3 style="font-size: 14px; margin: 12px 0 8px; color: #4b5563;">👤 wang_yi（6 条）</h3>
+    <div class="alert-list">
+      
+      <div class="alert p0">
+        <div class="title"><span class="badge p0">P0</span> <strong>R01</strong> · [日报 2026-07-26] R01 缺货 KF-2024-09-BLACK-30(美国) 可售8件/12.0件·天=0.7天</div>
+        <div class="action">👉 立即提价 5-10% / 暂停广告 / 紧急补货评估</div>
+      </div>
+      
+      <div class="alert p0">
+        <div class="title"><span class="badge p0">P0</span> <strong>R01</strong> · [日报 2026-07-26] R01 缺货 KF-2024-11-WALNUT-50(美国) 可售15件/5.0件·天=3.0天</div>
+        <div class="action">👉 立即提价 5-10% / 暂停广告 / 紧急补货评估</div>
+      </div>
+      
+      <div class="alert p0">
+        <div class="title"><span class="badge p0">P0</span> <strong>R01</strong> · [日报 2026-07-26] R01 缺货 KF-2024-09-BLACK-40(德国) 可售18件/6.0件·天=3.0天</div>
+        <div class="action">👉 立即提价 5-10% / 暂停广告 / 紧急补货评估</div>
+      </div>
+      
+      <div class="alert p0">
+        <div class="title"><span class="badge p0">P0</span> <strong>R02</strong> · [日报 2026-07-26] R02 毛利润<0 KF-2024-09-BLACK-30(美国) 7日毛利$-15</div>
+        <div class="action">👉 立即止损：检查定价 / 广告占比 / 退货成本</div>
+      </div>
+      
+      <div class="alert p0">
+        <div class="title"><span class="badge p0">P0</span> <strong>R04</strong> · [日报 2026-07-26] R04 Buybox丢失 B0ABCD1240(美国) 持有人:无人</div>
+        <div class="action">👉 查价格 / 查跟卖 / 品牌投诉 / 夺回 Buybox</div>
+      </div>
+      
+      <div class="alert p0">
+        <div class="title"><span class="badge p0">P0</span> <strong>R06</strong> · [日报 2026-07-26] R06 退款率异常 KF-2024-11-WALNUT-50(美国) 6.5%</div>
+        <div class="action">👉 查退货原因 / 检查 Listing 描述 / 准备客服模板</div>
+      </div>
+      
+    </div>
+  
+  
+</section>
+
+<footer>
+  KovaScape Daily Report · 自动生成 · 数据源：领星 MCP（mock 数据） · 推送通道：钉钉
+</footer>
+</body>
+</html>

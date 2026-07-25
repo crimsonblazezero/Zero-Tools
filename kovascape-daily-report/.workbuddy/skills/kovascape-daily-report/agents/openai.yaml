@@ -1,0 +1,4 @@
+interface:
+  display_name: "KovaScape日报"
+  short_description: "从领星MCP拉取15站点真实数据，生成日报+待办+钉钉推送"
+  default_prompt: "执行KovaScape日报全流程"

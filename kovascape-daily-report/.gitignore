@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+node_modules/
+.env
+output/raw/
+output/*.html
+output/snapshot-*.json
+output/alerts-*.json
+output/listing_owners.json

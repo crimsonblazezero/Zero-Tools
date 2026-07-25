@@ -1,0 +1,125 @@
+[
+  {
+    "rule_id": "R01",
+    "level": "P0",
+    "msku": "KF-2024-09-BLACK-30",
+    "asin": "B0ABCD1240",
+    "parent_asin": null,
+    "sid": 5018,
+    "country": "美国",
+    "evidence": {
+      "available": 8,
+      "sales_velocity_7d": 12.0,
+      "days_of_supply": 0.7
+    },
+    "title": "[日报 2026-07-26] R01 缺货 KF-2024-09-BLACK-30(美国) 可售8件/12.0件·天=0.7天",
+    "action": "立即提价 5-10% / 暂停广告 / 紧急补货评估",
+    "priority": 40,
+    "due_hours": 8,
+    "owner_key": "wang_yi",
+    "owner_user_id": "17566881508928543",
+    "triggered_at": "2026-07-25T22:11:06+08:00"
+  },
+  {
+    "rule_id": "R01",
+    "level": "P0",
+    "msku": "KF-2024-11-WALNUT-50",
+    "asin": "B0ABCD1260",
+    "parent_asin": null,
+    "sid": 5018,
+    "country": "美国",
+    "evidence": {
+      "available": 15,
+      "sales_velocity_7d": 5.0,
+      "days_of_supply": 3.0
+    },
+    "title": "[日报 2026-07-26] R01 缺货 KF-2024-11-WALNUT-50(美国) 可售15件/5.0件·天=3.0天",
+    "action": "立即提价 5-10% / 暂停广告 / 紧急补货评估",
+    "priority": 40,
+    "due_hours": 8,
+    "owner_key": "wang_yi",
+    "owner_user_id": "17566881508928543",
+    "triggered_at": "2026-07-25T22:11:06+08:00"
+  },
+  {
+    "rule_id": "R01",
+    "level": "P0",
+    "msku": "KF-2024-09-BLACK-40",
+    "asin": "B0DEEF5680",
+    "parent_asin": null,
+    "sid": 5024,
+    "country": "德国",
+    "evidence": {
+      "available": 18,
+      "sales_velocity_7d": 6.0,
+      "days_of_supply": 3.0
+    },
+    "title": "[日报 2026-07-26] R01 缺货 KF-2024-09-BLACK-40(德国) 可售18件/6.0件·天=3.0天",
+    "action": "立即提价 5-10% / 暂停广告 / 紧急补货评估",
+    "priority": 40,
+    "due_hours": 8,
+    "owner_key": "wang_yi",
+    "owner_user_id": "17566881508928543",
+    "triggered_at": "2026-07-25T22:11:06+08:00"
+  },
+  {
+    "rule_id": "R02",
+    "level": "P0",
+    "msku": "KF-2024-09-BLACK-30",
+    "asin": null,
+    "parent_asin": null,
+    "sid": 5018,
+    "country": "美国",
+    "evidence": {
+      "gross_profit": -15,
+      "sales": 120,
+      "ad_spend": 80
+    },
+    "title": "[日报 2026-07-26] R02 毛利润<0 KF-2024-09-BLACK-30(美国) 7日毛利$-15",
+    "action": "立即止损：检查定价 / 广告占比 / 退货成本",
+    "priority": 40,
+    "due_hours": 8,
+    "owner_key": "wang_yi",
+    "owner_user_id": "17566881508928543",
+    "triggered_at": "2026-07-25T22:11:06+08:00"
+  },
+  {
+    "rule_id": "R04",
+    "level": "P0",
+    "msku": "KF-2024-09-BLACK-30",
+    "asin": "B0ABCD1240",
+    "parent_asin": null,
+    "sid": 5018,
+    "country": "美国",
+    "evidence": {
+      "buybox_owner": "(无人持有)",
+      "is_hijacked": false
+    },
+    "title": "[日报 2026-07-26] R04 Buybox丢失 B0ABCD1240(美国) 持有人:无人",
+    "action": "查价格 / 查跟卖 / 品牌投诉 / 夺回 Buybox",
+    "priority": 40,
+    "due_hours": 4,
+    "owner_key": "wang_yi",
+    "owner_user_id": "17566881508928543",
+    "triggered_at": "2026-07-25T22:11:06+08:00"
+  },
+  {
+    "rule_id": "R06",
+    "level": "P0",
+    "msku": "KF-2024-11-WALNUT-50",
+    "asin": null,
+    "parent_asin": null,
+    "sid": 5018,
+    "country": "美国",
+    "evidence": {
+      "refund_rate": 6.5
+    },
+    "title": "[日报 2026-07-26] R06 退款率异常 KF-2024-11-WALNUT-50(美国) 6.5%",
+    "action": "查退货原因 / 检查 Listing 描述 / 准备客服模板",
+    "priority": 40,
+    "due_hours": 8,
+    "owner_key": "wang_yi",
+    "owner_user_id": "17566881508928543",
+    "triggered_at": "2026-07-25T22:11:06+08:00"
+  }
+]
