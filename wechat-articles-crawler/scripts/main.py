@@ -43,7 +43,7 @@ USER_AGENT = (
 MP_HOME_URL = "https://mp.weixin.qq.com/cgi-bin/home?t=home/index&lang=zh_CN"
 MP_LOGIN_URL = "https://mp.weixin.qq.com/"
 ARTICLE_LIST_PAGE_SIZE = 20
-KNOWN_COMMANDS = {"fetch", "increment", "ensure-login", "login-status", "clear-login"}
+KNOWN_COMMANDS = {"fetch", "increment", "status", "ensure-login", "login-status", "clear-login"}
 ACTIVE_QR_VIEWER: Any | None = None
 
 # 微信接口 create_time 为 UTC 秒级时间戳；中国公众号展示时间 = UTC+8，且中国不实行夏令时。
@@ -128,10 +128,12 @@ def merge_throttle(raw: dict[str, Any]) -> dict[str, float]:
 def main() -> int:
     # 强制 stdout/stderr 用 UTF-8，避免 Windows GBK 控制台打印含零宽字符(如 \u200b)的
     # 微信文章标题/内容时抛 UnicodeEncodeError（曾导致收尾 print 崩溃，但下载已完成）。
+    # 同时开启行缓冲：后台运行重定向到日志文件时实时可见进度，
+    # 不再出现"日志 0 字节干等"（等扫码/翻页阶段外部完全无感知）的问题。
     if hasattr(sys.stdout, "reconfigure"):
-        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
     if hasattr(sys.stderr, "reconfigure"):
-        sys.stderr.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8", line_buffering=True)
 
     args = parse_args()
     resolved_article_url = getattr(args, "url", None) or args.article_url
@@ -159,6 +161,8 @@ def main() -> int:
                 min_delay=args.min_delay,
                 max_jitter=args.max_jitter,
                 md_only=args.md_only,
+                limit=args.limit,
+                stop_after_seen=args.stop_after_seen,
             )
         elif args.command == "ensure-login":
             config = load_or_create_config(noninteractive=quiet or is_headless_environment())
@@ -194,7 +198,12 @@ def main() -> int:
                 max_jitter=args.max_jitter,
                 last_dir=args.last_dir,
                 md_only=args.md_only,
+                limit=args.limit,
+                stop_after_seen=args.stop_after_seen,
             )
+        elif args.command == "status":
+            config = load_or_create_config(noninteractive=True)
+            payload = command_status(config, quiet=quiet)
         else:
             raise RuntimeError(f"不支持的命令：{args.command}")
     except Exception as exc:  # noqa: BLE001
@@ -270,6 +279,21 @@ def parse_args() -> argparse.Namespace:
         help="只输出 Markdown，不生成 HTML 文件（也可在 config.json 设 write_html:false 作为默认）",
     )
     parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        metavar="N",
+        help="本轮最多抓取 N 篇新文章（覆盖 config.article_limit）。如\"只要最新10篇\"直接 --limit 10",
+    )
+    parser.add_argument(
+        "--stop-after-seen",
+        type=int,
+        default=None,
+        metavar="N",
+        help="增量提速：翻页时连续遇到 N 篇已抓文章即提前停止（列表新→旧，新增都在前面）。"
+             "带 --resume/increment 时默认 30；设 0 禁用早停（全量扫描）",
+    )
+    parser.add_argument(
         "--min-delay", type=float, default=None, help="覆盖下载最小间隔（秒）",
     )
     parser.add_argument(
@@ -302,7 +326,7 @@ def parse_args() -> argparse.Namespace:
         args.command = "fetch"
         args.article_url = args.primary
 
-    if args.command in {"ensure-login", "login-status", "clear-login"} and args.secondary:
+    if args.command in {"ensure-login", "login-status", "clear-login", "status"} and args.secondary:
         parser.error(f"{args.command} 不接受额外的位置参数。")
     if args.safe and args.fast:
         parser.error("--safe 与 --fast 不能同时指定。")
@@ -337,7 +361,7 @@ def ts_to_cn_str(ts: Any) -> str | None:
     if not isinstance(ts, (int, float)):
         return None
     try:
-        dt = datetime.utcfromtimestamp(int(ts)) + timedelta(hours=CN_OFFSET_HOURS)
+        dt = datetime.fromtimestamp(int(ts), tz=timezone.utc) + timedelta(hours=CN_OFFSET_HOURS)
     except (ValueError, OverflowError, OSError):
         return None
     return dt.strftime("%Y-%m-%d %H:%M:%S")
@@ -429,6 +453,8 @@ def command_increment(
     max_jitter: float | None = None,
     last_dir: str | None = None,
     md_only: bool = False,
+    limit: int | None = None,
+    stop_after_seen: int | None = None,
 ) -> dict[str, Any]:
     """增量续抓：复用上次 output 目录，自动推断 since（上次最新文章日期），只抓更新的文章。
 
@@ -480,6 +506,8 @@ def command_increment(
             min_delay=min_delay,
             max_jitter=max_jitter,
             md_only=md_only,
+            limit=limit,
+            stop_after_seen=stop_after_seen,
         )
     except RuntimeError as exc:
         if "没有可下载的新文章" in str(exc):
@@ -490,6 +518,60 @@ def command_increment(
                 "last_dir": str(run_dir),
             }
         raise
+
+
+# --------------------------------------------------------------------------- #
+# 命令：status（抓取前速览：各账号上次抓到哪天 + 登录态）
+# --------------------------------------------------------------------------- #
+def command_status(config: AppConfig, *, quiet: bool = False) -> dict[str, Any]:
+    """速览历史抓取状态：output_root 下每个账号目录的文章数、最新发布日期，以及登录态。
+
+    落实"抓取前先看上一轮日期、避免重复抓"的习惯，一条命令替代手写脚本解析 articles.json。
+    """
+    runs: list[dict[str, Any]] = []
+    root = config.output_root
+    if root.exists():
+        for d in sorted(root.iterdir()):
+            if not d.is_dir():
+                continue
+            aj = d / "articles.json"
+            if not aj.exists():
+                continue
+            total = ok = 0
+            latest: int | float | None = None
+            try:
+                data = json.loads(aj.read_text(encoding="utf-8"))
+                if isinstance(data, list):
+                    total = len(data)
+                    for item in data:
+                        if not isinstance(item, dict):
+                            continue
+                        if item.get("status") == "ok":
+                            ok += 1
+                        ct = item.get("create_time")
+                        if isinstance(ct, (int, float)) and (latest is None or ct > latest):
+                            latest = ct
+            except Exception:  # noqa: BLE001
+                pass
+            runs.append({
+                "dir": d.name,
+                "path": str(d),
+                "total": total,
+                "ok": ok,
+                "latest_publish": ts_to_cn_str(latest) if latest else None,
+                "note": None if latest else "旧数据无 create_time 字段，最新日期未知（去重仍可靠）",
+            })
+    login = command_login_status()
+    if not quiet:
+        log(f"输出根目录：{root}", quiet=quiet)
+        log(f"登录态：{login.get('status', 'unknown')}"
+            + (f"（更新于 {login.get('updated_at')}）" if login.get("updated_at") else ""), quiet=quiet)
+        if not runs:
+            log("暂无历史抓取记录。", quiet=quiet)
+        for r in runs:
+            log(f"  • {r['dir']}: 共 {r['total']} 篇（成功 {r['ok']}），最新发布 "
+                + (r["latest_publish"] or "未知(老数据)"), quiet=quiet)
+    return {"status": "ok", "output_root": str(root), "login": login, "runs": runs}
 
 
 # --------------------------------------------------------------------------- #
@@ -514,8 +596,13 @@ def command_fetch(
     min_delay: float | None = None,
     max_jitter: float | None = None,
     md_only: bool = False,
+    limit: int | None = None,
+    stop_after_seen: int | None = None,
 ) -> dict[str, Any]:
     article_url = get_article_url(article_url)
+
+    # 本轮抓取上限：--limit 优先于 config.article_limit（如"只要最新10篇"）
+    effective_limit = limit if (limit is not None and limit > 0) else config.article_limit
 
     thr = apply_speed_preset(config.throttle, safe_mode, fast_mode)
     if min_delay is not None:
@@ -541,6 +628,15 @@ def command_fetch(
     if resume_dir is not None:
         seen_links |= load_ok_links(resume_dir / "articles.json")
         seen_links |= load_manifest(resume_dir / SEEN_MANIFEST)
+
+    # 增量早停：续抓时列表新→旧，新增文章必然在最前面；连续命中 N 篇已抓文章
+    # 即说明已进入"老区"，直接停止翻页（避免为找增量翻完全部历史，600 篇号从 ~6 分钟降到几十秒）。
+    # 未显式指定时：带 resume 默认 30，全新抓取默认 0（不早停）。设 --stop-after-seen 0 可强制全量扫描。
+    if stop_after_seen is None:
+        stop_after_seen = 30 if seen_links else 0
+    if stop_after_seen > 0:
+        log(f"增量早停已启用：连续 {stop_after_seen} 篇命中已抓清单即停止翻页（--stop-after-seen 0 可禁用）。",
+            quiet=quiet)
 
     since_ts = date_to_ts(since, tz)
     until_ts = date_to_ts(until, tz)
@@ -579,6 +675,8 @@ def command_fetch(
             login_timeout=login_timeout,
             qr_refresh=qr_refresh,
             thr=thr,
+            limit_override=effective_limit,
+            stop_after_seen=stop_after_seen,
         )
     except LoginExpired:
         log("登录态已失效，正在强制重新扫码登录后重试一次...", quiet=quiet)
@@ -595,6 +693,8 @@ def command_fetch(
             login_timeout=login_timeout,
             qr_refresh=qr_refresh,
             thr=thr,
+            limit_override=effective_limit,
+            stop_after_seen=stop_after_seen,
         )
 
     if not articles:
@@ -648,7 +748,7 @@ def command_fetch(
     results = asyncio.run(
         download_articles(
             cookies=cookies,
-            articles=articles[: config.article_limit],
+            articles=articles[:effective_limit],
             output_dir=output_dir,
             account=articles[0]["account"],
             concurrency=concurrency,
@@ -690,7 +790,7 @@ def command_fetch(
         "status": "completed",
         "account_name": articles[0]["account_name"],
         "account_alias": articles[0]["account"].get("alias") or "",
-        "requested_limit": config.article_limit,
+        "requested_limit": effective_limit,
         "downloaded": new_success,
         "failed": len(results) - new_success,
         "output_dir": str(output_dir),
@@ -715,6 +815,8 @@ def run_fetch_once(
     login_timeout: int,
     qr_refresh: int,
     thr: dict[str, float],
+    limit_override: int | None = None,
+    stop_after_seen: int = 0,
 ) -> tuple[list[dict[str, Any]], int]:
     log("正在检查公众号后台登录状态...", quiet=quiet)
     token, cookies = ensure_login(
@@ -744,13 +846,14 @@ def run_fetch_once(
             client=client,
             token=token,
             fakeid=account["fakeid"],
-            limit=config.article_limit,
+            limit=limit_override or config.article_limit,
             seen_links=seen_links,
             since_ts=since_ts,
             until_ts=until_ts,
             limiter=api_limiter,
             max_retries=int(thr["max_retries"]),
             backoff_base=thr["backoff_base"],
+            stop_after_seen=stop_after_seen,
         )
 
     if not articles:
@@ -1458,12 +1561,14 @@ def fetch_account_articles(
     seen_links: set[str] | None = None,
     since_ts: int | None = None, until_ts: int | None = None,
     limiter: RateLimiter | None = None, max_retries: int = 6, backoff_base: float = 3.0,
+    stop_after_seen: int = 0,
 ) -> tuple[list[dict[str, Any]], int]:
     limiter = limiter or RateLimiter(DEFAULT_THROTTLE["api_min_delay"], DEFAULT_THROTTLE["api_max_jitter"])
     articles: list[dict[str, Any]] = []
     seen_links = seen_links or set()
     begin = 0
     skipped_already = 0
+    consecutive_seen = 0  # 连续命中已抓文章的计数（stop_after_seen>0 时用于增量早停）
 
     while len(articles) < limit:
         data = api_get_json(
@@ -1497,7 +1602,12 @@ def fetch_account_articles(
                     continue
                 if link in seen_links:
                     skipped_already += 1
+                    consecutive_seen += 1
+                    if stop_after_seen > 0 and consecutive_seen >= stop_after_seen:
+                        # 列表新→旧：连续命中已抓文章说明已进入"老区"，后面全是抓过的，提前收工
+                        return articles, skipped_already
                     continue
+                consecutive_seen = 0
                 ct = appmsg.get("create_time")
                 if until_ts is not None and isinstance(ct, (int, float)) and ct > until_ts:
                     continue

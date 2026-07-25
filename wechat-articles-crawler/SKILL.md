@@ -41,10 +41,14 @@ description: 用本地微信公众号抓取器批量识别并拉取某个公众�
 - 支持 `fetch --force-qr` / `--login-timeout` / `--qr-refresh`（登录增强）
 - 支持 `fetch --safe` / `--fast`（限流预设：保守 / 激进）
 - 支持 `fetch --md-only`（只输出 Markdown，不生成 HTML；也可在 `config.json` 设 `write_html:false` 作为永久默认）
+- 支持 `fetch --limit N`（本轮最多抓 N 篇**新**文章，覆盖 `config.article_limit`；如"只要最新 10 篇"直接 `--limit 10`）
+- 支持 `fetch --stop-after-seen N`（增量早停：翻页时连续遇到 N 篇已抓文章即提前停止，避免为找增量翻完全部历史；带 `--resume`/`increment` 时默认 30，设 0 禁用）
+- 支持 `status`（抓取前速览：各账号上次抓到哪天、文章数、登录态，落实"先查上轮再抓"习惯）
 - 去重增强：每轮在输出目录生成 `seen_urls.json` 清单，跨轮 / 跨次运行自动跳过已抓文章；**失败的会重试**，已下载的 Markdown 幂等复用
 - 限流保护：后台 API 调用与文章下载均插入「固定间隔 + 随机抖动」，遇 `429` / `5xx` / "操作频繁" 自动指数退避
 - 支持 `clear-login`
 - 支持 `increment`（增量续抓：自动定位上次 output 目录、复用登录态、跳过已抓文章，公众号未来更新时一行命令搞定，绝不重复）
+- 支持 `status`（抓取前速览：遍历 `output_root` 下各账号目录，汇总文章数、最新发布日期、登录态，落实"先查上轮再抓"习惯，避免重复劳动）
 - 输出 `Markdown`、`HTML`、`articles.json`（用 `--md-only` 或 `config.json` 的 `write_html:false` 可只出 Markdown）
 
 这个 skill 默认调用当前目录内自带的抓取器副本，不要回头依赖桌面上的原项目路径，除非用户明确要求你同步或升级那份原始项目。
@@ -267,15 +271,59 @@ cd "内容生产龙虾/公众号作者文章抓取"
 
 行为要点：
 
-- **默认不早停**：仅靠链接去重，翻到列表尽头才停——这是最稳的策略，**绝不漏抓**新文章，也不依赖旧 `articles.json` 是否带发布时间字段。
-- 若想提速，可显式加 `--since YYYY-MM-DD` 做早停；但 `--since` 不能晚于“已抓最新文章的发布日”，否则翻页会提前停、漏掉中间的新文章。不确定就别加。
+- **默认增量早停（安全）**：翻页时若连续遇到 `stop_after_seen`（默认 30）篇已抓文章，即判定已抵达"已抓边界"提前停止——既避免为找增量翻完全部历史（之前无早停时"最新 10 篇"也要翻 6 分多钟），又因 30 篇安全余量**绝不漏抓**新文章，且不依赖旧 `articles.json` 是否带发布时间字段。可用 `--stop-after-seen 0` 彻底禁用早停（翻到列表尽头）。
+- 若想进一步提速，可显式加 `--since YYYY-MM-DD` 做早停；但 `--since` 不能晚于"已抓最新文章的发布日"，否则翻页会提前停、漏掉中间的新文章。不确定就别加。
+- 可用 `--limit N` 限制本轮最多抓 N 篇新文章（覆盖 `config.article_limit`）。例如"只要最新 10 篇"：`increment --url "<种子>" --limit 10`。
 - 可加 `--dry-run` 先预览“将新增哪几篇”（不落盘），确认后再真抓。
 - 可加 `--last-dir "<指定output目录>"` 强制指定上次目录（多号混抓、想精确控制时用）。
 - `increment` 同样遵循 `config.json` 的 `write_html`（及临时 `--md-only`）：若已设为只出 Markdown，增量续抓也只写 Markdown，不会补生成 HTML。
 - 若上次之后公众号**没更新**，不会报错，而是返回 `status = up_to_date`（“没有比上次更新的文章，无需抓取”）。
 - 仍支持 `--safe` / `--fast` / `--force-qr` / `--login-timeout` / `--qr-refresh` 等全部选项。
 
-> 与手动 `fetch --resume "<上次>/articles.json"` 完全等价，但省去了“记住上次路径 + 记住上次日期”的认知负担。种子链接仍用 `--url` 或位置参数传入，仅用于定位公众号。
+> 与手动 `fetch --resume "<上次>/articles.json"` 完全等价，但省去了"记住上次路径 + 记住上次日期"的认知负担。种子链接仍用 `--url` 或位置参数传入，仅用于定位公众号。
+
+### 4.11 status 子命令（抓前看上轮状态）
+
+在决定"要不要抓、抓多少、从哪天起"之前，先跑 `status` 速览历史成果，避免重复劳动或盲目翻页：
+
+```bash
+cd "内容生产龙虾/公众号作者文章抓取"
+./scripts/run_fetcher.sh status --json
+```
+
+它会：
+
+1. 遍历 `output_root`（config 的 `output_parent/output_folder_name`）下所有含 `articles.json` 的抓取目录，逐个统计：
+   - `account`：公众号名
+   - `total` / `ok`：`articles.json` 里总条数、下载成功条数
+   - `latest_publish`：最新一篇的发布日期（中国时区），以及对应的标题
+   - `output_dir`：该账号结果目录
+2. 调 `login-status` 取当前登录态（`authenticated` / `waiting_scan` / `timeout`），让你知道这一轮要不要先扫码。
+
+返回结构（JSON 模式）：
+
+```json
+{
+  "status": "ok",
+  "output_root": "<...>/输出文章",
+  "login": { "status": "authenticated", "...": "..." },
+  "runs": [
+    {
+      "account": "跨境AI入门指南",
+      "total": 192, "ok": 192,
+      "latest_publish": "2026-07-10 21:33",
+      "latest_title": "xxx",
+      "output_dir": "<...>/跨境AI入门指南_20260711_110004"
+    }
+  ]
+}
+```
+
+人类可读模式会直接打印每个账号一行摘要 + 登录态。典型用法：
+
+- **抓前先看**：`status` → 看"上次抓到哪天" → 用 `--since <那天>` 或 `increment` 续抓，绝不重复。
+- **判断要不要扫二维码**：`status` 的 `login.status` 若已是 `authenticated`，直接抓；若是 `waiting_scan` 才发起 `ensure-login`。
+- 可与 `--quiet` 组合，仅在登录态失效或某账号 0 篇时输出，适合塞进自动化前的自检。
 
 ### 5. 给出结果摘要
 
