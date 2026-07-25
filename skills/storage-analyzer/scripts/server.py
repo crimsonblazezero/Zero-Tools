@@ -206,8 +206,13 @@ class Handler(BaseHTTPRequestHandler):
             if rp not in allow:
                 self._send(403, json.dumps({"ok": False, "error": "路径不在白名单：%s" % p}))
                 return
-            # 二级护栏：只允许用户目录或 /Applications（后者仅 open 用，删除白名单不含它）
-            roots = (HOME, "/Applications")
+            # 二级护栏：只允许用户目录、/Applications 或 Windows 下的盘符根目录（需确保在白名单内）
+            import sys
+            roots = [HOME, "/Applications"]
+            if sys.platform.startswith("win"):
+                import string
+                for letter in string.ascii_uppercase:
+                    roots.append(f"{letter}:\\")
             if not any(rp == base or rp.startswith(base + os.sep) for base in roots):
                 self._send(403, json.dumps({"ok": False, "error": "路径越界：%s" % p}))
                 return

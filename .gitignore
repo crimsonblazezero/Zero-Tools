@@ -1,9 +1,44 @@
+# Dependencies & Virtual Envs
 node_modules/
 .venv/
-.shared/
-.vscode/
 __pycache__/
+*.pyc
+
+# IDE & OS
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Environment Keys & Credentials & Databases
+*.env
+*.db
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+data/*.db
+data/*.json
+
+# Archives & Audio
 *.zip
-data/temp_fba_zip/
-cache/
+*.rar
+*.wav
+
+# Logs & Temporary Outputs
 *.log
+cache/
+.cache/
+data/temp_fba_zip/
+err.txt
+out.txt
+test.txt
+data/err.txt
+data/out.txt
+data/test.txt
+
+# Agent Scratch & Junction Links
+.agents/skills
+.agents/explorer_*
+.agents/orchestrator
+.agents/sentinel
+.agents/ORIGINAL_REQUEST.md
+.shared/
