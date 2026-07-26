@@ -1,11 +1,11 @@
 ---
 name: lingxing-weekly-report
-description: 领星 ERP 数据拉取、周报/月报汇总、运营周会 Excel 表格及钉钉日志(运营周复盘)自动提交工作流。用于周会数据收集、南京欧洲组KS店铺业绩分析、FBA 库龄/月库销比精准核算及钉钉周报一键填报。
+description: 领星 ERP 数据拉取、周报/月报汇总、运营周会 Excel 表格自动填报、钉盘附件上传及钉钉日志(运营周复盘)全自动提交工作流。用于周会数据收集、南京欧洲组KS店铺业绩分析、FBA 库龄/月库销比精准核算及钉钉周报一键填报。
 ---
 
 # 领星 ERP 周报与数据自动化 Skill (lingxing-weekly-report)
 
-本 Skill 总结并标准化了领星 ERP 的 API/MCP 数据拉取、店铺筛选、多维度汇总计算（周报、月度及 FBA 库龄）、**2026财年月度/周度目标内置逻辑**、自动填入运营周会 Excel 模板，以及**通过 DWS 自动提交钉钉《运营周复盘》日志**的标准 SOP。
+本 Skill 总结并标准化了领星 ERP 的 API/MCP 数据拉取、店铺筛选、多维度汇总计算（周报、月度及 FBA 库龄）、**2026财年月度/周度目标内置逻辑**、**AI表格《周重点任务》全量任务动态抓取**、自动填入运营周会 Excel 模板、**自动上传表格至钉盘**，以及**通过 DWS 自动提交钉钉《运营周复盘》日志**的标准 SOP。
 
 ---
 
@@ -37,32 +37,17 @@ description: 领星 ERP 数据拉取、周报/月报汇总、运营周会 Excel 
 | **2027-02** | $880,000 | $396,000 | $484,000 |
 | **2027-03** | $950,000 | $427,500 | $522,500 |
 
-### 毛利额目标 (Gross Profit Target in USD)
-
-| 月份 (Month) | 组总目标 (Group Total) | 王祎个人 (Wang Yi) | 化一博 (Hua Yibo) |
-| --- | --- | --- | --- |
-| **2026-04** | $12,000 | $3,600 | $8,400 |
-| **2026-05** | $6,000 | $1,800 | $4,200 |
-| **2026-06** | $5,000 | $1,500 | $3,500 |
-| **2026-07** | $8,000 | $3,200 | $4,800 |
-| **2026-08** | $18,000 | $7,200 | $10,800 |
-| **2026-09** | $24,000 | $9,600 | $14,400 |
-| **2026-10** | $36,000 | $14,400 | $21,600 |
-| **2026-11** | $60,000 | $24,000 | $36,000 |
-| **2026-12** | $70,000 | $31,500 | $38,500 |
-| **2027-01** | $100,000 | $45,000 | $55,000 |
-| **2027-02** | $115,000 | $51,750 | $63,250 |
-| **2027-03** | $126,000 | $56,700 | $69,300 |
-
 ---
 
-## 3. 核心数据源与 MCP 接口映射 (API Mapping)
+## 3. AI表格《周重点任务》全量任务动态提取
 
-| 报表/功能 | 调用的 MCP 工具 | 关键参数设置 | 提取的关键字段 |
-| --- | --- | --- | --- |
-| **店铺筛选** | `get_my_sids` | 无 | `sid`, `seller_name` |
-| **业绩数据** (周报/月度) | `query_product_performance_asin_lists` | `sids`: 15个SID<br>`currency_code`: "USD"<br>`summary_field_level1`: "principal"<br>`length`: 1000 | `amount` (销售额)<br>`volume` (销量)<br>`order_items` (订单量)<br>`predict_gross_profit` (预估毛利)<br>`spend` (广告花费)<br>`ad_sales_amount` (广告销售额) |
-| **FBA 库存与库龄** | `get_fba_stock_list` | `sid`: 15个SID<br>`length`: 1000 (必须分页拉取至 total 完结) | `afn_fulfillable_quantity` (在库可售)<br>`reserved_fc_processing` (待调仓)<br>`reserved_fc_transfers` (调仓中)<br>库龄分段: `inv_age_91_to_180_days` 等 |
+系统自动读取钉钉 AI 表格 Base `周重点任务` 中的 `1.任务管理表`：
+- **本周重点工作**：按当前周数提取本周（如第30周）的**全量任务**（包括已完成、进行中、未开始），格式化输出。
+- **下周重点计划**：按当前周数+1提取下周（如第31周）的**全量计划任务**。
+
+```bash
+dws aitable record list --base-id R1zknDm0WRNmEDKZSBED3jE4WBQEx5rG --table-id dv19yqvsgs3oebp3pcjys --limit 100 --format json
+```
 
 ---
 
@@ -76,30 +61,20 @@ description: 领星 ERP 数据拉取、周报/月报汇总、运营周会 Excel 
    $$\text{分母 (近7天平均日销)} = \frac{\text{近7天总销量 (上周日~本周六)}}{7}$$
    $$\text{月库销比} = \frac{\frac{\text{分子}}{\text{近7天平均日销}}}{30}$$
 
-3. **ACOS 与 ACOAS (TACOS)**：
-   $$\text{ACOS} = \frac{\text{广告花费 (`spend`)}}{\text{广告销售额 (`ad_sales_amount`)}}$$
-   $$\text{ACOAS (TACOS)} = \frac{\text{广告花费 (`spend`)}}{\text{总销售额 (`amount`)}}$$
-
 ---
 
-## 5. 钉钉日志《运营周复盘》自动提交 (DingTalk Integration)
+## 5. 钉盘上传与钉钉日志《运营周复盘》自动提交
 
-使用 DWS 工具与钉钉日志模块联动：
-- **模板 ID**: `17a14a44cdee2e409b88ad14ca68d77b` (`运营周复盘（周一9:00前提交）`)
-- **关键自动填充字段**：
-  - `本周实际销售额$`: 填入 `amount`
-  - `本周目标销售额$`: 填入内置周目标
-  - `AcoAs（%）`: 填入 `spend / amount * 100`
-  - `月实际销售额$`: 填入月累计 `amount`
-  - `月实际毛利额...$`: 填入 `predict_gross_profit * 0.6`
-  - `近30天库销比（FBA在库库存）`: 填入最新计算的月库销比
-  - `当前库存数量——90-180天库龄`: 填入 91-180天库存
-  - `当前库存数量——181-270天库龄`: 填入 181-270天库存
+1. **表格自动上传钉盘**：
+   ```bash
+   dws drive upload --file "C:\Users\Administrator\Desktop\工作\2025~若驰工作文件\运营周会数据收集_王祎_v19_new.xlsx" --format json -y
+   ```
+   提取返回的 `docUrl` 或 `nodeId`。
 
-命令示例：
-```bash
-dws report submit --template-name "运营周复盘（周一9:00前提交）" --json '{...}'
-```
+2. **日志提交**：
+   - **模板 ID**: `17a14a44cdee2e409b88ad14ca68d77b` (`运营周复盘（周一9:00前提交）`)
+   - 将钉盘文件 Markdown 链接写入 `本周重点工作...` 的末尾。
+   - 通过 `dws report entry submit` 自动填报发布。
 
 ---
 
