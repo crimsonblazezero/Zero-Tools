@@ -45,47 +45,23 @@ mkdir -p output
 
 ### 1. 通过 MCP 拉取真实数据
 
-对每个 KS- 站点（共15站），调用领星 MCP 拉取数据。MCP 工具通过 `DeferExecuteTool` 调用。
+**核心接口**：`query_product_performance_asin_lists` —— 一个接口包含 sales/profit/ad/inventory/ranking 全部数据。
 
-**15 个站点 sid**：
-| 站点 | sid | 站点 | sid | 站点 | sid |
-|------|-----|------|-----|------|-----|
-| 🇺🇸 美国 | 5018 | 🇨🇦 加拿大 | 5019 | 🇲🇽 墨西哥 | 5020 |
-| 🇯🇵 日本 | 5021 | 🇬🇧 英国 | 5022 | 🇮🇹 意大利 | 5023 |
-| 🇩🇪 德国 | 5024 | 🇫🇷 法国 | 5025 | 🇪🇸 西班牙 | 5026 |
-| 🇳🇱 荷兰 | 5027 | 🇸🇪 瑞典 | 5028 | 🇵🇱 波兰 | 5029 |
-| 🇧🇪 比利时 | 5030 | 🇮🇪 爱尔兰 | 5031 | 🇧🇷 巴西 | 5751 |
-
-#### 1a. 拉取 FBA 库存
-
-调 `mcp__LingXing-MCP__get_fba_stock_list`：
-```json
-{"sid": 5018, "offset": 0, "length": 500, "sort_field": "available", "sort_type": "desc", "fulfillment_channel_type": "FBA", "is_cost_page": 0}
+对每个 KS- 站点，调一次 MCP：
+```
+{"sids": "5018", "offset": 0, "length": 500, "start_date": "昨天", "end_date": "昨天", "date_type": "purchase", "query_order_profit": true}
 ```
 
-保存到 `output/raw/{sid}-inventory.json`。对返回的 `nextCursor` 继续分页直到无更多数据。
+保存到 `output/raw/{sid}-performance.json`。
 
-#### 1b. 拉取利润数据（7天）
+⚠️ 关键参数：
+- `sids`：必须指定单个站点ID（不要拼多个，也不要漏掉——否则会拉全站！）
+- `start_date` / `end_date`：都填美西昨天日期（一个站点一天的数据）
+- `query_order_profit: true`：获取利润数据
 
-调 `mcp__LingXing-MCP__query_order_profit_list_gross_profit`：
-```json
-{"sid": 5018, "offset": 0, "length": 500, "start_date": "7天前", "end_date": "昨天", "date_type": "purchase"}
-```
+15 个站点串行拉取，每站约 200-600 条记录。
 
-保存到 `output/raw/{sid}-profit.json`。
-
-#### 1c. 拉取产品表现（含Buybox/排名）
-
-调 `mcp__LingXing-MCP__query_product_performance_asin_lists`：
-```json
-{"sid": 5018, "offset": 0, "length": 500, "start_date": "7天前", "end_date": "昨天", "summary_field": "asin"}
-```
-
-保存到 `output/raw/{sid}-listings.json`。
-
-> 所有站点可并行拉取以加快速度。每调完一个 MCP 工具，把返回的原始 JSON 保存到 `output/raw/{sid}-{type}.json`。
-
-#### 1d. 合并原始数据为 snapshot JSON
+### 1d. 合并原始数据为 snapshot JSON
 
 ```bash
 python scripts/merge_mcp_data.py --date {美西日期} --output output/snapshot-{date}.json
