@@ -397,6 +397,63 @@ class RuleEngine:
             if alert:
                 alerts.append(alert)
 
+        # ---- R09 父ASIN变更 ----
+        r09_cfg = self.config.get("rules", {}).get("r09_parent_asin_change", {})
+        if r09_cfg.get("status") != "disabled":
+            try:
+                from parent_asin_tracker import load_history, detect_changes, save_snapshot
+
+                # 把 snapshot listings 转成 detect_changes 需要的格式
+                raw_listings = []
+                for lh in snapshot.listings:
+                    raw_listings.append({
+                        "asin": lh.asin,
+                        "parent_asin": lh.parent_asin or "",
+                        "msku": lh.msku or "",
+                        "item_name": lh.title or "",
+                    })
+                # 从 inventory 补充 ASIN（如果 listing 数据不全）
+                seen_asins = {l["asin"] for l in raw_listings if l["asin"]}
+                for inv in snapshot.inventory:
+                    if inv.asin and inv.asin not in seen_asins:
+                        raw_listings.append({
+                            "asin": inv.asin,
+                            "parent_asin": "",
+                            "msku": inv.msku,
+                            "item_name": "",
+                        })
+                        seen_asins.add(inv.asin)
+
+                # 保存今天快照
+                save_snapshot(raw_listings, report_date)
+
+                # 检测变更
+                history = load_history()
+                changes = detect_changes(raw_listings, history, report_date)
+                for c in changes:
+                    owner = self.owner_resolver.resolve(0, c.get("msku", ""), c["asin"])
+                    owner_key, owner_uid = owner
+                    alerts.append(Alert(
+                        rule_id="R09",
+                        level=r09_cfg.get("level", "P0"),
+                        asin=c["asin"],
+                        msku=c.get("msku", ""),
+                        evidence={
+                            "old_parent_asin": c["old_parent_asin"],
+                            "new_parent_asin": c["new_parent_asin"],
+                        },
+                        title=(f"[日报 {report_date}] R09 父ASIN变更 {c['asin']} "
+                               f"{c['old_parent_asin'][:8]}...→{c['new_parent_asin'][:8]}..."),
+                        action="检查品牌注册 / 核对 Listing 信息 / 确认是否被恶意篡改",
+                        priority=r09_cfg.get("priority", 40),
+                        due_hours=r09_cfg.get("due_hours", 24),
+                        owner_key=owner_key,
+                        owner_user_id=owner_uid,
+                        triggered_at=datetime.now(timezone(timedelta(hours=8))).isoformat(timespec="seconds"),
+                    ))
+            except Exception as e:
+                self.logger.warning(f"[R09] 父ASIN变更检测失败: {e}")
+
         self.logger.info(
             f"[RuleEngine] {len(alerts)} alerts triggered | "
             f"P0={sum(1 for a in alerts if a.level=='P0')} "

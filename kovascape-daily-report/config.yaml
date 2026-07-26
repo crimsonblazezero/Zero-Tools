@@ -129,7 +129,16 @@ rules:
     title_template: "[日报 {date}] R08 流量下滑 {msku} (Sessions↓{drop_pct:.0f}%)"
     action: "查关键词排名 / 检查广告结构 / 加预算抢流量"
 
-  # 留扩展位给批次 2/3 规则
+  # R09 父ASIN变更（对比昨日 parent_asin 映射）
+  r09_parent_asin_change:
+    level: "P1"
+    priority: 30
+    due_hours: 24
+    status: "active"
+    title_template: "[日报 {date}] R09 父ASIN变更 {asin}: {old_parent}→{new_parent}"
+    action: "检查品牌注册保护 / 核对 Listing 信息 / 确认是否被恶意篡改"
+
+  # 留扩展位给批次 3 规则
   r09_ad_burn:
     level: "P1"
     priority: 30
