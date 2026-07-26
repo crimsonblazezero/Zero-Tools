@@ -1,11 +1,11 @@
 ---
 name: lingxing-weekly-report
-description: 领星 ERP 数据拉取、周报/月报汇总、运营周会 Excel 表格自动填报、钉盘附件上传及钉钉日志(运营周复盘)全自动提交工作流。用于周会数据收集、南京欧洲组KS店铺业绩分析、FBA 库龄/月库销比精准核算及钉钉周报一键填报。
+description: 领星 ERP 数据拉取、周报/月报汇总、运营周会 Excel 表格自动填报、钉盘附件上传、权限配置及钉钉日志(运营周复盘)全自动提交工作流。用于周会数据收集、南京欧洲组KS店铺业绩分析、FBA 库龄/月库销比精准核算及钉钉周报一键填报。
 ---
 
 # 领星 ERP 周报与数据自动化 Skill (lingxing-weekly-report)
 
-本 Skill 总结并标准化了领星 ERP 的 API/MCP 数据拉取、店铺筛选、多维度汇总计算（周报、月度及 FBA 库龄）、**2026财年月度/周度目标内置逻辑**、**AI表格《周重点任务》全量任务动态抓取**、自动填入运营周会 Excel 模板、**自动上传表格至钉盘**，以及**通过 DWS 自动提交钉钉《运营周复盘》日志**的标准 SOP。
+本 Skill 总结并标准化了领星 ERP 的 API/MCP 数据拉取、店铺筛选、多维度汇总计算（周报、月度及 FBA 库龄）、**2026财年月度/周度目标内置逻辑**、**AI表格《周重点任务》全量任务动态抓取**、自动填入运营周会 Excel 模板、**附件优先挂载与钉盘权限自动配置**，以及**通过 DWS 自动提交钉钉《运营周复盘》日志**的标准 SOP。
 
 ---
 
@@ -42,7 +42,7 @@ description: 领星 ERP 数据拉取、周报/月报汇总、运营周会 Excel 
 ## 3. AI表格《周重点任务》全量任务动态提取
 
 系统自动读取钉钉 AI 表格 Base `周重点任务` 中的 `1.任务管理表`：
-- **本周重点工作**：按当前周数提取本周（如第30周）的**全量任务**（包括已完成、进行中、未开始），格式化输出。
+- **本周重点工作**：按当前周数提取本周（如第30周）的**全量任务**（包含所有已完成、进行中、未开始），格式化输出。
 - **下周重点计划**：按当前周数+1提取下周（如第31周）的**全量计划任务**。
 
 ```bash
@@ -63,18 +63,41 @@ dws aitable record list --base-id R1zknDm0WRNmEDKZSBED3jE4WBQEx5rG --table-id dv
 
 ---
 
-## 5. 钉盘上传与钉钉日志《运营周复盘》自动提交
+## 5. 附件上传、钉盘权限与钉钉日志提交标准 SOP
 
-1. **表格自动上传钉盘**：
-   ```bash
-   dws drive upload --file "C:\Users\Administrator\Desktop\工作\2025~若驰工作文件\运营周会数据收集_王祎_v19_new.xlsx" --format json -y
+### 步骤 A：本地 Excel 文件上传至钉盘
+```bash
+dws drive upload --file "C:\Users\Administrator\Desktop\工作\2025~若驰工作文件\运营周会数据收集_王祎_v19_new.xlsx" --format json -y
+```
+提取返回的 `spaceId`, `fileId`, `fileName`, `fileSize`, `docUrl`。
+
+### 步骤 B：自动设置钉盘文件企业内公开与复制下载权限
+为了保证团队成员与上级能够正常查看、复制与下载附件，上传后必须自动设置权限：
+```bash
+dws drive publish set --file-id <fileId> -y
+```
+并在知识库/文档空间中配置企业内协同或阅读下载权限（设置 `download_enabled: true` / `copy_enabled: true`）。
+
+### 步骤 C：日志提交双重 Fallback 机制 (Primary vs Fallback)
+
+1. **首选方案（主通道）**：使用日志模板自带的**原生【附件】组件** (sort: 56, type: 9)
+   在 `contents` 数组中添加原生附件控件：
+   ```json
+   {
+     "key": "附件",
+     "sort": "56",
+     "contentType": "origin",
+     "type": "9",
+     "content": "[{\"spaceId\":\"<spaceId>\",\"fileId\":\"<fileId>\",\"fileName\":\"<fileName>\",\"fileSize\":<fileSize>,\"fileType\":\"xlsx\"}]"
+   }
    ```
-   提取返回的 `docUrl` 或 `nodeId`。
 
-2. **日志提交**：
-   - **模板 ID**: `17a14a44cdee2e409b88ad14ca68d77b` (`运营周复盘（周一9:00前提交）`)
-   - 将钉盘文件 Markdown 链接写入 `本周重点工作...` 的末尾。
-   - 通过 `dws report entry submit` 自动填报发布。
+2. **降级方案 (Fallback)**：若原生【附件】组件上传失败或类型校验未通过
+   将钉盘文件在线链接格式化写入 **`本周重点工作...`** 字段的正文末尾：
+   ```markdown
+   📎 **数据汇总 Excel 表格在线链接（支持查看/复制/下载）**：
+   [运营周会数据收集_王祎_v19_new.xlsx](https://alidocs.dingtalk.com/i/nodes/<fileId>)
+   ```
 
 ---
 
