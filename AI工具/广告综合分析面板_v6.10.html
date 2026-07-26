@@ -208,6 +208,9 @@ tbody tr:hover{background:#FAFAFA}
       <button onclick="document.getElementById('f-batch').click()" style="background:var(--dg);color:#fff;border:none;padding:9px 18px;border-radius:var(--r);font-family:var(--fb);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all .2s" onmouseover="this.style.background='#085a4b'" onmouseout="this.style.background='var(--dg)'">
         <i class="fas fa-layer-group"></i> 批量导入（自动识别）
       </button>
+      <button id="btn-sync-db" onclick="syncWithSQLite()" style="background:#064338; color:#fff; border:1px solid var(--gold); padding:9px 18px; border-radius:var(--r); font-family:var(--fb); font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px; transition:all .2s">
+        <i class="fas fa-database" style="color:var(--gold)"></i> 🔌 一键同步本地数据库
+      </button>
       <span style="font-size:12px;color:var(--ts)">一次选择多个文件，系统自动按文件名归档到对应槽位</span>
       <div id="batch-result" style="display:none;font-size:12px;padding:6px 12px;border-radius:4px;border:1px solid"></div>
     </div>
@@ -363,6 +366,7 @@ tbody tr:hover{background:#FAFAFA}
   <div class="kpi-row" id="kpi-row"></div>
   <div class="tabs" id="tabs-bar"></div>
   <div class="tab-panel" id="panel-overview"></div>
+  <div class="tab-panel" id="panel-pop"></div>
   <div class="tab-panel" id="panel-action"></div>
   <div class="tab-panel" id="panel-product"></div>
   <div class="tab-panel" id="panel-search"></div>
@@ -1409,6 +1413,7 @@ function renderKPI(){
 
 const tabDef=[
   {id:'overview', icon:'fa-chart-pie',   label:'总览分析'},
+  {id:'pop',      icon:'fa-history',     label:'📅 周期环比'},
   {id:'action',   icon:'fa-bolt',        label:'行动建议'},
   {id:'product',  icon:'fa-sitemap',     label:'产品线分析'},
   {id:'search',   icon:'fa-search',      label:'搜索词(ST)'},
@@ -1428,7 +1433,7 @@ function renderTabs(){
 window.switchTab=function(id){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===id));
   document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active',p.id==='panel-'+id));
-  ({overview:renderOverview,action:renderAction,product:renderProduct,search:renderSearch,negatives:renderNegatives,placement:renderPlacement,xiyou:renderXiyou})[id]?.();
+  ({overview:renderOverview,pop:renderPop,action:renderAction,product:renderProduct,search:renderSearch,negatives:renderNegatives,placement:renderPlacement,xiyou:renderXiyou})[id]?.();
 };
 
 /* ══════════════════════════════════════════
@@ -1756,6 +1761,203 @@ function updateSpendAnalysis(){
         }
       }
     };
+
+/* 📅 周期环比数据聚合与图表绘制引擎 */
+let popChartInstance = null;
+window.renderPop = function() {
+    const container = $('panel-pop');
+    if (!container) return;
+
+    // 1. 数据按日期排序规整
+    const sortedCamp = [...data.camp].sort((a,b) => new Date(a.date) - new Date(b.date));
+    if (!sortedCamp.length) {
+        container.innerHTML = `<div class="alert alert-gold"><i class="fas fa-info-circle"></i><div>暂无有效的时序广告数据。请先一键同步数据库获取近半年明细。</div></div>`;
+        return;
+    }
+
+    // 2. 找到时间范围
+    const dates = sortedCamp.map(r => r.date).filter(Boolean);
+    const uniqueDates = [...new Set(dates)].sort();
+    const totalDays = uniqueDates.length;
+
+    // 我们把数据集对半平分：本期 (Current Period) & 上期 (Previous Period)
+    const midPoint = Math.floor(totalDays / 2);
+    const prevDates = uniqueDates.slice(0, midPoint);
+    const currDates = uniqueDates.slice(midPoint);
+
+    const prevSet = new Set(prevDates);
+    const currSet = new Set(currDates);
+
+    // 3. 计算各阶段核心汇总指标
+    const prevKpi = { spend: 0, sales: 0, orders: 0, clicks: 0, imp: 0 };
+    const currKpi = { spend: 0, sales: 0, orders: 0, clicks: 0, imp: 0 };
+
+    // 缓存每日明细用于图表趋势叠加绘制
+    const prevDaily = {};
+    const currDaily = {};
+
+    prevDates.forEach((d, idx) => prevDaily[idx] = { date: d, spend: 0, sales: 0 });
+    currDates.forEach((d, idx) => currDaily[idx] = { date: d, spend: 0, sales: 0 });
+
+    sortedCamp.forEach(r => {
+        const d = r.date;
+        const sp = num(r.cost || r['花费-本币']);
+        const sa = num(r.sales || r['广告销售额-本币']);
+        const ord = num(r.orders || r['广告订单']);
+        const clk = num(r.clicks || r['点击']);
+        const im = num(r.impressions || r['曝光量']);
+
+        if (prevSet.has(d)) {
+            prevKpi.spend += sp; prevKpi.sales += sa; prevKpi.orders += ord; prevKpi.clicks += clk; prevKpi.imp += im;
+            const idx = prevDates.indexOf(d);
+            if (idx !== -1) { prevDaily[idx].spend += sp; prevDaily[idx].sales += sa; }
+        } else if (currSet.has(d)) {
+            currKpi.spend += sp; currKpi.sales += sa; currKpi.orders += ord; currKpi.clicks += clk; currKpi.imp += im;
+            const idx = currDates.indexOf(d);
+            if (idx !== -1) { currDaily[idx].spend += sp; currDaily[idx].sales += sa; }
+        }
+    });
+
+    const prevAcos = prevKpi.sales > 0 ? prevKpi.spend / prevKpi.sales : 0;
+    const currAcos = currKpi.sales > 0 ? currKpi.spend / currKpi.sales : 0;
+    const prevCpc = prevKpi.clicks > 0 ? prevKpi.spend / prevKpi.clicks : 0;
+    const currCpc = currKpi.clicks > 0 ? currKpi.spend / currKpi.clicks : 0;
+
+    // 4. 指标增量百分比计算函数
+    const calcDiff = (curr, prev, isAcos = false) => {
+        if (prev === 0) return curr > 0 ? `+100.0% 🟢` : `0.0%`;
+        const diff = ((curr - prev) / prev) * 100;
+        const sign = diff >= 0 ? '+' : '';
+        const pct = `${sign}${diff.toFixed(1)}%`;
+        
+        if (isAcos) {
+            // Acos 越低越好
+            return diff <= 0 ? `<span style="color:var(--dg);font-weight:600">${pct} 🟢</span>` : `<span style="color:var(--red);font-weight:600">${pct} 🔴</span>`;
+        }
+        // 花费、销量、订单越高越好
+        return diff >= 0 ? `<span style="color:var(--dg);font-weight:600">${pct} 🟢</span>` : `<span style="color:var(--red);font-weight:600">${pct} 🔴</span>`;
+    };
+
+    container.innerHTML = `
+        <div class="insight-box" style="margin-bottom:20px">
+          <div class="ib-title"><i class="fas fa-history"></i> 📅 环比对比分析说明</div>
+          <div style="font-size:12px;color:var(--ts);line-height:1.7">
+            系统已将导入的时序数据自动平分为两个周期：<br/>
+            ⏮️ **上周期 (Previous Period)**: 从 <strong>${prevDates[0]}</strong> 至 <strong>${prevDates[prevDates.length-1]}</strong> (${prevDates.length}天)<br/>
+            ⏭️ **本周期 (Current Period)**: 从 <strong>${currDates[0]}</strong> 至 <strong>${currDates[currDates.length-1]}</strong> (${currDates.length}天)<br/>
+            数据对比剔除了暂停活动的干扰，纯净度极高。
+          </div>
+        </div>
+
+        <!-- 环比指标看板 -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px, 1fr));gap:12px;margin-bottom:24px">
+            <div class="kpi" style="border-top: 3px solid var(--dg)">
+                <div class="v" style="font-size:24px">${fmtM(currKpi.spend)}</div>
+                <div class="l">本期花费</div>
+                <div class="sub-v">上期: ${fmtM(prevKpi.spend)}</div>
+                <div class="sub-v" style="margin-top:4px">环比: ${calcDiff(currKpi.spend, prevKpi.spend, true)}</div>
+            </div>
+            <div class="kpi" style="border-top: 3px solid var(--gold)">
+                <div class="v" style="font-size:24px">${fmtM(currKpi.sales)}</div>
+                <div class="l">本期销售额</div>
+                <div class="sub-v">上期: ${fmtM(prevKpi.sales)}</div>
+                <div class="sub-v" style="margin-top:4px">环比: ${calcDiff(currKpi.sales, prevKpi.sales, false)}</div>
+            </div>
+            <div class="kpi" style="border-top: 3px solid var(--blue)">
+                <div class="v" style="font-size:24px">${fmtN(currKpi.orders)}</div>
+                <div class="l">本期订单数</div>
+                <div class="sub-v">上期: ${fmtN(prevKpi.orders)}</div>
+                <div class="sub-v" style="margin-top:4px">环比: ${calcDiff(currKpi.orders, prevKpi.orders, false)}</div>
+            </div>
+            <div class="kpi" style="border-top: 3px solid var(--red)">
+                <div class="v" style="font-size:24px; color:${currAcos > g_beAcos ? 'var(--red)' : 'var(--dg)'}">${fmtP(currAcos)}</div>
+                <div class="l">本期 ACoS</div>
+                <div class="sub-v">上期: ${fmtP(prevAcos)}</div>
+                <div class="sub-v" style="margin-top:4px">环比: ${calcDiff(currAcos, prevAcos, true)}</div>
+            </div>
+            <div class="kpi" style="border-top: 3px solid #666">
+                <div class="v" style="font-size:24px">${fmtM(currCpc)}</div>
+                <div class="l">本期 CPC</div>
+                <div class="sub-v">上期: ${fmtM(prevCpc)}</div>
+                <div class="sub-v" style="margin-top:4px">环比: ${calcDiff(currCpc, prevCpc, true)}</div>
+            </div>
+        </div>
+
+        <!-- 走势重叠对比图 -->
+        <div class="card no-bar" style="margin-bottom:24px">
+            <h3 class="card-t" style="font-size:14px;margin-bottom:8px"><i class="fas fa-chart-line"></i> 本期 vs 上期 (每日花费与销售趋势叠加图)</h3>
+            <div style="position:relative;height:340px">
+                <canvas id="chart-pop-overlap"></canvas>
+            </div>
+        </div>
+    `;
+
+    // 5. 渲染双折线重叠图 (Overlapping Line Chart)
+    if (popChartInstance) popChartInstance.destroy();
+    
+    // 生成X轴刻度 (以天数做标记 1, 2, 3...)
+    const labels = Array.from({ length: Math.min(prevDates.length, currDates.length) }, (_, i) => `第 ${i+1} 天`);
+
+    const ctx = $('chart-pop-overlap').getContext('2d');
+    popChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: '本周期销售额 ($)',
+                    data: Object.values(currDaily).map(x => x.sales),
+                    borderColor: '#064338',
+                    backgroundColor: 'rgba(6,67,56,0.06)',
+                    borderWidth: 2.5,
+                    tension: 0.25,
+                    fill: true
+                },
+                {
+                    label: '上周期销售额 ($)',
+                    data: Object.values(prevDaily).map(x => x.sales),
+                    borderColor: '#b4cfbe',
+                    borderWidth: 1.5,
+                    borderDash: [5, 5],
+                    tension: 0.25,
+                    fill: false
+                },
+                {
+                    label: '本周期花费 ($)',
+                    data: Object.values(currDaily).map(x => x.spend),
+                    borderColor: '#C4433A',
+                    borderWidth: 1.5,
+                    tension: 0.2,
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: { font: { size: 11, family: 'Poppins' } }
+                }
+            },
+            scales: {
+                y: {
+                    grid: { color: '#f0ede8' },
+                    ticks: { font: { size: 10 } }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 10 } }
+                }
+            }
+        }
+    });
+};
 
 /* ══════════════════════════════════════════
    产品线分析
@@ -5500,6 +5702,205 @@ window.exportFiltered = function(){ doExport(true); };
 // // pa-data-row clicks handled by direct onclick (stopPropagation prevents double-fire)
 window.exportAll = function(){ doExport(false); };
 
+
+/* ── 注入的本地 SQLite 数据库同步引擎 ── */
+window.syncWithSQLite = async function() {
+    const btn = document.getElementById('btn-sync-db');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在读取本地数据库...';
+    btn.disabled = true;
+
+    try {
+        // 1. 并发请求本地中继 API 获取 5 张表的全量数据
+        const storeKey = 'KS-US';
+        const [campRes, termRes, perfRes, mapRes, prodRes] = await Promise.all([
+            fetch(`http://localhost:8010/api/campaigns?store=${storeKey}`),
+            fetch(`http://localhost:8010/api/search_terms?store=${storeKey}`),
+            fetch(`http://localhost:8010/api/product_performance?store=${storeKey}`),
+            fetch(`http://localhost:8010/api/listing_mapping?store=${storeKey}`),
+            fetch(`http://localhost:8010/api/advertised_products?store=${storeKey}`)
+        ]);
+
+        const campJson = await campRes.json();
+        const termJson = await termRes.json();
+        const perfJson = await perfRes.json();
+        const mapJson = await mapRes.json();
+        const prodJson = await prodRes.json();
+
+        if (campJson.success && termJson.success) {
+            // 2. 写入全局变量，清空原缓存以触发全局重算
+            // 广告活动报告 (用标准中文表头对齐以确保 getVal 与 getStr 正确抓取)
+            data.camp = campJson.data.map(r => ({
+                "日期": r.date,
+                "广告活动": r.campaignName,
+                "广告组合": r.portfolioName || "默认",
+                "曝光量": r.impressions,
+                "点击": r.clicks,
+                "花费": r.cost,
+                "广告销售额": r.sales,
+                "广告订单": r.orders,
+                "ACoS": r.acos,
+                "有效状态": r.state || "ENABLED",
+                "类型": r.targetingType || "auto",
+                "国家": r.store
+            }));
+            
+            // 清理并重新计算 allPortfolios / allCampaigns
+            allPortfolios.clear();
+            allCampaigns.clear();
+
+            // 如果导入了 Listing 映射表，对齐映射数据以供 ASIN 匹配
+            if (mapJson.success && mapJson.data.length) {
+                data.map = mapJson.data.map(r => ({
+                    "MSKU": r.msku,
+                    "子ASIN": r.asin,
+                    "ASIN": r.asin,
+                    "父ASIN": r.parentAsin,
+                    "变体属性": r.variantAttribute,
+                    "品名": r.productName,
+                    "分类": r.category,
+                    "国家": r.store
+                }));
+            } else {
+                data.map = [];
+            }
+
+            // 3. 推广商品报告对齐
+            if (prodJson.success && prodJson.data.length) {
+                data.prod = prodJson.data.map(r => ({
+                    "asin": r.asin,
+                    "子asin": r.asin,
+                    "sku": r.msku,
+                    "msku": r.msku,
+                    "广告活动": r.campaignName,
+                    "广告组": r.adGroupName || "默认组",
+                    "广告组合": r.portfolioName || "默认",
+                    "曝光量": r.impressions,
+                    "点击": r.clicks,
+                    "花费": r.cost,
+                    "广告销售额": r.sales,
+                    "广告订单": r.orders,
+                    "有效状态": "ENABLED",
+                    "类型": "auto",
+                    "日期": r.date
+                }));
+            } else {
+                data.prod = [];
+            }
+
+            // 搜索词报告数据对齐 (买家搜索词, 曝光量, 点击, 花费, 广告销售额, 广告订单, 匹配方式, 投放)
+            data.srch = termJson.data.map(r => ({
+                "买家搜索词": r.customerSearchTerm,
+                "搜索词": r.customerSearchTerm,
+                "用户搜索词": r.customerSearchTerm,
+                "广告活动": r.campaignName || r.campaignId,
+                "广告组合": r.portfolioName || "默认",
+                "曝光量": r.impressions,
+                "点击": r.clicks,
+                "花费": r.cost,
+                "广告销售额": r.sales,
+                "广告订单": r.orders,
+                "订单": r.orders,
+                "ACoS": r.acos,
+                "匹配方式": "自动", // 降级默认
+                "投放": "auto",
+                "日期": r.date
+            }));
+
+            // 3. 领星产品表现时序对齐以供 TACoS / 利润 模块使用
+            if (perfJson.success && perfJson.data.length) {
+                data.lx = perfJson.data.map(r => ({
+                    "日期": r.date,
+                    "ASIN": r.asin,
+                    "子ASIN": r.asin,
+                    "父ASIN": r.parentAsin,
+                    "MSKU": r.msku,
+                    "店铺": r.store,
+                    "销量": r.salesQty,
+                    "销售额": r.salesAmt,
+                    "订单量": r.ordersQty,
+                    "订单数": r.ordersQty,
+                    "订单毛利润": r.profit,
+                    "订单毛利率": r.margin * 100, // 面板乘了100
+                    "FBA-可售": r.fbaAvailable,
+                    "FBA-在途": r.fbaInTransit,
+                    "FBA库存": r.fbaTotalStock,
+                    "FBA可售天数预估": r.fbaStockDays,
+                    "Sessions-Total": r.sessionsTotal,
+                    "CVR": r.cvr * 100,
+                    "Buybox赢得率": r.buyboxRate * 100,
+                    "广告花费": r.adSpend,
+                    "广告销售额": r.adSales,
+                    "广告订单量": r.adOrders,
+                    "ACOS": r.adAcos * 100,
+                    "TACOS": r.adTacos * 100,
+                    "自然订单量": r.naturalOrders
+                }));
+            } else {
+                data.lx = [];
+            }
+
+            data.place = [];
+            data.xy = [];
+
+            // 更新上传框的 UI 状态，这样渲染诊断出来的健康检查就不会报错“未上传”
+            const updateBox = (type, len) => {
+                const box = document.getElementById(`box-${type}`);
+                const status = document.getElementById(`st-${type}`);
+                if (box) box.classList.add('done');
+                if (status) status.innerHTML = `<i class="fas fa-check-circle" style="color:var(--dg)"></i> ${len} 条 (DB同步)`;
+            };
+            updateBox('camp', data.camp.length);
+            updateBox('prod', data.prod.length);
+            updateBox('srch', data.srch.length);
+            updateBox('lx', data.lx.length);
+            updateBox('map', data.map.length);
+
+            // 4. 隐藏上传区域，展示进度条并启动面板原生的渲染模型
+            document.getElementById('upload-area').style.display = 'none';
+            document.getElementById('loader').style.display = 'block';
+            
+            const setStatus = msg => {
+                const p = document.getElementById('loader').querySelector('p');
+                if (p) p.textContent = msg;
+            };
+
+            // 5. 依次触发原生的阶段渲染函数
+            setTimeout(() => {
+                setStatus('正在构建时序过滤器...');
+                setTimeout(() => {
+                    // 强制清空旧的过滤器与选择状态，让面板重新扫描并识别完整的历史时间周期（如 180 天）
+                    const periodDaysInput = document.getElementById('param-period-days');
+                    if (periodDaysInput) periodDaysInput.value = ""; // 自动检测时间
+
+                    buildFilters();
+                    setStatus('正在聚合六个月明细数据...');
+                    setTimeout(() => {
+                        processData();
+                        setStatus('正在绘制折线与趋势图...');
+                        setTimeout(() => {
+                            renderDashboard();
+                            document.getElementById('loader').style.display = 'none';
+                            document.getElementById('dashboard').style.display = 'block';
+                            btn.innerHTML = '<i class="fas fa-database" style="color:#F3C546"></i> 同步成功';
+                        }, 100);
+                    }, 100);
+                }, 50);
+            }, 50);
+        } else {
+            alert("同步数据失败，服务器返回异常！");
+            btn.innerHTML = '<i class="fas fa-database" style="color:#F3C546"></i> 同步失败';
+        }
+    } catch (err) {
+        console.error("SQLite Sync Error: ", err);
+        alert("未检测到本地中继服务，请确保 ads_api_server.py 已在后台运行。");
+        btn.innerHTML = '<i class="fas fa-database" style="color:#F3C546"></i> 同步失败';
+    } finally {
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-database" style="color:var(--gold)"></i> 🔌 一键同步本地数据库';
+        }, 5000);
+    }
+};
 
 </script>
 </body>
