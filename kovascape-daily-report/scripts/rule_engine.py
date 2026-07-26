@@ -180,8 +180,16 @@ def rule_r01_stockout(inv: InventoryRow, owner: tuple[str, str], thresholds: Dic
 
 
 def rule_r02_negative_profit(p: ProfitRow, owner: tuple[str, str], thresholds: Dict, report_date: str) -> Optional[Alert]:
-    """R02 毛利润 < 0"""
-    if p.gross_profit >= 0:
+    """R02 毛利润 < 0（且有实质销售活动）
+
+    过滤条件：
+      - gross_profit >= 0 → 跳过
+      - sales < $50 → 太小，跳过（可能是测试订单或零散花费）
+      - gross_profit > -$20 → 损失太小，不报
+    """
+    if p.gross_profit >= -20:  # 亏损 < $20 的不报
+        return None
+    if p.sales < 50:  # 销售额太小
         return None
 
     owner_key, owner_uid = owner
@@ -213,19 +221,16 @@ def rule_r03_rank_drop(lh: ListingHealth, owner: tuple[str, str], thresholds: Di
 def rule_r04_buybox(lh: ListingHealth, owner: tuple[str, str], thresholds: Dict, report_date: str) -> Optional[Alert]:
     """R04 Buybox 丢失
 
-    触发条件（任一）：
-      - buybox_owner 为 None（无主）
-      - buybox_owner 不是我们自己（被抢）
+    触发条件：buybox_owner == "LOST"（数据明确显示 BuyBox 不在我们手上）
+    跳过条件：
+      - buybox_owner is None → 数据不可用，不报警
+      - buybox_owner == "KovaScape" → 正常持有 BuyBox
     """
-    our_brand_aliases = {"kovascape", "our_brand", "us", "self", "零"}
-    is_ours = (
-        lh.buybox_owner is not None and
-        lh.buybox_owner.lower() in our_brand_aliases
-    )
-    if is_ours:
+    # None = 无数据；"KovaScape" = 正常
+    if lh.buybox_owner is None or lh.buybox_owner == "KovaScape":
         return None
 
-    # 触发：buybox_owner 为 None（无主） 或被抢
+    # "LOST" 或其他值 = BuyBox 丢失或被抢
     owner_key, owner_uid = owner
     return Alert(
         rule_id="R04",

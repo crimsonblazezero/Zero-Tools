@@ -119,25 +119,33 @@ def parse_performance(items: List[Dict]) -> tuple[List[Dict], List[Dict], List[D
         stars = float(item.get("avg_star", 0) or 0)
         buybox_pct = item.get("buy_box_percentage")
 
+        # BuyBox 判断：buy_box_percentage > 50% 认为持有 BuyBox
+        # "LOST" = 竞品在抢（<50%），None = 数据不可用（null/不存在）
+        buybox = None
+        if buybox_pct is not None:
+            try:
+                pct = float(buybox_pct)
+                if pct >= 50:
+                    buybox = "KovaScape"
+                else:
+                    buybox = "LOST"
+            except (ValueError, TypeError):
+                pass
+
         listing_rows.append({
             "sid": sid,
             "country": country,
             "msku": msku,
             "asin": asin,
-            "parent_asin": parent_asin,
+            "parent_asin": parent_asin or None,
             "title": item.get("item_name", ""),
-            "brand": "KovaScape",
-            "price": float(item.get("avg_custom_price", 0) or 0),
-            "status": "在售",
-            "buybox_owner": "KovaScape" if buybox_pct and buybox_pct > 0 else None,
+            "sessions": int(item.get("sessions", 0) or 0),
+            "buybox_owner": buybox,
             "is_hijacked": False,
-            "seller_rank": seller_rank,
-            "reviews": reviews,
-            "stars": stars,
-            "sales_30d": int(item.get("volume_30d", 0) or 0),
-            "sales_7d": int(item.get("volume_7d", 0) or 0),
-            "principal_uid": None,
-            "principal_name": (item.get("principal_names", [""]) or [""])[0] if item.get("principal_names") else "",
+            "category_rank": seller_rank or None,
+            "rating": float(item.get("avg_star", 0) or 0) or None,
+            "rating_count": reviews,
+            "rating_trend_14d": None,
         })
 
         # inventory（简版——从 available_inventory 提取）
@@ -232,10 +240,12 @@ def main():
     # 计算 inventory 派生字段（days_of_supply, sales_velocity_7d）
     for inv in all_inventory:
         msku = inv["msku"]
-        # 找对应的 sales_7d
-        for lh in all_listings:
-            if lh["msku"] == msku and lh["sid"] == inv["sid"]:
-                inv["sales_velocity_7d"] = lh.get("sales_7d", 0) / 7
+        sid = inv["sid"]
+        # 找对应的 sales_7d - 从 MCP 原始数据中获取
+        # 简化：直接用 profit 的 orders / 7
+        for p in all_profit:
+            if p["msku"] == msku and p["sid"] == sid:
+                inv["sales_velocity_7d"] = p["orders"] / 7 if p["orders"] else 0
                 if inv["sales_velocity_7d"] and inv["sales_velocity_7d"] > 0:
                     inv["days_of_supply"] = inv["available"] / inv["sales_velocity_7d"]
                 break
@@ -265,8 +275,6 @@ def main():
                         "sid": int(sid_str),
                         "msku": msku,
                         "owner_key": info.get("owner", "wang_yi"),
-                        "owner_name": info.get("name", ""),
-                        "uid": info.get("uid"),
                     })
                     seen.add(key)
         snapshot["owners"] = owners_list
