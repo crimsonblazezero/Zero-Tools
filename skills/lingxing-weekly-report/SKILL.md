@@ -62,7 +62,7 @@ description: 领星 ERP 数据拉取、周报/月报汇总与运营周会 Excel 
 | --- | --- | --- | --- |
 | **店铺筛选** | `get_my_sids` | 无 | `sid`, `seller_name` |
 | **业绩数据** (周报/月度) | `query_product_performance_asin_lists` | `sids`: 15个SID<br>`currency_code`: "USD"<br>`summary_field_level1`: "principal"<br>`length`: 1000 | `amount` (销售额)<br>`volume` (销量)<br>`order_items` (订单量)<br>`predict_gross_profit` (预估毛利)<br>`spend` (广告花费)<br>`ad_sales_amount` (广告销售额) |
-| **FBA 库存与库龄** | `get_fba_stock_list` | `sid`: 15个SID<br>`length`: 1000 (必须分页拉取至 total 完结) | `real_transit_quantity` (实际在途)<br>`afn_fulfillable_quantity` (在库可售)<br>`reserved_fc_processing` (待调仓)<br>`reserved_fc_transfers` (调仓中)<br>库龄分段: `inv_age_91_to_180_days` 等 |
+| **FBA 库存与库龄** | `get_fba_stock_list` | `sid`: 15个SID<br>`length`: 1000 (必须分页拉取至 total 完结) | `afn_fulfillable_quantity` (在库可售)<br>`reserved_fc_processing` (待调仓)<br>`reserved_fc_transfers` (调仓中)<br>库龄分段: `inv_age_91_to_180_days` 等 |
 
 ---
 
@@ -71,10 +71,10 @@ description: 领星 ERP 数据拉取、周报/月报汇总与运营周会 Excel 
 1. **实际毛利额**：
    $$\text{月实际毛利额} = \text{预估毛利额 (predict\_gross\_profit)} \times 0.6$$
 
-2. **月库销比**：
-   $$\text{分子 (总库存)} = \text{FBA实际在途 (`real_transit_quantity`)} + \text{FBA在库} + \text{待调仓} + \text{调仓中}$$
-   $$\text{分母 (月销量)} = \text{前30天区间 (如 06-26 ~ 07-25) 的实际总销量}$$
-   $$\text{月库销比} = \frac{\text{分子 (总库存)}}{\text{分母 (前30天总销量)}}$$
+2. **最新月库销比 (不含在途)**：
+   $$\text{分子 (在库总库存)} = \text{FBA在库可售 (`afn_fulfillable_quantity`)} + \text{待调仓 (`reserved_fc_processing`)} + \text{调仓中 (`reserved_fc_transfers`)}$$
+   $$\text{分母 (近7天平均日销)} = \frac{\text{近7天总销量 (上周日~本周六)}}{7}$$
+   $$\text{月库销比} = \frac{\frac{\text{分子}}{\text{近7天平均日销}}}{30}$$
 
 3. **ACOS 与 ACOAS (TACOS)**：
    $$\text{ACOS} = \frac{\text{广告花费 (`spend`)}}{\text{广告销售额 (`ad_sales_amount`)}}$$
@@ -98,7 +98,7 @@ description: 领星 ERP 数据拉取、周报/月报汇总与运营周会 Excel 
 - **K列 (月实际销售额达成率)**：填入公式 `=I2/H2`
 - **M列 (月实际毛利额)**：填入 `predict_gross_profit * 0.6`
 - **N列 (毛利额达成率)**：填入公式 `=M2/L2`
-- **O列 (月库销比)**：填入上述月库销比计算值
+- **O列 (月库销比)**：填入上述最新公式 `(在库总库存 / 近7天平均日销) / 30` 的计算值
 
 ### Sheet 2: `清货进度表`
 - **D列 (91-180天存量)**：全量分页汇总 `inv_age_91_to_180_days`
@@ -110,6 +110,6 @@ description: 领星 ERP 数据拉取、周报/月报汇总与运营周会 Excel 
 ---
 
 ## 6. 注意事项
-1. **目标自动判断**：拉取数据时，脚本会自动提取 `end_date` 的 `YYYY-MM`，并检索 2026 财年目标表，自动填充 E、H、L 列。
-2. **FBA 分页**：调用 `get_fba_stock_list` 时，必须检查返回的 `total` 字段，以 `offset=0, 1000, 2000` 进行循环分页拉取。
-3. **在途取值**：必须采用 `real_transit_quantity`。
+1. **月库销比分子范围**：完全排除在途数据，仅包含 `FBA在库可售 + 待调仓 + 调仓中`。
+2. **月库销比分母范围**：严格采用上周日到本周六的 `近7天平均日销`，除以 30。
+3. **FBA 分页**：调用 `get_fba_stock_list` 时，必须检查返回的 `total` 字段，以 `offset=0, 1000, 2000` 进行循环分页拉取。
