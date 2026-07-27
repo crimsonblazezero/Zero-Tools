@@ -1,11 +1,11 @@
 ---
 name: lingxing-weekly-report
-description: 领星 ERP 数据拉取、周报/月报汇总、运营周会 Excel 表格自动填报、钉盘附件上传、权限配置及周会纪要/钉钉日志全自动提交工作流。用于周会数据收集、南京欧洲组KS店铺业绩分析、FBA库龄/月库销比精准核算及全流程自动化发布。
+description: 领星 ERP 数据拉取、周报/月报汇总、运营周会 Excel 表格自动填报、钉盘附件上传、自动可编辑权限设置及周会纪要/钉钉日志全自动提交工作流。用于周会数据收集、南京欧洲组KS店铺业绩分析、FBA库龄/月库销比精准核算及全流程自动化发布。
 ---
 
 # 领星 ERP 周报与运营周会全自动化 Skill (lingxing-weekly-report)
 
-本 Skill 总结并标准化了领星 ERP 数据拉取、店铺筛选、多维度汇总计算（周报、月度及 FBA 库龄）、**2026财年月度/周度目标匹配**、**《六组周会会议纪要》对齐填报**、**dws 钉钉环境绑定前置条件**以及**组员复用指南与定制化 Prompt SOP**。
+本 Skill 总结并标准化了领星 ERP 数据拉取、店铺筛选、多维度汇总计算（周报、月度及 FBA 库龄）、**2026财年月度/周度目标匹配**、**《六组周会会议纪要》对齐填报**、**自动设置组员/群成员【可编辑 EDITOR】权限**、**dws 钉钉环境绑定前置条件**以及**组员复用指南与定制化 Prompt SOP**。
 
 ---
 
@@ -17,7 +17,19 @@ description: 领星 ERP 数据拉取、周报/月报汇总、运营周会 Excel 
 
 ---
 
-## 2. 🔑 组员环境前置条件：dws 钉钉授权绑定 (Prerequisite: dws Auth)
+## 2. 🔐 自动设置【可编辑 EDITOR】权限规则 (Automatic EDITable Permission)
+
+每次每周自动生成《六组周会会议纪要2026MMDD.xlsx》并上传至钉盘后，系统**必须自动执行权限设置**，将文件节点赋予组员及群成员可编辑权限：
+
+```bash
+dws drive permission add --node <fileId_or_docUrl> --users <userIds> --role EDITOR -y
+```
+
+- **目标**：保证钉群“南京欧洲站￥$€£”内的组员点击卡片在线链接后，可直接在浏览器中打开并编辑表格，无需再次提交权限申请。
+
+---
+
+## 3. 🔑 组员环境前置条件：dws 钉钉授权绑定 (Prerequisite: dws Auth)
 
 组员在首次运行周报自动化前，**必须在其本地电脑完成 `dws` (DingTalk Workspace CLI) 的登录绑定**，否则无法抓取 AI 表格或发送钉群通知。
 
@@ -28,7 +40,7 @@ description: 领星 ERP 数据拉取、周报/月报汇总、运营周会 Excel 
 
 ---
 
-## 3. 2026财年内置目标数据库 (FY2026 Targets)
+## 4. 2026财年内置目标数据库 (FY2026 Targets)
 
 每周目标为当前报告月份目标的 $1/4$。目标数据源自 `南京欧洲组-2026财年目标测算.xlsx`。
 
@@ -51,7 +63,7 @@ description: 领星 ERP 数据拉取、周报/月报汇总、运营周会 Excel 
 
 ---
 
-## 4. 核心 API 与 MCP 接口映射 (API Mapping)
+## 5. 核心 API 与 MCP 接口映射 (API Mapping)
 
 | 模块 / 数据源 | 调用的 MCP / API 工具 | 关键参数设置 | 关键提取字段与计算逻辑 |
 | --- | --- | --- | --- |
@@ -61,7 +73,7 @@ description: 领星 ERP 数据拉取、周报/月报汇总、运营周会 Excel 
 
 ---
 
-## 5. 核心计算规则与公式 (Calculation Rules)
+## 6. 核心计算规则与公式 (Calculation Rules)
 
 1. **真实订单利润额 (Order Profit in USD)**：
    $$\text{订单利润额} = \text{预估订单利润 (predict\_gross\_profit)} \times 0.6$$
@@ -76,7 +88,7 @@ description: 领星 ERP 数据拉取、周报/月报汇总、运营周会 Excel 
 
 ---
 
-## 6. 组员复用与个性化配置指南 (Team Reuse & Customization SOP)
+## 7. 组员复用与个性化配置指南 (Team Reuse & Customization SOP)
 
 为了让团队内其他组员也能无缝复用本 Skill，组员可以通过简单的 Prompt 指令告知 Agent 自己的个人数据与文件路径。
 
@@ -90,12 +102,12 @@ description: 领星 ERP 数据拉取、周报/月报汇总、运营周会 Excel 
 - **场景 A：仅拉取数据并填报本地 Excel（不发群通知）**
   > “请帮我运行周报自动化，拉取上一周领星美金业绩，更新我的本地周报 Excel，先不要发送到群里。”
 
-- **场景 B：完整执行并推送至个人/特定群聊**
-  > “请帮我生成上周的运营周报与周会纪要，更新表格后将通知发送到我个人钉钉。”
+- **场景 B：完整执行并推送至个人/特定群聊（自动赋权可编辑）**
+  > “请帮我生成上周的运营周报与周会纪要，更新表格并自动授权群成员可编辑权限后，将通知发送到钉群。”
 
 ---
 
-## 7. 参数化脚本支持 (Command Line Flags)
+## 8. 参数化脚本支持 (Command Line Flags)
 
 执行脚本已升级支持命令行参数，组员亦可直接通过命令运行：
 
@@ -103,7 +115,7 @@ description: 领星 ERP 数据拉取、周报/月报汇总、运营周会 Excel 
 # 1. 组员认证校验
 dws user me
 
-# 2. 指定个人姓名与模板路径运行
+# 2. 指定个人姓名与模板路径运行（包含自动 EDITOR 权限赋予）
 python src/generate_weekly_meeting_report.py --user-name "张三" --user-id "1234567890" --template "D:\MyWork\周会纪要_张三.xlsx"
 
 # 3. 预演测试模式 (Dry-Run: 不创建新文件、不发通知)

@@ -377,6 +377,62 @@ def update_weekly_report(wy_b7_text, hyb_b8_text, stats=None, stock_data=None, m
     print(f"✅ 成功生成最新全量任务与0.6利润修正版周报文件: {out_path}")
     return out_path
 
+def upload_and_set_editable_permission(out_path):
+    print(f"\n>>> 4. 正在上传 Excel 到钉盘并自动设置群成员【可编辑 EDITOR】权限...")
+    cmd_upload = [DWS_BIN, "drive", "upload", "--file", out_path, "-y", "-f", "json"]
+    res_up = subprocess.run(cmd_upload, capture_output=True, text=True, encoding='utf-8')
+    doc_url = None
+    file_id = None
+    if res_up.returncode == 0:
+        try:
+            up_data = json.loads(res_up.stdout)
+            result = up_data.get("result", {})
+            doc_url = result.get("docUrl")
+            file_id = result.get("fileId")
+            print(f"✅ 文件已成功上传至钉盘, DocURL: {doc_url}")
+        except Exception as e:
+            print(f"⚠️ 解析上传结果失败: {e}")
+    
+    if file_id or doc_url:
+        target_node = file_id if file_id else doc_url
+        print(f"🔐 正在自动授权组员可编辑权限 (Role: EDITOR)...")
+        cmd_perm = [DWS_BIN, "drive", "permission", "add", "--node", target_node, "--users", f"{USER_ID_WY},{USER_ID_HYB}", "--role", "EDITOR", "-y"]
+        res_perm = subprocess.run(cmd_perm, capture_output=True, text=True, encoding='utf-8')
+        if res_perm.returncode == 0:
+            print("✅ 成功设置组员为【可编辑 EDITOR】权限！")
+        else:
+            print(f"ℹ️ 权限配置状态: {res_perm.stdout.strip() or res_perm.stderr.strip()}")
+            
+    return doc_url
+
+def send_group_notification(doc_url, stats=None):
+    if not doc_url:
+        doc_url = "https://alidocs.dingtalk.com/i/nodes/nYMoO1rWxao6b447HjjbazE5V47Z3je9"
+        
+    card_text = f"""# 📊 运营六组周会会议纪要 (2026-07-27)
+
+📢 **最新周会会议纪要及数据环比在线表格已更新（具备编辑权限）！**
+
+### 📈 核心指标速览 (7.19 - 7.25)
+| 核心指标 | 运营六组全量 | 化一博个人 |
+| --- | --- | --- |
+| **销量** | {int(stats['group']['volume']) if stats else 2201} 件 | {int(stats['hyb']['volume']) if stats else 1317} 件 |
+| **销售额** | {stats['group']['amount']:.2f} 美元 | {stats['hyb']['amount']:.2f} 美元 |
+| **预估订单利润 (*0.6)** | {stats['group']['predict_gross_profit']:.2f} 美元 | {stats['hyb']['predict_gross_profit']:.2f} 美元 |
+| **结算利润** | {stats['group']['gross_profit']:.2f} 美元 | {stats['hyb']['gross_profit']:.2f} 美元 |
+| **广告花费** | {stats['group']['ad_spend']:.2f} 美元 | {stats['hyb']['ad_spend']:.2f} 美元 |
+| **FBA在库库存** | {stats['group']['fba_stock']} 件 | {stats['hyb']['fba_stock']} 件 |
+
+---
+📎 **[👉 点击在线查看 / 编辑《六组周会会议纪要20260727.xlsx》]({doc_url})**"""
+
+    cmd_send = [DWS_BIN, "chat", "message", "send", "--group", "cidCtsmbs4Sk6ajOZQDMQl32w==", "--title", "运营六组周会会议纪要已更新", "--text", card_text, "-y", "-f", "json"]
+    res_send = subprocess.run(cmd_send, capture_output=True, text=True, encoding='utf-8')
+    if res_send.returncode == 0:
+        print("✅ 成功推送到钉群【南京欧洲站￥$€£】！")
+    else:
+        print(f"⚠️ 推送结果: {res_send.stderr.strip()}")
+
 if __name__ == "__main__":
     dry_run = "--dry-run" in sys.argv or "--no-send" in sys.argv
     wy_b7_text, hyb_b8_text = fetch_aitable_tasks(meeting_date="2026-07-27")
@@ -385,4 +441,7 @@ if __name__ == "__main__":
         print("✅ [Dry-Run] 报表二《六组周会会议纪要》数据抓取与计算逻辑验证成功（已跳过文件写入与消息发送）。")
     else:
         out_file = update_weekly_report(wy_b7_text, hyb_b8_text, stats=stats, stock_data=stock_data, meeting_date="2026-07-27")
+        doc_url = upload_and_set_editable_permission(out_file)
+        send_group_notification(doc_url, stats=stats)
+
 

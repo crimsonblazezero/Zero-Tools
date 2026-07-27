@@ -330,8 +330,9 @@ def main():
 
         
     if dry_run:
-        print("✅ [Dry-Run] 报表一《运营周报》数据拉取与计算逻辑验证成功（已跳过钉盘上传与消息发送）。")
+        print("[SUCCESS] [Dry-Run] 报表一《运营周报》数据拉取与计算逻辑验证成功（已跳过钉盘上传与消息发送）。")
         return
+
 
     # 3. 上传文件与发送消息
     if excel_path and os.path.exists(excel_path):
