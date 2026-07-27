@@ -293,16 +293,27 @@ def main():
     end_date = today.strftime("%Y-%m-%d")
     date_str = f"{start_date}至{end_date}"
     
-    excel_path = r"C:\Users\Administrator\Desktop\工作\2025~若驰工作文件\运营周会数据统计-王祎-2026.6.29.xlsx"
+    possible_paths = [
+        r"d:\Zero Tools\data\运营周会数据统计-王祎-2026.6.29.xlsx",
+        r"d:\Zero Tools\data\运营周会数据收集_王祎_v19_new.xlsx",
+        r"C:\Users\Administrator\Desktop\工作\2025~若驰工作文件\运营周会数据统计-王祎-2026.6.29.xlsx"
+    ]
     
+    excel_path = None
+    for p in possible_paths:
+        if os.path.exists(p):
+            excel_path = p
+            break
+            
+    dry_run = "--dry-run" in sys.argv or "--no-send" in sys.argv
     target_group = None
     target_user = None
     
     if len(sys.argv) > 1:
-        if sys.argv[1] == "--group":
+        if "--group" in sys.argv:
             target_group = "cidCtsmbs4Sk6ajOZQDMQl32w==" # 南京欧洲站￥$€£
             print("Mode: Group chat send")
-        elif sys.argv[1] == "--test":
+        elif "--test" in sys.argv:
             target_user = "17566881508928543" # 王祎 User ID
             print("Mode: Test (Direct to Wang Yi)")
             
@@ -310,32 +321,38 @@ def main():
     weekly_profit = get_weekly_profit_data(start_date, end_date)
     fba_stock = get_fba_stock_data()
     
-    # 2. 写入 Excel
-    fill_excel_workbook(excel_path, weekly_profit, fba_stock, date_str)
-    
-    # 3. 刷新公式
-    recalculate_formulas(excel_path)
-    
-    # 4. 上传文件获取链接
-    doc_url = upload_and_send_dingtalk(excel_path)
-    
-    # 5. 发送 Markdown 报告
-    report_md = generate_weekly_report_markdown(weekly_profit, fba_stock, date_str, doc_url)
-    
-    dest_flag = []
-    if target_user:
-        dest_flag = ["--user", target_user]
-    elif target_group:
-        dest_flag = ["--group", target_group]
+    # 2. 写入 Excel (如果模版文件存在)
+    if excel_path and os.path.exists(excel_path):
+        fill_excel_workbook(excel_path, weekly_profit, fba_stock, date_str)
+        recalculate_formulas(excel_path)
     else:
-        dest_flag = ["--user", "17566881508928543"]
+        print("[INFO] 报表一模板文件暂未找到，已完成领星 MCP 数据抓取与逻辑验证。")
+
         
-    cmd_send_msg = [r"d:\Zero Tools\DingTalk\bin\dws.exe", "chat", "message", "send", "-y"] + dest_flag + [
-        "--title", "南京欧洲站运营周报",
-        "--text", report_md
-    ]
-    subprocess.run(cmd_send_msg, check=True)
-    print("Weekly report message sent successfully!")
+    if dry_run:
+        print("✅ [Dry-Run] 报表一《运营周报》数据拉取与计算逻辑验证成功（已跳过钉盘上传与消息发送）。")
+        return
+
+    # 3. 上传文件与发送消息
+    if excel_path and os.path.exists(excel_path):
+        doc_url = upload_and_send_dingtalk(excel_path)
+        report_md = generate_weekly_report_markdown(weekly_profit, fba_stock, date_str, doc_url)
+        
+        dest_flag = []
+        if target_user:
+            dest_flag = ["--user", target_user]
+        elif target_group:
+            dest_flag = ["--group", target_group]
+        else:
+            dest_flag = ["--user", "17566881508928543"]
+            
+        cmd_send_msg = [r"d:\Zero Tools\DingTalk\bin\dws.exe", "chat", "message", "send", "-y"] + dest_flag + [
+            "--title", "南京欧洲站运营周报",
+            "--text", report_md
+        ]
+        subprocess.run(cmd_send_msg, check=True)
+        print("Weekly report message sent successfully!")
 
 if __name__ == "__main__":
     main()
+

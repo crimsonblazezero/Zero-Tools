@@ -808,7 +808,7 @@ let mapData={
 };
 
 function parseMapping(){
-  mapData={ready:false,childToParent:{},childToPortfolio:{},childToSku:{},childToVariant:{},parentSet:new Set()};
+  mapData={ready:false,childToParent:{},childToPortfolio:{},childToSku:{},childToVariant:{},childParentToVariant:{},parentSet:new Set()};
   if(!data.map||!data.map.length) return;
   data.map.forEach(r=>{
     const childAsin=getStr(r,['子asin','childasin','child asin','asin']).trim().toUpperCase();
@@ -817,10 +817,43 @@ function parseMapping(){
     const portfolio=getStr(r,['广告组合','portfolio','广告组合名称']);
     const sku=getStr(r,['sku','msku']);
     const variantRaw=getStr(r,['变体属性','variant','variant attributes','变体']);
-    mapData.childToParent[childAsin]=parentAsin;
-    if(portfolio) mapData.childToPortfolio[childAsin]=portfolio;
-    if(sku) mapData.childToSku[childAsin]=sku;
-    if(variantRaw) mapData.childToVariant[childAsin]=variantRaw;
+    const hasExistingPf = mapData.childToPortfolio[childAsin];
+    const targetPf = (document.getElementById('filter-portfolio') && document.getElementById('filter-portfolio').value) || 'all';
+    let shouldOverwrite = true;
+    if (hasExistingPf) {
+      if (targetPf !== 'all') {
+        const cleanTarget = targetPf.trim();
+        const cleanExisting = hasExistingPf.trim();
+        const cleanCurrent = portfolio ? portfolio.trim() : '';
+        if (cleanExisting === cleanTarget && cleanCurrent !== cleanTarget) {
+          shouldOverwrite = false;
+        } else if (cleanExisting !== cleanTarget && cleanCurrent === cleanTarget) {
+          shouldOverwrite = true;
+        } else {
+          if (hasExistingPf && !portfolio) {
+            shouldOverwrite = false;
+          }
+        }
+      } else {
+        if (hasExistingPf && !portfolio) {
+          shouldOverwrite = false;
+        }
+      }
+    }
+    if (shouldOverwrite) {
+      mapData.childToParent[childAsin]=parentAsin;
+      if(portfolio) mapData.childToPortfolio[childAsin]=portfolio;
+      if(sku) mapData.childToSku[childAsin]=sku;
+      if(variantRaw){
+        mapData.childToVariant[childAsin]=variantRaw;
+        mapData.childParentToVariant[childAsin+'|'+parentAsin]=variantRaw;
+      }
+    } else {
+      if(variantRaw){
+        if(!mapData.childToVariant[childAsin]) mapData.childToVariant[childAsin]=variantRaw;
+        mapData.childParentToVariant[childAsin+'|'+parentAsin]=variantRaw;
+      }
+    }
     mapData.parentSet.add(parentAsin);
   });
   mapData.ready=Object.keys(mapData.childToParent).length>0;
@@ -1282,18 +1315,19 @@ function processData(){
                 const _pf=$('filter-portfolio').value;
                 if(_pf!=='all'){
                   // 重新从data.camp按广告组合汇总花费和广告订单（忽略广告活动筛选）
-                  let pfSpend=0, pfAdOrders=0;
+                  let pfSpend=0, pfAdOrders=0, pfAdSales=0;
                   if(data.camp&&data.camp.length){
                     data.camp.forEach(r=>{
                       const rPf=getStr(r,['广告组合','portfolio']);
                       if(rPf!==_pf) return;
                       pfSpend+=num(getVal(r,['花费','spend']));
                       pfAdOrders+=num(getVal(r,['订单','order','units','购买']));
+                      pfAdSales+=num(getVal(r,['销售额','sale','sales']));
                     });
                   } else {
                     // fallback：从搜索词报告按组合汇总
                     searchTerms.forEach(t=>{
-                      if(t.portfolioList.includes(_pf)){ pfSpend+=t.spend; pfAdOrders+=t.orders; }
+                      if(t.portfolioList.includes(_pf)){ pfSpend+=t.spend; pfAdOrders+=t.orders; pfAdSales+=t.sales; }
                     });
                   }
                   kpi.filtAdOrders=pfAdOrders;
@@ -1308,9 +1342,10 @@ function processData(){
                     });
                   }
                   if(pfParents.size===0){
-                    // fallback：映射表无数据，用广告花费/领星总销售额
-                    if(lxData.totalSales>0) kpi.filtTacos=pfSpend/lxData.totalSales;
-                    kpi.filtTotalOrders=lxData.totalOrders||null;
+                    // fallback：无匹配ASIN时将指标置为广告本身数据，避免抓取全账户的整体数据
+                    kpi.filtTacos = pfAdSales > 0 ? pfSpend / pfAdSales : (kpi.sales > 0 ? pfSpend / kpi.sales : null);
+                    kpi.filtTotalOrders = pfAdOrders;
+                    kpi.filtTotalSales = pfAdSales;
                   } else {
                     let pfSales=0, pfProfit=0, pfTotalOrders=0;
                     pfParents.forEach(pa=>{
@@ -1324,9 +1359,12 @@ function processData(){
                     if(pfSales>0){
                       kpi.filtTacos=pfSpend/pfSales;
                       kpi.filtMargin=pfProfit/pfSales;
+                    } else {
+                      kpi.filtTacos=pfAdSales>0?pfSpend/pfAdSales:null;
                     }
-                    kpi.filtTotalOrders=pfTotalOrders>0?pfTotalOrders:null;
-                    kpi.filtTotalSales=pfSales>0?pfSales:null;
+                    // 确保数值不为 null 且至少不低于广告层级数据，从源头防止 null 覆盖失效而泄露全账号数据
+                    kpi.filtTotalOrders=Math.max(pfAdOrders, pfTotalOrders);
+                    kpi.filtTotalSales=Math.max(pfAdSales, pfSales);
                   }
                 }
               }
@@ -1458,7 +1496,7 @@ function renderOverview(){
     const paRows=parents.map(function(pa,pi){
       var t=pa.tacos;
       var tColor=t===null?'#999':t>0.2?'#C4433A':t>0.12?'#E8752A':'#064338';
-      var tBadge=t===null?'<span class="badge b-gray">无数据</span>':t>0.2?'<span class="badge b-red">⚠️ 警戛</span>':t>0.12?'<span class="badge b-orange">📊 偏高</span>':'<span class="badge b-green">✅ 健康</span>';
+      var tBadge=t===null?'<span class="badge b-gray">无数据</span>':t>0.2?'<span class="badge b-red">⚠️ 警戒</span>':t>0.12?'<span class="badge b-orange">📊 偏高</span>':'<span class="badge b-green">✅ 健康</span>';
       var natPct=pa.totalOrders>0?pa.totalNatOrders/pa.totalOrders:0;
       var bw=t===null?0:Math.min(100,t*300);
       var mColor=pa.margin>=g_targetMargin?'var(--dg)':pa.margin>0?'var(--orange)':'var(--red)';
@@ -2077,9 +2115,39 @@ window.renderPop = function() {
             });
             return attrs;
           }
+          // 新增：如果筛选了广告组合，则根据当前广告组合对子ASIN进行过滤（强化版，支持饼图无数据兜底及trim大小写容错）
+          var currentPortfolio = (document.getElementById('filter-portfolio') && document.getElementById('filter-portfolio').value) || 'all';
+          if (currentPortfolio !== 'all') {
+            const cleanPf = currentPortfolio.trim();
+            const hasPortfolioChild = allChildren.some(function(asin) {
+              const mappedPf = mapData.childToPortfolio[asin];
+              if (mappedPf && mappedPf.trim() === cleanPf) return true;
+              if (data.prod && data.prod.length) {
+                return data.prod.some(function(r) {
+                  return getStr(r, ['asin']).trim().toUpperCase() === asin && getStr(r, ['广告组合', 'portfolio']).trim() === cleanPf;
+                });
+              }
+              return false;
+            });
+            if (hasPortfolioChild) {
+              allChildren = allChildren.filter(function(asin) {
+                const mappedPf = mapData.childToPortfolio[asin];
+                if (mappedPf && mappedPf.trim() === cleanPf) return true;
+                if (data.prod && data.prod.length) {
+                  return data.prod.some(function(r) {
+                    const rAsin = getStr(r, ['asin']).trim().toUpperCase();
+                    const rPf = getStr(r, ['广告组合', 'portfolio']).trim();
+                    return rAsin === asin && rPf === cleanPf;
+                  });
+                }
+                return false;
+              });
+            }
+          }
+
           // 构建子体列表（全量，变体属性可选）
           var children=allChildren.map(function(asin){
-            var raw=hasVariantData?(mapData.childToVariant[asin]||''):'';
+            var raw=hasVariantData?(mapData.childParentToVariant[asin+'|'+parentAsin]||mapData.childToVariant[asin]||''):'';
             var attrs=parseVariantAttrs(raw);
             var lx=lxData.byChild&&lxData.byChild[asin];
             var name=(lx&&lx.name)||asin;
@@ -2119,8 +2187,12 @@ window.renderPop = function() {
           });
           var slices=Object.values(themeMap).sort(function(a,b){ return b.orders-a.orders; });
           // 使用 byParent 权威总量，保证与父ASIN行一致
-          var totalOrders=(paData&&paData.totalOrders)||slices.reduce(function(s,x){ return s+x.orders; },0);
-          var totalSales=(paData&&paData.totalSales)||slices.reduce(function(s,x){ return s+x.sales; },0);
+          var totalOrders = (currentPortfolio !== 'all') 
+            ? slices.reduce(function(s,x){ return s+x.orders; },0)
+            : ((paData&&paData.totalOrders)||slices.reduce(function(s,x){ return s+x.orders; },0));
+          var totalSales = (currentPortfolio !== 'all')
+            ? slices.reduce(function(s,x){ return s+x.sales; },0)
+            : ((paData&&paData.totalSales)||slices.reduce(function(s,x){ return s+x.sales; },0));
           if(!totalOrders){
             container.innerHTML='<div style="font-size:12px;color:var(--ts);padding:8px 0">领星数据中该父ASIN无销量数据</div>';
             return;

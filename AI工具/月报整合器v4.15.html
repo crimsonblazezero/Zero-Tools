@@ -357,7 +357,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                             <li><span class="font-semibold text-kova-heading">客单价(净额)</span> = 净销售额 ÷ 销量</li>
                             <li><span class="font-semibold text-kova-heading">退货率</span> = 退货量 ÷ 销量</li>
                             <li><span class="font-semibold text-kova-heading">退款率</span> = 退款量 ÷ 销量</li>
-                            <li><span class="font-semibold text-kova-heading">期末总成本(可售)</span> = (期末库存(含移仓)-总成本 + 期末在途-总成本) ÷ 美元汇率 <span class="text-xs text-kova-main/70">(注: 用于将库存的人民币成本转成美元，可在控制面板手动设定汇率，折算后直接计入月报展示与导出)</span></li>
+                            <li><span class="font-semibold text-kova-heading">期末总成本(在库+在途)</span> = (期末库存(含移仓)-总成本 + 期末在途-总成本) ÷ 美元汇率 <span class="text-xs text-kova-main/70">(注: 用于将库存的人民币成本转成美元，可在控制面板手动设定汇率，折算后直接计入月报展示与导出)</span></li>
                             <li><span class="font-semibold text-kova-heading">月库销比</span> = FBA可售库存(期末) ÷ 销量 <span class="text-xs text-kova-main/70">(注: 独立抓取自[库存明细表]，已筛出可售库存)</span></li>
                         </ul>
                     </div>
@@ -807,7 +807,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                 name: '库存情况', bgColor: 'bg-kova-lightGreen', textColor: 'text-kova-main', borderColor: 'border-kova-main/30',
                 fields: [
                     { key: 'fbaStock', label: 'FBA可售库存(期末)', showIn: ['listing', 'individual', 'category', 'group'], type: 'num' },
-                    { key: 'fbaStockCost', label: '期末总成本(可售)', showIn: ['listing', 'individual', 'category', 'group'], type: 'currency' },
+                    { key: 'fbaStockCost', label: '期末总成本(在库+在途)', showIn: ['listing', 'individual', 'category', 'group'], type: 'currency' },
                     { key: 'monthStockSalesRatio', label: '月库销比', showIn: ['listing', 'individual', 'category', 'group'], type: 'num_ratio' } 
                 ]
             },
@@ -1557,6 +1557,10 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                             d.fbaStockCost += (rawStockCost + rawInTransitCost) / rate;
                         });
 
+                        // Check if orderRows contains orderCount column
+                        const hasOrderCountInOrderRows = orderRows.length > 0 && 
+                            (orderRows[0]['订单量'] !== undefined || orderRows[0]['订单数'] !== undefined);
+
                         perfRows.forEach(row => {
                             const asin = getAsin(row);
                             if (!asin || asin === '0' || asin === '-') return;
@@ -1576,6 +1580,11 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
                             d.adSpend += parseNum(getVal(row, ['广告花费']));
                             d.adSales += parseNum(getVal(row, ['广告销售额']));
                             d.adOrders += parseNum(getVal(row, ['广告订单量', '广告订单']));
+                            
+                            // If orderCount is not present in orderRows, fall back to performance report's orderCount
+                            if (!hasOrderCountInOrderRows) {
+                                d.orderCount += parseNum(getVal(row, ['订单量', '订单数']));
+                            }
                             
                             d.reviewCount += parseNum(getVal(row, ['评论数']));
                             

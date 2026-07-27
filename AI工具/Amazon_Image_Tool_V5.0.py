@@ -39,6 +39,26 @@ try:
 except ImportError:
     HAS_PILLOW = False
 
+def get_actual_extension(src_path, default_ext):
+    """检测图片的实际文件格式并返回正确的扩展名 / Detect the actual file format of the image and return the correct extension"""
+    if HAS_PILLOW:
+        try:
+            with Image.open(src_path) as img:
+                fmt = img.format.upper()
+                if fmt in ("JPEG", "MPO"):
+                    return ".jpg"
+                elif fmt == "PNG":
+                    return ".png"
+                elif fmt == "GIF":
+                    return ".gif"
+                elif fmt == "BMP":
+                    return ".bmp"
+                elif fmt == "WEBP":
+                    return ".webp"
+        except Exception:
+            pass
+    return default_ext
+
 try:
     import openpyxl
     HAS_OPENPYXL = True
@@ -211,7 +231,7 @@ def list_templates():
     ensure_templates_dir()
     templates = []
     for fname in os.listdir(TEMPLATES_DIR):
-        if fname.endswith(".json"):
+        if fname.endswith(".json") and not fname.startswith("."):
             tpath = os.path.join(TEMPLATES_DIR, fname)
             try:
                 with open(tpath, "r", encoding="utf-8") as f:
@@ -227,7 +247,29 @@ def list_templates():
                 continue
     return sorted(templates, key=lambda t: t["name"])
 
-def save_template(name, description, rules, swch_auto_last=True):
+# ── 持久化"上次使用的模板"（跨文件夹/跨重启记忆）──
+def _last_template_path():
+    return os.path.join(TEMPLATES_DIR, ".last.json")
+
+def get_last_template_name():
+    """读取持久化的上次模板名称，返回 name 或 None"""
+    p = _last_template_path()
+    if os.path.exists(p):
+        try:
+            with open(p, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            return data.get("name", None)
+        except Exception:
+            return None
+    return None
+
+def set_last_template_name(name):
+    """持久化记录上次使用的模板名称"""
+    p = _last_template_path()
+    with open(p, "w", encoding="utf-8") as f:
+        json.dump({"name": name}, f, ensure_ascii=False)
+
+def save_template(name, description, rules, swch_auto_last=True, position_list=None):
     ensure_templates_dir()
     safe_name = re.sub(r'[\\/*?:"<>|]', "_", name)
     fname = safe_name + ".json"
@@ -237,6 +279,7 @@ def save_template(name, description, rules, swch_auto_last=True):
         "description": description,
         "swch_auto_last": swch_auto_last,
         "rules": rules,
+        "position_list": position_list, # 保存排序的位置列表 / Save sorted position list
     }
     with open(tpath, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -671,8 +714,8 @@ class TemplateManager(tk.Toplevel):
         if idx >= len(self._templates):
             return
         template = self._templates[idx]
+        self.destroy()          # 先销毁弹窗释放 grab，再执行回调，确保父窗口 listbox 能正常刷新
         self.on_load(template)
-        self.destroy()
 
     def _delete(self):
         sel = self.listbox.curselection()
@@ -715,6 +758,7 @@ class FolderDialog(tk.Toplevel):
         super().__init__(parent)
         self.folder_path   = folder_path
         self.image_files   = list(image_files)
+        self.initial_image_files = list(image_files) # 保存原始加载顺序 / Save original load order
         self.asin          = asin
         self.custom_data   = custom_data or {}
         self._result       = None
@@ -923,6 +967,7 @@ class FolderDialog(tk.Toplevel):
     def _on_drag_stop(self, event):
         self._drag_data["index"] = None
         self._sync_listbox_display()
+        self._rebuild_grid() # 重建右侧网格 / Rebuild the right grid
 
     def _move_item(self, direction):
         sel = self._file_listbox.curselection()
@@ -941,6 +986,7 @@ class FolderDialog(tk.Toplevel):
                 self.image_files[idx], self.image_files[new_idx] = \
                     self.image_files[new_idx], self.image_files[idx]
         self._sync_listbox_display()
+        self._rebuild_grid() # 重建右侧网格 / Rebuild the right grid
         # 恢复选中状态
         for i, fname in enumerate(self.image_files):
             if fname in sel_fnames:
@@ -987,9 +1033,7 @@ class FolderDialog(tk.Toplevel):
             kws = self._extract_keywords(name_no_ext)
             if kws:
                 rules.append({"position": pos, "keywords": kws, "priority": "high"})
-        if not rules:
-            messagebox.showwarning("提示", "未找到可用于模板的关键词。\n请确保文件名包含有意义的关键词。", parent=self)
-            return
+        position_list = [self._pos_vars[fname].get() for fname in self.initial_image_files] # 获取基于初始顺序的位置列表 / Get position list based on initial order
         dlg = tk.Toplevel(self)
         dlg.title("保存排序模板")
         dlg.geometry("420x260")
@@ -1008,17 +1052,19 @@ class FolderDialog(tk.Toplevel):
         tk.Button(btn_row, text="保存", width=10, bg="#064338", fg="#F3C546",
                   font=("Arial", 10, "bold"),
                   command=lambda: self._do_save_template(
-                      dlg, name_var.get().strip(), desc_var.get().strip(), rules, swch_var.get()
+                      dlg, name_var.get().strip(), desc_var.get().strip(), rules, swch_var.get(), position_list
                   )).pack(side="left", padx=4)
         dlg.grab_set()
         dlg.focus_set()
         self.wait_window(dlg)
 
-    def _do_save_template(self, dlg, name, desc, rules, swch):
+    def _do_save_template(self, dlg, name, desc, rules, swch, position_list=None):
         if not name:
             messagebox.showwarning("提示", "请输入模板名称", parent=dlg)
             return
-        tpath = save_template(name, desc, rules, swch)
+        tpath = save_template(name, desc, rules, swch, position_list)
+        set_last_template_name(name)
+        self._last_template = {"name": name, "data": {"rules": rules, "swch_auto_last": swch, "position_list": position_list}}
         dlg.destroy()
         messagebox.showinfo("保存成功",
             "模板「%s」已保存\n规则数：%d 条\n路径：%s" % (name, len(rules), tpath), parent=self)
@@ -1033,12 +1079,124 @@ class FolderDialog(tk.Toplevel):
     def _load_template(self):
         def on_load(template):
             self._last_template = template  # 记住，支持一键复用
+            set_last_template_name(template["name"])
             rules = template.get("data", {}).get("rules", [])
             swch  = template.get("data", {}).get("swch_auto_last", True)
+            position_list = template.get("data", {}).get("position_list", [])
+            assignments = {}
+            if position_list:
+                # 按照初始顺序直接映射模板位置 / Map positions directly according to initial order
+                for idx, fname in enumerate(self.initial_image_files):
+                    if idx < len(position_list):
+                        assignments[fname] = position_list[idx]
+                    else:
+                        assignments[fname] = "跳过"
+                # 如果没有 SWCH 且启用了 SWCH 自动放末尾，将最后一个非 MAIN 文件设为 SWCH / If no SWCH is assigned and swch_auto_last is enabled, assign last non-MAIN file as SWCH
+                has_swch = any(p == "SWCH" for p in assignments.values())
+                if not has_swch and swch and self.initial_image_files:
+                    for fname in reversed(self.initial_image_files):
+                        if assignments.get(fname) != "MAIN":
+                            assignments[fname] = "SWCH"
+                            break
+            else:
+                if not rules:
+                    messagebox.showwarning("提示", "模板中没有规则", parent=self)
+                    return
+                used = set()
+                priority_order = {"exact": 0, "high": 1, "mid": 2, "low": 3}
+                sorted_rules = sorted(rules, key=lambda r: priority_order.get(r.get("priority","mid"), 2))
+                for rule in sorted_rules:
+                    target = rule.get("position", "")
+                    if target in used:
+                        continue
+                    for fname in self.image_files:
+                        if fname in assignments:
+                            continue
+                        name_lower = Path(fname).stem.lower()
+                        for kw in rule.get("keywords", []):
+                            if kw.lower() in name_lower:
+                                assignments[fname] = target
+                                used.add(target)
+                                break
+                        if target in used:
+                            break
+                for fname in self.image_files:
+                    if fname in assignments:
+                        continue
+                    p = guess_position(fname, self.extra_hints)
+                    if p and p not in used:
+                        assignments[fname] = p
+                        used.add(p)
+                pt_queue = [p for p in PT_POSITIONS if p not in used]
+                remaining = [f for f in self.image_files if f not in assignments]
+                if swch and "SWCH" not in used and remaining:
+                    last = remaining.pop()
+                    assignments[last] = "SWCH"
+                for fname in remaining:
+                    assignments[fname] = pt_queue.pop(0) if pt_queue else "跳过"
+
+            for fname, pos in assignments.items():
+                self._pos_vars[fname].set(pos)
+            # 按位置重排文件列表（MAIN→PT01→...→SWCH→跳过）
+            _order = {"MAIN":0,"PT01":1,"PT02":2,"PT03":3,"PT04":4,
+                      "PT05":5,"PT06":6,"PT07":7,"PT08":8,"SWCH":9,"跳过":10}
+            self.image_files.sort(key=lambda f: _order.get(
+                self._pos_vars[f].get(), 999))
+            # 同步左侧列表 + 重建右侧缩略图网格（按新顺序）
+            self._sync_listbox_display()
+            self._rebuild_grid()
+            self._check_conflicts()
+            count = len([a for a in assignments.values() if a != "跳过"])
+            messagebox.showinfo("模板已应用",
+                "模板「%s」已应用，左侧列表和右侧缩略图均已按位置重排。\n自动匹配 %d / %d 张图片。" % (
+                    template["name"], count, len(self.image_files)), parent=self)
+        TemplateManager(self, on_load)
+
+    def _quick_apply_template(self):
+        """一键应用上次加载/保存的模板，无需再次选择和确认
+        优先使用实例缓存，切换文件夹后回退到持久化文件记录，跨重启也生效。"""
+        template = self._last_template
+        if not template:
+            # 切换文件夹后实例缓存丢失，从持久化文件读取
+            last_name = get_last_template_name()
+            if last_name:
+                all_t = list_templates()
+                for t in all_t:
+                    if t["name"] == last_name:
+                        template = t
+                        self._last_template = t
+                        break
+            # 持久化也没有，回退到最新模板
+            if not template:
+                all_t = list_templates()
+                if all_t:
+                    template = all_t[0]
+                    self._last_template = template
+                else:
+                    messagebox.showwarning("提示", "没有可用的模板。\n请先通过「保存模板」或「加载模板」使用一次。", parent=self)
+                    return
+        rules = template.get("data", {}).get("rules", [])
+        swch  = template.get("data", {}).get("swch_auto_last", True)
+        position_list = template.get("data", {}).get("position_list", [])
+        assignments = {}
+        if position_list:
+            # 按照初始顺序直接映射模板位置 / Map positions directly according to initial order
+            for idx, fname in enumerate(self.initial_image_files):
+                if idx < len(position_list):
+                    assignments[fname] = position_list[idx]
+                else:
+                    assignments[fname] = "跳过"
+            # 如果没有 SWCH 且启用了 SWCH 自动放末尾，将最后一个非 MAIN 文件设为 SWCH / If no SWCH is assigned and swch_auto_last is enabled, assign last non-MAIN file as SWCH
+            has_swch = any(p == "SWCH" for p in assignments.values())
+            if not has_swch and swch and self.initial_image_files:
+                for fname in reversed(self.initial_image_files):
+                    if assignments.get(fname) != "MAIN":
+                        assignments[fname] = "SWCH"
+                        break
+        else:
             if not rules:
                 messagebox.showwarning("提示", "模板中没有规则", parent=self)
                 return
-            assignments = {}
             used = set()
             priority_order = {"exact": 0, "high": 1, "mid": 2, "low": 3}
             sorted_rules = sorted(rules, key=lambda r: priority_order.get(r.get("priority","mid"), 2))
@@ -1071,74 +1229,67 @@ class FolderDialog(tk.Toplevel):
                 assignments[last] = "SWCH"
             for fname in remaining:
                 assignments[fname] = pt_queue.pop(0) if pt_queue else "跳过"
-            for fname, pos in assignments.items():
-                self._pos_vars[fname].set(pos)
-            self._sync_listbox_display()
-            self._check_conflicts()
-            count = len([a for a in assignments.values() if a != "跳过"])
-            messagebox.showinfo("模板已应用",
-                "模板「%s」已应用。\n自动匹配 %d / %d 张图片。" % (
-                    template["name"], count, len(self.image_files)), parent=self)
-        TemplateManager(self, on_load)
-
-    def _quick_apply_template(self):
-        """一键应用上次加载的模板，无需再次选择和确认"""
-        if not self._last_template:
-            # 尝试从文件系统加载最近的一个模板
-            all_t = list_templates()
-            if all_t:
-                self._last_template = all_t[0]
-            else:
-                messagebox.showwarning("提示", "没有可用的模板。\n请先通过「加载模板」选择并应用一次模板。", parent=self)
-                return
-        # 直接应用 _last_template
-        template = self._last_template
-        rules = template.get("data", {}).get("rules", [])
-        swch  = template.get("data", {}).get("swch_auto_last", True)
-        if not rules:
-            messagebox.showwarning("提示", "模板中没有规则", parent=self)
-            return
-        assignments = {}
-        used = set()
-        priority_order = {"exact": 0, "high": 1, "mid": 2, "low": 3}
-        sorted_rules = sorted(rules, key=lambda r: priority_order.get(r.get("priority","mid"), 2))
-        for rule in sorted_rules:
-            target = rule.get("position", "")
-            if target in used:
-                continue
-            for fname in self.image_files:
-                if fname in assignments:
-                    continue
-                name_lower = Path(fname).stem.lower()
-                for kw in rule.get("keywords", []):
-                    if kw.lower() in name_lower:
-                        assignments[fname] = target
-                        used.add(target)
-                        break
-                if target in used:
-                    break
-        for fname in self.image_files:
-            if fname in assignments:
-                continue
-            p = guess_position(fname, self.extra_hints)
-            if p and p not in used:
-                assignments[fname] = p
-                used.add(p)
-        pt_queue = [p for p in PT_POSITIONS if p not in used]
-        remaining = [f for f in self.image_files if f not in assignments]
-        if swch and "SWCH" not in used and remaining:
-            last = remaining.pop()
-            assignments[last] = "SWCH"
-        for fname in remaining:
-            assignments[fname] = pt_queue.pop(0) if pt_queue else "跳过"
         for fname, pos in assignments.items():
             self._pos_vars[fname].set(pos)
+        # 按位置重排文件列表（MAIN→PT01→...→SWCH→跳过）
+        _order = {"MAIN":0,"PT01":1,"PT02":2,"PT03":3,"PT04":4,
+                  "PT05":5,"PT06":6,"PT07":7,"PT08":8,"SWCH":9,"跳过":10}
+        self.image_files.sort(key=lambda f: _order.get(
+            self._pos_vars[f].get(), 999))
+        # 同步左侧列表 + 重建右侧缩略图网格（按新顺序）
         self._sync_listbox_display()
+        self._rebuild_grid()
         self._check_conflicts()
         count = len([a for a in assignments.values() if a != "跳过"])
         messagebox.showinfo("快速应用完成",
-            "模板「%s」已应用。\n自动匹配 %d / %d 张图片。" % (
+            "模板「%s」已应用，左侧列表和右侧缩略图均已按位置重排。\n自动匹配 %d / %d 张图片。" % (
                 template["name"], count, len(self.image_files)), parent=self)
+
+    def _rebuild_grid(self):
+        """销毁右侧缩略图网格并按 self.image_files 当前顺序重建，同时保留已有的 _pos_vars 值。"""
+        # 清空旧 cell（_inner 的所有子控件）
+        for widget in self._inner.winfo_children():
+            widget.destroy()
+        self._thumb_refs      = []
+        self._conflict_labels = {}
+
+        COLS = 4
+        for idx, fname in enumerate(self.image_files):
+            row_i, col_i = divmod(idx, COLS)
+            cell = tk.Frame(self._inner, bd=1, relief="groove", padx=4, pady=4, bg="#fafafa")
+            cell.grid(row=row_i, column=col_i, padx=4, pady=4, sticky="n")
+
+            img_path = os.path.join(self.folder_path, fname)
+            if HAS_PILLOW:
+                try:
+                    img = Image.open(img_path)
+                    img.thumbnail((THUMB_W, THUMB_H))
+                    photo = ImageTk.PhotoImage(img)
+                    self._thumb_refs.append(photo)
+                    tk.Label(cell, image=photo, bg="#fafafa").pack()
+                except Exception:
+                    tk.Label(cell, text="[无法预览]", width=14, height=6, bg="#ddd").pack()
+            else:
+                tk.Label(cell, text="[需安装Pillow]", width=14, height=6, bg="#ddd").pack()
+
+            short_name = fname if len(fname) <= 22 else fname[:19] + "..."
+            tk.Label(cell, text=short_name, font=("Arial", 8),
+                     wraplength=140, bg="#fafafa").pack()
+
+            # 复用已有的 StringVar（保留模板分配的位置值）
+            var = self._pos_vars[fname]
+            combo = ttk.Combobox(cell, textvariable=var, values=ALL_POSITIONS,
+                                 width=8, state="readonly")
+            combo.pack(pady=2)
+
+            conflict_lbl = tk.Label(cell, text="", fg="red", font=("Arial", 8), bg="#fafafa")
+            conflict_lbl.pack()
+            self._conflict_labels[fname] = conflict_lbl
+
+        # 刷新 canvas 滚动区域
+        self._inner.update_idletasks()
+        self._canvas.configure(scrollregion=self._canvas.bbox("all"))
+        self._canvas.yview_moveto(0)  # 滚回顶部
 
     def _save_geometry(self):
         global _last_dialog_geometry
@@ -1155,18 +1306,13 @@ class FolderDialog(tk.Toplevel):
             lbl.config(text=("⚠ %s 重复!" % p) if (p != "跳过" and pos_count.get(p,0) > 1) else "")
 
     def _reorder(self):
-        swch_file = None
-        others = []
-        for fname in self.image_files:
-            if self._pos_vars[fname].get() == "SWCH":
-                swch_file = fname
-            else:
-                others.append(fname)
-        for i, fname in enumerate(others):
-            self._pos_vars[fname].set(PT_POSITIONS[i] if i < len(PT_POSITIONS) else "跳过")
-        if swch_file:
-            self._pos_vars[swch_file].set("SWCH")
+        # 按位置顺序对文件列表进行物理排序 / Physically sort file list by position order
+        _order = {"MAIN":0, "PT01":1, "PT02":2, "PT03":3, "PT04":4,
+                  "PT05":5, "PT06":6, "PT07":7, "PT08":8, "SWCH":9, "跳过":10}
+        self.image_files.sort(key=lambda f: _order.get(
+            self._pos_vars[f].get() if f in self._pos_vars else "跳过", 999))
         self._sync_listbox_display()
+        self._rebuild_grid() # 重建右侧网格 / Rebuild the right grid
         self._check_conflicts()
 
     def _confirm(self):
@@ -1372,7 +1518,7 @@ class App(tk.Tk):
             return
 
         self.custom_data["swch_auto_last"] = self.swch_var.get()
-        file_map, warnings = {}, []
+        file_map, warnings, corrected_files = {}, [], []
         auto_pattern = None  # None=手动弹窗模式；list=自动套用排序方案
         auto_count = 0
 
@@ -1421,20 +1567,44 @@ class App(tk.Tk):
                     self.update()
             else:
                 # ── 自动模式：套用排序方案 ──
-                asin = matched_asin
-                assignments = {}
-                for i, fname in enumerate(image_files):
-                    if i < len(auto_pattern):
-                        assignments[fname] = auto_pattern[i]
-                    else:
-                        assignments[fname] = "跳过"
-                # 如果方案里没有 SWCH 且开关打开，末尾自动设 SWCH
-                has_swch = any(p == "SWCH" for p in assignments.values())
-                if not has_swch and self.swch_var.get() and image_files:
-                    for fname in reversed(image_files):
-                        if assignments.get(fname) != "MAIN":
-                            assignments[fname] = "SWCH"
-                            break
+                need_manual = False
+                if len(image_files) != len(auto_pattern):
+                    # 弹出警报提示图片数量不一致 / Show discrepancy warning
+                    msg = ("文件夹 \"%s\" 含有 %d 张图片，与模板数量 (%d 张) 不一致。\n\n"
+                           "您是要对此文件夹自动套用模板（是），还是手动调整（否）？" % (
+                               folder_name, len(image_files), len(auto_pattern)))
+                    if not messagebox.askyesno("图片数量不一致警告", msg, parent=self):
+                        need_manual = True
+
+                if need_manual:
+                    dlg = FolderDialog(self, folder_path=folder_path,
+                                       image_files=image_files,
+                                       asin=matched_asin,
+                                       custom_data=self.custom_data)
+                    result = dlg.get_result()
+                    if result is None or result[0] == "quit":
+                        self.status_lbl.config(text="已退出处理", fg="#e74c3c")
+                        return
+                    if result[0] == "skip":
+                        continue
+                    action, asin, assignments = result
+                    if action == "apply_all":
+                        auto_pattern = [assignments.get(f, "跳过") for f in image_files]
+                else:
+                    asin = matched_asin
+                    assignments = {}
+                    for i, fname in enumerate(image_files):
+                        if i < len(auto_pattern):
+                            assignments[fname] = auto_pattern[i]
+                        else:
+                            assignments[fname] = "跳过"
+                    # 如果方案里没有 SWCH 且开关打开，末尾自动设 SWCH
+                    has_swch = any(p == "SWCH" for p in assignments.values())
+                    if not has_swch and self.swch_var.get() and image_files:
+                        for fname in reversed(image_files):
+                            if assignments.get(fname) != "MAIN":
+                                assignments[fname] = "SWCH"
+                                break
                 auto_count += 1
                 self.status_lbl.config(
                     text="🚀 自动处理 [%d/%d]：%s（%d张）" % (
@@ -1447,7 +1617,16 @@ class App(tk.Tk):
                 if pos == "跳过":
                     continue
                 src = os.path.join(folder_path, fname)
-                ext = Path(fname).suffix.lower()
+                orig_ext = Path(fname).suffix.lower()
+                ext = get_actual_extension(src, orig_ext) # 检测实际图像格式以修正后缀名 / Detect actual image format to correct suffix
+                if orig_ext != ext:
+                    corrected_files.append({
+                        "folder": folder_name,
+                        "filename": fname,
+                        "old_ext": orig_ext,
+                        "new_ext": ext,
+                        "dest": "%s.%s%s" % (asin, pos, ext)
+                    })
                 dest = "%s.%s%s" % (asin, pos, ext)
                 if dest in file_map.values():
                     warnings.append("重复文件名：%s（来自 %s）" % (dest, folder_name))
@@ -1459,7 +1638,31 @@ class App(tk.Tk):
 
         try:
             zip_paths = pack_to_zip(file_map, output)
-            msg = "✓ 完成！共处理 %d 张图片\nZIP文件：\n" % len(file_map) + "\n".join(zip_paths)
+            
+            # 写入处理报告 / Write process report
+            import datetime
+            report_path = os.path.join(output, "image_process_report.txt")
+            with open(report_path, "w", encoding="utf-8") as rf:
+                rf.write("==================================================\n")
+                rf.write("             亚马逊图片重命名与打包处理报告\n")
+                rf.write("==================================================\n\n")
+                rf.write("处理时间：%s\n" % datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                rf.write("图片总数：%d 张\n" % len(file_map))
+                rf.write("ZIP包路径：\n%s\n\n" % "\n".join(zip_paths))
+                
+                if corrected_files:
+                    rf.write("发现并修正的格式不一致图片（共 %d 张）：\n" % len(corrected_files))
+                    rf.write("-" * 60 + "\n")
+                    for item in corrected_files:
+                        rf.write("文件夹：%s\n" % item["folder"])
+                        rf.write("  原文件名：%s\n" % item["filename"])
+                        rf.write("  实际格式修正：%s -> %s\n" % (item["old_ext"], item["new_ext"]))
+                        rf.write("  打包文件名：%s\n\n" % item["dest"])
+                else:
+                    rf.write("没有发现实际格式与后缀不一致的图片，未做后缀修正。\n")
+            
+            msg = "✓ 完成！共处理 %d 张图片\n处理报告已生成至输出目录 (image_process_report.txt)\n\nZIP文件：\n%s" % (
+                len(file_map), "\n".join(zip_paths))
             if warnings:
                 msg += "\n\n⚠ 警告（%d条）：\n" % len(warnings) + "\n".join(warnings[:10])
             messagebox.showinfo("处理完成", msg)

@@ -1,24 +1,36 @@
 ---
 name: lingxing-weekly-report
-description: 领星 ERP 数据拉取、周报/月报汇总、运营周会 Excel 表格自动填报、钉盘附件上传、权限配置及钉钉日志(运营周复盘)全自动提交工作流。用于周会数据收集、南京欧洲组KS店铺业绩分析、FBA 库龄/月库销比精准核算及钉钉周报一键填报。
+description: 领星 ERP 数据拉取、周报/月报汇总、运营周会 Excel 表格自动填报、钉盘附件上传、权限配置及周会纪要/钉钉日志全自动提交工作流。用于周会数据收集、南京欧洲组KS店铺业绩分析、FBA库龄/月库销比精准核算及全流程自动化发布。
 ---
 
-# 领星 ERP 周报与数据自动化 Skill (lingxing-weekly-report)
+# 领星 ERP 周报与运营周会全自动化 Skill (lingxing-weekly-report)
 
-本 Skill 总结并标准化了领星 ERP 的 API/MCP 数据拉取、店铺筛选、多维度汇总计算（周报、月度及 FBA 库龄）、**2026财年月度/周度目标内置逻辑**、**AI表格《周重点任务》全量任务动态抓取**、自动填入运营周会 Excel 模板、**附件优先挂载与钉盘权限自动配置**，以及**通过 DWS 自动提交钉钉《运营周复盘》日志**的标准 SOP。
+本 Skill 总结并标准化了领星 ERP 数据拉取、店铺筛选、多维度汇总计算（周报、月度及 FBA 库龄）、**2026财年月度/周度目标匹配**、**《六组周会会议纪要》对齐填报**、**dws 钉钉环境绑定前置条件**以及**组员复用指南与定制化 Prompt SOP**。
 
 ---
 
 ## 1. 适用场景与触发词
-- **触发词**：`周报数据`、`运营周会`、`生成周报`、`领星数据拉取`、`南京欧洲组`、`填写周报Excel`、`计算月库销比`、`FBA库龄分析`、`提交钉钉周报`、`发送钉钉日志`
-- **默认范围**：店铺筛选仅保留名称以 `南京欧洲组KS` 开头的所有 15 个店铺 SID (`5030, 5751, 5019, 5024, 5026, 5025, 5031, 5023, 5021, 5020, 5027, 5029, 5028, 5022, 5018`)。
+- **触发词**：`周报数据`、`运营周会`、`生成周报`、`领星数据拉取`、`南京欧洲组`、`填写周报Excel`、`周会会议纪要`、`定时周报推送`、`提交钉钉周报`
+- **默认店铺范围**：仅筛选名称包含 `南京欧洲组KS` 的 15 个店铺 SID (`5030, 5751, 5019, 5024, 5026, 5025, 5031, 5023, 5021, 5020, 5027, 5029, 5028, 5022, 5018`)。
 - **计价币种**：美金 (USD)。
+- **核心逻辑执行脚本**：`src/run_all_weekly_reports.py`
 
 ---
 
-## 2. 2026财年内置目标数据库 (Built-in FY2026 Monthly & Weekly Targets)
+## 2. 🔑 组员环境前置条件：dws 钉钉授权绑定 (Prerequisite: dws Auth)
 
-数据源自 `南京欧洲组-2026财年目标测算.xlsx` 人员 Sheet。系统自动根据报告截止日所在的月份动态匹配月目标，**每周目标 = 月目标 ÷ 4**。
+组员在首次运行周报自动化前，**必须在其本地电脑完成 `dws` (DingTalk Workspace CLI) 的登录绑定**，否则无法抓取 AI 表格或发送钉群通知。
+
+### 绑定三步法：
+1. **确认 dws 可执行文件**：确保 `D:\Zero Tools\DingTalk\bin\dws.exe` 或全局 `dws` 命令可用。
+2. **执行扫码登录**：在终端运行 `dws auth login`，使用手机钉钉扫码完成身份授权。
+3. **运行登录验证**：运行 `dws user me`，若正常输出组员个人信息，则表示 `dws` 绑定成功。
+
+---
+
+## 3. 2026财年内置目标数据库 (FY2026 Targets)
+
+每周目标为当前报告月份目标的 $1/4$。目标数据源自 `南京欧洲组-2026财年目标测算.xlsx`。
 
 ### 销售额目标 (GMV Target in USD)
 
@@ -39,89 +51,61 @@ description: 领星 ERP 数据拉取、周报/月报汇总、运营周会 Excel 
 
 ---
 
-## 3. AI表格《周重点任务》全量任务动态提取
+## 4. 核心 API 与 MCP 接口映射 (API Mapping)
 
-系统自动读取钉钉 AI 表格 Base `周重点任务` 中的 `1.任务管理表`：
-- **本周重点工作**：按当前周数提取本周（如第30周）的**全量任务**（包含所有已完成、进行中、未开始），格式化输出。
-- **下周重点计划**：按当前周数+1提取下周（如第31周）的**全量计划任务**。
-
-```bash
-dws aitable record list --base-id R1zknDm0WRNmEDKZSBED3jE4WBQEx5rG --table-id dv19yqvsgs3oebp3pcjys --limit 100 --format json
-```
+| 模块 / 数据源 | 调用的 MCP / API 工具 | 关键参数设置 | 关键提取字段与计算逻辑 |
+| --- | --- | --- | --- |
+| **AI 表格任务提取** | `dws aitable record list` | `--all --base-id R1zknDm0WRNmEDKZSBED3jE4WBQEx5rG --table-id dv19yqvsgs3oebp3pcjys` | `jxzfinmckxuusjowbz5ca` (任务名称)<br>`sb82jyoeivzhh5is2guac` (负责人)<br>`8LkwFxC` / `y5s8sqzoulb4pdafd1mlo` (按 ISO 周数精准匹配本周与上周任务) |
+| **产品表现数据** | `query_product_performance_asin_lists` | `sids`: 15个SID<br>`currency_code`: "USD"<br>`summary_field`: "asin"<br>`length`: 1000 | `volume` (销量)<br>`amount` (销售额)<br>`predict_gross_profit` (预估订单利润，**必须 * 0.6**)<br>`gross_profit` (结算利润)<br>`spend` (广告花费，正数展示) |
+| **FBA 库存与库龄** | `get_fba_stock_list` | `sid`: 15个SID (多线程并发拉取)<br>`length`: 2000 | `afn_fulfillable_quantity` + `afn_reserved_quantity` + `reserved_fc_transfers` (**FBA可售+待调仓+调仓中**)<br>库龄分段: `inv_age_91_to_180_days` 等 |
 
 ---
 
-## 4. 核心计算规则与公式 (Calculation Formulas)
+## 5. 核心计算规则与公式 (Calculation Rules)
 
-1. **实际毛利额**：
-   $$\text{月实际毛利额} = \text{预估毛利额 (predict\_gross\_profit)} \times 0.6$$
+1. **真实订单利润额 (Order Profit in USD)**：
+   $$\text{订单利润额} = \text{预估订单利润 (predict\_gross\_profit)} \times 0.6$$
 
-2. **最新月库销比 (不含在途)**：
-   $$\text{分子 (在库总库存)} = \text{FBA在库可售 (`afn_fulfillable_quantity`)} + \text{待调仓 (`reserved_fc_processing`)} + \text{调仓中 (`reserved_fc_transfers`)}$$
-   $$\text{分母 (近7天平均日销)} = \frac{\text{近7天总销量 (上周日~本周六)}}{7}$$
-   $$\text{月库销比} = \frac{\frac{\text{分子}}{\text{近7天平均日销}}}{30}$$
+2. **FBA 在库库存 (FBA On-hand Stock)**：
+   $$\text{FBA在库库存} = \text{FBA可售} + \text{待调仓/预留} + \text{调仓中}$$
 
----
-
-## 5. 附件上传、钉盘权限与钉钉日志提交标准 SOP
-
-### 步骤 A：本地 Excel 文件上传至钉盘
-```bash
-dws drive upload --file "C:\Users\Administrator\Desktop\工作\2025~若驰工作文件\运营周会数据收集_王祎_v19_new.xlsx" --format json -y
-```
-提取返回的 `spaceId`, `fileId`, `fileName`, `fileSize`, `docUrl`。
-
-### 步骤 B：自动设置钉盘文件企业内公开与复制下载权限
-为了保证团队成员与上级能够正常查看、复制与下载附件，上传后必须自动设置权限：
-```bash
-dws drive publish set --file-id <fileId> -y
-```
-并在知识库/文档空间中配置企业内协同或阅读下载权限（设置 `download_enabled: true` / `copy_enabled: true`）。
-
-### 步骤 C：日志提交双重 Fallback 机制 (Primary vs Fallback)
-
-1. **首选方案（主通道）**：使用日志模板自带的**原生【附件】组件** (sort: 56, type: 9)
-   在 `contents` 数组中添加原生附件控件：
-   ```json
-   {
-     "key": "附件",
-     "sort": "56",
-     "contentType": "origin",
-     "type": "9",
-     "content": "[{\"spaceId\":\"<spaceId>\",\"fileId\":\"<fileId>\",\"fileName\":\"<fileName>\",\"fileSize\":<fileSize>,\"fileType\":\"xlsx\"}]"
-   }
-   ```
-
-2. **降级方案 (Fallback)**：若原生【附件】组件上传失败或类型校验未通过
-   将钉盘文件在线链接格式化写入 **`本周重点工作...`** 字段的正文末尾：
-   ```markdown
-   📎 **数据汇总 Excel 表格在线链接（支持查看/复制/下载）**：
-   [运营周会数据收集_王祎_v19_new.xlsx](https://alidocs.dingtalk.com/i/nodes/<fileId>)
-   ```
+3. **数据位移与公式修正 (Formula Shift)**：
+   - 环比表格更新时，旧 D列/J列 自动位移复制至 C列/I列。
+   - C列与 I列的所有比率与衍生公式（客单价、利润率、ACOAS、日销等）**必须修正为引用自身 C/I 单元格**。
+   - 最新周（D列与J列）的 `太仓仓库库存`、`额定资金`、`实际资金`、`资金使用率` 强制设为 `None` (留空)。
 
 ---
 
-## 6. Excel 模板填报 SOP (Workbook Automation)
+## 6. 组员复用与个性化配置指南 (Team Reuse & Customization SOP)
 
-目标文件：`C:\Users\Administrator\Desktop\工作\2025~若驰工作文件\运营周会数据收集_王祎_v19_new.xlsx`
+为了让团队内其他组员也能无缝复用本 Skill，组员可以通过简单的 Prompt 指令告知 Agent 自己的个人数据与文件路径。
 
-### Sheet 1: `周报`
-- **E列 (本周目标销售额)**：根据报告日期月份取出月目标，写入 `月目标 / 4`
-- **H列 (月目标销售额)**：自动匹配填入当前月份的目标销售额
-- **L列 (月目标毛利额)**：自动匹配填入当前月份的目标毛利额
-- **D列 (本周销售额完成)**：填入上周日到本周六的 `amount`
-- **F列 (本周ACOAS)**：填入上周日到本周六的 `spend / amount`
-- **G列 (周销售额达成率)**：填入公式 `=D2/E2`
-- **I列 (月实际销售额)**：填入 1号至周六的 `amount`
-- **J列 (本月ACOAS)**：填入 1号至周六的 `spend / amount`
-- **K列 (月实际销售额达成率)**：填入公式 `=I2/H2`
-- **M列 (月实际毛利额)**：填入 `predict_gross_profit * 0.6`
-- **N列 (毛利额达成率)**：填入公式 `=M2/L2`
-- **O列 (月库销比)**：填入上述最新公式 `(在库总库存 / 近7天平均日销) / 30` 的计算值
+### 👥 1. 组员首次使用配置 Prompt 模板 (First-time Configuration Prompt)
 
-### Sheet 2: `清货进度表`
-- **D列 (91-180天存量)**：全量分页汇总 `inv_age_91_to_180_days`
-- **F列 (91-180天清货效率)**：填入公式 `=E2/D2`
-- **G列 (181-270天存量)**：全量分页汇总 `inv_age_181_to_270_days`
-- **I列 (181-270天清货效率)**：填入公式 `=H2/G2`
-- **J列 & M列 (271-365天与365天以上)**：全量分页汇总填入（若无填 0，效率填 `="-"`）
+> **复制发送给 AI**：
+> “我是组员【张三】，我的钉钉 User ID 是【1234567890】，我的模板文件路径是 `D:\MyWork\运营周报_张三.xlsx`。请帮我在周报自动化逻辑中将【张三】设为个人数据列的提取负责人，并更新模版路径。”
+
+### 🔄 2. 组员日常执行 Prompt 模板 (Daily Execution Prompts)
+
+- **场景 A：仅拉取数据并填报本地 Excel（不发群通知）**
+  > “请帮我运行周报自动化，拉取上一周领星美金业绩，更新我的本地周报 Excel，先不要发送到群里。”
+
+- **场景 B：完整执行并推送至个人/特定群聊**
+  > “请帮我生成上周的运营周报与周会纪要，更新表格后将通知发送到我个人钉钉。”
+
+---
+
+## 7. 参数化脚本支持 (Command Line Flags)
+
+执行脚本已升级支持命令行参数，组员亦可直接通过命令运行：
+
+```bash
+# 1. 组员认证校验
+dws user me
+
+# 2. 指定个人姓名与模板路径运行
+python src/generate_weekly_meeting_report.py --user-name "张三" --user-id "1234567890" --template "D:\MyWork\周会纪要_张三.xlsx"
+
+# 3. 预演测试模式 (Dry-Run: 不创建新文件、不发通知)
+python src/run_all_weekly_reports.py --dry-run
+```
