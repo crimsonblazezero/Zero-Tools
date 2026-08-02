@@ -1,0 +1,233 @@
+[
+  {
+    "key": "附件",
+    "sort": "56",
+    "content": "[{\"spaceId\": \"27227639280\", \"fileId\": \"ndMj49yWjXo2mLLDHRnkP0jXJ3pmz5aA\", \"fileName\": \"运营周会数据收集_王祎_v19_new(5).xlsx\", \"fileSize\": 13851, \"fileType\": \"xlsx\"}]",
+    "contentType": "origin",
+    "type": "9"
+  },
+  {
+    "key": "周销量",
+    "sort": "20",
+    "content": "0",
+    "contentType": "origin",
+    "type": "2"
+  },
+  {
+    "key": "本周目标销售额$",
+    "sort": "23",
+    "content": "0",
+    "contentType": "origin",
+    "type": "2"
+  },
+  {
+    "key": "本周实际销售额$",
+    "sort": "21",
+    "content": "0",
+    "contentType": "origin",
+    "type": "2"
+  },
+  {
+    "key": "AcoAs（%）",
+    "sort": "22",
+    "content": "0",
+    "contentType": "origin",
+    "type": "2"
+  },
+  {
+    "key": "下周目标销售额$",
+    "sort": "24",
+    "content": "0",
+    "contentType": "origin",
+    "type": "2"
+  },
+  {
+    "key": "月目标销售额$",
+    "sort": "25",
+    "content": "0",
+    "contentType": "origin",
+    "type": "2"
+  },
+  {
+    "key": "月实际销售额$",
+    "sort": "26",
+    "content": "0",
+    "contentType": "origin",
+    "type": "2"
+  },
+  {
+    "key": "月AcoAs（%）",
+    "sort": "55",
+    "content": "无",
+    "contentType": "markdown",
+    "type": "1"
+  },
+  {
+    "key": "月目标毛利率（%）",
+    "sort": "27",
+    "content": "0",
+    "contentType": "origin",
+    "type": "2"
+  },
+  {
+    "key": "月实际毛利率（%）",
+    "sort": "28",
+    "content": "0",
+    "contentType": "origin",
+    "type": "2"
+  },
+  {
+    "key": "月目标毛利额$",
+    "sort": "29",
+    "content": "0",
+    "contentType": "origin",
+    "type": "2"
+  },
+  {
+    "key": "月实际毛利额（未扣除工资、房租物业和财务成本等）$",
+    "sort": "30",
+    "content": "0",
+    "contentType": "origin",
+    "type": "2"
+  },
+  {
+    "key": "毛利额完成比率（%）",
+    "sort": "31",
+    "content": "0",
+    "contentType": "origin",
+    "type": "2"
+  },
+  {
+    "key": "近30天库销比（FBA在库库存）",
+    "sort": "57",
+    "content": "无",
+    "contentType": "markdown",
+    "type": "1"
+  },
+  {
+    "key": "本周清货计划是否符合预期？如否，写明原因",
+    "sort": "51",
+    "content": "无",
+    "contentType": "markdown",
+    "type": "1"
+  },
+  {
+    "key": "当前库存数量——90-180天库龄",
+    "sort": "35",
+    "content": "0",
+    "contentType": "origin",
+    "type": "2"
+  },
+  {
+    "key": "目标存量——90-180天库龄",
+    "sort": "47",
+    "content": "0",
+    "contentType": "origin",
+    "type": "2"
+  },
+  {
+    "key": "当前库存数量——181-270天库龄",
+    "sort": "38",
+    "content": "0",
+    "contentType": "origin",
+    "type": "2"
+  },
+  {
+    "key": "目标存量——181-270天库龄",
+    "sort": "48",
+    "content": "0",
+    "contentType": "origin",
+    "type": "2"
+  },
+  {
+    "key": "当前库存数量——271-365天库龄",
+    "sort": "41",
+    "content": "0",
+    "contentType": "origin",
+    "type": "2"
+  },
+  {
+    "key": "目标存量——271-365天库龄",
+    "sort": "49",
+    "content": "0",
+    "contentType": "origin",
+    "type": "2"
+  },
+  {
+    "key": "当前库存数量——366天以上库龄",
+    "sort": "44",
+    "content": "0",
+    "contentType": "origin",
+    "type": "2"
+  },
+  {
+    "key": "目标存量——366天以上库龄",
+    "sort": "50",
+    "content": "0",
+    "contentType": "origin",
+    "type": "2"
+  },
+  {
+    "key": "本周重点工作及完成情况(事、量化、做到什么程度)",
+    "sort": "17",
+    "content": "无",
+    "contentType": "markdown",
+    "type": "1"
+  },
+  {
+    "key": "周未达成重要目标/存在问题/原因/办法",
+    "sort": "0",
+    "content": "无",
+    "contentType": "markdown",
+    "type": "1"
+  },
+  {
+    "key": "下周重点工作及计划（事、量化、时间/不超3项）",
+    "sort": "1",
+    "content": "无",
+    "contentType": "markdown",
+    "type": "1"
+  },
+  {
+    "key": "老品月库销比超过2个月的产品名称/降低库销比方案/预期需要多久完成",
+    "sort": "18",
+    "content": "无",
+    "contentType": "markdown",
+    "type": "1"
+  },
+  {
+    "key": "超过180天的SKU数量/以及对应的货量总和/预期多久清理完毕",
+    "sort": "19",
+    "content": "无",
+    "contentType": "markdown",
+    "type": "1"
+  },
+  {
+    "key": "心得/建议/所需支持/其他需交流的问题",
+    "sort": "2",
+    "content": "无",
+    "contentType": "markdown",
+    "type": "1"
+  },
+  {
+    "key": "备注",
+    "sort": "3",
+    "content": "无",
+    "contentType": "markdown",
+    "type": "1"
+  },
+  {
+    "key": "周销量/销售额$/AcoAs/下周目标销售额$",
+    "sort": "12",
+    "content": "无",
+    "contentType": "markdown",
+    "type": "1"
+  },
+  {
+    "key": "月目标销售额/实际销售额/月目标毛利率/实际毛利率/月目标毛利额/实际毛利额（未扣除工资、房租物业和财务成本等）/毛利额完成比率%",
+    "sort": "16",
+    "content": "无",
+    "contentType": "markdown",
+    "type": "1"
+  }
+]

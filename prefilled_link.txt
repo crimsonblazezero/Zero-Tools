@@ -1,0 +1,5 @@
+Web URL:
+https://landray.dingtalkapps.com/alid/app/report/createReport_new.html?templateId=17a14a44cdee2e409b88ad14ca68d77b&corpid=dingd53795b1c0745e4eacaaa37764f94726
+
+Client URL:
+dingtalk://dingtalkclient/action/openapp?corpid=dingd53795b1c0745e4eacaaa37764f94726&container_type=work_platform&app_id=2&redirect_type=jump&redirect_url=https%3A//landray.dingtalkapps.com/alid/app/report/createReport_new.html%3FtemplateId%3D17a14a44cdee2e409b88ad14ca68d77b%26corpid%3Ddingd53795b1c0745e4eacaaa37764f94726

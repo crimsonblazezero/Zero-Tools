@@ -42,3 +42,22 @@ data/test.txt
 .agents/sentinel
 .agents/ORIGINAL_REQUEST.md
 .shared/
+
+# AI Agent memory and settings
+antigravity/
+hermes/
+
+# Temporary Payload JSON files
+*_payload.json
+*_test.json
+exact_*.json
+payload_*.json
+single_*.json
+all_35_*.json
+all_fields.json
+all_origin.json
+clean_payload.json
+excel_headers.txt
+tasks_dump.txt
+type16_*.json
+user_test.json
