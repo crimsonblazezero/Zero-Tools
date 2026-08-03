@@ -370,8 +370,11 @@ body{font-family:'Poppins',sans-serif;background:#F0EDE8;display:flex;height:100
           <button class="rpt-vt-btn active" id="rpt-vt-card" onclick="setRptView('card')" title="卡片视图">▦</button>
           <button class="rpt-vt-btn" id="rpt-vt-list" onclick="setRptView('list')" title="列表视图">☰</button>
         </div>
-      <span id="batch-del-bar" style="display:none;padding:3px 0;font-size:11.5px;color:var(--body-gray)"><label style="cursor:pointer;margin-right:6px;user-select:none"><input type="checkbox" id="rpt-select-all" onclick="toggleSelectAllReports()" style="width:14px;height:14px;accent-color:var(--green);vertical-align:middle"> 全选</label> 已选 <span id="batch-del-count">0</span> 项
+      <span id="batch-del-bar" style="display:none;padding:3px 0;font-size:11.5px;color:var(--body-gray);align-items:center;gap:6px"><label style="cursor:pointer;margin-right:6px;user-select:none"><input type="checkbox" id="rpt-select-all" onclick="toggleSelectAllReports()" style="width:14px;height:14px;accent-color:var(--green);vertical-align:middle"> 全选</label> 已选 <span id="batch-del-count">0</span> 项
         <button class="btn-danger" style="padding:4px 12px;font-size:11px;margin-left:6px" onclick="batchDeleteReports()">🗑 批量删除</button>
+        <span style="height:12px;width:1px;background:var(--border);margin:0 4px"></span>
+        <select id="batch-move-cat" style="padding:3px 8px;font-size:11px;border:1px solid var(--border);border-radius:4px;outline:none;background:#fff"></select>
+        <button class="btn-tb" style="padding:4px 12px;font-size:11px;background:var(--green);color:#fff;border-color:var(--green)" onclick="batchMoveReports()">📦 批量移动</button>
       </span>
       </div>
       <div class="reports-grid" id="reports-grid"></div>
@@ -1044,7 +1047,11 @@ function updateBatchDelBtn(){
   const n=document.getElementById('batch-del-count');
   const sa=document.getElementById('rpt-select-all');
   if(all.length&&sa){sa.checked=c.length===all.length;sa.indeterminate=c.length>0&&c.length<all.length;}
-  if(c.length){b.style.display='inline';n.textContent=c.length;}
+  if(c.length){
+    b.style.display='inline-flex';
+    n.textContent=c.length;
+    buildRptCatSelect('batch-move-cat');
+  }
   else{b.style.display='none';}
 }
 function toggleSelectAllReports(){
@@ -1060,6 +1067,21 @@ function batchDeleteReports(){
   if(!confirm(`确定删除 ${ids.length} 份报告？`))return;
   reports=reports.filter(r=>!ids.includes(r.id));
   saveReports();renderReports();updateStats();updateBatchDelBtn();
+}
+function batchMoveReports(){
+  const c=document.querySelectorAll('.rpt-checkbox:checked');
+  if(!c.length)return;
+  const targetCatId=document.getElementById('batch-move-cat').value;
+  if(!targetCatId) return;
+  const targetCatName=(rptCats.find(x=>x.id===targetCatId)||{}).label||'';
+  const ids=Array.from(c).map(x=>x.getAttribute('data-id'));
+  if(!confirm(`确定将已选的 ${ids.length} 份报告移动到分类「${targetCatName}」吗？`))return;
+  reports.forEach(r=>{
+    if(ids.includes(r.id)){
+      r.cat=targetCatId;
+    }
+  });
+  saveReports();renderReports();updateBatchDelBtn();
 }
 // ═══════════════════════════════════════════════════════════════════════════════
 // STATS
@@ -1084,7 +1106,20 @@ function openTool(id){
 }
 function openReport(id){
   const r=reports.find(x=>x.id===id); if(!r) return;
-  const ext=r.path.split('.').pop().toLowerCase();if(ext==='pdf'){window.open(r.path,'_blank');return;}if(ext==='xlsx'||ext==='xls'){renderExcelInIframe(r.path,r.title);return;}if(ext==='md'){renderMarkdownInIframe(r.path,r.title);return;}openIframe('📄',r.title,r.path,'reports');
+  const ext=r.path.split('.').pop().toLowerCase();
+  if(ext==='pdf'||ext==='html'||ext==='htm'){
+    window.open(r.path,'_blank');
+    return;
+  }
+  if(ext==='xlsx'||ext==='xls'){
+    renderExcelInIframe(r.path,r.title);
+    return;
+  }
+  if(ext==='md'){
+    renderMarkdownInIframe(r.path,r.title);
+    return;
+  }
+  openIframe('📄',r.title,r.path,'reports');
 }
 // ═══ Markdown → HTML converter
 function md2html(m){
