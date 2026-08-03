@@ -1,0 +1,13 @@
+{
+  "name": "ima-knowledge-base-mcp",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "IMA Knowledge Base MCP Server",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  }
+}
