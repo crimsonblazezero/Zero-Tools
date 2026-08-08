@@ -184,7 +184,7 @@ sort=52 "组长销售数据" 和 sort=53 "组长库存数据" 在模板中是 **
 **DWS contentType 正确写法**：
 - type=1 文本 → `contentType: "origin"`（不是 markdown）
 - type=2 数字 → `contentType: "origin"`
-- type=9 附件 → `contentType: "origin"`（当前阶段跳过）
+- type=9 附件 → `contentType: "origin"`（2026-08-08 已实测可自动上传）
 - type=16 必须转 type=1 → `contentType: "origin"`
 
 - **组整体**：所有`asin_principal_list`中包含该负责人的NS-KS商品都计入
@@ -328,7 +328,7 @@ dws report entry submit --template-id <id> --contents-file <file.json> --yes --f
 2. contents JSON 加：`{"key":"附件","sort":"56","content":"<UUID>","contentType":"origin","type":"9"}`
 3. `dws report entry submit --template-id <模板ID> --contents-file <file.json> --yes`
 
-**用户偏好**：当前阶段跳过附件自动上传。DWS提交后手动上传Excel到日志中。脚本内 `build_dws()` 中附件字段设为空字符串即可。
+**用户偏好（2026-08-08 更新）**：附件自动上传已验证可用（实测 `dws drive upload` 成功返回 fileId/spaceId/docUrl），**恢复自动上传附件**。脚本内 `build_dws()` 附件字段写入上传返回的 UUID，不再置空。
 
 #### ⚠️ contents JSON 去重规则
 
@@ -382,7 +382,7 @@ dws report entry submit \
 5. **提交成功后用 `dingtalkOpenMarkdownLink`** 给用户点击跳转，禁止裸放 `dingtalk://` 链接
 6. **不要走 dws doc 写文档**，如果用户明确说"OA周报/日志/模板"就走 dws report
 7. **出参确认**：submit 成功会在返回中追加 `dingtalkOpenMarkdownLink`；如果缺少就再调一次 `entry get` 补取
-8. **当前阶段跳过附件上传**，Excel仅做本地备份（脚本内 build_dws() 不含附件字段）
+8. **附件自动上传（2026-08-08 实测可用）**：`dws drive upload` 上传 Excel → 取 UUID 填入 contents sort=56；不再跳过
 9. **`weekly_report.py` 是主脚本**，路径 `C:\Users\Administrator\Desktop\工作\2025~若驰工作文件\scripts\weekly_report.py`
 
 ### 📋 运营周复盘模板字段表

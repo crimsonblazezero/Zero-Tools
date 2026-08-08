@@ -36,7 +36,7 @@ metadata:
 
 | 指标 | 公式/来源 | 备注 |
 |------|----------|------|
-| **毛利润** | 领星 grossProfit × **0.6** | 因部分成本未扣减，需用此系数修正 |
+| **毛利润** | 领星 predict_gross_profit × **0.6** ÷ 6.8109 | 因部分成本未扣减，需用此系数修正（周报/周会纪要统一口径） |
 | **ACoS%** | 直接取领星广告报表数据 | ⚠️ 不要手动算 ads_cost/sales |
 | **周目标** | 月目标 ÷ 4 | 固定分配 |
 | **90-180天库存目标** | 当前库存 × **0.8** | 库龄清货目标 |
@@ -94,7 +94,7 @@ notification: "success -> no group message"
 | I: 月实际销售额 | month_actual_sales | 利润报表合计 |
 | J: 本月ACOAS | ACoS % | 广告报表或利润报表 |
 | L: 月目标毛利额 | month_profit_target | 目标表 |
-| M: 月实际毛利额 | gross_profit × 0.6 | 利润报表×修正系数 |
+| M: 月实际毛利额 | predict_gross_profit × 0.6 ÷ 6.8109 | 产品表现表×修正系数 |
 | N: 毛利额达成率 | adjusted / target | 自动计算 |
 | O: 月库销比 | stock_units / daily_units | 自动计算 |
 

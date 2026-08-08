@@ -85,7 +85,7 @@ dws auth status
 | J | 本月 ACOAS | 月 `spend / amount` |
 | K | 月销售额达成率 | 公式 `=I2/H2` |
 | L | 月目标毛利额 | FY2026 目标表 |
-| M | 月实际毛利额 | `predict_gross_profit * 0.6` |
+| M | 月实际毛利额 | `predict_gross_profit × 0.6 ÷ 6.8109` |
 | N | 毛利额达成率 | 公式 `=M2/L2` |
 | O | 月库销比 | `(FBA在库可售 + 待调仓 + 调仓中) / (近7天平均日销) / 30` |
 
@@ -117,7 +117,7 @@ dws auth status
 | 8 | 月实际销售额$ | 26 | 2 | origin | 全组当月 `amount` |
 | 9 | 月AcoAs（%） | 55 | 1 | markdown | 全组当月 `spend / amount * 100` |
 | 10 | 月目标毛利额$ | 29 | 2 | origin | FY2026 目标表 |
-| 11 | 月实际毛利额（未扣除工资、房租物业和财务成本等）$ | 30 | 2 | origin | 全组当月 `predict_gross_profit * 0.6` |
+| 11 | 月实际毛利额（未扣除工资、房租物业和财务成本等）$ | 30 | 2 | origin | 全组当月 `predict_gross_profit × 0.6 ÷ 6.8109` |
 | 12 | 毛利额完成比率（%） | 31 | 2 | origin | `月实际毛利额 / 月目标毛利额 * 100` |
 | 13 | 近30天库销比（FBA在库库存） | 57 | 1 | markdown | `(FBA总库存 / 近7天平均日销) / 30` |
 | 14 | 当前库存数量——90-180天库龄 | 35 | 2 | origin | FBA 库龄 91-180 天 |
@@ -135,11 +135,14 @@ dws auth status
 | 26 | 本周重点工作及完成情况(事、量化、做到什么程度) | 17 | 1 | markdown | 从 AI 表格读取上周 WK 任务 |
 | 27 | 下周重点工作及计划（事、量化、时间/不超3项） | 1 | 1 | markdown | 从 AI 表格读取本周 WK 任务 |
 
-### 🔒 步骤 4：暂停自动提交，等待确认
+### 🔓 步骤 4：附件自动上传 + 自动提交（2026-08-08 实测可用）
 
-- **禁止自动直接调用 `dws report entry submit` 提交发布日志！**
-- 生成 `report_payload.json` 后，向王祎展示完整预览
-- **必须等待王祎回复"确认"或"执行"后**，才可执行 `dws report entry submit`
+- **附件自动上传已验证**：`dws drive upload <excel>` 实测成功（返回 fileId/spaceId/docUrl），不再跳过
+- 上传后取 UUID 填入 contents `sort=56`（附件字段），然后执行：
+  ```bash
+  dws report entry submit --template-id 17a14a44cdee2e409b88ad14ca68d77b --contents-file d:\Zero Tools\data\report_payload.json --yes
+  ```
+- 提交成功后用返回的 `dingtalkOpenMarkdownLink` 给王祎跳转查看
 
 ---
 
