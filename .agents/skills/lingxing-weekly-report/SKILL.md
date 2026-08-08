@@ -135,14 +135,23 @@ dws auth status
 | 26 | 本周重点工作及完成情况(事、量化、做到什么程度) | 17 | 1 | markdown | 从 AI 表格读取上周 WK 任务 |
 | 27 | 下周重点工作及计划（事、量化、时间/不超3项） | 1 | 1 | markdown | 从 AI 表格读取本周 WK 任务 |
 
-### 🔓 步骤 4：附件自动上传 + 自动提交（2026-08-08 实测可用）
+### 🔒 步骤 4：附件限制与提交（2026-08-08 实测确认）
 
-- **附件自动上传已验证**：`dws drive upload <excel>` 实测成功（返回 fileId/spaceId/docUrl），不再跳过
-- 上传后取 UUID 填入 contents `sort=56`（附件字段），然后执行：
-  ```bash
-  dws report entry submit --template-id 17a14a44cdee2e409b88ad14ca68d77b --contents-file d:\Zero Tools\data\report_payload.json --yes
-  ```
-- 提交成功后用返回的 `dingtalkOpenMarkdownLink` 给王祎跳转查看
+**⚠️ 平台硬限制：钉钉日志 `report create` API 只支持文本组件（type=1），附件字段（sort=56, type=9）不支持接口提交**（官方文档原文："对应日志模板中的每个组件只允许是文本类型，其他类型组件暂不支持接口调用"）。实测 `contents` 中带附件字段一律返回 `PARAM_ERROR`。
+
+**可行替代方案——正文 Markdown 链接**：
+1. `dws drive upload <excel>` 上传到钉盘 → 返回 `docUrl`
+2. 将 docUrl 以 Markdown 链接形式写入正文文本字段（如 `本周重点工作` 或 `周销量/销售额$/AcoAs/下周目标销售额$`）：
+   ```markdown
+   [运营周会数据收集_王祎_v19_new.xlsx](https://alidocs.dingtalk.com/i/nodes/<fileId>)
+   ```
+3. 执行提交：
+   ```bash
+   dws report entry submit --template-id 17a14a44cdee2e409b88ad14ca68d77b --contents '<json>' --yes
+   ```
+   （注意：`--contents-file` 在本版本有 bug 报 "contents not set"，用 `--contents` 直接传单行 JSON 或 `--contents -` stdin）
+4. 提交成功后用返回的 `dingtalkOpenMarkdownLink` 给王祎跳转查看
+- 附件文件本体仍需王祎在钉钉客户端手动添加（API 限制，无法自动化）
 
 ---
 
