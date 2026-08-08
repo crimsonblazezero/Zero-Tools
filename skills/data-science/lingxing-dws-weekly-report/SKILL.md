@@ -159,8 +159,8 @@ def is_nsks_fba(item):
 
 ## Excel 输出格式
 
-目标文件：`运营周会数据收集_王祎.xlsx`
-脚本路径：`scripts/weekly_report.py`（v18，直接覆盖旧值，不用管原始Excel公式）
+目标文件：`运营周会数据收集_王祎_v19_new.xlsx`
+统一入口：`d:\Zero Tools\src\weekly_report_pipeline.py`（直接覆盖旧值，不用管原始Excel公式）
 
 **"清货进度表" Sheet 同样规则：**
 | Excel行 | 姓名列 | 组内序号 | 数据口径 |
@@ -321,14 +321,17 @@ dws report entry submit --template-id <id> --contents-file <file.json> --yes
 dws report entry submit --template-id <id> --contents-file <file.json> --yes --format json
 ```
 
-#### 附件上传流程（可选）
+#### 附件处理（2026-08-08 实测修正：API 不支持附件字段）
 
-模板 sort=56 "附件"（type=9）。不能直接传文件路径，需要两步：
-1. `dws drive upload <local_excel_path>` → 获取 UUID
-2. contents JSON 加：`{"key":"附件","sort":"56","content":"<UUID>","contentType":"origin","type":"9"}`
-3. `dws report entry submit --template-id <模板ID> --contents-file <file.json> --yes`
+模板 sort=56 "附件"（type=9）**无法通过接口提交**（钉钉官方文档："对应日志模板中的每个组件只允许是文本类型，其他类型组件暂不支持接口调用"；实测 contents 带附件字段一律 PARAM_ERROR）。
 
-**用户偏好（2026-08-08 实测修正）**：⚠️ 钉钉日志 API 只支持文本组件（type=1），**附件字段（sort=56, type=9）无法通过接口提交**（官方文档确认 + 实测 PARAM_ERROR）。替代方案：`dws drive upload` 上传 Excel 后，把 docUrl 以 Markdown 链接写入正文文本字段，附件本体由王祎在钉钉客户端手动添加。
+**正确替代方案**：
+1. `dws drive upload <excel>` → 返回 `docUrl`
+2. 将 docUrl 以 Markdown 链接写入正文文本字段（如 `周销量/销售额$/AcoAs/下周目标销售额$`）：
+   ```markdown
+   [运营周会数据收集_王祎_v19_new.xlsx](https://alidocs.dingtalk.com/i/nodes/<fileId>)
+   ```
+3. 附件文件本体由王祎在钉钉客户端手动添加后转发管理人员
 
 #### ⚠️ contents JSON 去重规则
 
@@ -353,37 +356,33 @@ for c in dws_contents:
 
 contents JSON 的 `key` 必须等于 `field_name` 原值，`sort` 必须等于 `field_sort` 字符串。
 
-#### 附件上传流程
+#### 附件处理（与上文一致：API 不支持附件字段）
 
-模板 sort=56 "附件"（type=9）。不能直接传文件路径，需要两步：
-1. `dws drive upload <local_excel_path>` → 获取 UUID
-2. contents JSON 加：`{"key":"附件","sort":"56","content":"<UUID>","contentType":"file","type":"9"}`
-3. submit 必须带 `--format json` 才能解析 file_id
+⚠️ **不要按旧文档把 fileId 填入附件字段**——实测无效（PARAM_ERROR）。正确做法见上文「附件处理」：上传钉盘取 docUrl → Markdown 链接贴正文文本字段 → 附件本体人工添加。
 
 ```bash
-# 构造 contents JSON 到文件
-cat > /tmp/report_contents.json << 'EOF'
-[{...}]
-EOF
+# 正确：上传后取 docUrl
+dws drive upload --file <excel> --file-name "运营周会数据收集_王祎_v19_new.xlsx"
+# → {"fileId":"...","docUrl":"https://alidocs.dingtalk.com/i/nodes/..."}
 
-# 提交
+# 提交（把链接贴进正文文本字段，如 sort=12 周销量/销售额$/AcoAs/下周目标销售额$）
 dws report entry submit \
   --template-id <模板ID> \
-  --contents-file /tmp/report_contents.json \
-  --yes --format json
+  --contents '<json 含 markdown 链接>' \
+  --yes
 ```
 
 ### ⚠️ 必守铁律
 
 1. **contents key 必须完全等于 template get 返回的 field_name**，一个字不能改
-2. **contentType 用 `origin`**（type=1 文本也用 origin，不用 markdown；type=9 附件用 origin）
-3. **长内容永远走 `--contents-file`**，禁止 `--contents '<json>'` 带中文引号换行
+2. **contentType 与 type 匹配**：type=1 文本用 `markdown`；type=2 数字用 `origin`（官方文档：只支持 markdown 类型文本组件）
+3. **长内容提交方式（2026-08-08 实测）**：`--contents-file` 在本版本有 bug 报 "contents not set"，改用 `--contents "$(cat file)"`（单行 JSON）最稳；`--contents -` stdin 部分内容会 SYSTEM_ERROR
 4. **提交失败后的排查顺序**：template list → template get → 重新写 contents → submit
 5. **提交成功后用 `dingtalkOpenMarkdownLink`** 给用户点击跳转，禁止裸放 `dingtalk://` 链接
 6. **不要走 dws doc 写文档**，如果用户明确说"OA周报/日志/模板"就走 dws report
 7. **出参确认**：submit 成功会在返回中追加 `dingtalkOpenMarkdownLink`；如果缺少就再调一次 `entry get` 补取
 8. **附件字段（sort=56, type=9）无法通过 API 提交**（2026-08-08 实测确认，钉钉官方文档：日志组件只允许文本类型）。用 `dws drive upload` 上传后把 docUrl 以 Markdown 链接写入正文；附件本体人工在钉钉客户端添加
-9. **`weekly_report.py` 是主脚本**，路径 `C:\Users\Administrator\Desktop\工作\2025~若驰工作文件\scripts\weekly_report.py`
+9. **统一入口脚本（2026-08-08 更新）**：`d:\Zero Tools\src\weekly_report_pipeline.py`（--report1/--report2/--all/--dry-run）；旧 `weekly_report.py`（v18）已废弃，不再使用
 
 ### 📋 运营周复盘模板字段表
 
@@ -410,7 +409,7 @@ dws report entry submit \
 | 1 | 下周重点工作及计划 | 1(文本) | ⚠️ AI草稿 |
 | 12 | 周销量/销售额$/AcoAs/下周目标 | 1(文本) | ✅ |
 | 16 | 月目标/实际/毛利率/毛利额 | 1(文本) | ✅ |
-| 56 | 附件 | 9(附件) | ✅ Excel上传 |
+| 56 | 附件 | 9(附件) | ⚠️ API 不支持，人工钉钉客户端添加 |
 
 ## Excel 输出格式
 
@@ -487,5 +486,5 @@ HTTP Streamable HTTP，每次请求 QPS ≤ 1。多数据源并行采集时必�
 - `references/LingXing_profit_report_api_audit.md` — 🔴 两个利润API口径差异审计（含截图基准数据、实测对比）
 - 本地文件：
   - `C:\Users\Administrator\Desktop\工作\2025~若驰工作文件\南京欧洲组-2026财年目标测算.xlsx`
-  - `C:\Users\Administrator\Desktop\工作\2025~若驰工作文件\运营周会数据收集_王祎.xlsx`
-- MVP脚本：`C:\Users\Administrator\Desktop\工作\2025~若驰工作文件\scripts\weekly_report.py`（已暂停，待修正后继续）
+  - `C:\Users\Administrator\Desktop\工作\2025~若驰工作文件\运营周会数据收集_王祎_v19_new.xlsx`
+- 统一入口脚本：`d:\Zero Tools\src\weekly_report_pipeline.py`（替代旧 weekly_report.py v18/v19）
