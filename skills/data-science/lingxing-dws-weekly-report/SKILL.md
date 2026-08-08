@@ -481,7 +481,7 @@ HTTP Streamable HTTP，每次请求 QPS ≤ 1。多数据源并行采集时必�
 
 ## 相关文件
 
-- `references/weekly_report_field_mapping.md` — 字段名→Excel列映射速查表
+- `references/field-mapping.md` — 字段名→Excel列映射速查表
 - `references/LingXing_profit_report_api_audit.md` — 🔴 两个利润API口径差异审计（含截图基准数据、实测对比）
 - 本地文件：
   - `C:\Users\Administrator\Desktop\工作\2025~若驰工作文件\南京欧洲组-2026财年目标测算.xlsx`

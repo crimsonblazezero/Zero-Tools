@@ -103,7 +103,7 @@ dws auth status
 - 模板 ID：`17a14a44cdee2e409b88ad14ca68d77b`
 - Payload 输出路径：`d:\Zero Tools\data\report_payload.json`
 
-**完整字段映射与参考说明（详见 [field-mapping.md](file:///d:/Zero%20Tools/references/field-mapping.md)）**
+**完整字段映射与参考说明（详见 [field-mapping.md](file:///d:/Zero%20Tools/skills/data-science/lingxing-dws-weekly-report/references/field-mapping.md)）**
 
 | # | key | sort | type | contentType | 数据来源说明 |
 |---|-----|------|------|-------------|-------------|
