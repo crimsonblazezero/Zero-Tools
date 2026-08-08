@@ -92,8 +92,10 @@ next_week_target = week_target + max(month_goal - already_spent, 0)
 
 ### 库龄目标存量
 ```
-target_90_180 = current_90_180 × 0.75
-target_181_270 = current_181_270 × 0.80
+target_90_180  = current_90_180  × 0.8
+target_181_270 = current_181_270 × 0.5
+target_271_365 = current_271_365 × 0.3
+target_366_plus = current_366_plus × 0.1
 ```
 
 ### 库销比
