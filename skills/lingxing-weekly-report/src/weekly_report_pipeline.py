@@ -41,68 +41,68 @@ EXCEL_TEMPLATE_R2 = r"D:\Zero Tools\data\六组周会会议纪要20260727.xlsx"
 OUTPUT_DIR = r"d:\Zero Tools\data"
 
 # FY2026 财年内置目标表 (包含销售额与毛利额)
-# 数据源：南京欧洲组-2026财年目标测算.xlsx（人员sheet；全组含乔雅静，王祎/化一博为个人维度）
-# 2026-08-10 修正：group profit 8月=18000/9月=24000（原误 40000）；wy/hyb 拆分全部改为 Excel 实际值
+# 数据源：南京欧洲组-2026财年目标测算.xlsx（人员sheet；2026-08-10 起团队仅王祎+化一博两人，乔雅静已移除，wy+hyb=group 全组）
+# 2026-08-10 修正：group profit 8月=18000/9月=24000（原误 40000）；wy/hyb 拆分全部改为 Excel「人员」sheet 实际值（两人制）
 FY2026_TARGETS = {
     "2026-04": {
         "group": {"sales": 150000, "profit": 12000},
-        "wy":    {"sales": 15000,  "profit": 1200},
-        "hyb":   {"sales": 90000,  "profit": 7200}
+        "wy":    {"sales": 45000,  "profit": 3600},
+        "hyb":   {"sales": 105000, "profit": 8400}
     },
     "2026-05": {
         "group": {"sales": 90000, "profit": 6000},
-        "wy":    {"sales": 9000,  "profit": 600},
-        "hyb":   {"sales": 54000,  "profit": 3600}
+        "wy":    {"sales": 27000,  "profit": 1800},
+        "hyb":   {"sales": 63000,  "profit": 4200}
     },
     "2026-06": {
         "group": {"sales": 65000, "profit": 5000},
-        "wy":    {"sales": 13000,  "profit": 1000},
-        "hyb":   {"sales": 35750,  "profit": 2750}
+        "wy":    {"sales": 19500,  "profit": 1500},
+        "hyb":   {"sales": 45500,  "profit": 3500}
     },
     "2026-07": {
         "group": {"sales": 120000, "profit": 8000},
-        "wy":    {"sales": 24000,  "profit": 1600},
-        "hyb":   {"sales": 66000,  "profit": 4400}
+        "wy":    {"sales": 48000,  "profit": 3200},
+        "hyb":   {"sales": 72000,  "profit": 4800}
     },
     "2026-08": {
         "group": {"sales": 280000, "profit": 18000},
-        "wy":    {"sales": 56000,  "profit": 3600},
-        "hyb":   {"sales": 140000, "profit": 9000}
+        "wy":    {"sales": 112000, "profit": 7200},
+        "hyb":   {"sales": 168000, "profit": 10800}
     },
     "2026-09": {
         "group": {"sales": 280000, "profit": 24000},
-        "wy":    {"sales": 56000,  "profit": 4800},
-        "hyb":   {"sales": 140000, "profit": 12000}
+        "wy":    {"sales": 112000, "profit": 9600},
+        "hyb":   {"sales": 168000, "profit": 14400}
     },
     "2026-10": {
         "group": {"sales": 450000, "profit": 36000},
-        "wy":    {"sales": 90000,  "profit": 7200},
-        "hyb":   {"sales": 202500, "profit": 16200}
+        "wy":    {"sales": 180000, "profit": 14400},
+        "hyb":   {"sales": 270000, "profit": 21600}
     },
     "2026-11": {
         "group": {"sales": 550000, "profit": 60000},
-        "wy":    {"sales": 110000, "profit": 12000},
-        "hyb":   {"sales": 247500, "profit": 27000}
+        "wy":    {"sales": 220000, "profit": 24000},
+        "hyb":   {"sales": 330000, "profit": 36000}
     },
     "2026-12": {
         "group": {"sales": 600000, "profit": 70000},
-        "wy":    {"sales": 120000, "profit": 14000},
-        "hyb":   {"sales": 240000, "profit": 28000}
+        "wy":    {"sales": 270000, "profit": 31500},
+        "hyb":   {"sales": 330000, "profit": 38500}
     },
     "2027-01": {
         "group": {"sales": 720000, "profit": 100000},
-        "wy":    {"sales": 144000, "profit": 20000},
-        "hyb":   {"sales": 288000, "profit": 40000}
+        "wy":    {"sales": 324000, "profit": 45000},
+        "hyb":   {"sales": 396000, "profit": 55000}
     },
     "2027-02": {
         "group": {"sales": 880000, "profit": 115000},
-        "wy":    {"sales": 176000, "profit": 23000},
-        "hyb":   {"sales": 352000, "profit": 46000}
+        "wy":    {"sales": 396000, "profit": 51750},
+        "hyb":   {"sales": 484000, "profit": 63250}
     },
     "2027-03": {
         "group": {"sales": 950000, "profit": 126000},
-        "wy":    {"sales": 190000, "profit": 25200},
-        "hyb":   {"sales": 380000, "profit": 50400}
+        "wy":    {"sales": 427500, "profit": 56700},
+        "hyb":   {"sales": 522500, "profit": 69300}
     }
 }
 
@@ -258,7 +258,8 @@ def fetch_settled_gross_profit(start_date, end_date):
     口径说明（2026-08-09 用户确认）：月实际毛利改用**结算毛利**（与领星前台一致），
     但仍 ×0.6 打折（采购与头程成本未完全扣减）。
     接口 query_order_profit_list 返回全组织数据，需按记录 sids 与南京组交集筛选。
-    返回 dict: {"group": Σ, "hyb": 化一博Σ}（×0.6 由调用方处理）。
+    返回 dict: {"group": Σ, "wy": 王祎Σ, "hyb": 化一博Σ}（×0.6 由调用方处理）。
+    2026-08-10 修正：新增 wy（王祎个人）拆分——此前缺 wy 导致王祎个人 M 列回退预估口径（虚高至超全组）。
     """
     res = call_mcp_tool("query_order_profit_list", {
         "currency_type": "USD", "date_summary_type": 3,
@@ -272,16 +273,19 @@ def fetch_settled_gross_profit(start_date, end_date):
     if isinstance(d, dict):
         items = (d.get("data") or {}).get("list", []) or d.get("list", [])
     nj_set = set(str(s) for s in SIDS_LIST)
-    total_g, total_hyb = 0.0, 0.0
+    total_g, total_wy, total_hyb = 0.0, 0.0, 0.0
     for r in items:
         sids = set(str(s) for s in (r.get("sids") or []))
         if sids & nj_set:
             g = float(r.get("gross_profit") or 0.0)
             total_g += g
-            if "化一博" in (r.get("principal_names") or []):
+            pr = r.get("principal_names") or []
+            if "王祎" in pr:
+                total_wy += g
+            if "化一博" in pr:
                 total_hyb += g
-    print(f"💰 结算毛利（利润报表, {start_date}~{end_date}）: 全组 Σ gross = {total_g:.2f} (化一博 {total_hyb:.2f}) → ×0.6 = {total_g * 0.6:.2f}")
-    return {"group": total_g, "hyb": total_hyb}
+    print(f"💰 结算毛利（利润报表, {start_date}~{end_date}）: 全组 Σ gross = {total_g:.2f} (王祎 {total_wy:.2f} / 化一博 {total_hyb:.2f}) → ×0.6 = {total_g * 0.6:.2f}")
+    return {"group": total_g, "wy": total_wy, "hyb": total_hyb}
 
 
 # 抓取并汇总领星数据
@@ -548,14 +552,17 @@ def pull_performance_and_stock(date_info):
         }
 
     # 月实际毛利（2026-08-09 用户确认）：改用结算毛利 gross_profit × 0.6（与领星前台一致，
-    # 采购与头程未完全扣减需打折）；全组 + 化一博两维度（周会纪要展示用，与报表一完全一致）
+    # 采购与头程未完全扣减需打折）；全组/王祎/化一博三维度（报表一 Row2/3/4 + 周会纪要展示，口径一致）
+    # 2026-08-10 修正：新增 wy（王祎个人）——此前缺 wy 致王祎个人 M 列回退预估口径（虚高至超全组）
     try:
         settled = fetch_settled_gross_profit(month_start, month_end)
         res_merged["group"]["month_gross_profit"] = settled["group"] * 0.6
+        res_merged["wy"]["month_gross_profit"] = settled["wy"] * 0.6
         res_merged["hyb"]["month_gross_profit"] = settled["hyb"] * 0.6
     except Exception as e:
         print(f"⚠️ 结算毛利拉取失败，回退预估口径: {e}")
         res_merged["group"]["month_gross_profit"] = res_merged["group"]["month_predict_profit"]
+        res_merged["wy"]["month_gross_profit"] = res_merged["wy"]["month_predict_profit"]
         res_merged["hyb"]["month_gross_profit"] = res_merged["hyb"]["month_predict_profit"]
 
     return res_merged
@@ -626,7 +633,7 @@ def fetch_aitable_tasks(meeting_date="2026-08-03"):
     return wy_b7_text, wy_b8_text, hyb_b8_text
 
 # Report 1: fill_weekly_report
-def run_report1(res_data, date_info, dry_run=False):
+def run_report1(res_data, date_info, dry_run=False, push=False):
     print("\n--- 🟢 执行报表一 (运营周复盘) ---")
     month_key = date_info["month_key"]
     targets_cfg = FY2026_TARGETS.get(month_key, FY2026_TARGETS["2026-07"])
@@ -782,8 +789,21 @@ def run_report1(res_data, date_info, dry_run=False):
     if attach_info["docUrl"]:
         print(f"📎 附带最新 Excel 钉盘链接: {attach_info['docUrl']}")
 
+    # 2026-08-10 用户确认：先出关键数据 MD 待审核，审核通过后再发送（--push 才执行发送动作）
+    if not dry_run:
+        print("\n📋 === 报表一 关键数据（待王祎审核）===")
+        print(f"**周销量**: {int(g_data['volume'])} 件 | **周销售额**: ${round(g_data['amount'],2)} | **周AcoAs**: {round(g_data['acoas'],2)}%")
+        print(f"**月目标销售额**: ${round(t_sales_monthly,2)} | **月实际销售额**: ${round(g_data['month_amount'],2)} | 达成率 {round(g_data['month_amount']/t_sales_monthly*100,1)}%")
+        print(f"**月目标毛利额**: ${round(t_profit_monthly,2)} | **月实际毛利额(结算×0.6)**: ${actual_profit} | 完成率 **{profit_ratio}%**")
+        print(f"**库销比**: {round(g_data['stock_to_sales_ratio'],2)} | 库龄[90-180/181-270/271-365/365+]: {g_data['age_90_180']}/{g_data['age_181_270']}/{g_data['age_271_365']}/{g_data['age_365_plus']}")
+        print(f"**超180天SKU**: {g_data['over_180_skus_cnt']} 个 / {g_data['over_180_qty']} 件")
+        print(f"**本周重点任务**: \n{wy_w31_text}")
+        print(f"**下周计划**: \n{wy_w32_text}")
+        print("=====================================")
+
     # 2026-08-09 用户要求：发出周报后，把在线表格链接转发给高应婷（已授权 EDITOR）
-    if _online_link and not dry_run:
+    # 2026-08-10 改为：审核通过后 --push 才转发
+    if _online_link and not dry_run and push:
         _gy_open_id = "DT2AUV82nT7PZbqyiPfiPSdOwuyiPmR29xgn"   # 高应婷 openDingTalkId
         _gy_text = f"{date_info['week_start']}~{date_info['week_end']} 运营周复盘在线表格（已授权可编辑）：{_online_link}"
         try:
@@ -797,7 +817,7 @@ def run_report1(res_data, date_info, dry_run=False):
             print(f"⚠️ 转发高应婷异常: {e}")
 
 # Report 2: generate_weekly_meeting_report
-def run_report2(res_data, date_info, dry_run=False):
+def run_report2(res_data, date_info, dry_run=False, push=False):
     print("\n--- 🟢 执行报表二 (六组周会会议纪要) ---")
     
     # 抓取 AI 表格重点任务
@@ -916,8 +936,25 @@ def run_report2(res_data, date_info, dry_run=False):
         _r2_base = os.path.splitext(os.path.basename(out_path))[0]
         doc_url, _ = import_excel_as_online(out_path, display_name=_r2_base)
 
-        # 发送钉群卡片消息
-        if doc_url:
+        # 2026-08-10 用户确认：先出关键数据 MD 待审核，审核通过后再推送钉群（--push）
+        if not push:
+            print("\n📋 === 报表二 关键数据（待审核）===")
+            g_data = res_data["group"]
+            h_data = res_data["hyb"]
+            print(f"**会议日期**: {date_info['meeting_date']} | 周区间 {date_info['week_start']}~{date_info['week_end']}")
+            print(f"| 指标 | 全组 | 化一博 |")
+            print(f"| --- | --- | --- |")
+            print(f"| 销量 | {int(g_data['volume'])} | {int(h_data['volume'])} |")
+            print(f"| 销售额 | ${g_data['amount']:.2f} | ${h_data['amount']:.2f} |")
+            print(f"| 订单利润额(结算×0.6) | ${g_data.get('month_gross_profit', g_data['gross_profit']*0.6):.2f} | ${h_data.get('month_gross_profit', h_data['gross_profit']*0.6):.2f} |")
+            print(f"| 结算利润额(产品表现purchase) | ${g_data.get('month_perf_gross', 0):.2f} | ${h_data.get('month_perf_gross', 0):.2f} |")
+            print(f"| 广告花费 | ${g_data['ad_spend']:.2f} | ${h_data['ad_spend']:.2f} |")
+            print(f"| FBA在库库存 | {g_data['fba_stock_total']} | {h_data['fba_stock_total']} |")
+            print(f"📎 在线表格: {doc_url}")
+            print("=====================================")
+
+        # 发送钉群卡片消息（审核通过后 --push）
+        if doc_url and push:
             g_data = res_data["group"]
             h_data = res_data["hyb"]
             card_text = f"""# 📊 运营六组周会会议纪要 ({date_info["meeting_date"]})
@@ -951,7 +988,10 @@ def main():
     parser.add_argument("--week-end", type=str, help="指定周六日期 (YYYY-MM-DD), 不传则基于今日自动寻找最近周六")
     parser.add_argument("--meeting-date", type=str, help="指定会议日期 (YYYY-MM-DD), 默认自动推算为周六的下周一")
     parser.add_argument("--dry-run", action="store_true", help="只拉取并校验数据，不写入物理文件和触发消息")
-    
+    parser.add_argument("--push", action="store_true",
+                        help="审核通过后执行发送动作（报表二推送钉群、报表一转发给高应婷）。"
+                             "2026-08-10 用户确认：默认只生成+打印关键数据MD待审核，不发送任何消息")
+
     args = parser.parse_args()
     
     if not (args.report1 or args.report2 or args.all):
@@ -970,12 +1010,12 @@ def main():
     # 2. 抓取并汇总领星数据
     res_data = pull_performance_and_stock(date_info)
     
-    # 3. 分发执行
+    # 3. 分发执行（2026-08-10：默认不发送，--push 才发送；先出 MD 待审核）
     if args.report1 or args.all:
-        run_report1(res_data, date_info, dry_run=args.dry_run)
+        run_report1(res_data, date_info, dry_run=args.dry_run, push=args.push)
         
     if args.report2 or args.all:
-        run_report2(res_data, date_info, dry_run=args.dry_run)
+        run_report2(res_data, date_info, dry_run=args.dry_run, push=args.push)
 
 if __name__ == "__main__":
     main()
