@@ -41,66 +41,68 @@ EXCEL_TEMPLATE_R2 = r"D:\Zero Tools\data\六组周会会议纪要20260727.xlsx"
 OUTPUT_DIR = r"d:\Zero Tools\data"
 
 # FY2026 财年内置目标表 (包含销售额与毛利额)
+# 数据源：南京欧洲组-2026财年目标测算.xlsx（人员sheet；全组含乔雅静，王祎/化一博为个人维度）
+# 2026-08-10 修正：group profit 8月=18000/9月=24000（原误 40000）；wy/hyb 拆分全部改为 Excel 实际值
 FY2026_TARGETS = {
     "2026-04": {
         "group": {"sales": 150000, "profit": 12000},
-        "wy":    {"sales": 45000,  "profit": 3600},
-        "hyb":   {"sales": 105000, "profit": 8400}
+        "wy":    {"sales": 15000,  "profit": 1200},
+        "hyb":   {"sales": 90000,  "profit": 7200}
     },
     "2026-05": {
         "group": {"sales": 90000, "profit": 6000},
-        "wy":    {"sales": 27000,  "profit": 1800},
-        "hyb":   {"sales": 63000,  "profit": 4200}
+        "wy":    {"sales": 9000,  "profit": 600},
+        "hyb":   {"sales": 54000,  "profit": 3600}
     },
     "2026-06": {
         "group": {"sales": 65000, "profit": 5000},
-        "wy":    {"sales": 19500,  "profit": 1500},
-        "hyb":   {"sales": 45500,  "profit": 3500}
+        "wy":    {"sales": 13000,  "profit": 1000},
+        "hyb":   {"sales": 35750,  "profit": 2750}
     },
     "2026-07": {
         "group": {"sales": 120000, "profit": 8000},
-        "wy":    {"sales": 48000,  "profit": 3600},
-        "hyb":   {"sales": 72000,  "profit": 6400}
+        "wy":    {"sales": 24000,  "profit": 1600},
+        "hyb":   {"sales": 66000,  "profit": 4400}
     },
     "2026-08": {
-        "group": {"sales": 280000, "profit": 40000},
-        "wy":    {"sales": 112000, "profit": 16000},
-        "hyb":   {"sales": 168000, "profit": 24000}
+        "group": {"sales": 280000, "profit": 18000},
+        "wy":    {"sales": 56000,  "profit": 3600},
+        "hyb":   {"sales": 140000, "profit": 9000}
     },
     "2026-09": {
-        "group": {"sales": 280000, "profit": 40000},
-        "wy":    {"sales": 112000, "profit": 16000},
-        "hyb":   {"sales": 168000, "profit": 24000}
+        "group": {"sales": 280000, "profit": 24000},
+        "wy":    {"sales": 56000,  "profit": 4800},
+        "hyb":   {"sales": 140000, "profit": 12000}
     },
     "2026-10": {
         "group": {"sales": 450000, "profit": 36000},
-        "wy":    {"sales": 180000, "profit": 14400},
-        "hyb":   {"sales": 270000, "profit": 21600}
+        "wy":    {"sales": 90000,  "profit": 7200},
+        "hyb":   {"sales": 202500, "profit": 16200}
     },
     "2026-11": {
         "group": {"sales": 550000, "profit": 60000},
-        "wy":    {"sales": 220000, "profit": 24000},
-        "hyb":   {"sales": 330000, "profit": 36000}
+        "wy":    {"sales": 110000, "profit": 12000},
+        "hyb":   {"sales": 247500, "profit": 27000}
     },
     "2026-12": {
         "group": {"sales": 600000, "profit": 70000},
-        "wy":    {"sales": 270000, "profit": 31500},
-        "hyb":   {"sales": 330000, "profit": 38500}
+        "wy":    {"sales": 120000, "profit": 14000},
+        "hyb":   {"sales": 240000, "profit": 28000}
     },
     "2027-01": {
         "group": {"sales": 720000, "profit": 100000},
-        "wy":    {"sales": 324000, "profit": 45000},
-        "hyb":   {"sales": 396000, "profit": 55000}
+        "wy":    {"sales": 144000, "profit": 20000},
+        "hyb":   {"sales": 288000, "profit": 40000}
     },
     "2027-02": {
         "group": {"sales": 880000, "profit": 115000},
-        "wy":    {"sales": 396000, "profit": 51750},
-        "hyb":   {"sales": 484000, "profit": 63250}
+        "wy":    {"sales": 176000, "profit": 23000},
+        "hyb":   {"sales": 352000, "profit": 46000}
     },
     "2027-03": {
         "group": {"sales": 950000, "profit": 126000},
-        "wy":    {"sales": 427500, "profit": 56700},
-        "hyb":   {"sales": 522500, "profit": 69300}
+        "wy":    {"sales": 190000, "profit": 25200},
+        "hyb":   {"sales": 380000, "profit": 50400}
     }
 }
 
