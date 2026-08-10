@@ -44,6 +44,7 @@ description: 用本地微信公众号抓取器批量识别并拉取某个公众�
 - 支持 `fetch --limit N`（本轮最多抓 N 篇**新**文章，覆盖 `config.article_limit`；如"只要最新 10 篇"直接 `--limit 10`）
 - 支持 `fetch --stop-after-seen N`（增量早停：翻页时连续遇到 N 篇已抓文章即提前停止，避免为找增量翻完全部历史；带 `--resume`/`increment` 时默认 30，设 0 禁用）
 - 支持 `status`（抓取前速览：各账号上次抓到哪天、文章数、登录态，落实"先查上轮再抓"习惯）
+- 支持 `album`（抓取公众号**文章合集 / 专辑**：直接给 `appmsgalbum` 合集链接，复用登录态拉取合集内全部文章，无需单篇种子翻历史；输出与 fetch 一致的 Markdown）
 - 去重增强：每轮在输出目录生成 `seen_urls.json` 清单，跨轮 / 跨次运行自动跳过已抓文章；**失败的会重试**，已下载的 Markdown 幂等复用
 - 限流保护：后台 API 调用与文章下载均插入「固定间隔 + 随机抖动」，遇 `429` / `5xx` / "操作频繁" 自动指数退避
 - 支持 `clear-login`
@@ -324,6 +325,27 @@ cd "内容生产龙虾/公众号作者文章抓取"
 - **抓前先看**：`status` → 看"上次抓到哪天" → 用 `--since <那天>` 或 `increment` 续抓，绝不重复。
 - **判断要不要扫二维码**：`status` 的 `login.status` 若已是 `authenticated`，直接抓；若是 `waiting_scan` 才发起 `ensure-login`。
 - 可与 `--quiet` 组合，仅在登录态失效或某账号 0 篇时输出，适合塞进自动化前的自检。
+
+### 4.12 album 子命令（抓取公众号合集 / 专辑）
+
+当用户给出的是**公众号文章合集页**（`mp.weixin.qq.com/mp/appmsgalbum?__biz=...&album_id=...`，常见于"合集""目录""系列课"入口），而不是某一篇文章时，用 `album` 子命令，而不是 `fetch`：
+
+```bash
+cd "内容生产龙虾/公众号作者文章抓取"
+./scripts/run_fetcher.sh album "https://mp.weixin.qq.com/mp/appmsgalbum?__biz=MzI2NTQ2OTkwMg==&action=getalbum&album_id=4560732506928398340" --json --display silent
+# 或：
+python main.py album --url "https://mp.weixin.qq.com/mp/appmsgalbum?__biz=...&album_id=..."
+```
+
+要点：
+
+- **无需单篇种子、无需重新扫码**：`album` 复用 `ensure-login` 留下的登录态 cookie，直接调用读者端 `appmsgalbum` 接口拿到合集内全部文章列表，再逐篇抓取正文。
+- **自动翻页**：合集文章按页返回（每页 10 篇），`album` 自动翻到 `continue_flag=0`，不会漏抓。
+- **输出与 `fetch` 一致**：每篇落盘为 `markdown/<序号>_<标题>.md`，含标题、公众号、发布时间、原文链接；同样遵循 `config.json` 的 `write_html`（默认只出 Markdown）。
+- **目录命名**：`<公众号名>_专辑_<album_id 末 6 位>_<时间戳>`，便于和单账号抓取结果区分。
+- 若链接缺少 `__biz` / `album_id`，或登录态失效（合集返回 0 篇），会给出明确报错提示先 `ensure-login`。
+
+典型场景：用户丢来一个"XX 系列课（共 N 篇）"的合集链接，直接 `album` 一把梭，不必一篇篇去找种子再翻历史。
 
 ### 5. 给出结果摘要
 

@@ -43,7 +43,7 @@ USER_AGENT = (
 MP_HOME_URL = "https://mp.weixin.qq.com/cgi-bin/home?t=home/index&lang=zh_CN"
 MP_LOGIN_URL = "https://mp.weixin.qq.com/"
 ARTICLE_LIST_PAGE_SIZE = 20
-KNOWN_COMMANDS = {"fetch", "increment", "status", "ensure-login", "login-status", "clear-login"}
+KNOWN_COMMANDS = {"fetch", "increment", "status", "album", "ensure-login", "login-status", "clear-login"}
 ACTIVE_QR_VIEWER: Any | None = None
 
 # 微信接口 create_time 为 UTC 秒级时间戳；中国公众号展示时间 = UTC+8，且中国不实行夏令时。
@@ -200,6 +200,14 @@ def main() -> int:
                 md_only=args.md_only,
                 limit=args.limit,
                 stop_after_seen=args.stop_after_seen,
+            )
+        elif args.command == "album":
+            config = load_or_create_config(noninteractive=quiet or is_headless_environment())
+            payload = command_album(
+                album_url=resolved_article_url,
+                config=config,
+                quiet=quiet,
+                md_only=args.md_only,
             )
         elif args.command == "status":
             config = load_or_create_config(noninteractive=True)
@@ -1878,6 +1886,117 @@ def safe_json(response: httpx.Response) -> dict[str, Any]:
         raise RuntimeError(f"接口返回不是 JSON：{response.text[:200]}") from exc
     check_base_resp(data)
     return data
+
+
+def command_album(
+    *,
+    album_url: str | None,
+    config: AppConfig,
+    quiet: bool,
+    md_only: bool = False,  # 专辑天然只出 Markdown；保留参数仅为接口一致
+) -> dict[str, Any]:
+    """抓取公众号文章合集（专辑 / album）下的全部文章。
+
+    与 fetch/increment（单篇种子翻历史）不同，album 处理读者视角的合集页
+    （mp.weixin.qq.com/mp/appmsgalbum?__biz=...&album_id=...）。复用后台登录态
+    cookie 直接调用读者端 appmsgalbum 接口拿到合集文章列表，无需重新扫码。
+    """
+    import datetime as _dt
+
+    if not album_url:
+        raise RuntimeError(
+            "album 命令需要传入专辑链接：wechat_crawler album <专辑URL> 或 --url <专辑URL>"
+        )
+    parsed_q = parse_qs(urlparse(album_url).query)
+    biz = parsed_q.get("__biz", [None])[0]
+    album_id = parsed_q.get("album_id", [None])[0]
+    if not biz or not album_id:
+        raise RuntimeError(
+            "专辑链接缺少 __biz 或 album_id，无法定位合集。\n"
+            "请使用形如 https://mp.weixin.qq.com/mp/appmsgalbum?__biz=...&album_id=... 的链接。"
+        )
+
+    cookies = load_cookies_from_profile()
+    if not cookies:
+        raise RuntimeError("找不到登录态 cookie（login_artifacts/cookies.json）。请先运行 ensure-login 登录。")
+    client = build_sync_client(cookies)
+
+    # 1) 翻页收集专辑文章列表
+    items: list[dict[str, Any]] = []
+    begin = 0
+    while True:
+        params = {
+            "action": "getalbum", "__biz": biz, "album_id": album_id,
+            "begin": begin, "count": 10, "f": "json", "lang": "zh_CN", "ajax": 1,
+        }
+        resp = client.get("https://mp.weixin.qq.com/mp/appmsgalbum", params=params)
+        resp.raise_for_status()
+        data = resp.json()
+        gar = data.get("getalbum_resp", {})
+        br = gar.get("base_resp", {}) or {}
+        if br.get("ret") not in (None, 0):
+            raise RuntimeError(f"专辑接口报错 base_resp.ret={br.get('ret')} {br.get('err_msg')}")
+        page = gar.get("article_list", []) or []
+        if not page:
+            break
+        items.extend(page)
+        if len(page) < 10 or gar.get("continue_flag") == 0:
+            break
+        begin += len(page)
+
+    if not items:
+        raise RuntimeError("专辑返回 0 篇文章，可能登录态失效或该合集不可见。请重新 ensure-login。")
+
+    # 2) 确定账号名（用于目录命名）：预抓首篇
+    nickname = ""
+    first_parsed: dict[str, Any] | None = None
+    try:
+        r0 = client.get(items[0].get("url") or items[0].get("link"), follow_redirects=True, timeout=30)
+        r0.raise_for_status()
+        first_parsed = parse_article_content(r0.text, items[0])
+        nickname = (first_parsed or {}).get("account_name") or ""
+    except Exception as exc:  # noqa: BLE001
+        log_err(f"预取首篇失败（不影响后续）：{exc}")
+
+    ts = _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    dir_name = f"{safe_name(nickname) or 'album'}_专辑_{album_id[-6:]}_{ts}"
+    out_dir = config.output_root / dir_name
+    md_dir = out_dir / "markdown"
+    md_dir.mkdir(parents=True, exist_ok=True)
+
+    # 3) 逐篇抓取正文并落盘为 Markdown
+    fetched = 0
+    for i, a in enumerate(items, 1):
+        link = a.get("url") or a.get("link")
+        a["link"] = link  # build_markdown_document 读取 article['link'] 作为原文链接
+        parsed = first_parsed if (i == 1 and first_parsed is not None) else None
+        if parsed is None:
+            try:
+                r = client.get(link, follow_redirects=True, timeout=30)
+                r.raise_for_status()
+                parsed = parse_article_content(r.text, a)
+            except Exception as exc:  # noqa: BLE001
+                log_err(f"[{i}/{len(items)}] 抓取失败：{exc}")
+                time.sleep(1.0)
+                continue
+        if not parsed.get("publish_time") and a.get("create_time"):
+            parsed["publish_time"] = ts_to_cn_str(int(a["create_time"]))
+        md = build_markdown_document(parsed, a, {"nickname": nickname, "alias": ""})
+        base = f"{i:03d}_{safe_name(parsed['title'] or a.get('title') or '未命名')}"
+        (md_dir / f"{base}.md").write_text(md, encoding="utf-8")
+        fetched += 1
+        log(f"[{i}/{len(items)}] {parsed.get('title')} -> {len(md)} chars", quiet=quiet)
+        time.sleep(1.0)
+
+    log(f"专辑抓取完成：{fetched}/{len(items)} 篇 -> {out_dir}", quiet=quiet)
+    return {
+        "status": "ok",
+        "album_id": album_id,
+        "biz": biz,
+        "total": len(items),
+        "fetched": fetched,
+        "output_dir": str(out_dir),
+    }
 
 
 if __name__ == "__main__":
