@@ -32,7 +32,7 @@ SIDS_LIST = [5030, 5751, 5019, 5024, 5026, 5025, 5031, 5023, 5021, 5020, 5027, 5
 MCP_URL = "https://openmcp.lingxing.com/mcp-servers/lingxing-mcp"
 MCP_HEADERS = {
     "Content-Type": "application/json",
-    "X-Mcp-Key": "b7a40552c273e2757ada0bfd047d20a9"
+    "X-Mcp-Key": "a12e733b81a539ab08cb05f0110c5624"
 }
 
 def call_mcp_tool(name, arguments):
