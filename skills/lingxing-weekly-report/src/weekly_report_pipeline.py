@@ -10,6 +10,7 @@ KovaScape 领星周报统一流水线 (Master Weekly Report Pipeline)
 import os
 import sys
 import json
+import re
 import threading
 import datetime
 import urllib.request
@@ -851,11 +852,19 @@ def run_report2(res_data, date_info, dry_run=False, push=False):
         if "数据环比" in wb.sheetnames:
             ws2 = wb["数据环比"]
             # 旧数据复制 (从 D -> C, J -> I)
+            # 2026-08-11 修复：openpyxl 默认 data_only=False，公式单元格读到的是公式字符串
+            # （如 '=IF(D3=0,0,D4/D3)'）。若直接复制到 C 列，公式仍引用 D 列导致环比错乱。
+            # 需在滚动时同步替换列引用：D→C、J→I（数值单元格原样复制）。
+            def _roll_cell(src_row, src_col, dst_col):
+                v = ws2[f"{src_col}{src_row}"].value
+                if isinstance(v, str) and v.startswith("="):
+                    # 公式：仅替换列字母（保留行号），D→C / J→I
+                    v = re.sub(rf"\b{src_col}(\d+)", rf"{dst_col}\1", v)
+                return v
+
             for r in range(3, 24):
-                val_d = ws2.cell(row=r, column=4).value
-                ws2.cell(row=r, column=3, value=val_d)
-                val_j = ws2.cell(row=r, column=10).value
-                ws2.cell(row=r, column=9, value=val_j)
+                ws2.cell(row=r, column=3, value=_roll_cell(r, "D", "C"))    # D -> C
+                ws2.cell(row=r, column=9, value=_roll_cell(r, "J", "I"))   # J -> I
 
             # 表头日期（动态：基于 date_info 推算上周与本周区间）
             cur_ws = datetime.datetime.strptime(date_info["week_start"], "%Y-%m-%d").date()
