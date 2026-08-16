@@ -54,8 +54,9 @@ DEFAULT_THROTTLE: dict[str, float] = {
     "api_max_jitter": 1.5,    # API 调用额外随机抖动上限（秒）
     "dl_min_delay": 1.5,      # 两篇文章下载之间的最小间隔（秒）
     "dl_max_jitter": 1.2,     # 下载额外随机抖动上限（秒）
-    "max_retries": 6,         # 单请求失败后的最大重试次数
+    "max_retries": 10,        # 单请求失败后的最大重试次数（freq control 等限流可能持续数分钟）
     "backoff_base": 3.0,      # 退避基数（秒），第 n 次重试等待 ≈ backoff_base * 2^n
+    "post_login_cooldown": 45.0,  # 刚登录完先静默冷却 N 秒，避开"新会话预热限流"再打第一个接口
 }
 
 # 触发"需要重新登录"的 ret 码（微信后台约定，部分版本不同）
@@ -836,6 +837,13 @@ def run_fetch_once(
     )
     log("登录状态可用，开始解析文章来源...", quiet=quiet)
 
+    # 新会话刚登录完常处于"预热限流"窗口，立即打后台接口会触发 freq control(ret=200013)。
+    # 静默冷却一段再发起第一个请求，给微信后端限流窗口自然过去（可由 throttle.post_login_cooldown 调整）。
+    cooldown = float(thr.get("post_login_cooldown", 0) or 0)
+    if cooldown > 0:
+        log(f"登录后冷却 {cooldown:.0f}s，避开新会话预热限流...", quiet=quiet)
+        time.sleep(cooldown)
+
     seed = fetch_seed_article_info(article_url)
     if not seed.get("nickname") and not seed.get("alias"):
         raise RuntimeError("无法从这篇文章里识别公众号名称，换一篇该号文章再试。")
@@ -1422,7 +1430,7 @@ def check_base_resp(data: Any) -> None:
     msg = msg or str(data.get("err_msg", ""))
     if ret in LOGIN_EXPIRED_RETS or any(p in msg for p in ("登录已过期", "请重新登录", "未登录", "请先登录", "帐号登录")):
         raise LoginExpired(f"ret={ret} {msg}")
-    if any(p in msg for p in ("频繁", "频率", "太频繁", "操作过于", "请稍后", "frequency", "try again", "busy", "访问过于")):
+    if ret in (200013,) or any(p in msg for p in ("频繁", "频率", "太频繁", "操作过于", "请稍后", "freq", "frequency", "control", "try again", "busy", "访问过于")):
         raise WeChatRateLimit(f"ret={ret} {msg}")
     raise RuntimeError(f"公众号后台接口报错：{data}")
 
@@ -1447,7 +1455,7 @@ def api_get_json(
             last_exc = exc
             if attempt >= max(1, max_retries) - 1:
                 break
-            wait = backoff_base * (2 ** attempt) + random.uniform(0, 1.5)
+            wait = min(60.0, backoff_base * (2 ** attempt)) + random.uniform(0, 1.5)
             log_err(f"[限流/重试] 第{attempt + 1}次失败：{exc}；{wait:.1f}s 后重试")
             time.sleep(wait)
             limiter.reset()
